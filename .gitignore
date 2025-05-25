@@ -5,3 +5,7 @@ dist-ssr
 *.local
 .venv
 dump/
+.next/
+.vscode/
+.cursor/
+.env
