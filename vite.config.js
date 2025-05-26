@@ -21,4 +21,12 @@ export default defineConfig({
       "@": resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    exclude: ["ssh2", "cpu-features"],
+  },
+  build: {
+    rollupOptions: {
+      external: ["ssh2", "cpu-features", /\.node$/],
+    },
+  },
 });
