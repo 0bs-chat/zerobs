@@ -1,7 +1,7 @@
 import { v } from "convex/values";
-import { mutation } from "convex/_generated/server";
-import { requireAuth } from "convex/utils/helpers";
-import { api } from "convex/_generated/api";
+import { mutation } from "../_generated/server";
+import { requireAuth } from "../utils/helpers";
+import { api } from "../_generated/api";
 
 export const create = mutation({
   args: {
@@ -73,7 +73,7 @@ export const remove = mutation({
       .query("chatStream")
       .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
       .first();
-    
+
     if (chatStream) {
       await ctx.runMutation(api.chatStream.mutations.remove, {
         chatId: args.chatId,
@@ -83,7 +83,7 @@ export const remove = mutation({
     // Delete associated chat input
     const chatInput = await ctx.db
       .query("chatInput")
-      .withIndex("by_user_chat", (q) => 
+      .withIndex("by_user_chat", (q) =>
         q.eq("chatId", args.chatId).eq("userId", userId)
       )
       .first();

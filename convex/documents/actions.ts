@@ -1,5 +1,5 @@
-import { api } from "convex/_generated/api";
-import { internalAction } from "convex/_generated/server";
+import { api } from "../_generated/api";
+import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { Document } from "langchain/document";
 import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
@@ -7,10 +7,12 @@ import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube
 export const load = internalAction({
   args: {
     documentId: v.id("documents"),
-    metadata: v.optional(v.object({
-      source: v.id("projectDocuments"),
-      projectId: v.id("projects"),
-    })),
+    metadata: v.optional(
+      v.object({
+        source: v.id("projectDocuments"),
+        projectId: v.id("projects"),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const document = await ctx.runQuery(api.documents.queries.get, {
@@ -28,11 +30,11 @@ export const load = internalAction({
           headers: {
             Authorization: `Bearer ${process.env.SERVICE_PASS}`,
           },
-        },
+        }
       ).then(async (res) => await res.text());
     } else if (document.type === "url") {
       const res = await fetch(
-        `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(document.key)}&max_depth=0`,
+        `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(document.key)}&max_depth=0`
       );
       const data = (await res.json()) as { url: string; markdown: string };
       pageContent = `# ${data.url}\n\n${data.markdown}`;
@@ -42,10 +44,15 @@ export const load = internalAction({
         addVideoInfo: true,
       });
       const docs = await loader.load();
-      pageContent = docs.map((doc) => `# ${JSON.stringify(doc.metadata, null, 2)}\n\n${doc.pageContent}`).join("\n\n");
+      pageContent = docs
+        .map(
+          (doc) =>
+            `# ${JSON.stringify(doc.metadata, null, 2)}\n\n${doc.pageContent}`
+        )
+        .join("\n\n");
     } else if (document.type === "site") {
       const res = await fetch(
-        `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(document.key)}&max_depth=2`,
+        `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(document.key)}&max_depth=2`
       );
       const data = (await res.json()) as { url: string; markdown: string }[];
       pageContent = data.map((d) => `# ${d.url}\n\n${d.markdown}`).join("\n\n");

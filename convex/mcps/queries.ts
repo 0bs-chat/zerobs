@@ -1,8 +1,8 @@
-import { query } from "convex/_generated/server";
+import { query } from "../_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "convex/utils/helpers";
-import { api } from "convex/_generated/api";
-import type { Doc } from "convex/_generated/dataModel";
+import { requireAuth } from "../utils/helpers";
+import { api } from "../_generated/api";
+import type { Doc } from "../_generated/dataModel";
 import { paginationOptsValidator } from "convex/server";
 
 export const get = query({
@@ -28,7 +28,7 @@ export const get = query({
 
 export const getAll = query({
   args: {
-    paginationOpts: paginationOptsValidator
+    paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -58,7 +58,7 @@ export const getMultiple = query({
           throw new Error("MCP not found");
         }
         return mcp;
-      }),
+      })
     );
 
     return mcps;
@@ -69,7 +69,8 @@ export const getRunning = query({
   handler: async (ctx) => {
     const { userId } = await requireAuth(ctx);
 
-    const mcps = await ctx.db.query("mcps")
+    const mcps = await ctx.db
+      .query("mcps")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("status"), "running"))
       .collect();

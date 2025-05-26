@@ -1,7 +1,7 @@
-import { api, internal } from "convex/_generated/api";
-import type { Id } from "convex/_generated/dataModel";
-import { action } from "convex/_generated/server";
-import { requireAuth } from "convex/utils/helpers";
+import { api, internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import { action } from "../_generated/server";
+import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
 
 export const send = action({
@@ -27,7 +27,9 @@ export const send = action({
       throw new Error("Model not found");
     }
 
-    await ctx.runAction(internal.langchain.index.chat, { chatInputId: chatInput._id as Id<"chatInput"> });
+    await ctx.runAction(internal.langchain.index.chat, {
+      chatInputId: chatInput._id as Id<"chatInput">,
+    });
 
     return null;
   },

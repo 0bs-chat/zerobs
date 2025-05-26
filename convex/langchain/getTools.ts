@@ -5,9 +5,10 @@ import { DuckDuckGoSearch } from "@langchain/community/tools/duckduckgo_search";
 import { tool, type StructuredToolInterface } from "@langchain/core/tools";
 import { MultiServerMCPClient, type Connection } from "@langchain/mcp-adapters";
 import { z } from "zod";
-import { api, internal } from "convex/_generated/api";
-import type { ActionCtx } from "convex/_generated/server";
-import type { ToolInputSchemaBase } from "node_modules/@langchain/core/dist/tools/types";
+import { api, internal } from "../_generated/api";
+import type { ActionCtx } from "../_generated/server";
+import { ToolSchemaBase } from "@langchain/core/tools";
+import { Doc } from "../_generated/dataModel";
 
 export const getSearchTools = () => {
   const tools: {
@@ -19,7 +20,7 @@ export const getSearchTools = () => {
     crawlWeb: tool(
       async ({ url }: { url: string }) => {
         const response = await fetch(
-          `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(url)}&max_depth=0`,
+          `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(url)}&max_depth=0`
         );
         const data = await response.json();
         return data.markdown as string;
@@ -47,23 +48,26 @@ export const getSearchTools = () => {
 
 export const getMCPTools = async (ctx: ActionCtx) => {
   const mcps = await ctx.runQuery(api.mcps.queries.getRunning);
-  
+
   await ctx.runMutation(internal.mcps.mutations.ensureRunning, {
-    mcpIds: mcps.map((mcp) => mcp._id),
+    mcpIds: mcps.map((mcp: Doc<"mcps">) => mcp._id),
   });
-  
+
   const mcpServers: Record<string, Connection> = Object.fromEntries(
-    mcps.map((mcp) => [mcp.name, {
-      transport: "sse",
-      url: mcp.url!,
-      headers: mcp.env,
-      useNodeEventSource: true,
-      reconnect: {
-        enabled: true,
-        maxAttempts: 2,
-        delayMs: 100,
+    mcps.map((mcp: Doc<"mcps">) => [
+      mcp.name,
+      {
+        transport: "sse",
+        url: mcp.url!,
+        headers: mcp.env,
+        useNodeEventSource: true,
+        reconnect: {
+          enabled: true,
+          maxAttempts: 2,
+          delayMs: 100,
+        },
       },
-    }]),
+    ])
   );
 
   const client = new MultiServerMCPClient({
@@ -78,7 +82,7 @@ export const getMCPTools = async (ctx: ActionCtx) => {
   // Group tools by server name
   const groupedTools: Record<
     string,
-    StructuredToolInterface<ToolInputSchemaBase>[]
+    StructuredToolInterface<ToolSchemaBase>[]
   > = {};
 
   for (const tool of tools) {

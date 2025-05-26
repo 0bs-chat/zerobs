@@ -1,9 +1,9 @@
-import type { Id } from "convex/_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import {
   type QueryCtx,
   type MutationCtx,
   type ActionCtx,
-} from "convex/_generated/server.js";
+} from "../_generated/server.js";
 import { ConvexError } from "convex/values";
 
 export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {

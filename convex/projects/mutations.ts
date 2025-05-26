@@ -1,7 +1,7 @@
-import { mutation } from "convex/_generated/server";
-import { requireAuth } from "convex/utils/helpers";
+import { mutation } from "../_generated/server";
+import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
-import { api } from "convex/_generated/api";
+import { api } from "../_generated/api";
 
 export const create = mutation({
   args: {
@@ -89,8 +89,8 @@ export const remove = mutation({
       projectDocuments.map((projectDocument) =>
         ctx.runMutation(api.projectDocuments.mutations.remove, {
           projectDocumentId: projectDocument._id,
-        }),
-      ),
+        })
+      )
     );
 
     // Finally delete the project

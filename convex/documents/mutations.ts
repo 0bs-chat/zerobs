@@ -1,7 +1,7 @@
-import { mutation } from "convex/_generated/server";
-import type { Id } from "convex/_generated/dataModel";
+import { mutation } from "../_generated/server";
+import type { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
-import { requireAuth } from "convex/utils/helpers";
+import { requireAuth } from "../utils/helpers";
 
 export const generateUploadUrl = mutation({
   args: {},
@@ -18,7 +18,7 @@ export const create = mutation({
       v.literal("file"),
       v.literal("url"),
       v.literal("site"),
-      v.literal("youtube"),
+      v.literal("youtube")
     ),
     size: v.number(),
     key: v.union(v.id("_storage"), v.string()),

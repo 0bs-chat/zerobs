@@ -1,7 +1,7 @@
-import { requireAuth } from "convex/utils/helpers";
-import { mutation } from "convex/_generated/server";
+import { requireAuth } from "../utils/helpers";
+import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { api, internal } from "convex/_generated/api";
+import { api, internal } from "../_generated/api";
 
 export const create = mutation({
   args: {
@@ -54,7 +54,7 @@ export const update = mutation({
       api.projectDocuments.queries.get,
       {
         projectDocumentId: args.projectDocumentId,
-      },
+      }
     );
     if (!projectDocument) {
       throw new Error("Project document not found");
@@ -80,7 +80,7 @@ export const remove = mutation({
       api.projectDocuments.queries.get,
       {
         projectDocumentId: args.projectDocumentId,
-      },
+      }
     );
     if (!projectDocument) {
       throw new Error("Project document not found");
@@ -130,8 +130,8 @@ export const toggleSelect = mutation({
         ctx.runMutation(api.projectDocuments.mutations.update, {
           projectDocumentId: projectDocument._id,
           update: { selected: args.selected },
-        }),
-      ),
+        })
+      )
     );
 
     return true;

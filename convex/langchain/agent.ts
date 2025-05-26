@@ -10,7 +10,7 @@ import {
 } from "@langchain/langgraph";
 import type { DocumentInterface } from "@langchain/core/documents";
 import type { RunnableConfig } from "@langchain/core/runnables";
-import type { ActionCtx } from "convex/_generated/server";
+import type { ActionCtx } from "../_generated/server";
 import {
   BaseMessage,
   SystemMessage,
@@ -21,8 +21,8 @@ import {
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
 import { z } from "zod";
-import type { Doc } from "convex/_generated/dataModel";
-import { api } from "convex/_generated/api";
+import type { Doc } from "../_generated/dataModel";
+import { api } from "../_generated/api";
 import { Document } from "langchain/document";
 import type { TavilySearchResponse } from "@langchain/tavily";
 import { formatDocumentsAsString } from "langchain/util/document";
@@ -33,9 +33,8 @@ import { AIMessage } from "@langchain/core/messages";
 import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 
-
 const checkpointer = PostgresSaver.fromConnString(
-  process.env.POSTGRES_URL || "postgresql://postgres:postgres@database:5432",
+  process.env.POSTGRES_URL || "postgresql://postgres:postgres@database:5432"
 );
 await checkpointer.setup();
 
@@ -51,7 +50,7 @@ const plan = z
       additional_context: z
         .string()
         .describe("Additional context that may be needed to execute the step"),
-    }),
+    })
   )
   .describe("A step by step plan to achieve the objective")
   .min(1)
@@ -73,17 +72,26 @@ const GraphState = Annotation.Root({
   }),
 });
 
-async function shouldRetrieve(_state: typeof GraphState.State, config: RunnableConfig) {
+async function shouldRetrieve(
+  _state: typeof GraphState.State,
+  config: RunnableConfig
+) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
-  if (formattedConfig.chatInput.projectId || formattedConfig.chatInput.webSearch) {
+  if (
+    formattedConfig.chatInput.projectId ||
+    formattedConfig.chatInput.webSearch
+  ) {
     return "true";
   }
 
   return "false";
 }
 
-async function retrieve(state: typeof GraphState.State, config: RunnableConfig) {
+async function retrieve(
+  state: typeof GraphState.State,
+  config: RunnableConfig
+) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
   const vectorStore = new ConvexVectorStore(getEmbeddingModel("embeddings"), {
     ctx: formattedConfig.ctx,
@@ -101,24 +109,33 @@ async function retrieve(state: typeof GraphState.State, config: RunnableConfig) 
     type: "vectorStore" | "webSearch",
     model: string,
     state: typeof GraphState.State,
-    config: ExtendedRunnableConfig,
+    config: ExtendedRunnableConfig
   ) {
     const promptTemplate = ChatPromptTemplate.fromMessages([
-      [ "system", "Based on the messages and the user's query, generate queries for the " + type + ".", ],
+      [
+        "system",
+        "Based on the messages and the user's query, generate queries for the " +
+          type +
+          ".",
+      ],
       new MessagesPlaceholder("messages"),
     ]);
 
     const modelWithOutputParser = promptTemplate.pipe(
       getModel(model).withStructuredOutput(
         z.object({
-          queries: z.array(z.string()).describe("Queries for the " + type + ".").max(3).min(1),
-        }),
-      ),
+          queries: z
+            .array(z.string())
+            .describe("Queries for the " + type + ".")
+            .max(3)
+            .min(1),
+        })
+      )
     );
 
     const queries = await modelWithOutputParser.invoke({
       messages: state.messages.slice(-5),
-      config
+      config,
     });
 
     return queries.queries;
@@ -127,71 +144,90 @@ async function retrieve(state: typeof GraphState.State, config: RunnableConfig) 
   // Retrive documents
   let documents: DocumentInterface[] = [];
   if (formattedConfig.chatInput.projectId) {
-    const includedProjectDocuments = await formattedConfig.ctx.runQuery(api.projectDocuments.queries.getSelected, {
-      projectId: formattedConfig.chatInput.projectId,
-      selected: true,
-    });
+    const includedProjectDocuments = await formattedConfig.ctx.runQuery(
+      api.projectDocuments.queries.getSelected,
+      {
+        projectId: formattedConfig.chatInput.projectId,
+        selected: true,
+      }
+    );
 
-    const queries = await generateQueries("vectorStore", formattedConfig.chatInput.model, state, formattedConfig);
-    await Promise.all(queries.map(async (query) => {
-      const results = await vectorStore.similaritySearch(query, 4, {
-        filter: (q) => q.or(
-          ...includedProjectDocuments.map((doc) => q.eq("metadata", {
-            projectId: formattedConfig.chatInput.projectId,
-            source: doc,
-          })),
-        ),
-      });
-      documents.push(...results);
-    }));
+    const queries = await generateQueries(
+      "vectorStore",
+      formattedConfig.chatInput.model,
+      state,
+      formattedConfig
+    );
+    await Promise.all(
+      queries.map(async (query) => {
+        const results = await vectorStore.similaritySearch(query, 4, {
+          filter: (q) =>
+            q.or(
+              ...includedProjectDocuments.map((doc: Doc<"projectDocuments">) =>
+                q.eq("metadata", {
+                  projectId: formattedConfig.chatInput.projectId,
+                  source: doc,
+                })
+              )
+            ),
+        });
+        documents.push(...results);
+      })
+    );
   }
   if (formattedConfig.chatInput.webSearch) {
     const searchTools = await getSearchTools();
 
-    const queries = await generateQueries("webSearch", formattedConfig.chatInput.model, state, formattedConfig);
-    await Promise.all(queries.map(async (query) => {
-      if (searchTools.tavily) {
-        const searchResults = (await searchTools.tavily._call({
-          query: query,
-          topic: "general",
-          includeImages: false,
-          includeDomains: [],
-          excludeDomains: [],
-          searchDepth: "basic",
-        })) as TavilySearchResponse;
-        const docs = searchResults.results.map((result) => {
-          return new Document({
-            pageContent: `${result.score}. ${result.title}\n${result.url}\n${result.content}`,
-            metadata: {
-              source: "tavily",
-            },
+    const queries = await generateQueries(
+      "webSearch",
+      formattedConfig.chatInput.model,
+      state,
+      formattedConfig
+    );
+    await Promise.all(
+      queries.map(async (query) => {
+        if (searchTools.tavily) {
+          const searchResults = (await searchTools.tavily._call({
+            query: query,
+            topic: "general",
+            includeImages: false,
+            includeDomains: [],
+            excludeDomains: [],
+            searchDepth: "basic",
+          })) as TavilySearchResponse;
+          const docs = searchResults.results.map((result) => {
+            return new Document({
+              pageContent: `${result.score}. ${result.title}\n${result.url}\n${result.content}`,
+              metadata: {
+                source: "tavily",
+              },
+            });
           });
-        });
-        documents.push(...docs);
-      } else {
-        const searchResults = await searchTools.duckduckgo._call(query);
-        const searchResultsArray: {
-          title: string;
-          url: string;
-          snippet: string;
-        }[] = JSON.parse(searchResults);
-        const urlMarkdownContents = await Promise.all(
-          searchResultsArray.map(
-            (result) =>
-              searchTools.crawlWeb.invoke({ url: result.url }),
-          ),
-        );
-        const docs = searchResultsArray.map((result, index) => {
-          return new Document({
-            pageContent: `${result.title}\n${result.url}\n${urlMarkdownContents[index]}`,
-            metadata: {
-              source: "duckduckgo",
-            },
+          documents.push(...docs);
+        } else {
+          const searchResults = await searchTools.duckduckgo._call(query);
+          const searchResultsArray: {
+            title: string;
+            url: string;
+            snippet: string;
+          }[] = JSON.parse(searchResults);
+          const urlMarkdownContents = await Promise.all(
+            searchResultsArray.map((result) =>
+              searchTools.crawlWeb.invoke({ url: result.url })
+            )
+          );
+          const docs = searchResultsArray.map((result, index) => {
+            return new Document({
+              pageContent: `${result.title}\n${result.url}\n${urlMarkdownContents[index]}`,
+              metadata: {
+                source: "duckduckgo",
+              },
+            });
           });
-        });
-        documents.push(...docs);
-      }
-    }));
+          documents.push(...docs);
+        }
+      })
+    );
   }
 
   // Grade documents
@@ -199,11 +235,13 @@ async function retrieve(state: typeof GraphState.State, config: RunnableConfig) 
     model: string,
     document: DocumentInterface,
     message: BaseMessage,
-    config: ExtendedRunnableConfig,
+    config: ExtendedRunnableConfig
   ) {
     const promptTemplate = ChatPromptTemplate.fromMessages([
-      [ "system", "You are a grader assessing relevance of a retrieved document to the user question (focus on the last message as the question).\n" +
-        "If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant."
+      [
+        "system",
+        "You are a grader assessing relevance of a retrieved document to the user question (focus on the last message as the question).\n" +
+          "If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant.",
       ],
       new MessagesPlaceholder("document"),
       new MessagesPlaceholder("message"),
@@ -212,32 +250,54 @@ async function retrieve(state: typeof GraphState.State, config: RunnableConfig) 
     const modelWithOutputParser = promptTemplate.pipe(
       getModel(model).withStructuredOutput(
         z.object({
-          relevant: z.boolean().describe("Whether the document is relevant to the user question"),
-        }),
-      ),
+          relevant: z
+            .boolean()
+            .describe("Whether the document is relevant to the user question"),
+        })
+      )
     );
 
-    const gradedDocument = await modelWithOutputParser.invoke({
-      document: document,
-      message: message,
-    }, config);
+    const gradedDocument = await modelWithOutputParser.invoke(
+      {
+        document: document,
+        message: message,
+      },
+      config
+    );
 
     return gradedDocument.relevant;
   }
-  const gradedDocuments = (await Promise.all(documents.map(async (document) => {
-    return await gradeDocument(formattedConfig.chatInput.model!, document, state.messages.slice(-1)[0], formattedConfig) ? document : null;
-  }))).filter((document) => document !== null);
+  const gradedDocuments = (
+    await Promise.all(
+      documents.map(async (document) => {
+        return (await gradeDocument(
+          formattedConfig.chatInput.model!,
+          document,
+          state.messages.slice(-1)[0],
+          formattedConfig
+        ))
+          ? document
+          : null;
+      })
+    )
+  ).filter((document) => document !== null);
 
   return {
     documents: gradedDocuments,
   };
 }
 
-async function passToShouldPlan(_state: typeof GraphState.State, _config: RunnableConfig) {
-  return {}
+async function passToShouldPlan(
+  _state: typeof GraphState.State,
+  _config: RunnableConfig
+) {
+  return {};
 }
 
-async function shouldPlan(_state: typeof GraphState.State, config: RunnableConfig) {
+async function shouldPlan(
+  _state: typeof GraphState.State,
+  config: RunnableConfig
+) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
   if (formattedConfig.chatInput.plannerMode) {
@@ -255,20 +315,22 @@ async function agent(state: typeof GraphState.State, config: RunnableConfig) {
       `You are 0bs Chat, an AI assistant powered by the ${formattedConfig.chatInput.model} model. ` +
         `Your role is to assist and engage in conversation while being helpful, respectful, and engaging.\n` +
         `- If you are specifically asked about the model you are using, you may mention that you use the ${formattedConfig.chatInput.model} model. If you are not asked specifically about the model you are using, you do not need to mention it.\n` +
-        `- The current date and time is` + JSON.stringify(new Date().toLocaleString()) + `.\n` +
+        `- The current date and time is` +
+        JSON.stringify(new Date().toLocaleString()) +
+        `.\n` +
         `- Always use LaTeX for mathematical expressions.\n` +
         `   - Inline math must be wrapped in escaped parentheses: \( content \).\n` +
         `   - Do not use single dollar signs for inline math.\n` +
         `   - Display math must be wrapped in double dollar signs: $$ content $$.\n` +
         `- When generating code:\n` +
         `   - Ensure it is properly formatted using Prettier with a print width of 80 characters\n` +
-        `   - Present it in Markdown code blocks with the correct language extension indicated\n`,
+        `   - Present it in Markdown code blocks with the correct language extension indicated\n`
     ),
     ...(state.documents && state.documents.length > 0
       ? [
           new HumanMessage(
             "Here are the documents that are relevant to the question: " +
-              formatDocumentsAsString(state.documents),
+              formatDocumentsAsString(state.documents)
           ),
         ]
       : []),
@@ -288,7 +350,9 @@ async function agent(state: typeof GraphState.State, config: RunnableConfig) {
       llm: getModel(formattedConfig.chatInput.model),
       tools: [
         ...tools.tools,
-        ...(searchTools.tavily ? [searchTools.tavily] : [searchTools.duckduckgo, searchTools.crawlWeb]),
+        ...(searchTools.tavily
+          ? [searchTools.tavily]
+          : [searchTools.duckduckgo, searchTools.crawlWeb]),
       ],
       prompt: promptTemplate,
     });
@@ -299,7 +363,7 @@ async function agent(state: typeof GraphState.State, config: RunnableConfig) {
           llm: getModel(formattedConfig.chatInput.model!),
           tools,
           prompt: `You are a ${groupName} assistant`,
-        }),
+        })
     );
 
     agent = createSupervisor({
@@ -316,12 +380,12 @@ async function agent(state: typeof GraphState.State, config: RunnableConfig) {
     {
       messages: state.messages,
     },
-    config,
+    config
   );
 
   const newMessages = response.messages.slice(
     state.messages.length,
-    response.messages.length,
+    response.messages.length
   );
 
   return {
@@ -343,19 +407,25 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   ]);
 
   const modelWithOutputParser = promptTemplate.pipe(
-    getModel(formattedConfig.chatInput.model!).withStructuredOutput(plan),
+    getModel(formattedConfig.chatInput.model!).withStructuredOutput(plan)
   );
 
-  const response = await modelWithOutputParser.invoke({
-    messages: state.messages,
-  }, config);
+  const response = await modelWithOutputParser.invoke(
+    {
+      messages: state.messages,
+    },
+    config
+  );
 
   return {
     plan: response,
   };
 }
 
-async function plannerAgent(state: typeof GraphState.State, config: RunnableConfig) {
+async function plannerAgent(
+  state: typeof GraphState.State,
+  config: RunnableConfig
+) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
   if (!state.plan || state.plan.length === 0) {
@@ -379,13 +449,13 @@ async function plannerAgent(state: typeof GraphState.State, config: RunnableConf
         `   - Display math must be wrapped in double dollar signs: $$ content $$.\n` +
         `- When generating code:\n` +
         `   - Ensure it is properly formatted using Prettier with a print width of 80 characters\n` +
-        `   - Present it in Markdown code blocks with the correct language extension indicated\n`,
+        `   - Present it in Markdown code blocks with the correct language extension indicated\n`
     ),
     ...(state.documents.length > 0
       ? [
           new HumanMessage(
             "Here are the documents that are relevant to the question: " +
-              formatDocumentsAsString(state.documents),
+              formatDocumentsAsString(state.documents)
           ),
         ]
       : []),
@@ -405,7 +475,9 @@ async function plannerAgent(state: typeof GraphState.State, config: RunnableConf
       llm: getModel(formattedConfig.chatInput.model),
       tools: [
         ...tools.tools,
-        ...(searchTools.tavily ? [searchTools.tavily] : [searchTools.duckduckgo, searchTools.crawlWeb]),
+        ...(searchTools.tavily
+          ? [searchTools.tavily]
+          : [searchTools.duckduckgo, searchTools.crawlWeb]),
       ],
       prompt: promptTemplate,
     });
@@ -416,7 +488,7 @@ async function plannerAgent(state: typeof GraphState.State, config: RunnableConf
           llm: getModel(formattedConfig.chatInput.model!),
           tools,
           prompt: `You are a ${groupName} assistant`,
-        }),
+        })
     );
 
     agent = createSupervisor({
@@ -433,7 +505,7 @@ async function plannerAgent(state: typeof GraphState.State, config: RunnableConf
     {
       messages: state.messages,
     },
-    config,
+    config
   );
 
   const newMessages = response.messages.slice(-1).map((message) => {
@@ -447,7 +519,10 @@ async function plannerAgent(state: typeof GraphState.State, config: RunnableConf
   };
 }
 
-async function replanner(state: typeof GraphState.State, config: RunnableConfig) {
+async function replanner(
+  state: typeof GraphState.State,
+  config: RunnableConfig
+) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
   const promptTemplate = ChatPromptTemplate.fromTemplate(
@@ -460,7 +535,7 @@ async function replanner(state: typeof GraphState.State, config: RunnableConfig)
       `Your original plan was this:\n{plan}\n\n` +
       `You have currently done the following steps:\n${new MessagesPlaceholder("pastSteps")}\n\n` +
       `Update your plan accordingly. If no more steps are needed and you can return to the user, then respond with that and use the 'response' function. ` +
-      `Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
+      `Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`
   );
 
   const outputParser = z.union([
@@ -471,17 +546,27 @@ async function replanner(state: typeof GraphState.State, config: RunnableConfig)
   ]);
 
   const modelWithOutputParser = promptTemplate.pipe(
-    getModel(formattedConfig.chatInput.model!).withStructuredOutput(outputParser),
+    getModel(formattedConfig.chatInput.model!).withStructuredOutput(
+      outputParser
+    )
   );
 
-  const response = await modelWithOutputParser.invoke({
-    input: state.messages[state.messages.length - 2],
-    plan: state.plan,
-    pastSteps: (state.messages
-      .filter((message) => message.response_metadata["planSteps"])
-      .map((message, index) => [new AIMessage(`${index}: ${JSON.stringify(message.response_metadata["planSteps"])}`), message]))
-      .flat(),
-  }, config);
+  const response = await modelWithOutputParser.invoke(
+    {
+      input: state.messages[state.messages.length - 2],
+      plan: state.plan,
+      pastSteps: state.messages
+        .filter((message) => message.response_metadata["planSteps"])
+        .map((message, index) => [
+          new AIMessage(
+            `${index}: ${JSON.stringify(message.response_metadata["planSteps"])}`
+          ),
+          message,
+        ])
+        .flat(),
+    },
+    config
+  );
 
   if (typeof response === "object" && "response" in response) {
     return {

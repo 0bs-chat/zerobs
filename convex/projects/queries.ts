@@ -1,6 +1,6 @@
-import { query } from "convex/_generated/server";
+import { query } from "../_generated/server";
 import { paginationOptsValidator } from "convex/server";
-import { requireAuth } from "convex/utils/helpers";
+import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
 
 export const get = query({
@@ -61,7 +61,7 @@ export const getMultiple = query({
         }
 
         return project;
-      }),
+      })
     );
 
     return projects;

@@ -1,20 +1,26 @@
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { ChatAnthropic } from "@langchain/anthropic";
-import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import {
+  ChatGoogleGenerativeAI,
+  GoogleGenerativeAIEmbeddings,
+} from "@langchain/google-genai";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Embeddings } from "@langchain/core/embeddings";
-import type { Doc } from "convex/_generated/dataModel";
-import mime from 'mime';
-import type { ActionCtx } from "convex/_generated/server";
-import type { MessageContentComplex, DataContentBlock } from "@langchain/core/messages";
-import { internal } from "convex/_generated/api";
+import type { Doc } from "../_generated/dataModel";
+import mime from "mime";
+import type { ActionCtx } from "../_generated/server";
+import type {
+  MessageContentComplex,
+  DataContentBlock,
+} from "@langchain/core/messages";
+import { internal } from "../_generated/api";
 import { formatDocumentsAsString } from "langchain/util/document";
 
 const API_KEY_MAP = {
-  "anthropic": process.env.ANTHROPIC_API_KEY,
-  "openai": process.env.OPENAI_API_KEY,
-  "google": process.env.GOOGLE_API_KEY,
-}
+  anthropic: process.env.ANTHROPIC_API_KEY,
+  openai: process.env.OPENAI_API_KEY,
+  google: process.env.GOOGLE_API_KEY,
+};
 
 export interface ModelConfig {
   label: string;
@@ -31,7 +37,8 @@ export interface ModelConfig {
 export const models: ModelConfig[] = [
   {
     label: "gemini-2.5-flash",
-    icon_url: "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://gemini.google.com/app&size=256",
+    icon_url:
+      "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://gemini.google.com/app&size=256",
     model: "gemini-2.5-flash",
     provider: "google",
     providerType: "google",
@@ -42,7 +49,8 @@ export const models: ModelConfig[] = [
 export const embeddings: ModelConfig[] = [
   {
     label: "embeddings",
-    icon_url: "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://gemini.google.com/app&size=256",
+    icon_url:
+      "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://gemini.google.com/app&size=256",
     model: "text-embedding-004",
     provider: "google",
     providerType: "google",
@@ -51,8 +59,8 @@ export const embeddings: ModelConfig[] = [
 ];
 
 export function getModel(modelName: string): BaseChatModel {
-  const modelConfig = models.find(m => m.model === modelName);
-  
+  const modelConfig = models.find((m) => m.model === modelName);
+
   if (!modelConfig) {
     throw new Error(`Model ${modelName} not found in configuration`);
   }
@@ -66,9 +74,9 @@ export function getModel(modelName: string): BaseChatModel {
         apiKey: apiKey,
         ...(modelConfig.openai_args && {
           configuration: {
-            baseURL: modelConfig.openai_args.base_url
-          }
-        })
+            baseURL: modelConfig.openai_args.base_url,
+          },
+        }),
       });
 
     case "anthropic":
@@ -89,7 +97,7 @@ export function getModel(modelName: string): BaseChatModel {
 }
 
 export function getEmbeddingModel(modelName: string): Embeddings {
-  const modelConfig = embeddings.find(m => m.model === modelName);
+  const modelConfig = embeddings.find((m) => m.model === modelName);
 
   if (!modelConfig) {
     throw new Error(`Model ${modelName} not found in configuration`);
@@ -115,19 +123,23 @@ export function getEmbeddingModel(modelName: string): Embeddings {
   }
 }
 
-export async function formatDocument(document: Doc<"documents">, model: string, ctx: ActionCtx) {
-  const modelConfig = models.find(m => m.model === model);
+export async function formatDocument(
+  document: Doc<"documents">,
+  model: string,
+  ctx: ActionCtx
+) {
+  const modelConfig = models.find((m) => m.model === model);
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);
   }
 
-  let content: (MessageContentComplex | DataContentBlock)
-  
+  let content: MessageContentComplex | DataContentBlock;
+
   if (document.type === "file") {
     const buffer = await (await ctx.storage.get(document.key))?.arrayBuffer();
-    const base64 = Buffer.from(buffer!).toString('base64');
+    const base64 = Buffer.from(buffer!).toString("base64");
     const mimeType = mime.getType(document.name) ?? "application/octet-stream";
-    const fileType = mimeType.split('/')[0];
+    const fileType = mimeType.split("/")[0];
 
     if (fileType === "image" && modelConfig.tags.includes("image")) {
       content = {
@@ -150,7 +162,10 @@ export async function formatDocument(document: Doc<"documents">, model: string, 
         data: base64,
         mime_type: mimeType,
       };
-    } else if (mimeType === "application/pdf" && modelConfig.tags.includes("pdf")) {
+    } else if (
+      mimeType === "application/pdf" &&
+      modelConfig.tags.includes("pdf")
+    ) {
       content = {
         type: "file",
         source_type: "base64",
@@ -166,7 +181,11 @@ export async function formatDocument(document: Doc<"documents">, model: string, 
       };
     } else {
       try {
-        const text = await formatDocumentsAsString([(await ctx.runAction(internal.documents.funcs.load.load, { documentId: document._id}))]);
+        const text = await formatDocumentsAsString([
+          await ctx.runAction(internal.documents.funcs.load.load, {
+            documentId: document._id,
+          }),
+        ]);
         content = {
           type: "text",
           source_type: "text",
@@ -178,7 +197,11 @@ export async function formatDocument(document: Doc<"documents">, model: string, 
     }
   } else {
     try {
-      const text = await formatDocumentsAsString([(await ctx.runAction(internal.documents.funcs.load.load, { documentId: document._id}))]);
+      const text = await formatDocumentsAsString([
+        await ctx.runAction(internal.documents.funcs.load.load, {
+          documentId: document._id,
+        }),
+      ]);
       content = {
         type: "text",
         source_type: "text",

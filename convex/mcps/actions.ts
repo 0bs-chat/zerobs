@@ -1,7 +1,7 @@
 "use node";
 
-import { internal } from "convex/_generated/api";
-import { internalAction } from "convex/_generated/server";
+import { internal } from "../_generated/api";
+import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { docker } from "./utils";
 
@@ -18,7 +18,9 @@ export const start = internalAction({
     }
 
     const containers = await docker.listContainers({ all: true });
-    const container = containers.find((c) => c.Names.some((name) => name === `/${mcp._id}` || name === mcp._id));
+    const container = containers.find((c) =>
+      c.Names.some((name) => name === `/${mcp._id}` || name === mcp._id)
+    );
 
     const host = process.env.MCP_RUNNER_HOST || "host.docker.internal";
     let sseUrl = mcp.url;
@@ -32,7 +34,9 @@ export const start = internalAction({
         Image: "mantrakp04/mcprunner:latest",
         Env: [
           `MCP_COMMAND=${mcp.command}`,
-          ...(mcp.env ? Object.entries(mcp.env).map(([key, value]) => `${key}=${value}`) : []),
+          ...(mcp.env
+            ? Object.entries(mcp.env).map(([key, value]) => `${key}=${value}`)
+            : []),
         ],
         HostConfig: {
           PortBindings: {
@@ -66,7 +70,9 @@ export const stop = internalAction({
     }
 
     const containers = await docker.listContainers({ all: true });
-    const container = containers.find((c) => c.Names.some((name) => name === `/${mcp._id}` || name === mcp._id));
+    const container = containers.find((c) =>
+      c.Names.some((name) => name === `/${mcp._id}` || name === mcp._id)
+    );
     if (container) {
       await docker.getContainer(container.Id).stop();
       await docker.getContainer(container.Id).remove();

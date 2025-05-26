@@ -10,7 +10,7 @@ export default defineSchema({
       v.literal("file"),
       v.literal("url"),
       v.literal("site"),
-      v.literal("youtube"),
+      v.literal("youtube")
     ),
     size: v.number(),
     key: v.union(v.id("_storage"), v.string()),
@@ -46,7 +46,7 @@ export default defineSchema({
       v.literal("pending"),
       v.literal("streaming"),
       v.literal("done"),
-      v.literal("error"),
+      v.literal("error")
     ),
     stream: v.optional(v.string()),
   }).index("by_chat", ["chatId"]),
@@ -89,7 +89,7 @@ export default defineSchema({
     env: v.optional(v.record(v.string(), v.string())),
     url: v.optional(v.string()),
     status: v.optional(
-      v.union(v.literal("running"), v.literal("stopped"), v.literal("error")),
+      v.union(v.literal("running"), v.literal("stopped"), v.literal("error"))
     ),
     userId: v.id("users"),
     createdAt: v.number(),

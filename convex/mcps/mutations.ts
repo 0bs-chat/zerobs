@@ -1,6 +1,6 @@
-import { internal } from "convex/_generated/api";
-import { internalMutation, mutation } from "convex/_generated/server";
-import { requireAuth } from "convex/utils/helpers";
+import { internal } from "../_generated/api";
+import { internalMutation, mutation } from "../_generated/server";
+import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
 
 export const create = mutation({
@@ -10,7 +10,7 @@ export const create = mutation({
     env: v.optional(v.record(v.string(), v.string())),
     url: v.optional(v.string()),
     status: v.optional(
-      v.union(v.literal("running"), v.literal("stopped"), v.literal("error")),
+      v.union(v.literal("running"), v.literal("stopped"), v.literal("error"))
     ),
   },
   handler: async (ctx, args) => {
@@ -48,7 +48,7 @@ export const update = mutation({
       env: v.optional(v.record(v.string(), v.string())),
       url: v.optional(v.string()),
       status: v.optional(
-        v.union(v.literal("running"), v.literal("stopped"), v.literal("error")),
+        v.union(v.literal("running"), v.literal("stopped"), v.literal("error"))
       ),
     }),
   },
@@ -90,7 +90,7 @@ export const remove = mutation({
     if (!existingMCP) {
       throw new Error("MCP not found");
     }
-    
+
     await ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
       mcpId: args.mcpId,
     });
@@ -134,16 +134,23 @@ export const toggle = mutation({
 
 export const stopIdle = internalMutation({
   handler: async (ctx) => {
-    const idleContainers = await ctx.db.query("mcps")
-      .filter((q) => q.and(
-        q.eq(q.field("status"), "running"),
-        q.lt(q.field("updatedAt"), Date.now() - 15 * 60 * 1000),
-      ))
+    const idleContainers = await ctx.db
+      .query("mcps")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("status"), "running"),
+          q.lt(q.field("updatedAt"), Date.now() - 15 * 60 * 1000)
+        )
+      )
       .collect();
 
-    await Promise.all(idleContainers.map((c) => ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
-      mcpId: c._id,
-    })));
+    await Promise.all(
+      idleContainers.map((c) =>
+        ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
+          mcpId: c._id,
+        })
+      )
+    );
 
     return null;
   },
@@ -154,9 +161,19 @@ export const ensureRunning = internalMutation({
     mcpIds: v.array(v.id("mcps")),
   },
   handler: async (ctx, args) => {
-    const mcps = await Promise.all(args.mcpIds.map((id) => ctx.runQuery(internal.mcps.crud.read, { id })));
+    const mcps = await Promise.all(
+      args.mcpIds.map((id) => ctx.runQuery(internal.mcps.crud.read, { id }))
+    );
 
-    await Promise.all(mcps.map((mcp) => mcp && ctx.scheduler.runAfter(0, internal.mcps.actions.start, { mcpId: mcp._id })));
+    await Promise.all(
+      mcps.map(
+        (mcp) =>
+          mcp &&
+          ctx.scheduler.runAfter(0, internal.mcps.actions.start, {
+            mcpId: mcp._id,
+          })
+      )
+    );
 
     return null;
   },

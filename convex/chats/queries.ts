@@ -1,6 +1,6 @@
-import { query } from "convex/_generated/server";
+import { query } from "../_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "convex/utils/helpers";
+import { requireAuth } from "../utils/helpers";
 import { paginationOptsValidator } from "convex/server";
 
 export const get = query({
@@ -36,7 +36,7 @@ export const getAll = query({
       .query("chats")
       .withIndex("by_user_updated", (q) => q.eq("userId", userId))
       .filter((q) =>
-        args.pinned === undefined ? true : q.eq(q.field("pinned"), args.pinned),
+        args.pinned === undefined ? true : q.eq(q.field("pinned"), args.pinned)
       )
       .order("desc")
       .paginate(args.paginationOpts ?? { numItems: 10, cursor: null });
@@ -65,7 +65,7 @@ export const getMultiple = query({
         }
 
         return chat;
-      }),
+      })
     );
   },
 });

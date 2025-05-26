@@ -1,6 +1,6 @@
-import { query } from "convex/_generated/server";
+import { query } from "../_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "convex/utils/helpers";
+import { requireAuth } from "../utils/helpers";
 
 export const get = query({
   args: {
@@ -32,7 +32,7 @@ export const get = query({
     const chatInput = await ctx.db
       .query("chatInput")
       .withIndex("by_user_chat", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
+        q.eq("chatId", args.chatId).eq("userId", userId)
       )
       .first();
     if (!chatInput && args.chatId !== "new") {

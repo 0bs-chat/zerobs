@@ -1,8 +1,8 @@
-import { query } from "convex/_generated/server";
+import { query } from "../_generated/server";
 import { v } from "convex/values";
-import { requireAuth } from "convex/utils/helpers";
-import { api } from "convex/_generated/api";
-import type { Id } from "convex/_generated/dataModel";
+import { requireAuth } from "../utils/helpers";
+import { api } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
 
 export const get = query({
   args: {

@@ -1,5 +1,5 @@
-import { requireAuth } from "convex/utils/helpers";
-import { mutation } from "convex/_generated/server";
+import { requireAuth } from "../utils/helpers";
+import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 
 export const create = mutation({
@@ -20,7 +20,7 @@ export const create = mutation({
     const existingChatInput = await ctx.db
       .query("chatInput")
       .withIndex("by_user_chat", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
+        q.eq("chatId", args.chatId).eq("userId", userId)
       )
       .first();
 
@@ -83,7 +83,7 @@ export const update = mutation({
     let existingChatInput = await ctx.db
       .query("chatInput")
       .withIndex("by_user_chat", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
+        q.eq("chatId", args.chatId).eq("userId", userId)
       )
       .first();
 
@@ -121,7 +121,7 @@ export const remove = mutation({
     const existingChatInput = await ctx.db
       .query("chatInput")
       .withIndex("by_user_chat", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
+        q.eq("chatId", args.chatId).eq("userId", userId)
       )
       .first();
 

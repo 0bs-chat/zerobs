@@ -1,8 +1,8 @@
-import { requireAuth } from "convex/utils/helpers";
-import { internalMutation, mutation } from "convex/_generated/server";
+import { requireAuth } from "../utils/helpers";
+import { internalMutation, mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { api } from "convex/_generated/api";
-import type { Id } from "convex/_generated/dataModel";
+import { api } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
 
 export const create = mutation({
   args: {
@@ -12,8 +12,8 @@ export const create = mutation({
         v.literal("pending"),
         v.literal("streaming"),
         v.literal("done"),
-        v.literal("error"),
-      ),
+        v.literal("error")
+      )
     ),
   },
   handler: async (ctx, args) => {
@@ -53,8 +53,8 @@ export const update = mutation({
           v.literal("pending"),
           v.literal("streaming"),
           v.literal("done"),
-          v.literal("error"),
-        ),
+          v.literal("error")
+        )
       ),
       stream: v.optional(v.string()),
     }),
@@ -151,7 +151,7 @@ export const setStatus = internalMutation({
       v.literal("pending"),
       v.literal("streaming"),
       v.literal("done"),
-      v.literal("error"),
+      v.literal("error")
     ),
   },
   returns: v.null(),
