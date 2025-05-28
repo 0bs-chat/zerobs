@@ -20,9 +20,9 @@ export const chat = internalAction({
     const stream = await streamHelper(ctx, { chatInput });
 
     for await (const event of stream) {
-      await ctx.runMutation(internal.chatStream.mutations.appendStream, {
-        chatId: chatInput.chatId as Id<"chats">,
-        content: JSON.stringify(event),
+      await ctx.runMutation(internal.streams.mutations.appendStream, {
+        streamId: chatInput.streamId!,
+        chunk: JSON.stringify(event),
       });
     }
   },

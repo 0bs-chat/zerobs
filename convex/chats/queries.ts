@@ -26,8 +26,10 @@ export const get = query({
 
 export const getAll = query({
   args: {
-    pinned: v.optional(v.boolean()),
     paginationOpts: v.optional(paginationOptsValidator),
+    filters: v.optional(v.object({
+      pinned: v.optional(v.boolean()),
+    })),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -36,7 +38,7 @@ export const getAll = query({
       .query("chats")
       .withIndex("by_user_updated", (q) => q.eq("userId", userId))
       .filter((q) =>
-        args.pinned === undefined ? true : q.eq(q.field("pinned"), args.pinned)
+        args.filters?.pinned === undefined ? true : q.eq(q.field("pinned"), args.filters.pinned)
       )
       .order("desc")
       .paginate(args.paginationOpts ?? { numItems: 10, cursor: null });

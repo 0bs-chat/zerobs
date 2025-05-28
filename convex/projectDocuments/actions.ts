@@ -2,27 +2,31 @@
 
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 import { api, internal } from "../_generated/api";
-import { internalAction } from "../_generated/server";
+import { action } from "../_generated/server";
 import { v } from "convex/values";
 import { getEmbeddingModel } from "../langchain/models";
+import { Document } from "@langchain/core/documents";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { requireAuth } from "../utils/helpers";
 
-export const add = internalAction({
+export const add = action({
   args: {
-    projectDocumentId: v.id("projectDocuments"),
+    documentId: v.id("documents"),
+    projectId: v.id("projects"),
   },
   handler: async (ctx, args) => {
-    const projectDocument = await ctx.runQuery(
-      api.projectDocuments.queries.get,
-      {
-        projectDocumentId: args.projectDocumentId,
-      }
-    );
+    await requireAuth(ctx);
+
+    const projectDocumentId = await ctx.runMutation(api.projectDocuments.mutations.create, {
+      projectId: args.projectId,
+      documentId: args.documentId,
+    });
 
     const document = await ctx.runAction(internal.documents.actions.load, {
-      documentId: projectDocument.documentId,
+      documentId: args.documentId,
       metadata: {
-        source: projectDocument._id,
-        projectId: projectDocument.projectId,
+        source: projectDocumentId,
+        projectId: args.projectId,
       },
     });
 
@@ -30,6 +34,13 @@ export const add = internalAction({
       ctx,
     });
 
-    await vectorStore.addDocuments([document]);
+    const textSplitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
+      chunkSize: 1000,
+      chunkOverlap: 200,
+    });
+
+    const chunks = await textSplitter.splitDocuments([new Document({...document})]);
+
+    await vectorStore.addDocuments(chunks);
   },
 });

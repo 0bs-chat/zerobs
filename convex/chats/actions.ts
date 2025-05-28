@@ -27,6 +27,17 @@ export const send = action({
       throw new Error("Model not found");
     }
 
+    const stream = await ctx.runMutation(internal.streams.crud.create, {
+      userId: chatInput.userId!,
+      status: "pending",
+    });
+    await ctx.runMutation(api.chatInput.mutations.update, {
+      chatId: args.chatId,
+      updates: {
+        streamId: stream._id,
+      },
+    });
+
     await ctx.runAction(internal.langchain.index.chat, {
       chatInputId: chatInput._id as Id<"chatInput">,
     });

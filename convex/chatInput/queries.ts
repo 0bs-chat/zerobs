@@ -6,26 +6,6 @@ export const get = query({
   args: {
     chatId: v.union(v.id("chats"), v.literal("new")),
   },
-  returns: v.union(
-    v.object({
-      _id: v.id("chatInput"),
-      _creationTime: v.number(),
-      chatId: v.union(v.id("chats"), v.literal("new")),
-      userId: v.id("users"),
-      documents: v.optional(v.array(v.id("documents"))),
-      text: v.optional(v.string()),
-      projectId: v.optional(v.id("projects")),
-      model: v.optional(v.string()),
-      agentMode: v.optional(v.boolean()),
-      plannerMode: v.optional(v.boolean()),
-      webSearch: v.optional(v.boolean()),
-      updatedAt: v.number(),
-      chat: v.optional(v.any()),
-    }),
-    v.object({
-      chat: v.optional(v.any()),
-    })
-  ),
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
@@ -61,20 +41,6 @@ export const getById = query({
   args: {
     chatInputId: v.id("chatInput"),
   },
-  returns: v.object({
-    _id: v.id("chatInput"),
-    _creationTime: v.number(),
-    chatId: v.union(v.id("chats"), v.literal("new")),
-    userId: v.id("users"),
-    documents: v.optional(v.array(v.id("documents"))),
-    text: v.optional(v.string()),
-    projectId: v.optional(v.id("projects")),
-    model: v.optional(v.string()),
-    agentMode: v.optional(v.boolean()),
-    plannerMode: v.optional(v.boolean()),
-    webSearch: v.optional(v.boolean()),
-    updatedAt: v.number(),
-  }),
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 

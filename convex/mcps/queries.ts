@@ -1,7 +1,6 @@
-import { query } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
-import { api } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import { paginationOptsValidator } from "convex/server";
 
@@ -29,6 +28,9 @@ export const get = query({
 export const getAll = query({
   args: {
     paginationOpts: paginationOptsValidator,
+    filters: v.optional(v.object({
+      enabled: v.optional(v.boolean()),
+    })),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -36,45 +38,35 @@ export const getAll = query({
     const mcps = await ctx.db
       .query("mcps")
       .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) =>
+        args.filters?.enabled === undefined ? true : q.eq(q.field("enabled"), args.filters.enabled)
+      )
       .paginate(args.paginationOpts);
 
     return mcps;
   },
 });
 
-export const getMultiple = query({
+export const getMultiple = internalQuery({
   args: {
     mcpIds: v.array(v.id("mcps")),
+    filters: v.optional(v.object({
+      enabled: v.optional(v.boolean()),
+    })),
   },
   handler: async (ctx, args): Promise<Doc<"mcps">[]> => {
-    await requireAuth(ctx);
-
     const mcps = await Promise.all(
       args.mcpIds.map(async (mcpId) => {
-        const mcp = await ctx.runQuery(api.mcps.queries.get, {
-          mcpId: mcpId,
-        });
+        const mcp = await ctx.db.query("mcps").filter((q) => q.eq(q.field("_id"), mcpId)).filter((q) =>
+          args.filters?.enabled === undefined ? true : q.eq(q.field("enabled"), args.filters.enabled)
+        ).first();
         if (!mcp) {
-          throw new Error("MCP not found");
+          return null;
         }
         return mcp;
       })
     );
 
-    return mcps;
-  },
-});
-
-export const getRunning = query({
-  handler: async (ctx) => {
-    const { userId } = await requireAuth(ctx);
-
-    const mcps = await ctx.db
-      .query("mcps")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("status"), "running"))
-      .collect();
-
-    return mcps;
+    return mcps.filter((mcp) => mcp !== null);
   },
 });

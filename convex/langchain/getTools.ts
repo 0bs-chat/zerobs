@@ -5,10 +5,10 @@ import { DuckDuckGoSearch } from "@langchain/community/tools/duckduckgo_search";
 import { tool, type StructuredToolInterface } from "@langchain/core/tools";
 import { MultiServerMCPClient, type Connection } from "@langchain/mcp-adapters";
 import { z } from "zod";
-import { api, internal } from "../_generated/api";
+import { api } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
 import { ToolSchemaBase } from "@langchain/core/tools";
-import { Doc } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 
 export const getSearchTools = () => {
   const tools: {
@@ -20,7 +20,12 @@ export const getSearchTools = () => {
     crawlWeb: tool(
       async ({ url }: { url: string }) => {
         const response = await fetch(
-          `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(url)}&max_depth=0`
+          `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(url)}&max_depth=0`,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.SERVICE_PASS || "1234"}`,
+            },
+          }
         );
         const data = await response.json();
         return data.markdown as string;
@@ -47,14 +52,18 @@ export const getSearchTools = () => {
 };
 
 export const getMCPTools = async (ctx: ActionCtx) => {
-  const mcps = await ctx.runQuery(api.mcps.queries.getRunning);
-
-  await ctx.runMutation(internal.mcps.mutations.ensureRunning, {
-    mcpIds: mcps.map((mcp: Doc<"mcps">) => mcp._id),
+  const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
+    paginationOpts: {
+      numItems: 100,
+      cursor: null,
+    },
+    filters: {
+      enabled: true,
+    },
   });
 
   const mcpServers: Record<string, Connection> = Object.fromEntries(
-    mcps.map((mcp: Doc<"mcps">) => [
+    mcps.page.map((mcp: Doc<"mcps">) => [
       mcp.name,
       {
         transport: "sse",

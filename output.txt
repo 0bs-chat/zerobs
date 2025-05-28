@@ -1,0 +1,3402 @@
+base path: convex/
+
+utils/helpers.ts:
+import type { Id } from "convex/_generated/dataModel";
+import {
+  type QueryCtx,
+  type MutationCtx,
+  type ActionCtx,
+} from "convex/_generated/server.js";
+import { ConvexError } from "convex/values";
+
+export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
+  const user = await ctx.auth.getUserIdentity();
+  if (!user) {
+    throw new ConvexError("Unauthorized");
+  }
+  const userId = user.subject.split("|")[0] as Id<"users">;
+  return { user, userId };
+}
+
+langchain/models.ts:
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
+import { ChatAnthropic } from "@langchain/anthropic";
+import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { Embeddings } from "@langchain/core/embeddings";
+import type { Doc } from "convex/_generated/dataModel";
+import mime from 'mime';
+import type { ActionCtx } from "convex/_generated/server";
+import type { MessageContentComplex, DataContentBlock } from "@langchain/core/messages";
+import { internal } from "convex/_generated/api";
+import { formatDocumentsAsString } from "langchain/util/document";
+
+const API_KEY_MAP = {
+  "anthropic": process.env.ANTHROPIC_API_KEY,
+  "openai": process.env.OPENAI_API_KEY,
+  "google": process.env.GOOGLE_API_KEY,
+}
+
+export interface ModelConfig {
+  label: string;
+  icon_url: string;
+  model: string;
+  provider: keyof typeof API_KEY_MAP;
+  providerType: "google" | "openai" | "anthropic";
+  openai_args?: {
+    base_url: string;
+  };
+  tags: ("text" | "image" | "audio" | "video" | "pdf")[];
+}
+
+export const models: ModelConfig[] = [
+  {
+    label: "gemini-2.5-flash",
+    icon_url: "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://gemini.google.com/app&size=256",
+    model: "gemini-2.5-flash-preview-05-20",
+    provider: "google",
+    providerType: "google",
+    tags: ["text", "image", "audio", "video", "pdf"],
+  },
+];
+
+export const embeddings: ModelConfig[] = [
+  {
+    label: "embeddings",
+    icon_url: "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://gemini.google.com/app&size=256",
+    model: "text-embedding-004",
+    provider: "google",
+    providerType: "google",
+    tags: ["text"],
+  },
+];
+
+export function getModel(modelName: string): BaseChatModel {
+  const modelConfig = models.find(m => m.model === modelName);
+  
+  if (!modelConfig) {
+    throw new Error(`Model ${modelName} not found in configuration`);
+  }
+
+  const apiKey = API_KEY_MAP[modelConfig.provider];
+
+  switch (modelConfig.providerType) {
+    case "openai":
+      return new ChatOpenAI({
+        model: modelConfig.model,
+        apiKey: apiKey,
+        ...(modelConfig.openai_args && {
+          configuration: {
+            baseURL: modelConfig.openai_args.base_url
+          }
+        })
+      });
+
+    case "anthropic":
+      return new ChatAnthropic({
+        model: modelConfig.model,
+        apiKey: apiKey,
+      });
+
+    case "google":
+      // return new ChatGoogleGenerativeAI({
+      //   model: modelConfig.model,
+      //   apiKey: apiKey,
+      // });
+      return new ChatOpenAI({
+        model: modelConfig.model,
+        apiKey: apiKey,
+        configuration: {
+          baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
+        }
+      });
+
+    default:
+      throw new Error(`Unsupported provider: ${modelConfig.provider}`);
+  }
+}
+
+export function getEmbeddingModel(modelName: string): Embeddings {
+  const modelConfig = embeddings.find(m => m.model === modelName);
+
+  if (!modelConfig) {
+    throw new Error(`Model ${modelName} not found in configuration`);
+  }
+
+  const apiKey = API_KEY_MAP[modelConfig.provider];
+
+  switch (modelConfig.providerType) {
+    case "openai":
+      return new OpenAIEmbeddings({
+        model: modelConfig.model,
+        apiKey: apiKey,
+      });
+
+    case "google":
+      return new GoogleGenerativeAIEmbeddings({
+        model: modelConfig.model,
+        apiKey: apiKey,
+      });
+
+    default:
+      throw new Error(`Unsupported provider: ${modelConfig.provider}`);
+  }
+}
+
+export async function formatDocument(document: Doc<"documents">, model: string, ctx: ActionCtx) {
+  const modelConfig = models.find(m => m.model === model);
+  if (!modelConfig) {
+    throw new Error(`Model ${model} not found in configuration`);
+  }
+
+  let content: (MessageContentComplex | DataContentBlock)
+  
+  if (document.type === "file") {
+    const buffer = await (await ctx.storage.get(document.key))?.arrayBuffer();
+    const base64 = Buffer.from(buffer!).toString('base64');
+    const mimeType = mime.getType(document.name) ?? "application/octet-stream";
+    const fileType = mimeType.split('/')[0];
+
+    if (fileType === "image" && modelConfig.tags.includes("image")) {
+      content = {
+        type: "image",
+        source_type: "base64",
+        data: base64,
+        mime_type: mimeType,
+      };
+    } else if (fileType === "audio" && modelConfig.tags.includes("audio")) {
+      content = {
+        type: "audio",
+        source_type: "base64",
+        data: base64,
+        mime_type: mimeType,
+      };
+    } else if (fileType === "video" && modelConfig.tags.includes("video")) {
+      content = {
+        type: "video",
+        source_type: "base64",
+        data: base64,
+        mime_type: mimeType,
+      };
+    } else if (mimeType === "application/pdf" && modelConfig.tags.includes("pdf")) {
+      content = {
+        type: "file",
+        source_type: "base64",
+        data: base64,
+        mime_type: mimeType,
+      };
+    } else if (fileType === "text" && modelConfig.tags.includes("text")) {
+      const text = await (await ctx.storage.get(document.key))?.text();
+      content = {
+        type: "text",
+        source_type: "text",
+        text: text,
+      };
+    } else {
+      try {
+        const text = await formatDocumentsAsString([(await ctx.runAction(internal.documents.actions.load, { documentId: document._id}))]);
+        content = {
+          type: "text",
+          source_type: "text",
+          text: text,
+        };
+      } catch (e) {
+        throw new Error(`Failed to format document ${document.name}: ${e}`);
+      }
+    }
+  } else {
+    try {
+      const text = await formatDocumentsAsString([(await ctx.runAction(internal.documents.actions.load, { documentId: document._id}))]);
+      content = {
+        type: "text",
+        source_type: "text",
+        text: text,
+      };
+    } catch (e) {
+      throw new Error(`Failed to format document ${document.name}: ${e}`);
+    }
+  }
+
+  return content;
+}
+
+langchain/db.ts:
+export * from "@langchain/community/utils/convex";
+langchain/agent.ts:
+"use node";
+
+import { getEmbeddingModel, getModel } from "./models";
+import {
+  Annotation,
+  END,
+  messagesStateReducer,
+  START,
+  StateGraph,
+} from "@langchain/langgraph";
+import type { DocumentInterface } from "@langchain/core/documents";
+import type { RunnableConfig } from "@langchain/core/runnables";
+import type { ActionCtx } from "convex/_generated/server";
+import {
+  BaseMessage,
+  SystemMessage,
+  HumanMessage,
+} from "@langchain/core/messages";
+import {
+  ChatPromptTemplate,
+  MessagesPlaceholder,
+} from "@langchain/core/prompts";
+import { z } from "zod";
+import type { Doc } from "convex/_generated/dataModel";
+import { api } from "convex/_generated/api";
+import { Document } from "langchain/document";
+import type { TavilySearchResponse } from "@langchain/tavily";
+import { formatDocumentsAsString } from "langchain/util/document";
+import { getSearchTools, getMCPTools } from "./getTools";
+import { createSupervisor } from "@langchain/langgraph-supervisor";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { AIMessage } from "@langchain/core/messages";
+import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
+import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
+
+
+const checkpointer = PostgresSaver.fromConnString(
+  process.env.POSTGRES_URL || "postgresql://postgres:postgres@database:5432",
+);
+await checkpointer.setup();
+
+type ExtendedRunnableConfig = RunnableConfig & {
+  ctx: ActionCtx;
+  chatInput: Doc<"chatInput">;
+};
+
+const plan = z
+  .array(
+    z.object({
+      step: z.string().describe("The step to be executed"),
+      additional_context: z
+        .string()
+        .describe("Additional context that may be needed to execute the step"),
+    }),
+  )
+  .describe("A step by step plan to achieve the objective")
+  .min(1)
+  .max(9);
+
+const GraphState = Annotation.Root({
+  messages: Annotation<BaseMessage[]>({
+    reducer: messagesStateReducer,
+    default: () => [],
+  }),
+  documents: Annotation<DocumentInterface[]>({
+    reducer: (x, y) => y ?? x ?? [],
+  }),
+  lastNode: Annotation<Record<string, any>>({
+    reducer: (x, y) => y ?? x ?? {},
+  }),
+  plan: Annotation<z.infer<typeof plan>>({
+    reducer: (x, y) => y ?? x ?? [],
+  }),
+});
+
+async function shouldRetrieve(_state: typeof GraphState.State, config: RunnableConfig) {
+  const formattedConfig = config.configurable as ExtendedRunnableConfig;
+
+  if (formattedConfig.chatInput.projectId || formattedConfig.chatInput.webSearch) {
+    return "true";
+  }
+
+  return "false";
+}
+
+async function retrieve(state: typeof GraphState.State, config: RunnableConfig) {
+  const formattedConfig = config.configurable as ExtendedRunnableConfig;
+  const vectorStore = new ConvexVectorStore(getEmbeddingModel("embeddings"), {
+    ctx: formattedConfig.ctx,
+    table: "projectVectors",
+    index: "byEmbedding",
+    textField: "text",
+    embeddingField: "embedding",
+    metadataField: "metadata",
+  });
+  if (!formattedConfig.chatInput.model) {
+    throw new Error("Model is required");
+  }
+
+  async function generateQueries(
+    type: "vectorStore" | "webSearch",
+    model: string,
+    state: typeof GraphState.State,
+    config: ExtendedRunnableConfig,
+  ) {
+    const promptTemplate = ChatPromptTemplate.fromMessages([
+      [ "system", "Based on the messages and the user's query, generate queries for the " + type + ".", ],
+      new MessagesPlaceholder("messages"),
+    ]);
+
+    const modelWithOutputParser = promptTemplate.pipe(
+      getModel(model).withStructuredOutput(
+        z.object({
+          queries: z.array(z.string()).describe("Queries for the " + type + ".").max(3).min(1),
+        }),
+      ),
+    );
+
+    const queries = await modelWithOutputParser.invoke({
+      messages: state.messages.slice(-5),
+      config
+    });
+
+    return queries.queries;
+  }
+
+  // Retrive documents
+  let documents: DocumentInterface[] = [];
+  if (formattedConfig.chatInput.projectId) {
+    const includedProjectDocuments = await formattedConfig.ctx.runQuery(api.projectDocuments.queries.getSelected, {
+      projectId: formattedConfig.chatInput.projectId,
+      selected: true,
+    });
+
+    const queries = await generateQueries("vectorStore", formattedConfig.chatInput.model, state, formattedConfig);
+    await Promise.all(queries.map(async (query) => {
+      const results = await vectorStore.similaritySearch(query, 4, {
+        filter: (q) => q.or(
+          ...includedProjectDocuments.map((doc) => q.eq("metadata", {
+            projectId: formattedConfig.chatInput.projectId,
+            source: doc,
+          })),
+        ),
+      });
+      documents.push(...results);
+    }));
+  }
+  if (formattedConfig.chatInput.webSearch) {
+    const searchTools = await getSearchTools();
+
+    const queries = await generateQueries("webSearch", formattedConfig.chatInput.model, state, formattedConfig);
+    await Promise.all(queries.map(async (query) => {
+      if (searchTools.tavily) {
+        const searchResults = (await searchTools.tavily._call({
+          query: query,
+          topic: "general",
+          includeImages: false,
+          includeDomains: [],
+          excludeDomains: [],
+          searchDepth: "basic",
+        })) as TavilySearchResponse;
+        const docs = searchResults.results.map((result) => {
+          return new Document({
+            pageContent: `${result.score}. ${result.title}\n${result.url}\n${result.content}`,
+            metadata: {
+              source: "tavily",
+            },
+          });
+        });
+        documents.push(...docs);
+      } else {
+        const searchResults = await searchTools.duckduckgo._call(query);
+        const searchResultsArray: {
+          title: string;
+          url: string;
+          snippet: string;
+        }[] = JSON.parse(searchResults);
+        const urlMarkdownContents = await Promise.all(
+          searchResultsArray.map(
+            (result) =>
+              searchTools.crawlWeb.invoke({ url: result.url }),
+          ),
+        );
+        const docs = searchResultsArray.map((result, index) => {
+          return new Document({
+            pageContent: `${result.title}\n${result.url}\n${urlMarkdownContents[index]}`,
+            metadata: {
+              source: "duckduckgo",
+            },
+          });
+        });
+        documents.push(...docs);
+      }
+    }));
+  }
+
+  // Grade documents
+  async function gradeDocument(
+    model: string,
+    document: DocumentInterface,
+    message: BaseMessage,
+    config: ExtendedRunnableConfig,
+  ) {
+    const promptTemplate = ChatPromptTemplate.fromMessages([
+      [ "system", "You are a grader assessing relevance of a retrieved document to the user question (focus on the last message as the question).\n" +
+        "If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant."
+      ],
+      new MessagesPlaceholder("document"),
+      new MessagesPlaceholder("message"),
+    ]);
+
+    const modelWithOutputParser = promptTemplate.pipe(
+      getModel(model).withStructuredOutput(
+        z.object({
+          relevant: z.boolean().describe("Whether the document is relevant to the user question"),
+        }),
+      ),
+    );
+
+    const gradedDocument = await modelWithOutputParser.invoke({
+      document: document,
+      message: message,
+    }, config);
+
+    return gradedDocument.relevant;
+  }
+  const gradedDocuments = (await Promise.all(documents.map(async (document) => {
+    return await gradeDocument(formattedConfig.chatInput.model!, document, state.messages.slice(-1)[0], formattedConfig) ? document : null;
+  }))).filter((document) => document !== null);
+
+  return {
+    documents: gradedDocuments,
+  };
+}
+
+async function passToShouldPlan(_state: typeof GraphState.State, _config: RunnableConfig) {
+  return {}
+}
+
+async function shouldPlan(_state: typeof GraphState.State, config: RunnableConfig) {
+  const formattedConfig = config.configurable as ExtendedRunnableConfig;
+
+  if (formattedConfig.chatInput.plannerMode) {
+    return "true";
+  }
+
+  return "false";
+}
+
+async function agent(state: typeof GraphState.State, config: RunnableConfig) {
+  const formattedConfig = config.configurable as ExtendedRunnableConfig;
+
+  const promptTemplate = ChatPromptTemplate.fromMessages([
+    new SystemMessage(
+      `You are 0bs Chat, an AI assistant powered by the ${formattedConfig.chatInput.model} model. ` +
+        `Your role is to assist and engage in conversation while being helpful, respectful, and engaging.\n` +
+        `- If you are specifically asked about the model you are using, you may mention that you use the ${formattedConfig.chatInput.model} model. If you are not asked specifically about the model you are using, you do not need to mention it.\n` +
+        `- The current date and time is` + JSON.stringify(new Date().toLocaleString()) + `.\n` +
+        `- Always use LaTeX for mathematical expressions.\n` +
+        `   - Inline math must be wrapped in escaped parentheses: \( content \).\n` +
+        `   - Do not use single dollar signs for inline math.\n` +
+        `   - Display math must be wrapped in double dollar signs: $$ content $$.\n` +
+        `- When generating code:\n` +
+        `   - Ensure it is properly formatted using Prettier with a print width of 80 characters\n` +
+        `   - Present it in Markdown code blocks with the correct language extension indicated\n`,
+    ),
+    ...(state.documents && state.documents.length > 0
+      ? [
+          new HumanMessage(
+            "Here are the documents that are relevant to the question: " +
+              formatDocumentsAsString(state.documents),
+          ),
+        ]
+      : []),
+    new MessagesPlaceholder("messages"),
+  ]);
+
+  const searchTools = await getSearchTools();
+  const { tools, groupedTools } = await getMCPTools(formattedConfig.ctx);
+
+  if (!formattedConfig.chatInput.model) {
+    throw new Error("Model is required");
+  }
+
+  let agent: ReturnType<typeof createReactAgent> | ReturnType<typeof createSupervisor>;
+  if (!formattedConfig.chatInput.agentMode) {
+    agent = createReactAgent({
+      llm: getModel(formattedConfig.chatInput.model),
+      tools: [
+        ...(tools || []), // this tools here if added causes the dangling state
+        ...(searchTools.tavily ? [searchTools.tavily] : [searchTools.duckduckgo, searchTools.crawlWeb]),
+      ],
+      prompt: promptTemplate,
+    });
+  } else {
+    const agents = Object.entries(groupedTools).map(
+      ([groupName, tools]) =>
+        createReactAgent({
+          llm: getModel(formattedConfig.chatInput.model!),
+          tools,
+          prompt: `You are a ${groupName} assistant`,
+        }),
+    );
+
+    agent = createSupervisor({
+      agents,
+      tools: [],
+      llm: getModel(formattedConfig.chatInput.model!),
+      prompt:
+        `You are 0bs Chat, an AI assistant powered by the ${formattedConfig.chatInput.model} model. ` +
+        `Your role is to analyze the user's request and determine a plan of action to take. Assign each plan step to the appropriate agent, one at a time.\n`,
+    }).compile();
+  }
+
+  const response = await agent.invoke(
+    {
+      messages: state.messages,
+    },
+    config
+  );
+
+  const newMessages = response.messages.slice(
+    state.messages.length,
+    response.messages.length,
+  );
+
+  return {
+    messages: newMessages,
+  };
+}
+
+async function planner(state: typeof GraphState.State, config: RunnableConfig) {
+  const formattedConfig = config.configurable as ExtendedRunnableConfig;
+
+  const promptTemplate = ChatPromptTemplate.fromMessages([
+    [
+      "system",
+      `For the given objective, come up with a simple step by step plan.\n` +
+        `This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps.\n` +
+        `The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.\n`,
+    ],
+    new MessagesPlaceholder("messages"),
+  ]);
+
+  const modelWithOutputParser = promptTemplate.pipe(
+    getModel(formattedConfig.chatInput.model!).withStructuredOutput(plan),
+  );
+
+  const response = await modelWithOutputParser.invoke({
+    messages: state.messages,
+  }, config);
+
+  return {
+    plan: response,
+  };
+}
+
+async function plannerAgent(state: typeof GraphState.State, config: RunnableConfig) {
+  const formattedConfig = config.configurable as ExtendedRunnableConfig;
+
+  if (!state.plan || state.plan.length === 0) {
+    return {};
+  }
+
+  const currentTask = state.plan[0];
+  const remainingPlan = state.plan.slice(1);
+
+  const promptTemplate = ChatPromptTemplate.fromMessages([
+    new SystemMessage(
+      `You are 0bs Chat, an AI assistant powered by the ${formattedConfig.chatInput.model} model. ` +
+        `Your role is to complete the following specific task:\n` +
+        `${currentTask.step}\n\n` +
+        `Additional Context: ${currentTask.additional_context}\n\n` +
+        `- If you are specifically asked about the model you are using, you may mention that you use the ${formattedConfig.chatInput.model} model.\n` +
+        `- The current date and time is ${new Date().toLocaleString()}.\n` +
+        `- Always use LaTeX for mathematical expressions.\n` +
+        `   - Inline math must be wrapped in escaped parentheses: \( content \).\n` +
+        `   - Do not use single dollar signs for inline math.\n` +
+        `   - Display math must be wrapped in double dollar signs: $$ content $$.\n` +
+        `- When generating code:\n` +
+        `   - Ensure it is properly formatted using Prettier with a print width of 80 characters\n` +
+        `   - Present it in Markdown code blocks with the correct language extension indicated\n`,
+    ),
+    ...(state.documents.length > 0
+      ? [
+          new HumanMessage(
+            "Here are the documents that are relevant to the question: " +
+              formatDocumentsAsString(state.documents),
+          ),
+        ]
+      : []),
+    new MessagesPlaceholder("messages"),
+  ]);
+
+  const tools = await getMCPTools(formattedConfig.ctx);
+  const searchTools = await getSearchTools();
+
+  if (!formattedConfig.chatInput.model) {
+    throw new Error("Model is required");
+  }
+
+  let agent;
+  if (!formattedConfig.chatInput.agentMode) {
+    agent = createReactAgent({
+      llm: getModel(formattedConfig.chatInput.model),
+      tools: [
+        ...tools.tools,
+        ...(searchTools.tavily ? [searchTools.tavily] : [searchTools.duckduckgo, searchTools.crawlWeb]),
+      ],
+      prompt: promptTemplate,
+    });
+  } else {
+    const agents = Object.entries(tools.groupedTools).map(
+      ([groupName, tools]) =>
+        createReactAgent({
+          llm: getModel(formattedConfig.chatInput.model!),
+          tools,
+          prompt: `You are a ${groupName} assistant`,
+        }),
+    );
+
+    agent = createSupervisor({
+      agents,
+      tools: [],
+      llm: getModel(formattedConfig.chatInput.model!),
+      prompt:
+        `You are 0bs Chat, an AI assistant powered by the ${formattedConfig.chatInput.model} model. ` +
+        `Your role is to analyze the user's request and determine a plan of action to take. Assign each plan step to the appropriate agent, one at a time.\n`,
+    }).compile();
+  }
+
+  const response = await agent.invoke(
+    {
+      messages: state.messages,
+    },
+    config,
+  );
+
+  const newMessages = response.messages.slice(-1).map((message) => {
+    message.response_metadata["planSteps"] = currentTask;
+    return message;
+  });
+
+  return {
+    messages: newMessages,
+    plan: remainingPlan,
+  };
+}
+
+async function replanner(state: typeof GraphState.State, config: RunnableConfig) {
+  const formattedConfig = config.configurable as ExtendedRunnableConfig;
+
+  const promptTemplate = ChatPromptTemplate.fromTemplate(
+    `For the given objective, come up with a simple step by step plan. ` +
+      `This plan should involve individual tasks that, if executed correctly, will yield the correct answer. Do not add any superfluous steps. ` +
+      `The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.\n\n` +
+      `Your objective was this:` +
+      new MessagesPlaceholder("input") +
+      "\n\n" +
+      `Your original plan was this:\n{plan}\n\n` +
+      `You have currently done the following steps:\n${new MessagesPlaceholder("pastSteps")}\n\n` +
+      `Update your plan accordingly. If no more steps are needed and you can return to the user, then respond with that and use the 'response' function. ` +
+      `Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
+  );
+
+  const outputParser = z.union([
+    plan,
+    z.object({
+      response: z.string().describe("The response to the user"),
+    }),
+  ]);
+
+  const modelWithOutputParser = promptTemplate.pipe(
+    getModel(formattedConfig.chatInput.model!).withStructuredOutput(outputParser),
+  );
+
+  const response = await modelWithOutputParser.invoke({
+    input: state.messages[state.messages.length - 2],
+    plan: state.plan,
+    pastSteps: (state.messages
+      .filter((message) => message.response_metadata["planSteps"])
+      .map((message, index) => [new AIMessage(`${index}: ${JSON.stringify(message.response_metadata["planSteps"])}`), message]))
+      .flat(),
+  }, config);
+
+  if (typeof response === "object" && "response" in response) {
+    return {
+      messages: [
+        new AIMessage(response.response, {
+          response_metadata: {
+            planSteps: {
+              step: "Response",
+            },
+          },
+        }),
+      ],
+    };
+  } else {
+    return {
+      plan: response,
+    };
+  }
+}
+
+async function shouldEndPlanner(state: typeof GraphState.State) {
+  const lastMessage = state.messages[state.messages.length - 1];
+  if (lastMessage.response_metadata["planSteps"]?.step === "Response") {
+    return "true";
+  }
+  return "false";
+}
+
+export const agentGraph = new StateGraph(GraphState)
+  .addNode("retrieve", retrieve)
+  .addNode("passToShouldPlan", passToShouldPlan)
+  .addNode("agent", agent)
+  .addNode("planner", planner)
+  .addNode("plannerAgent", plannerAgent)
+  .addNode("replanner", replanner)
+  .addConditionalEdges(START, shouldRetrieve, {
+    true: "retrieve",
+    false: "passToShouldPlan",
+  })
+  .addEdge("retrieve", "passToShouldPlan")
+  .addConditionalEdges("passToShouldPlan", shouldPlan, {
+    true: "planner",
+    false: "agent",
+  })
+  .addEdge("agent", END)
+  .addEdge("planner", "plannerAgent")
+  .addEdge("plannerAgent", "replanner")
+  .addConditionalEdges("replanner", shouldEndPlanner, {
+    true: END,
+    false: "plannerAgent",
+  })
+  .compile({
+    checkpointer: checkpointer,
+  });
+
+langchain/getTools.ts:
+"use node";
+
+import { TavilySearch } from "@langchain/tavily";
+import { DuckDuckGoSearch } from "@langchain/community/tools/duckduckgo_search";
+import { tool, type StructuredToolInterface } from "@langchain/core/tools";
+import { z } from "zod";
+import { api } from "convex/_generated/api";
+import { type ActionCtx } from "convex/_generated/server";
+import type { ToolSchemaBase } from "@langchain/core/tools";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import { loadMcpTools } from "@langchain/mcp-adapters";
+
+export const getSearchTools = async () => {
+  const tools: {
+    tavily?: TavilySearch;
+    duckduckgo: DuckDuckGoSearch;
+    crawlWeb: StructuredToolInterface;
+  } = {
+    duckduckgo: new DuckDuckGoSearch({ maxResults: 5 }),
+    crawlWeb: tool(
+      async ({ url }: { url: string }) => {
+        const response = await fetch(
+          `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(url)}&max_depth=0`,
+        );
+        const data = await response.json();
+        return data.markdown as string;
+      },
+      {
+        name: "crawlWeb",
+        description: "Crawl the web and return the markdown",
+        schema: z.object({
+          url: z.string().describe("The url to crawl"),
+        }),
+      }
+    ),
+  };
+
+  if (process.env.TAVILY_API_KEY) {
+    tools.tavily = new TavilySearch({
+      maxResults: 5,
+      topic: "general",
+      tavilyApiKey: process.env.TAVILY_API_KEY,
+    });
+  }
+
+  return tools;
+};
+
+export async function getMCPTools(ctx: ActionCtx) {
+  const mcps = await ctx.runQuery(api.mcps.queries.getRunning);
+  if (mcps.length === 0) {
+    return {
+      tools: [],
+      groupedTools: {},
+    };
+  }
+
+  await ctx.runMutation(api.mcps.mutations.ensureRunning, {
+    mcpIds: mcps.map((mcp) => mcp._id),
+  });
+
+  const updatedMCPs = await ctx.runQuery(api.mcps.queries.getRunning);
+
+  const client = new Client({
+    name: "zerobs-client",
+    version: "1.0.0",
+  });
+
+  await Promise.all(updatedMCPs.map(async (mcp) => {
+    if (mcp.url) {
+      await client.connect(new SSEClientTransport(
+        new URL(mcp.url),
+        {
+          requestInit: {
+            headers: {
+              ...mcp.env,
+            }
+          }
+        }
+      ));
+    }
+  }));
+
+  const tools = await loadMcpTools("zerobs", client, {
+    prefixToolNameWithServerName: true,
+    additionalToolNamePrefix: "mcp",
+  });
+
+  // Group tools by server name
+  const groupedTools: Record<
+    string,
+    StructuredToolInterface<ToolSchemaBase>[]
+  > = {};
+
+  for (const tool of tools) {
+    const parts = tool.name.split("__");
+    if (parts.length >= 2) {
+      const serverName = parts[1];
+      if (!groupedTools[serverName]) {
+        groupedTools[serverName] = [];
+      }
+      groupedTools[serverName].push(tool);
+    }
+  }
+
+  return {
+    tools,
+    groupedTools,
+  };
+}
+
+langchain/index.ts:
+"use node";
+
+import { internalAction } from "convex/_generated/server";
+import { v } from "convex/values";
+import { agentGraph } from "./agent";
+import { HumanMessage } from "@langchain/core/messages";
+import { formatDocument } from "./models";
+import { api } from "convex/_generated/api";
+
+export const chat = internalAction({
+  args: {
+    chatInputId: v.id("chatInput"),
+  },
+  handler: async (ctx, args) => {
+    const chatInput = await ctx.runQuery(api.chatInput.queries.getById, { chatInputId: args.chatInputId });
+    
+    const humanMessage = new HumanMessage({
+      content: [
+        {
+          type: "text",
+          source_type: "text",
+          text: chatInput.text,
+        },
+        ...(chatInput.documents?.map(async (documentId) => {
+          const document = await ctx.runQuery(api.documents.queries.get, { documentId: documentId });
+          return formatDocument(document, chatInput.model!, ctx);
+        }) ?? []),
+      ]
+    });
+    
+    await ctx.runMutation(api.chatInput.mutations.update, {
+      updates: {
+        text: "",
+        documents: [],
+      },
+      chatId: chatInput.chatId,
+    })
+
+    const response = agentGraph.streamEvents({
+      messages: [humanMessage],
+    }, {
+      version: "v2",
+      configurable: {
+        ctx,
+        chatInput: chatInput,
+        thread_id: chatInput.chatId
+      },
+    });
+    
+    for await (const event of response) {
+      console.log(event.event);
+      await ctx.runMutation(api.streams.mutations.addChunk, {
+        streamId: chatInput.streamId!,
+        chunk: JSON.stringify(event),
+      });
+    }
+
+    await ctx.runMutation(api.streams.mutations.update, {
+      streamId: chatInput.streamId!,
+      status: "done",
+    });
+  },
+});
+
+schema.ts:
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
+
+export default defineSchema({
+  ...authTables,
+  documents: defineTable({
+    name: v.string(),
+    type: v.union(
+      v.literal("file"),
+      v.literal("url"),
+      v.literal("site"),
+      v.literal("youtube"),
+    ),
+    size: v.number(),
+    key: v.union(v.id("_storage"), v.string()),
+    userId: v.id("users"),
+  })
+    .index("by_key", ["key"])
+    .index("by_user", ["userId"]),
+  chats: defineTable({
+    name: v.string(),
+    userId: v.id("users"),
+    pinned: v.boolean(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_updated", ["userId", "updatedAt"]),
+  chatInput: defineTable({
+    chatId: v.union(v.id("chats"), v.literal("new")),
+    userId: v.id("users"),
+    documents: v.optional(v.array(v.id("documents"))),
+    text: v.optional(v.string()),
+    projectId: v.optional(v.id("projects")),
+    agentMode: v.optional(v.boolean()),
+    plannerMode: v.optional(v.boolean()),
+    webSearch: v.optional(v.boolean()),
+    model: v.optional(v.string()),
+    streamId: v.optional(v.id("streams")),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_stream", ["streamId", "userId"])
+    .index("by_user_chat", ["chatId", "userId"]),
+  interrupt: defineTable({
+    chatId: v.id("chats"),
+    userId: v.id("users"),
+    interrupt: v.boolean(),
+    humanMessage: v.optional(v.string()),
+    updatedAt: v.number(),
+  }).index("by_chat", ["chatId"]),
+  projects: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    systemPrompt: v.optional(v.string()),
+    userId: v.id("users"),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_updated", ["userId", "updatedAt"]),
+  projectDocuments: defineTable({
+    projectId: v.id("projects"),
+    documentId: v.id("documents"),
+    selected: v.boolean(),
+    updatedAt: v.number(),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_project_document", ["projectId", "documentId"]),
+  projectVectors: defineTable({
+    embedding: v.array(v.number()),
+    text: v.string(),
+    metadata: v.any(),
+  }).vectorIndex("byEmbedding", {
+    vectorField: "embedding",
+    dimensions: 768,
+    filterFields: ["metadata"],
+  }),
+  mcps: defineTable({
+    name: v.string(),
+    command: v.optional(v.string()),
+    env: v.optional(v.record(v.string(), v.string())),
+    url: v.optional(v.string()),
+    status: v.optional(
+      v.union(v.literal("running"), v.literal("stopped"), v.literal("error")),
+    ),
+    userId: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_updated", ["userId", "updatedAt"])
+    .index("by_user_created", ["userId", "createdAt"])
+    .index("by_status", ["status"]),
+  streams: defineTable({
+    userId: v.id("users"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("streaming"),
+      v.literal("done"),
+      v.literal("error"),
+      v.literal("timeout")
+    ),
+  })
+    .index("by_status", ["status"])
+    .index("by_user", ["userId"]),
+  streamChunks: defineTable({
+    streamId: v.id("streams"),
+    chunk: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_stream", ["streamId"])
+    .index("by_created", ["createdAt"]),
+});
+
+chats/actions.ts:
+import { api, internal } from "convex/_generated/api";
+import type { Id } from "convex/_generated/dataModel";
+import { action, httpAction } from "convex/_generated/server";
+import { requireAuth } from "convex/utils/helpers";
+import { v } from "convex/values";
+
+export const send = action({
+  args: {
+    chatId: v.id("chats"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    await ctx.runQuery(api.chats.queries.get, {
+      chatId: args.chatId,
+    });
+
+    const chatInput = await ctx.runQuery(api.chatInput.queries.get, {
+      chatId: args.chatId,
+    });
+
+    if (!chatInput.text) {
+      throw new Error("Chat input not found");
+    }
+
+    if (!chatInput.model) {
+      throw new Error("Model not found");
+    }
+
+    const streamId = await ctx.runMutation(api.streams.mutations.create);
+    await ctx.runMutation(api.chatInput.mutations.update, {
+      updates: {
+        streamId: streamId,
+      },
+      chatId: args.chatId,
+    });
+
+    await ctx.runAction(internal.langchain.index.chat, { chatInputId: chatInput._id as Id<"chatInput"> });
+
+    return null;
+  },
+});
+
+export const stream = httpAction(async (ctx, request) => {
+  await requireAuth(ctx);
+
+  const { streamId } = await request.json();
+  const pollInterval = 100;
+  const timeout = 300000;
+  const startTime = Date.now();
+
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const textEncoder = new TextEncoder();
+
+  const stream = async () => {
+    while (true) {
+      if (Date.now() - startTime > timeout) {
+        break;
+      }
+
+      const chunks = await ctx.runQuery(api.streams.queries.getNewChunks, {
+        streamId: streamId,
+        lastTimestamp: startTime,
+      });
+
+      if (["done", "error", "timeout"].includes(chunks.stream.status)) {
+        break;
+      }
+
+      if (chunks.chunks.length > 0) {
+        for (const chunk of chunks.chunks) {
+          writer.write(textEncoder.encode(chunk.chunk));
+        }
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+  };
+
+  void stream();
+
+  return new Response(readable, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+      "Vary": "Origin",
+      "Access-Control-Allow-Origin": "*",
+    },
+  });
+});
+chats/mutations.ts:
+import { v } from "convex/values";
+import { mutation } from "convex/_generated/server";
+import { requireAuth } from "convex/utils/helpers";
+import { api } from "convex/_generated/api";
+
+export const create = mutation({
+  args: {
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+    const chatId = ctx.db.insert("chats", {
+      userId,
+      name: args.name,
+      pinned: false,
+      updatedAt: Date.now(),
+    });
+    return chatId;
+  },
+});
+
+export const update = mutation({
+  args: {
+    chatId: v.id("chats"),
+    updates: v.object({
+      name: v.optional(v.string()),
+      pinned: v.optional(v.boolean()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+    const { chatId, updates } = args;
+
+    if (Object.keys(updates).length === 0) {
+      // No actual updates provided
+      return null;
+    }
+
+    const existingChat = await ctx.db
+      .query("chats")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), chatId))
+      .first();
+
+    if (!existingChat) {
+      throw new Error("Chat not found");
+    }
+
+    await ctx.db.patch(existingChat._id, { ...updates, updatedAt: Date.now() });
+    return null;
+  },
+});
+
+export const remove = mutation({
+  args: {
+    chatId: v.id("chats"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const existingChat = await ctx.db
+      .query("chats")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.chatId))
+      .first();
+
+    if (!existingChat) {
+      throw new Error("Chat not found");
+    }
+
+    // Delete associated chat input
+    const chatInput = await ctx.db
+      .query("chatInput")
+      .withIndex("by_user_chat", (q) => 
+        q.eq("chatId", args.chatId).eq("userId", userId)
+      )
+      .first();
+
+    if (chatInput) {
+      await ctx.runMutation(api.chatInput.mutations.remove, {
+        chatId: args.chatId,
+      });
+    }
+
+    // Finally delete the chat itself
+    await ctx.db.delete(args.chatId);
+
+    return null;
+  },
+});
+
+chats/queries.ts:
+import { query } from "convex/_generated/server";
+import { v } from "convex/values";
+import { requireAuth } from "convex/utils/helpers";
+import { paginationOptsValidator } from "convex/server";
+
+export const get = query({
+  args: {
+    chatId: v.id("chats"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const chat = await ctx.db
+      .query("chats")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.chatId))
+      .first();
+
+    if (!chat) {
+      throw new Error("Chat not found");
+    }
+
+    return chat;
+  },
+});
+
+export const getAll = query({
+  args: {
+    pinned: v.optional(v.boolean()),
+    paginationOpts: v.optional(paginationOptsValidator),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const userChats = await ctx.db
+      .query("chats")
+      .withIndex("by_user_updated", (q) => q.eq("userId", userId))
+      .filter((q) =>
+        args.pinned === undefined ? true : q.eq(q.field("pinned"), args.pinned),
+      )
+      .order("desc")
+      .paginate(args.paginationOpts ?? { numItems: 10, cursor: null });
+
+    return userChats;
+  },
+});
+
+export const getMultiple = query({
+  args: {
+    chatIds: v.array(v.id("chats")),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    return await Promise.all(
+      args.chatIds.map(async (chatId) => {
+        const chat = await ctx.db
+          .query("chats")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .filter((q) => q.eq(q.field("_id"), chatId))
+          .first();
+
+        if (!chat) {
+          throw new Error("Chat not found");
+        }
+
+        return chat;
+      }),
+    );
+  },
+});
+
+streams/mutations.ts:
+import { requireAuth } from "convex/utils/helpers";
+import { mutation } from "convex/_generated/server";
+import { v } from "convex/values";
+
+export const create = mutation({
+  handler: async (ctx) => {
+    const { userId } = await requireAuth(ctx);
+
+    const existingStream = await ctx.db.query("streams")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    
+    if (existingStream) {
+      return existingStream._id;
+    }
+
+    return await ctx.db.insert("streams", {
+      userId: userId,
+      status: "pending",
+    });
+  },
+});
+
+export const update = mutation({
+  args: {
+    streamId: v.id("streams"),
+    status: v.union(v.literal("pending"), v.literal("streaming"), v.literal("done"), v.literal("error"), v.literal("timeout")),
+  },
+  handler: async (ctx, args) => {
+
+    // If status is done, delete chunks
+    if (["done", "error", "timeout"].includes(args.status)) {
+      const toDelete = await ctx.db.query("streamChunks")
+        .withIndex("by_stream", (q) => 
+          q.eq("streamId", args.streamId))
+        .collect();
+
+      await Promise.all(toDelete.map((chunk) => ctx.db.delete(chunk._id)));
+    }
+
+    return await ctx.db.patch(args.streamId, {
+      status: args.status,
+    });
+  },
+});
+
+export const addChunk = mutation({
+  args: {
+    streamId: v.id("streams"),
+    chunk: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.streamId, {
+      status: "streaming",
+    });
+
+    return await ctx.db.insert("streamChunks", {
+      streamId: args.streamId,
+      chunk: args.chunk,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+streams/queries.ts:
+import { api } from "convex/_generated/api";
+import type { Doc } from "convex/_generated/dataModel";
+import { query } from "convex/_generated/server";
+import { requireAuth } from "convex/utils/helpers";
+import { v } from "convex/values";
+
+export const get = query({
+  args: {
+    streamId: v.id("streams"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const stream = await ctx.db.query("streams")
+      .withIndex("by_user", (q) => 
+        q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.streamId))
+      .first();
+    if (!stream) {
+      throw new Error("Stream not found");
+    }
+
+    return stream;
+  },
+});
+
+export const getStreamBody = query({
+  args: {
+    streamId: v.id("streams"),
+  },
+  returns: v.object({
+    text: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("streaming"),
+      v.literal("done"),
+      v.literal("error"),
+      v.literal("timeout")
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const stream = await ctx.db.query("streams")
+      .withIndex("by_user", (q) => 
+        q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.streamId))
+      .first();
+    
+    if (!stream) {
+      throw new Error("Stream not found");
+    }
+
+    const chunks = await ctx.db.query("streamChunks")
+      .withIndex("by_stream", (q) => 
+        q.eq("streamId", args.streamId))
+      .order("asc")
+      .collect();
+
+    const text = chunks.map(chunk => chunk.chunk).join("");
+
+    return {
+      text,
+      status: stream.status,
+    };
+  },
+});
+
+export const getChunks = query({
+  args: {
+    streamId: v.id("streams"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    await ctx.runQuery(api.streams.queries.get, {
+      streamId: args.streamId,
+    });
+
+    const chunks = await ctx.db.query("streamChunks")
+      .withIndex("by_stream", (q) => 
+        q.eq("streamId", args.streamId))
+      .order("desc")
+
+    return chunks;
+  },
+});
+
+export const getNewChunks = query({
+  args: {
+    streamId: v.id("streams"),
+    lastTimestamp: v.number(),
+  },
+  handler: async (ctx, args): Promise<{ chunks: Doc<"streamChunks">[], stream: Doc<"streams"> }> => {
+    await requireAuth(ctx);
+
+    const stream = await ctx.runQuery(api.streams.queries.get, {
+      streamId: args.streamId,
+    });
+
+    const chunks = await ctx.db.query("streamChunks")
+      .withIndex("by_stream", (q) => 
+        q.eq("streamId", args.streamId))
+      .filter((q) => q.gt(q.field("createdAt"), args.lastTimestamp))
+      .order("desc")
+      .collect();
+
+    return {
+      stream: stream,
+      chunks: chunks,
+    };
+  },
+});
+
+auth.ts:
+import { convexAuth } from "@convex-dev/auth/server";
+import { Anonymous } from "@convex-dev/auth/providers/Anonymous";
+import GitHub from "@auth/core/providers/github";
+import Google from "@auth/core/providers/google";
+import Slack from "@auth/core/providers/slack";
+import { query } from "./_generated/server";
+import { v } from "convex/values";
+
+export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+  providers: [
+    Anonymous,
+    ...(process.env.AUTH_GITHUB_SECRET && process.env.AUTH_GITHUB_ID
+      ? [GitHub]
+      : []),
+    ...(process.env.AUTH_GOOGLE_SECRET && process.env.AUTH_GOOGLE_ID
+      ? [Google]
+      : []),
+    ...(process.env.AUTH_SLACK_SECRET && process.env.AUTH_SLACK_ID
+      ? [Slack]
+      : []),
+  ],
+  callbacks: {
+    async afterUserCreatedOrUpdated(ctx, args) {
+      // Create a new chat for the user
+      await ctx.db.insert("chatInput", {
+        chatId: "new",
+        userId: args.userId,
+        agentMode: false,
+        plannerMode: false,
+        webSearch: false,
+        updatedAt: Date.now(),
+      });
+    },
+  },
+});
+
+export const isProviderEnabled = query({
+  args: {
+    provider: v.union(
+      v.literal("github"),
+      v.literal("google"),
+      v.literal("slack"),
+    ),
+  },
+  handler: async (_, args) => {
+    if (args.provider === "github") {
+      return process.env.AUTH_GITHUB_SECRET && process.env.AUTH_GITHUB_ID;
+    }
+    if (args.provider === "google") {
+      return process.env.AUTH_GOOGLE_SECRET && process.env.AUTH_GOOGLE_ID;
+    }
+    if (args.provider === "slack") {
+      return process.env.AUTH_SLACK_SECRET && process.env.AUTH_SLACK_ID;
+    }
+    return false;
+  },
+});
+
+_generated/server.js:
+/* eslint-disable */
+/**
+ * Generated utilities for implementing server-side Convex query and mutation functions.
+ *
+ * THIS CODE IS AUTOMATICALLY GENERATED.
+ *
+ * To regenerate, run `npx convex dev`.
+ * @module
+ */
+
+import {
+  actionGeneric,
+  httpActionGeneric,
+  queryGeneric,
+  mutationGeneric,
+  internalActionGeneric,
+  internalMutationGeneric,
+  internalQueryGeneric,
+  componentsGeneric,
+} from "convex/server";
+
+/**
+ * Define a query in this Convex app's public API.
+ *
+ * This function will be allowed to read your Convex database and will be accessible from the client.
+ *
+ * @param func - The query function. It receives a {@link QueryCtx} as its first argument.
+ * @returns The wrapped query. Include this as an `export` to name it and make it accessible.
+ */
+export const query = queryGeneric;
+
+/**
+ * Define a query that is only accessible from other Convex functions (but not from the client).
+ *
+ * This function will be allowed to read from your Convex database. It will not be accessible from the client.
+ *
+ * @param func - The query function. It receives a {@link QueryCtx} as its first argument.
+ * @returns The wrapped query. Include this as an `export` to name it and make it accessible.
+ */
+export const internalQuery = internalQueryGeneric;
+
+/**
+ * Define a mutation in this Convex app's public API.
+ *
+ * This function will be allowed to modify your Convex database and will be accessible from the client.
+ *
+ * @param func - The mutation function. It receives a {@link MutationCtx} as its first argument.
+ * @returns The wrapped mutation. Include this as an `export` to name it and make it accessible.
+ */
+export const mutation = mutationGeneric;
+
+/**
+ * Define a mutation that is only accessible from other Convex functions (but not from the client).
+ *
+ * This function will be allowed to modify your Convex database. It will not be accessible from the client.
+ *
+ * @param func - The mutation function. It receives a {@link MutationCtx} as its first argument.
+ * @returns The wrapped mutation. Include this as an `export` to name it and make it accessible.
+ */
+export const internalMutation = internalMutationGeneric;
+
+/**
+ * Define an action in this Convex app's public API.
+ *
+ * An action is a function which can execute any JavaScript code, including non-deterministic
+ * code and code with side-effects, like calling third-party services.
+ * They can be run in Convex's JavaScript environment or in Node.js using the "use node" directive.
+ * They can interact with the database indirectly by calling queries and mutations using the {@link ActionCtx}.
+ *
+ * @param func - The action. It receives an {@link ActionCtx} as its first argument.
+ * @returns The wrapped action. Include this as an `export` to name it and make it accessible.
+ */
+export const action = actionGeneric;
+
+/**
+ * Define an action that is only accessible from other Convex functions (but not from the client).
+ *
+ * @param func - The function. It receives an {@link ActionCtx} as its first argument.
+ * @returns The wrapped function. Include this as an `export` to name it and make it accessible.
+ */
+export const internalAction = internalActionGeneric;
+
+/**
+ * Define a Convex HTTP action.
+ *
+ * @param func - The function. It receives an {@link ActionCtx} as its first argument, and a `Request` object
+ * as its second.
+ * @returns The wrapped endpoint function. Route a URL path to this function in `convex/http.js`.
+ */
+export const httpAction = httpActionGeneric;
+
+_generated/dataModel.d.ts:
+/* eslint-disable */
+/**
+ * Generated data model types.
+ *
+ * THIS CODE IS AUTOMATICALLY GENERATED.
+ *
+ * To regenerate, run `npx convex dev`.
+ * @module
+ */
+
+import type {
+  DataModelFromSchemaDefinition,
+  DocumentByName,
+  TableNamesInDataModel,
+  SystemTableNames,
+} from "convex/server";
+import type { GenericId } from "convex/values";
+import schema from "../schema.js";
+
+/**
+ * The names of all of your Convex tables.
+ */
+export type TableNames = TableNamesInDataModel<DataModel>;
+
+/**
+ * The type of a document stored in Convex.
+ *
+ * @typeParam TableName - A string literal type of the table name (like "users").
+ */
+export type Doc<TableName extends TableNames> = DocumentByName<
+  DataModel,
+  TableName
+>;
+
+/**
+ * An identifier for a document in Convex.
+ *
+ * Convex documents are uniquely identified by their `Id`, which is accessible
+ * on the `_id` field. To learn more, see [Document IDs](https://docs.convex.dev/using/document-ids).
+ *
+ * Documents can be loaded using `db.get(id)` in query and mutation functions.
+ *
+ * IDs are just strings at runtime, but this type can be used to distinguish them from other
+ * strings when type checking.
+ *
+ * @typeParam TableName - A string literal type of the table name (like "users").
+ */
+export type Id<TableName extends TableNames | SystemTableNames> =
+  GenericId<TableName>;
+
+/**
+ * A type describing your Convex data model.
+ *
+ * This type includes information about what tables you have, the type of
+ * documents stored in those tables, and the indexes defined on them.
+ *
+ * This type is used to parameterize methods like `queryGeneric` and
+ * `mutationGeneric` to make them type-safe.
+ */
+export type DataModel = DataModelFromSchemaDefinition<typeof schema>;
+
+_generated/api.js:
+/* eslint-disable */
+/**
+ * Generated `api` utility.
+ *
+ * THIS CODE IS AUTOMATICALLY GENERATED.
+ *
+ * To regenerate, run `npx convex dev`.
+ * @module
+ */
+
+import { anyApi, componentsGeneric } from "convex/server";
+
+/**
+ * A utility for referencing Convex functions in your app's API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
+export const api = anyApi;
+export const internal = anyApi;
+export const components = componentsGeneric();
+
+_generated/api.d.ts:
+/* eslint-disable */
+/**
+ * Generated `api` utility.
+ *
+ * THIS CODE IS AUTOMATICALLY GENERATED.
+ *
+ * To regenerate, run `npx convex dev`.
+ * @module
+ */
+
+import type * as auth from "../auth.js";
+import type * as chatInput_actions from "../chatInput/actions.js";
+import type * as chatInput_mutations from "../chatInput/mutations.js";
+import type * as chatInput_queries from "../chatInput/queries.js";
+import type * as chats_actions from "../chats/actions.js";
+import type * as chats_mutations from "../chats/mutations.js";
+import type * as chats_queries from "../chats/queries.js";
+import type * as crons from "../crons.js";
+import type * as documents_actions from "../documents/actions.js";
+import type * as documents_mutations from "../documents/mutations.js";
+import type * as documents_queries from "../documents/queries.js";
+import type * as http from "../http.js";
+import type * as langchain_agent from "../langchain/agent.js";
+import type * as langchain_db from "../langchain/db.js";
+import type * as langchain_getTools from "../langchain/getTools.js";
+import type * as langchain_index from "../langchain/index.js";
+import type * as langchain_models from "../langchain/models.js";
+import type * as mcps_actions from "../mcps/actions.js";
+import type * as mcps_crud from "../mcps/crud.js";
+import type * as mcps_mutations from "../mcps/mutations.js";
+import type * as mcps_queries from "../mcps/queries.js";
+import type * as mcps_utils from "../mcps/utils.js";
+import type * as projectDocuments_actions from "../projectDocuments/actions.js";
+import type * as projectDocuments_mutations from "../projectDocuments/mutations.js";
+import type * as projectDocuments_queries from "../projectDocuments/queries.js";
+import type * as projects_mutations from "../projects/mutations.js";
+import type * as projects_queries from "../projects/queries.js";
+import type * as streams_mutations from "../streams/mutations.js";
+import type * as streams_queries from "../streams/queries.js";
+import type * as utils_helpers from "../utils/helpers.js";
+
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
+
+/**
+ * A utility for referencing Convex functions in your app's API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
+declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
+  "chatInput/actions": typeof chatInput_actions;
+  "chatInput/mutations": typeof chatInput_mutations;
+  "chatInput/queries": typeof chatInput_queries;
+  "chats/actions": typeof chats_actions;
+  "chats/mutations": typeof chats_mutations;
+  "chats/queries": typeof chats_queries;
+  crons: typeof crons;
+  "documents/actions": typeof documents_actions;
+  "documents/mutations": typeof documents_mutations;
+  "documents/queries": typeof documents_queries;
+  http: typeof http;
+  "langchain/agent": typeof langchain_agent;
+  "langchain/db": typeof langchain_db;
+  "langchain/getTools": typeof langchain_getTools;
+  "langchain/index": typeof langchain_index;
+  "langchain/models": typeof langchain_models;
+  "mcps/actions": typeof mcps_actions;
+  "mcps/crud": typeof mcps_crud;
+  "mcps/mutations": typeof mcps_mutations;
+  "mcps/queries": typeof mcps_queries;
+  "mcps/utils": typeof mcps_utils;
+  "projectDocuments/actions": typeof projectDocuments_actions;
+  "projectDocuments/mutations": typeof projectDocuments_mutations;
+  "projectDocuments/queries": typeof projectDocuments_queries;
+  "projects/mutations": typeof projects_mutations;
+  "projects/queries": typeof projects_queries;
+  "streams/mutations": typeof streams_mutations;
+  "streams/queries": typeof streams_queries;
+  "utils/helpers": typeof utils_helpers;
+}>;
+declare const fullApiWithMounts: typeof fullApi;
+
+export declare const api: FilterApi<
+  typeof fullApiWithMounts,
+  FunctionReference<any, "public">
+>;
+export declare const internal: FilterApi<
+  typeof fullApiWithMounts,
+  FunctionReference<any, "internal">
+>;
+
+export declare const components: {};
+
+_generated/server.d.ts:
+/* eslint-disable */
+/**
+ * Generated utilities for implementing server-side Convex query and mutation functions.
+ *
+ * THIS CODE IS AUTOMATICALLY GENERATED.
+ *
+ * To regenerate, run `npx convex dev`.
+ * @module
+ */
+
+import {
+  ActionBuilder,
+  AnyComponents,
+  HttpActionBuilder,
+  MutationBuilder,
+  QueryBuilder,
+  GenericActionCtx,
+  GenericMutationCtx,
+  GenericQueryCtx,
+  GenericDatabaseReader,
+  GenericDatabaseWriter,
+  FunctionReference,
+} from "convex/server";
+import type { DataModel } from "./dataModel.js";
+
+type GenericCtx =
+  | GenericActionCtx<DataModel>
+  | GenericMutationCtx<DataModel>
+  | GenericQueryCtx<DataModel>;
+
+/**
+ * Define a query in this Convex app's public API.
+ *
+ * This function will be allowed to read your Convex database and will be accessible from the client.
+ *
+ * @param func - The query function. It receives a {@link QueryCtx} as its first argument.
+ * @returns The wrapped query. Include this as an `export` to name it and make it accessible.
+ */
+export declare const query: QueryBuilder<DataModel, "public">;
+
+/**
+ * Define a query that is only accessible from other Convex functions (but not from the client).
+ *
+ * This function will be allowed to read from your Convex database. It will not be accessible from the client.
+ *
+ * @param func - The query function. It receives a {@link QueryCtx} as its first argument.
+ * @returns The wrapped query. Include this as an `export` to name it and make it accessible.
+ */
+export declare const internalQuery: QueryBuilder<DataModel, "internal">;
+
+/**
+ * Define a mutation in this Convex app's public API.
+ *
+ * This function will be allowed to modify your Convex database and will be accessible from the client.
+ *
+ * @param func - The mutation function. It receives a {@link MutationCtx} as its first argument.
+ * @returns The wrapped mutation. Include this as an `export` to name it and make it accessible.
+ */
+export declare const mutation: MutationBuilder<DataModel, "public">;
+
+/**
+ * Define a mutation that is only accessible from other Convex functions (but not from the client).
+ *
+ * This function will be allowed to modify your Convex database. It will not be accessible from the client.
+ *
+ * @param func - The mutation function. It receives a {@link MutationCtx} as its first argument.
+ * @returns The wrapped mutation. Include this as an `export` to name it and make it accessible.
+ */
+export declare const internalMutation: MutationBuilder<DataModel, "internal">;
+
+/**
+ * Define an action in this Convex app's public API.
+ *
+ * An action is a function which can execute any JavaScript code, including non-deterministic
+ * code and code with side-effects, like calling third-party services.
+ * They can be run in Convex's JavaScript environment or in Node.js using the "use node" directive.
+ * They can interact with the database indirectly by calling queries and mutations using the {@link ActionCtx}.
+ *
+ * @param func - The action. It receives an {@link ActionCtx} as its first argument.
+ * @returns The wrapped action. Include this as an `export` to name it and make it accessible.
+ */
+export declare const action: ActionBuilder<DataModel, "public">;
+
+/**
+ * Define an action that is only accessible from other Convex functions (but not from the client).
+ *
+ * @param func - The function. It receives an {@link ActionCtx} as its first argument.
+ * @returns The wrapped function. Include this as an `export` to name it and make it accessible.
+ */
+export declare const internalAction: ActionBuilder<DataModel, "internal">;
+
+/**
+ * Define an HTTP action.
+ *
+ * This function will be used to respond to HTTP requests received by a Convex
+ * deployment if the requests matches the path and method where this action
+ * is routed. Be sure to route your action in `convex/http.js`.
+ *
+ * @param func - The function. It receives an {@link ActionCtx} as its first argument.
+ * @returns The wrapped function. Import this function from `convex/http.js` and route it to hook it up.
+ */
+export declare const httpAction: HttpActionBuilder;
+
+/**
+ * A set of services for use within Convex query functions.
+ *
+ * The query context is passed as the first argument to any Convex query
+ * function run on the server.
+ *
+ * This differs from the {@link MutationCtx} because all of the services are
+ * read-only.
+ */
+export type QueryCtx = GenericQueryCtx<DataModel>;
+
+/**
+ * A set of services for use within Convex mutation functions.
+ *
+ * The mutation context is passed as the first argument to any Convex mutation
+ * function run on the server.
+ */
+export type MutationCtx = GenericMutationCtx<DataModel>;
+
+/**
+ * A set of services for use within Convex action functions.
+ *
+ * The action context is passed as the first argument to any Convex action
+ * function run on the server.
+ */
+export type ActionCtx = GenericActionCtx<DataModel>;
+
+/**
+ * An interface to read from the database within Convex query functions.
+ *
+ * The two entry points are {@link DatabaseReader.get}, which fetches a single
+ * document by its {@link Id}, or {@link DatabaseReader.query}, which starts
+ * building a query.
+ */
+export type DatabaseReader = GenericDatabaseReader<DataModel>;
+
+/**
+ * An interface to read from and write to the database within Convex mutation
+ * functions.
+ *
+ * Convex guarantees that all writes within a single mutation are
+ * executed atomically, so you never have to worry about partial writes leaving
+ * your data in an inconsistent state. See [the Convex Guide](https://docs.convex.dev/understanding/convex-fundamentals/functions#atomicity-and-optimistic-concurrency-control)
+ * for the guarantees Convex provides your functions.
+ */
+export type DatabaseWriter = GenericDatabaseWriter<DataModel>;
+
+http.ts:
+import { httpRouter } from "convex/server";
+import { corsRouter } from "convex-helpers/server/cors";
+import { auth } from "./auth";
+import { stream } from "./chats/actions";
+
+const http = httpRouter();
+const cors = corsRouter(http, {
+  allowedHeaders: ["*"],
+  allowedOrigins: ["*"],
+});
+
+auth.addHttpRoutes(http);
+
+cors.route({
+  path: "/stream-chat",
+  method: "POST",
+  handler: stream,
+})
+
+export default http;
+
+crons.ts:
+import { cronJobs } from "convex/server";
+import { internal } from "./_generated/api";
+
+const crons = cronJobs();
+
+crons.interval(
+  "stopIdle",
+  { minutes: 15 },
+  internal.mcps.mutations.stopIdle,
+);
+
+export default crons;
+
+chatInput/actions.ts:
+import { models, type ModelConfig } from "convex/langchain/models";
+import { action } from "convex/_generated/server";
+import { v } from "convex/values";
+import { api } from "convex/_generated/api";
+
+export const getModels = action({
+  args: {
+    chatId: v.union(v.id("chats"), v.literal("new")),
+  },
+  handler: async (ctx, args): Promise<{
+    selectedModel: ModelConfig;
+    models: ModelConfig[];
+  }> => {
+    const chatInput = await ctx.runQuery(api.chatInput.queries.get, {
+      chatId: args.chatId,
+    });
+    
+    let selectedModel = models.find((model) => model.model === chatInput.model);
+    if (!selectedModel) {
+      selectedModel = models[0];
+    }
+    return {
+      selectedModel,
+      models
+    }
+  },
+});
+chatInput/mutations.ts:
+import { requireAuth } from "convex/utils/helpers";
+import { mutation } from "convex/_generated/server";
+import { v } from "convex/values";
+
+export const create = mutation({
+  args: {
+    chatId: v.union(v.id("chats"), v.literal("new")),
+    documents: v.optional(v.array(v.id("documents"))),
+    text: v.optional(v.string()),
+    projectId: v.optional(v.id("projects")),
+    model: v.optional(v.string()),
+    agentMode: v.optional(v.boolean()),
+    plannerMode: v.optional(v.boolean()),
+    webSearch: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    // Check if chatInput already exists
+    const existingChatInput = await ctx.db
+      .query("chatInput")
+      .withIndex("by_user_chat", (q) =>
+        q.eq("chatId", args.chatId).eq("userId", userId),
+      )
+      .first();
+
+    if (existingChatInput && args.chatId !== "new") {
+      throw new Error("Chat input already exists");
+    }
+
+    // Check if chat exists
+    const chat = await ctx.db
+      .query("chats")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.chatId))
+      .first();
+
+    if (!chat && args.chatId !== "new") {
+      throw new Error("Chat not found");
+    }
+
+    const newChatInputId = await ctx.db.insert("chatInput", {
+      chatId: args.chatId,
+      userId,
+      documents: args.documents,
+      text: args.text,
+      projectId: args.projectId,
+      model: args.model,
+      agentMode: args.agentMode,
+      plannerMode: args.plannerMode,
+      webSearch: args.webSearch,
+      updatedAt: Date.now(),
+    });
+    const newChatInput = await ctx.db.get(newChatInputId);
+
+    if (!newChatInput) {
+      throw new Error("Chat input not found");
+    }
+
+    return {
+      ...newChatInput,
+      chat,
+    };
+  },
+});
+
+export const update = mutation({
+  args: {
+    chatId: v.union(v.id("chats"), v.literal("new")),
+    updates: v.object({
+      documents: v.optional(v.array(v.id("documents"))),
+      text: v.optional(v.string()),
+      projectId: v.optional(v.id("projects")),
+      model: v.optional(v.string()),
+      agentMode: v.optional(v.boolean()),
+      plannerMode: v.optional(v.boolean()),
+      webSearch: v.optional(v.boolean()),
+      streamId: v.optional(v.id("streams")),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    let existingChatInput = await ctx.db
+      .query("chatInput")
+      .withIndex("by_user_chat", (q) =>
+        q.eq("chatId", args.chatId).eq("userId", userId),
+      )
+      .first();
+
+    if (!existingChatInput) {
+      throw new Error("Chat input not found");
+    }
+
+    // Check if chat exists
+    const chat = await ctx.db
+      .query("chats")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.chatId))
+      .first();
+
+    if (!chat && args.chatId !== "new") {
+      throw new Error("Chat not found");
+    }
+
+    await ctx.db.patch(existingChatInput._id, {
+      ...args.updates,
+      updatedAt: Date.now(),
+    });
+
+    return true;
+  },
+});
+
+export const remove = mutation({
+  args: {
+    chatId: v.union(v.id("chats"), v.literal("new")),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const existingChatInput = await ctx.db
+      .query("chatInput")
+      .withIndex("by_user_chat", (q) =>
+        q.eq("chatId", args.chatId).eq("userId", userId),
+      )
+      .first();
+
+    if (!existingChatInput || args.chatId === "new") {
+      throw new Error("Chat input not found");
+    }
+
+    // Check if chat exists
+    const chat = await ctx.db
+      .query("chats")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.chatId))
+      .first();
+
+    if (!chat && args.chatId !== "new") {
+      throw new Error("Chat not found");
+    }
+
+    await ctx.db.delete(existingChatInput._id);
+
+    return true;
+  },
+});
+
+chatInput/queries.ts:
+import { query } from "convex/_generated/server";
+import { v } from "convex/values";
+import { requireAuth } from "convex/utils/helpers";
+
+export const get = query({
+  args: {
+    chatId: v.union(v.id("chats"), v.literal("new")),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const chatInput = await ctx.db
+      .query("chatInput")
+      .withIndex("by_user_chat", (q) =>
+        q.eq("chatId", args.chatId).eq("userId", userId),
+      )
+      .first();
+    if (!chatInput && args.chatId !== "new") {
+      throw new Error("Chat input not found");
+    }
+
+    // Get chat
+    const chat = await ctx.db
+      .query("chats")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.chatId))
+      .first();
+
+    if (!chat && args.chatId !== "new") {
+      throw new Error("Chat not found");
+    }
+
+    return {
+      ...chatInput,
+      chat,
+    };
+  },
+});
+
+export const getByStreamId = query({
+  args: {
+    streamId: v.id("streams"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const chatInput = await ctx.db
+      .query("chatInput")
+      .withIndex("by_user_stream", (q) => q.eq("streamId", args.streamId).eq("userId", userId))
+      .first();
+
+    if (!chatInput) {
+      throw new Error("Chat input not found");
+    }
+
+    return chatInput;
+  },
+});
+
+export const getById = query({
+  args: {
+    chatInputId: v.id("chatInput"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const chatInput = await ctx.db
+      .query("chatInput")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.chatInputId))
+      .first();
+
+    if (!chatInput) {
+      throw new Error("Chat input not found");
+    }
+
+    return chatInput;
+  },
+});
+convex.config.ts:
+// convex/convex.config.ts
+import { defineApp } from "convex/server";
+
+const app = defineApp();
+export default app;
+
+projectDocuments/actions.ts:
+"use node";
+
+import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
+import { api, internal } from "convex/_generated/api";
+import { internalAction } from "convex/_generated/server";
+import { v } from "convex/values";
+import { getEmbeddingModel } from "convex/langchain/models";
+
+export const add = internalAction({
+  args: {
+    projectDocumentId: v.id("projectDocuments"),
+  },
+  handler: async (ctx, args) => {
+    const projectDocument = await ctx.runQuery(api.projectDocuments.queries.get, {
+      projectDocumentId: args.projectDocumentId,
+    });
+
+    const document = await ctx.runAction(internal.documents.actions.load, {
+      documentId: projectDocument.documentId,
+      metadata: {
+        source: projectDocument._id,
+        projectId: projectDocument.projectId,
+      },
+    });
+
+    const vectorStore = new ConvexVectorStore(getEmbeddingModel("embeddings"), { ctx });
+
+    await vectorStore.addDocuments([document]);
+  },
+});
+projectDocuments/mutations.ts:
+import { requireAuth } from "convex/utils/helpers";
+import { mutation } from "convex/_generated/server";
+import { v } from "convex/values";
+import { api, internal } from "convex/_generated/api";
+
+export const create = mutation({
+  args: {
+    projectId: v.id("projects"),
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const project = await ctx.runQuery(api.projects.queries.get, {
+      projectId: args.projectId,
+    });
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    const document = await ctx.runQuery(api.documents.queries.get, {
+      documentId: args.documentId,
+    });
+    if (!document) {
+      throw new Error("Document not found");
+    }
+
+    const projectDocumentId = await ctx.db.insert("projectDocuments", {
+      projectId: args.projectId,
+      documentId: args.documentId,
+      selected: true,
+      updatedAt: Date.now(),
+    });
+
+    await ctx.scheduler.runAfter(0, internal.projectDocuments.funcs.add.add, {
+      projectDocumentId: projectDocumentId,
+    });
+
+    return projectDocumentId;
+  },
+});
+
+export const update = mutation({
+  args: {
+    projectDocumentId: v.id("projectDocuments"),
+    update: v.object({
+      selected: v.optional(v.boolean()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const projectDocument = await ctx.runQuery(
+      api.projectDocuments.queries.get,
+      {
+        projectDocumentId: args.projectDocumentId,
+      },
+    );
+    if (!projectDocument) {
+      throw new Error("Project document not found");
+    }
+
+    await ctx.db.patch(args.projectDocumentId, {
+      ...args.update,
+      updatedAt: Date.now(),
+    });
+
+    return true;
+  },
+});
+
+export const remove = mutation({
+  args: {
+    projectDocumentId: v.id("projectDocuments"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const projectDocument = await ctx.runQuery(
+      api.projectDocuments.queries.get,
+      {
+        projectDocumentId: args.projectDocumentId,
+      },
+    );
+    if (!projectDocument) {
+      throw new Error("Project document not found");
+    }
+
+    // Delete the associated document
+    await ctx.runMutation(api.documents.mutations.remove, {
+      documentId: projectDocument.document._id,
+    });
+
+    // Delete the project document
+    await ctx.db.delete(args.projectDocumentId);
+
+    // Delete the associated vectors
+    const vectors = await ctx.db
+      .query("projectVectors")
+      .filter((q) => q.eq(q.field("metadata.source"), args.projectDocumentId))
+      .collect();
+    await Promise.all(vectors.map((vector) => ctx.db.delete(vector._id)));
+
+    return true;
+  },
+});
+
+export const toggleSelect = mutation({
+  args: {
+    projectId: v.id("projects"),
+    selected: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const project = await ctx.runQuery(api.projects.queries.get, {
+      projectId: args.projectId,
+    });
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    const projectDocuments = await ctx.db
+      .query("projectDocuments")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+
+    await Promise.all(
+      projectDocuments.map((projectDocument) =>
+        ctx.runMutation(api.projectDocuments.mutations.update, {
+          projectDocumentId: projectDocument._id,
+          update: { selected: args.selected },
+        }),
+      ),
+    );
+
+    return true;
+  },
+});
+
+projectDocuments/queries.ts:
+import { requireAuth } from "convex/utils/helpers";
+import { query } from "convex/_generated/server";
+import { v } from "convex/values";
+import { api } from "convex/_generated/api";
+import type { Id, Doc } from "convex/_generated/dataModel";
+import { paginationOptsValidator } from "convex/server";
+
+export const get = query({
+  args: {
+    projectDocumentId: v.id("projectDocuments"),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<
+    Doc<"projectDocuments"> & {
+      project: Doc<"projects">;
+      document: Doc<"documents">;
+    }
+  > => {
+    await requireAuth(ctx);
+
+    const projectDocument = await ctx.db.get(args.projectDocumentId);
+    if (!projectDocument) {
+      throw new Error("Project document not found");
+    }
+
+    const project = await ctx.runQuery(api.projects.queries.get, {
+      projectId: projectDocument.projectId as Id<"projects">,
+    });
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    const document = await ctx.runQuery(api.documents.queries.get, {
+      documentId: projectDocument.documentId as Id<"documents">,
+    });
+    if (!document) {
+      throw new Error("Document not found");
+    }
+
+    return {
+      ...projectDocument,
+      project,
+      document,
+    };
+  },
+});
+
+export const getAll = query({
+  args: {
+    projectId: v.id("projects"),
+    paginationOpts: v.optional(paginationOptsValidator),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    projectDocuments: (Doc<"projectDocuments"> & {
+      document: Doc<"documents">;
+    })[];
+    project: Doc<"projects"> | null;
+  }> => {
+    await requireAuth(ctx);
+
+    const project = await ctx.runQuery(api.projects.queries.get, {
+      projectId: args.projectId,
+    });
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    const projectDocuments = await ctx.db
+      .query("projectDocuments")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .order("desc")
+      .paginate(args.paginationOpts ?? { numItems: 10, cursor: null });
+    if (projectDocuments.page.length === 0) {
+      return {
+        projectDocuments: [],
+        project: null,
+      };
+    }
+
+    const documents = await ctx.runQuery(api.documents.queries.getMultiple, {
+      documentIds: projectDocuments.page.map(
+        (projectDocument) => projectDocument.documentId,
+      ),
+    });
+    if (!documents) {
+      throw new Error("Documents not found");
+    }
+
+    const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
+    documents.forEach((document: Doc<"documents">) =>
+      documentsMap.set(document._id, document),
+    );
+
+    const projectDocumentsMap = new Map<
+      Id<"projectDocuments">,
+      Doc<"projectDocuments"> & { document: Doc<"documents"> }
+    >();
+
+    projectDocuments.page.forEach((projectDocument) => {
+      const document = documentsMap.get(projectDocument.documentId);
+      if (!document) {
+        throw new Error("Document not found");
+      }
+
+      projectDocumentsMap.set(projectDocument._id, {
+        ...projectDocument,
+        document,
+      });
+    });
+
+    return {
+      projectDocuments: Array.from(projectDocumentsMap.values()),
+      project,
+    };
+  },
+});
+
+export const getMultiple = query({
+  args: {
+    projectDocumentIds: v.array(v.id("projectDocuments")),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<
+    (Doc<"projectDocuments"> & {
+      project: Doc<"projects">;
+      document: Doc<"documents">;
+    })[]
+  > => {
+    await requireAuth(ctx);
+
+    return await Promise.all(
+      args.projectDocumentIds.map(async (projectDocumentId) => {
+        const projectDocument = await ctx.runQuery(
+          api.projectDocuments.queries.get,
+          {
+            projectDocumentId,
+          },
+        );
+        if (!projectDocument) {
+          throw new Error("Project document not found");
+        }
+
+        return projectDocument;
+      }),
+    );
+  },
+});
+
+export const getSelected = query({
+  args: {
+    projectId: v.id("projects"),
+    selected: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const projectDocuments = await ctx.db
+      .query("projectDocuments")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .filter((q) => q.eq(q.field("selected"), args.selected))
+      .collect();
+
+    return projectDocuments.map((projectDocument) => projectDocument._id);
+  },
+});
+
+documents/actions.ts:
+import { api } from "convex/_generated/api";
+import { internalAction } from "convex/_generated/server";
+import { v } from "convex/values";
+import { Document } from "langchain/document";
+import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
+
+export const load = internalAction({
+  args: {
+    documentId: v.id("documents"),
+    metadata: v.optional(v.object({
+      source: v.id("projectDocuments"),
+      projectId: v.id("projects"),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const document = await ctx.runQuery(api.documents.queries.get, {
+      documentId: args.documentId,
+    });
+
+    let pageContent = "";
+    if (document.type === "file") {
+      const documentUrl = new URL((await ctx.storage.getUrl(document.key))!);
+      documentUrl.host = process.env.BACKEND_HOST || "backend";
+      documentUrl.port = process.env.BACKEND_PORT || "3210";
+      pageContent = await fetch(
+        `http://${process.env.CONVERT_FILE_SERVICE_HOST || "services"}:${process.env.CONVERT_FILE_SERVICE_PORT || "5001"}/convert/?source=${encodeURIComponent(documentUrl.toString())}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.SERVICE_PASS}`,
+          },
+        },
+      ).then(async (res) => await res.text());
+    } else if (document.type === "url") {
+      const res = await fetch(
+        `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(document.key)}&max_depth=0`,
+      );
+      const data = (await res.json()) as { url: string; markdown: string };
+      pageContent = `# ${data.url}\n\n${data.markdown}`;
+    } else if (document.type === "youtube") {
+      const loader = YoutubeLoader.createFromUrl(document.key, {
+        language: "en",
+        addVideoInfo: true,
+      });
+      const docs = await loader.load();
+      pageContent = docs.map((doc) => `# ${JSON.stringify(doc.metadata, null, 2)}\n\n${doc.pageContent}`).join("\n\n");
+    } else if (document.type === "site") {
+      const res = await fetch(
+        `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(document.key)}&max_depth=2`,
+      );
+      const data = (await res.json()) as { url: string; markdown: string }[];
+      pageContent = data.map((d) => `# ${d.url}\n\n${d.markdown}`).join("\n\n");
+    } else {
+      throw new Error("Invalid document type");
+    }
+
+    return new Document({
+      pageContent,
+      ...(args.metadata ? { metadata: args.metadata } : {}),
+    });
+  },
+});
+documents/mutations.ts:
+import { mutation } from "convex/_generated/server";
+import type { Id } from "convex/_generated/dataModel";
+import { v } from "convex/values";
+import { requireAuth } from "convex/utils/helpers";
+
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireAuth(ctx);
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const create = mutation({
+  args: {
+    name: v.string(),
+    type: v.union(
+      v.literal("file"),
+      v.literal("url"),
+      v.literal("site"),
+      v.literal("youtube"),
+    ),
+    size: v.number(),
+    key: v.union(v.id("_storage"), v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const document = await ctx.db.insert("documents", {
+      userId: userId,
+      name: args.name,
+      type: args.type,
+      size: args.size,
+      key: args.key,
+    });
+
+    return document;
+  },
+});
+
+export const remove = mutation({
+  args: {
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const document = await ctx.db
+      .query("documents")
+      .withIndex("by_id", (q) => q.eq("_id", args.documentId))
+      .first();
+    if (!document) {
+      throw new Error("Document not found");
+    }
+
+    if (document.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    await ctx.db.delete(args.documentId);
+    try {
+      await ctx.storage.delete(document.key as Id<"_storage">);
+    } catch (error) {
+      // pass
+    }
+
+    return true;
+  },
+});
+
+documents/queries.ts:
+import { query } from "convex/_generated/server";
+import { v } from "convex/values";
+import { requireAuth } from "convex/utils/helpers";
+import { paginationOptsValidator } from "convex/server";
+
+export const get = query({
+  args: {
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const source = await ctx.db
+      .query("documents")
+      .withIndex("by_id", (q) => q.eq("_id", args.documentId))
+      .first();
+    if (!source) {
+      throw new Error("Source not found");
+    }
+
+    return source;
+  },
+});
+
+export const getAll = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const documents = await ctx.db
+      .query("documents")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    return documents;
+  },
+});
+
+export const getMultiple = query({
+  args: {
+    documentIds: v.array(v.id("documents")),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const sources = await Promise.all(
+      args.documentIds.map(async (documentId) => {
+        const source = await ctx.db
+          .query("documents")
+          .withIndex("by_id", (q) => q.eq("_id", documentId))
+          .first();
+        if (!source) {
+          throw new Error("Source not found");
+        }
+
+        if (source.userId !== userId) {
+          throw new Error("Unauthorized");
+        }
+
+        return source;
+      }),
+    );
+
+    return sources;
+  },
+});
+
+export const getByKey = query({
+  args: {
+    key: v.union(v.id("_storage"), v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const source = await ctx.db
+      .query("documents")
+      .withIndex("by_key", (q) => q.eq("key", args.key))
+      .first();
+    if (!source) {
+      throw new Error("Source not found");
+    }
+
+    if (source.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    return source;
+  },
+});
+
+mcps/actions.ts:
+"use node";
+
+import { internal } from "convex/_generated/api";
+import { internalAction } from "convex/_generated/server";
+import { v } from "convex/values";
+import { docker } from "./utils";
+
+export const start = internalAction({
+  args: {
+    mcpId: v.id("mcps"),
+  },
+  handler: async (ctx, args) => {
+    const mcp = await ctx.runQuery(internal.mcps.crud.read, {
+      id: args.mcpId,
+    });
+    if (!mcp) {
+      throw new Error("MCP not found");
+    }
+
+    const containers = await docker.listContainers({ all: true });
+    const container = containers.find((c) => c.Names.some((name) => name === `/${mcp._id}` || name === mcp._id));
+
+    const host = process.env.MCP_RUNNER_HOST || "host.docker.internal";
+    let sseUrl = mcp.url;
+    if (container && container.State === "running") {
+      sseUrl = `http://${host}:${container.Ports.find((p) => p.PrivatePort === 8000)?.PublicPort}/sse`;
+    }
+
+    if (mcp.command && container?.State !== "running") {
+      const newContainer = await docker.createContainer({
+        name: mcp._id,
+        Image: "mantrakp04/mcprunner:latest",
+        Env: [
+          `MCP_COMMAND=${mcp.command}`,
+          ...(mcp.env ? Object.entries(mcp.env).map(([key, value]) => `${key}=${value}`) : []),
+        ],
+        HostConfig: {
+          PortBindings: {
+            "8000/tcp": [{}],
+          }
+        },
+      });
+      await newContainer.start();
+      const container = (await docker.listContainers({ all: true })).find((c) => c.Names.some((name) => name === `/${mcp._id}` || name === mcp._id));
+      const port = container?.Ports.find((p) => p.PrivatePort === 8000)?.PublicPort;
+      sseUrl = `http://${host}:${port}/sse`;
+    }
+
+    if (!sseUrl) {
+      throw new Error("Failed to start MCP");
+    }
+
+    try {
+      await ctx.runMutation(internal.mcps.crud.update, {
+          id: args.mcpId,
+          patch: { url: sseUrl, status: "running", updatedAt: Date.now() },
+        });
+    } catch (error) {
+      console.error(error);
+    }
+  },
+});
+
+export const stop = internalAction({
+  args: {
+    mcpId: v.id("mcps"),
+  },
+  handler: async (ctx, args) => {
+    const mcp = await ctx.runQuery(internal.mcps.crud.read, {
+      id: args.mcpId,
+    });
+    if (!mcp) {
+      throw new Error("MCP not found");
+    }
+
+    const containers = await docker.listContainers({ all: true });
+    const container = containers.find((c) => c.Names.some((name) => name === `/${mcp._id}` || name === mcp._id));
+    if (container) {
+      await docker.getContainer(container.Id).stop();
+      await docker.getContainer(container.Id).remove();
+    }
+
+    await ctx.runMutation(internal.mcps.crud.update, {
+      id: args.mcpId,
+      patch: { status: "stopped" },
+    });
+  },
+});
+
+mcps/crud.ts:
+import { crud } from "convex-helpers/server/crud";
+import schema from "convex/schema";
+
+export const {
+  create, read, update, destroy
+} = crud(schema, "mcps");
+
+mcps/mutations.ts:
+import { internal } from "convex/_generated/api";
+import { internalMutation, mutation } from "convex/_generated/server";
+import { requireAuth } from "convex/utils/helpers";
+import { v } from "convex/values";
+
+export const create = mutation({
+  args: {
+    name: v.string(),
+    command: v.optional(v.string()),
+    env: v.optional(v.record(v.string(), v.string())),
+    url: v.optional(v.string()),
+    status: v.optional(
+      v.union(v.literal("running"), v.literal("stopped"), v.literal("error")),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    if (!args.command && !args.url) {
+      throw new Error("Command or URL is required");
+    }
+
+    const newMCPId = await ctx.db.insert("mcps", {
+      name: args.name,
+      command: args.command,
+      env: args.env,
+      url: args.url,
+      status: args.status,
+      userId: userId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    await ctx.scheduler.runAfter(0, internal.mcps.actions.start, {
+      mcpId: newMCPId,
+    });
+
+    return newMCPId;
+  },
+});
+
+export const update = mutation({
+  args: {
+    mcpId: v.id("mcps"),
+    updates: v.object({
+      name: v.optional(v.string()),
+      command: v.optional(v.string()),
+      env: v.optional(v.record(v.string(), v.string())),
+      url: v.optional(v.string()),
+      status: v.optional(
+        v.union(v.literal("running"), v.literal("stopped"), v.literal("error")),
+      ),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const existingMCP = await ctx.db
+      .query("mcps")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.mcpId))
+      .first();
+
+    if (!existingMCP) {
+      throw new Error("MCP not found");
+    }
+
+    await ctx.db.patch(args.mcpId, {
+      ...args.updates,
+      updatedAt: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+export const remove = mutation({
+  args: {
+    mcpId: v.id("mcps"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const existingMCP = await ctx.db
+      .query("mcps")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.mcpId))
+      .first();
+
+    if (!existingMCP) {
+      throw new Error("MCP not found");
+    }
+    
+    await ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
+      mcpId: args.mcpId,
+    });
+
+    await ctx.db.delete(args.mcpId);
+
+    return null;
+  },
+});
+
+export const toggle = mutation({
+  args: {
+    mcpId: v.id("mcps"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const existingMCP = await ctx.db
+      .query("mcps")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.mcpId))
+      .first();
+
+    if (!existingMCP) {
+      throw new Error("MCP not found");
+    }
+
+    if (existingMCP.status === "running") {
+      await ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
+        mcpId: args.mcpId,
+      });
+    } else {
+      await ctx.scheduler.runAfter(0, internal.mcps.actions.start, {
+        mcpId: args.mcpId,
+      });
+    }
+
+    return null;
+  },
+});
+
+export const stopIdle = internalMutation({
+  handler: async (ctx) => {
+    const idleContainers = await ctx.db.query("mcps")
+      .filter((q) => q.and(
+        q.eq(q.field("status"), "running"),
+        q.lt(q.field("updatedAt"), Date.now() - 15 * 60 * 1000),
+      ))
+      .collect();
+
+    await Promise.all(idleContainers.map((c) => ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
+      mcpId: c._id,
+    })));
+
+    return null;
+  },
+});
+
+export const ensureRunning = mutation({
+  args: {
+    mcpIds: v.array(v.id("mcps")),
+  },
+  handler: async (ctx, args) => {
+    const mcps = await Promise.all(args.mcpIds.map((id) => ctx.runQuery(internal.mcps.crud.read, { id })));
+
+    mcps.forEach(async (mcp) => {
+      if (mcp?.status !== "running") {
+        await ctx.scheduler.runAfter(0, internal.mcps.actions.start, {
+          mcpId: mcp?._id!,
+        });
+        await ctx.db.patch(mcp?._id!, {
+          status: "running",
+          updatedAt: Date.now(),
+        });
+      }
+    });
+
+    return null;
+  },
+});
+mcps/queries.ts:
+import { query } from "convex/_generated/server";
+import { v } from "convex/values";
+import { requireAuth } from "convex/utils/helpers";
+import { api } from "convex/_generated/api";
+import type { Doc } from "convex/_generated/dataModel";
+import { paginationOptsValidator } from "convex/server";
+
+export const get = query({
+  args: {
+    mcpId: v.id("mcps"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const mcp = await ctx.db
+      .query("mcps")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.mcpId))
+      .first();
+
+    if (!mcp) {
+      throw new Error("MCP not found");
+    }
+
+    return mcp;
+  },
+});
+
+export const getAll = query({
+  args: {
+    paginationOpts: paginationOptsValidator
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const mcps = await ctx.db
+      .query("mcps")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .paginate(args.paginationOpts);
+
+    return mcps;
+  },
+});
+
+export const getMultiple = query({
+  args: {
+    mcpIds: v.array(v.id("mcps")),
+  },
+  handler: async (ctx, args): Promise<Doc<"mcps">[]> => {
+    await requireAuth(ctx);
+
+    const mcps = await Promise.all(
+      args.mcpIds.map(async (mcpId) => {
+        const mcp = await ctx.runQuery(api.mcps.queries.get, {
+          mcpId: mcpId,
+        });
+        if (!mcp) {
+          throw new Error("MCP not found");
+        }
+        return mcp;
+      }),
+    );
+
+    return mcps;
+  },
+});
+
+export const getRunning = query({
+  handler: async (ctx) => {
+    const { userId } = await requireAuth(ctx);
+
+    const mcps = await ctx.db.query("mcps")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("status"), "running"))
+      .collect();
+
+    return mcps;
+  },
+});
+mcps/utils.ts:
+"use node";
+
+import Dockerode from "dockerode";
+
+export const docker = new Dockerode();
+projects/mutations.ts:
+import { mutation } from "convex/_generated/server";
+import { requireAuth } from "convex/utils/helpers";
+import { v } from "convex/values";
+import { api } from "convex/_generated/api";
+
+export const create = mutation({
+  args: {
+    name: v.string(),
+    description: v.optional(v.string()),
+    systemPrompt: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const newProjectId = await ctx.db.insert("projects", {
+      name: args.name,
+      description: args.description,
+      systemPrompt: args.systemPrompt,
+      userId: userId,
+      updatedAt: Date.now(),
+    });
+
+    const newProject = await ctx.db.get(newProjectId);
+
+    if (!newProject) {
+      throw new Error("Project not found");
+    }
+
+    return newProject;
+  },
+});
+
+export const update = mutation({
+  args: {
+    projectId: v.id("projects"),
+    updates: v.object({
+      name: v.optional(v.string()),
+      description: v.optional(v.string()),
+      systemPrompt: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const existingProject = await ctx.db
+      .query("projects")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.projectId))
+      .first();
+
+    if (!existingProject) {
+      throw new Error("Project not found");
+    }
+
+    await ctx.db.patch(existingProject._id, {
+      ...args.updates,
+      updatedAt: Date.now(),
+    });
+
+    return true;
+  },
+});
+
+export const remove = mutation({
+  args: {
+    projectId: v.id("projects"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const existingProject = await ctx.db
+      .query("projects")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.projectId))
+      .first();
+
+    if (!existingProject) {
+      throw new Error("Project not found");
+    }
+
+    // First get all project documents
+    const projectDocuments = await ctx.db
+      .query("projectDocuments")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .collect();
+
+    // Delete all project documents
+    await Promise.all(
+      projectDocuments.map((projectDocument) =>
+        ctx.runMutation(api.projectDocuments.mutations.remove, {
+          projectDocumentId: projectDocument._id,
+        }),
+      ),
+    );
+
+    // Finally delete the project
+    await ctx.db.delete(args.projectId);
+
+    return true;
+  },
+});
+
+projects/queries.ts:
+import { query } from "convex/_generated/server";
+import { paginationOptsValidator } from "convex/server";
+import { requireAuth } from "convex/utils/helpers";
+import { v } from "convex/values";
+
+export const get = query({
+  args: {
+    projectId: v.id("projects"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const project = await ctx.db
+      .query("projects")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.projectId))
+      .first();
+
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    return project;
+  },
+});
+
+export const getAll = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const projects = await ctx.db
+      .query("projects")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    return projects;
+  },
+});
+
+export const getMultiple = query({
+  args: {
+    projectIds: v.array(v.id("projects")),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const projects = await Promise.all(
+      args.projectIds.map(async (projectId) => {
+        const project = await ctx.db
+          .query("projects")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .filter((q) => q.eq(q.field("_id"), projectId))
+          .first();
+
+        if (!project) {
+          throw new Error("Project not found");
+        }
+
+        return project;
+      }),
+    );
+
+    return projects;
+  },
+});
+
+auth.config.ts:
+export default {
+  providers: [
+    {
+      domain: process.env.CONVEX_SITE_URL,
+      applicationID: "convex",
+    },
+  ],
+};
+

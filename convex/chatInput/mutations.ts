@@ -75,6 +75,7 @@ export const update = mutation({
       agentMode: v.optional(v.boolean()),
       plannerMode: v.optional(v.boolean()),
       webSearch: v.optional(v.boolean()),
+      streamId: v.optional(v.id("streams")),
     }),
   },
   handler: async (ctx, args) => {

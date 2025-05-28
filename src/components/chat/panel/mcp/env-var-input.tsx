@@ -27,6 +27,63 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
     );
   };
 
+  const handlePaste = (
+    e: React.ClipboardEvent<HTMLInputElement>,
+    index: number,
+  ) => {
+    // Only process paste if the input is empty
+    const currentEnvVar = envVars[index];
+    if (currentEnvVar.key !== "" || currentEnvVar.value !== "") {
+      return;
+    }
+
+    // Prevent default paste behavior
+    e.preventDefault();
+    
+    // Get pasted text
+    const pastedText = e.clipboardData.getData("text");
+    if (!pastedText.trim()) return;
+    
+    // Try to parse as environment variables
+    const parsedEnvVars = parseEnvVars(pastedText);
+    
+    // If we have parsed env vars, update state with them
+    if (parsedEnvVars.length > 0) {
+      // Replace the current empty env var with the parsed ones
+      const newEnvVars = [
+        ...envVars.slice(0, index),
+        ...parsedEnvVars,
+        ...envVars.slice(index + 1),
+      ];
+      onUpdate(newEnvVars);
+    }
+  };
+
+  const parseEnvVars = (text: string): EnvVar[] => {
+    const result: EnvVar[] = [];
+    
+    // Split by newlines
+    const lines = text.split(/\r?\n/);
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Skip empty lines and comments
+      if (!trimmedLine || trimmedLine.startsWith("#")) continue;
+      
+      // Try to match KEY=VALUE pattern
+      const match = trimmedLine.match(/^([^=]+)=(.*)$/);
+      if (match) {
+        result.push({
+          key: match[1].trim(),
+          value: match[2].trim(),
+        });
+      }
+    }
+    
+    return result;
+  };
+
   return (
     <div className="space-y-2">
       {envVars.map((env, index) => (
@@ -35,12 +92,14 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
             placeholder="Key"
             value={env.key}
             onChange={(e) => updateEnvVar(index, "key", e.target.value)}
+            onPaste={(e) => handlePaste(e, index)}
           />
           <span className="flex items-center">:</span>
           <Input
             placeholder="Value"
             value={env.value}
             onChange={(e) => updateEnvVar(index, "value", e.target.value)}
+            onPaste={(e) => handlePaste(e, index)}
           />
           {index === envVars.length - 1 ? (
             <Button

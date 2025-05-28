@@ -4,6 +4,7 @@ import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { docker } from "./utils";
+import type { Id } from "../_generated/dataModel";
 
 export const start = internalAction({
   args: {
@@ -15,6 +16,12 @@ export const start = internalAction({
     });
     if (!mcp) {
       throw new Error("MCP not found");
+    }
+    if (!mcp.enabled) {
+      throw new Error("MCP is not enabled");
+    }
+    if (mcp.type !== "stdio") {
+      throw new Error("MCP is not a stdio type");
     }
 
     const containers = await docker.listContainers({ all: true });
@@ -52,7 +59,7 @@ export const start = internalAction({
 
     await ctx.runMutation(internal.mcps.crud.update, {
       id: args.mcpId,
-      patch: { url: sseUrl, status: "running" },
+      patch: { url: sseUrl },
     });
   },
 });
@@ -68,11 +75,15 @@ export const stop = internalAction({
     if (!mcp) {
       throw new Error("MCP not found");
     }
+    if (!mcp.enabled) {
+      throw new Error("MCP is not enabled");
+    }
+    if (mcp.type !== "stdio") {
+      throw new Error("MCP is not a stdio type");
+    }
 
     const containers = await docker.listContainers({ all: true });
-    const container = containers.find((c) =>
-      c.Names.some((name) => name === `/${mcp._id}` || name === mcp._id)
-    );
+    const container = containers.find((c) => c.Names.some((name) => name.includes(mcp._id)));
     if (container) {
       await docker.getContainer(container.Id).stop();
       await docker.getContainer(container.Id).remove();
@@ -80,7 +91,26 @@ export const stop = internalAction({
 
     await ctx.runMutation(internal.mcps.crud.update, {
       id: args.mcpId,
-      patch: { status: "stopped" },
+      patch: { url: undefined, enabled: false },
     });
+  },
+});
+
+export const stopIdle = internalAction({
+  args: {},
+  handler: async (ctx, _args) => {
+    const containers = await docker.listContainers({ all: true });
+    const containerIds = containers.map((c) => c.Id as Id<"mcps">);
+    const mcps = await ctx.runQuery(internal.mcps.queries.getMultiple, {
+      mcpIds: containerIds,
+      filters: {
+        enabled: true,
+      },
+    });
+    for (const mcp of mcps) {
+      await ctx.runAction(internal.mcps.actions.stop, {
+        mcpId: mcp._id,
+      });
+    }
   },
 });

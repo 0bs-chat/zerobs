@@ -163,7 +163,7 @@ async function retrieve(
         const results = await vectorStore.similaritySearch(query, 4, {
           filter: (q) =>
             q.or(
-              ...includedProjectDocuments.map((doc: Doc<"projectDocuments">) =>
+              ...includedProjectDocuments.map((doc) =>
                 q.eq("metadata", {
                   projectId: formattedConfig.chatInput.projectId,
                   source: doc,
@@ -349,7 +349,7 @@ async function agent(state: typeof GraphState.State, config: RunnableConfig) {
     agent = createReactAgent({
       llm: getModel(formattedConfig.chatInput.model),
       tools: [
-        ...tools.tools,
+        ...(tools.tools.length > 0 ? tools.tools : []),
         ...(searchTools.tavily
           ? [searchTools.tavily]
           : [searchTools.duckduckgo, searchTools.crawlWeb]),
@@ -357,6 +357,9 @@ async function agent(state: typeof GraphState.State, config: RunnableConfig) {
       prompt: promptTemplate,
     });
   } else {
+    if (Object.keys(tools.groupedTools).length === 0) {
+      throw new Error("Need atleast 1 mcp enabled to use planner mode");
+    }
     const agents = Object.entries(tools.groupedTools).map(
       ([groupName, tools]) =>
         createReactAgent({

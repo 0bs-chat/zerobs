@@ -9,9 +9,7 @@ export const create = mutation({
     command: v.optional(v.string()),
     env: v.optional(v.record(v.string(), v.string())),
     url: v.optional(v.string()),
-    status: v.optional(
-      v.union(v.literal("running"), v.literal("stopped"), v.literal("error"))
-    ),
+    enabled: v.boolean(),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -22,12 +20,12 @@ export const create = mutation({
 
     const newMCPId = await ctx.db.insert("mcps", {
       name: args.name,
+      type: args.command ? "stdio" : "sse",
       command: args.command,
       env: args.env,
       url: args.url,
-      status: args.status,
+      enabled: args.enabled,
       userId: userId,
-      createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
@@ -47,9 +45,7 @@ export const update = mutation({
       command: v.optional(v.string()),
       env: v.optional(v.record(v.string(), v.string())),
       url: v.optional(v.string()),
-      status: v.optional(
-        v.union(v.literal("running"), v.literal("stopped"), v.literal("error"))
-      ),
+      enabled: v.optional(v.boolean()),
     }),
   },
   handler: async (ctx, args) => {
@@ -69,6 +65,18 @@ export const update = mutation({
       ...args.updates,
       updatedAt: Date.now(),
     });
+
+    if (args.updates.enabled !== undefined) {
+      if (args.updates.enabled) {
+        await ctx.scheduler.runAfter(0, internal.mcps.actions.start, {
+          mcpId: args.mcpId,
+        });
+      } else if (existingMCP.enabled && !args.updates.enabled) {
+        await ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
+          mcpId: args.mcpId,
+        });
+      }
+    }
 
     return null;
   },
@@ -96,84 +104,6 @@ export const remove = mutation({
     });
 
     await ctx.db.delete(args.mcpId);
-
-    return null;
-  },
-});
-
-export const toggle = mutation({
-  args: {
-    mcpId: v.id("mcps"),
-  },
-  handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
-
-    const existingMCP = await ctx.db
-      .query("mcps")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.mcpId))
-      .first();
-
-    if (!existingMCP) {
-      throw new Error("MCP not found");
-    }
-
-    if (existingMCP.status === "running") {
-      await ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
-        mcpId: args.mcpId,
-      });
-    } else {
-      await ctx.scheduler.runAfter(0, internal.mcps.actions.start, {
-        mcpId: args.mcpId,
-      });
-    }
-
-    return null;
-  },
-});
-
-export const stopIdle = internalMutation({
-  handler: async (ctx) => {
-    const idleContainers = await ctx.db
-      .query("mcps")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("status"), "running"),
-          q.lt(q.field("updatedAt"), Date.now() - 15 * 60 * 1000)
-        )
-      )
-      .collect();
-
-    await Promise.all(
-      idleContainers.map((c) =>
-        ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
-          mcpId: c._id,
-        })
-      )
-    );
-
-    return null;
-  },
-});
-
-export const ensureRunning = internalMutation({
-  args: {
-    mcpIds: v.array(v.id("mcps")),
-  },
-  handler: async (ctx, args) => {
-    const mcps = await Promise.all(
-      args.mcpIds.map((id) => ctx.runQuery(internal.mcps.crud.read, { id }))
-    );
-
-    await Promise.all(
-      mcps.map(
-        (mcp) =>
-          mcp &&
-          ctx.scheduler.runAfter(0, internal.mcps.actions.start, {
-            mcpId: mcp._id,
-          })
-      )
-    );
 
     return null;
   },

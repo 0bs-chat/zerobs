@@ -39,9 +39,7 @@ WORKDIR /app
 COPY pyproject.toml /app/pyproject.toml
 
 # Create and activate virtual environment
-RUN uv venv /app/.venv
-ENV PATH="/app/.venv/bin:$PATH"
-RUN uv pip install -e .
+RUN uv sync
 
 COPY scripts /app/scripts
 RUN uvx playwright install --with-deps

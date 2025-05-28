@@ -1,7 +1,7 @@
 import { requireAuth } from "../utils/helpers";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { api, internal } from "../_generated/api";
+import { api } from "../_generated/api";
 
 export const create = mutation({
   args: {
@@ -11,29 +11,19 @@ export const create = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const project = await ctx.runQuery(api.projects.queries.get, {
+    await ctx.runQuery(api.projects.queries.get, {
       projectId: args.projectId,
     });
-    if (!project) {
-      throw new Error("Project not found");
-    }
 
-    const document = await ctx.runQuery(api.documents.queries.get, {
+    await ctx.runQuery(api.documents.queries.get, {
       documentId: args.documentId,
     });
-    if (!document) {
-      throw new Error("Document not found");
-    }
 
     const projectDocumentId = await ctx.db.insert("projectDocuments", {
       projectId: args.projectId,
       documentId: args.documentId,
       selected: true,
       updatedAt: Date.now(),
-    });
-
-    await ctx.scheduler.runAfter(0, internal.projectDocuments.funcs.add.add, {
-      projectDocumentId: projectDocumentId,
     });
 
     return projectDocumentId;
@@ -50,15 +40,12 @@ export const update = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const projectDocument = await ctx.runQuery(
+    await ctx.runQuery(
       api.projectDocuments.queries.get,
       {
         projectDocumentId: args.projectDocumentId,
       }
     );
-    if (!projectDocument) {
-      throw new Error("Project document not found");
-    }
 
     await ctx.db.patch(args.projectDocumentId, {
       ...args.update,
@@ -82,9 +69,6 @@ export const remove = mutation({
         projectDocumentId: args.projectDocumentId,
       }
     );
-    if (!projectDocument) {
-      throw new Error("Project document not found");
-    }
 
     // Delete the associated document
     await ctx.runMutation(api.documents.mutations.remove, {
@@ -113,12 +97,9 @@ export const toggleSelect = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const project = await ctx.runQuery(api.projects.queries.get, {
+    await ctx.runQuery(api.projects.queries.get, {
       projectId: args.projectId,
     });
-    if (!project) {
-      throw new Error("Project not found");
-    }
 
     const projectDocuments = await ctx.db
       .query("projectDocuments")

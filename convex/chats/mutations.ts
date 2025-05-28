@@ -70,13 +70,13 @@ export const remove = mutation({
 
     // Delete associated chat stream
     const chatStream = await ctx.db
-      .query("chatStream")
-      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .query("streams")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
 
     if (chatStream) {
-      await ctx.runMutation(api.chatStream.mutations.remove, {
-        chatId: args.chatId,
+      await ctx.runMutation(api.streams.mutations.remove, {
+        streamId: chatStream._id,
       });
     }
 

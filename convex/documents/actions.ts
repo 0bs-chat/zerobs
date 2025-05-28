@@ -1,7 +1,8 @@
+"use node";
+
 import { api } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
-import { Document } from "langchain/document";
 import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
 
 export const load = internalAction({
@@ -28,13 +29,18 @@ export const load = internalAction({
         `http://${process.env.CONVERT_FILE_SERVICE_HOST || "services"}:${process.env.CONVERT_FILE_SERVICE_PORT || "5001"}/convert/?source=${encodeURIComponent(documentUrl.toString())}`,
         {
           headers: {
-            Authorization: `Bearer ${process.env.SERVICE_PASS}`,
+            Authorization: `Bearer ${process.env.SERVICE_PASS || "1234"}`,
           },
         }
       ).then(async (res) => await res.text());
     } else if (document.type === "url") {
       const res = await fetch(
-        `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(document.key)}&max_depth=0`
+        `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(document.key)}&max_depth=0`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.SERVICE_PASS || "1234"}`,
+          },
+        }
       );
       const data = (await res.json()) as { url: string; markdown: string };
       pageContent = `# ${data.url}\n\n${data.markdown}`;
@@ -60,9 +66,9 @@ export const load = internalAction({
       throw new Error("Invalid document type");
     }
 
-    return new Document({
+    return {
       pageContent,
       ...(args.metadata ? { metadata: args.metadata } : {}),
-    });
+    };
   },
 });

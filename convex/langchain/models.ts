@@ -15,6 +15,7 @@ import type {
 } from "@langchain/core/messages";
 import { internal } from "../_generated/api";
 import { formatDocumentsAsString } from "langchain/util/document";
+import { Document } from "@langchain/core/documents";
 
 const API_KEY_MAP = {
   anthropic: process.env.ANTHROPIC_API_KEY,
@@ -181,10 +182,11 @@ export async function formatDocument(
       };
     } else {
       try {
+        const doc = await ctx.runAction(internal.documents.actions.load, {
+          documentId: document._id,
+        });
         const text = await formatDocumentsAsString([
-          await ctx.runAction(internal.documents.funcs.load.load, {
-            documentId: document._id,
-          }),
+          new Document({...doc}),
         ]);
         content = {
           type: "text",
@@ -197,10 +199,11 @@ export async function formatDocument(
     }
   } else {
     try {
+      const doc = await ctx.runAction(internal.documents.actions.load, {
+        documentId: document._id,
+      });
       const text = await formatDocumentsAsString([
-        await ctx.runAction(internal.documents.funcs.load.load, {
-          documentId: document._id,
-        }),
+        new Document({...doc}),
       ]);
       content = {
         type: "text",

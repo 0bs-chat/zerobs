@@ -27,6 +27,7 @@
     "@langchain/langgraph-supervisor": "^0.0.11",
     "@langchain/mcp-adapters": "^0.4.2",
     "@langchain/tavily": "^0.1.1",
+    "@langchain/textsplitters": "^0.1.0",
     "@langchain/weaviate": "^0.1.1",
     "@radix-ui/react-accordion": "^1.2.10",
     "@radix-ui/react-alert-dialog": "^1.1.13",

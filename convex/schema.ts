@@ -36,27 +36,22 @@ export default defineSchema({
     plannerMode: v.optional(v.boolean()),
     webSearch: v.optional(v.boolean()),
     model: v.optional(v.string()),
+    streamId: v.optional(v.id("streams")),
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_user_chat", ["chatId", "userId"]),
-  chatStream: defineTable({
-    chatId: v.id("chats"),
-    status: v.union(
-      v.literal("pending"),
-      v.literal("streaming"),
-      v.literal("done"),
-      v.literal("error")
-    ),
-    stream: v.optional(v.string()),
-  }).index("by_chat", ["chatId"]),
-  interrupt: defineTable({
-    chatId: v.id("chats"),
+  streams: defineTable({
     userId: v.id("users"),
-    interrupt: v.boolean(),
-    humanMessage: v.optional(v.string()),
-    updatedAt: v.number(),
-  }).index("by_chat", ["chatId"]),
+    status: v.union(v.literal("pending"), v.literal("streaming"), v.literal("done"), v.literal("error")),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"]),
+  streamChunks: defineTable({
+    streamId: v.id("streams"),
+    chunk: v.string(),
+  })
+    .index("by_stream", ["streamId"]),
   projects: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
@@ -85,18 +80,15 @@ export default defineSchema({
   }),
   mcps: defineTable({
     name: v.string(),
+    type: v.union(v.literal("sse"), v.literal("stdio")),
     command: v.optional(v.string()),
-    env: v.optional(v.record(v.string(), v.string())),
     url: v.optional(v.string()),
-    status: v.optional(
-      v.union(v.literal("running"), v.literal("stopped"), v.literal("error"))
-    ),
+    env: v.optional(v.record(v.string(), v.string())),
+    enabled: v.boolean(),
     userId: v.id("users"),
-    createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_user_updated", ["userId", "updatedAt"])
-    .index("by_user_created", ["userId", "createdAt"])
-    .index("by_status", ["status"]),
+    .index("by_enabled", ["enabled"]),
 });
