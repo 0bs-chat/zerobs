@@ -4,7 +4,7 @@ import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { agentGraph } from "./agent";
 import type { ActionCtx } from "../_generated/server";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import { HumanMessage } from "@langchain/core/messages";
 import { formatDocument } from "./models";
 import { api, internal } from "../_generated/api";

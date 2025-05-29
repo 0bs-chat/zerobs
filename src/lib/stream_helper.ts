@@ -1,10 +1,11 @@
 "use client";
 
 /// React helpers for persistent text streaming.
-import type { StreamBody, StreamId } from "@convex-dev/persistent-text-streaming";
 import { useQuery } from "convex/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FunctionReference } from "convex/server";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
+import type { StreamEvent } from "@langchain/core/tracers/log_stream";
 
 if (typeof window === "undefined") {
   throw new Error("this is frontend code, but it's running somewhere else!");
@@ -13,7 +14,7 @@ if (typeof window === "undefined") {
 /**
  * React hook for persistent text streaming.
  *
- * @param getPersistentBody - A query function reference that returns the body
+ * @param getChunks - A query function reference that returns the chunks
  * of a stream using the component's `getStreamBody` method.
  * @param streamUrl - The URL of the http action that will kick off the stream
  * generation and stream the result back to the client using the component's
@@ -27,16 +28,24 @@ if (typeof window === "undefined") {
  * `pending`.
  * @returns The body and status of the stream.
  */
+type StreamBody = {
+  chunks: StreamEvent[];
+  status: Doc<"streams">["status"];
+}
+
 export function useStream(
-  getPersistentBody: FunctionReference<
+  getChunks: FunctionReference<
     "query",
     "public",
     { streamId: string },
-    StreamBody
+    {
+      stream: Doc<"streams">;
+      chunks: Doc<"streamChunks">[];
+    }
   >,
   streamUrl: URL,
   driven: boolean,
-  streamId?: StreamId,
+  streamId?: Id<"streams">,
   token?: string
 ) {
   const [streamEnded, setStreamEnded] = useState(null as boolean | null);
@@ -57,18 +66,18 @@ export function useStream(
     return false;
   }, [driven, streamId, streamEnded]);
 //  console.log("usePersistence", usePersistence);
-  const persistentBody = useQuery(
-    getPersistentBody,
+  const persistentData = useQuery(
+    getChunks,
     usePersistence && streamId ? { streamId: streamId! } : "skip"
   );
-  const [streamBody, setStreamBody] = useState<string>("");
+  const [streamChunks, setStreamChunks] = useState<StreamEvent[]>([]);
 
   useEffect(() => {
     if (driven && streamId && !streamStarted.current) {
       // Kick off HTTP action.
       void (async () => {
         const success = await startStreaming(streamUrl, streamId, token, (text) => {
-          setStreamBody((prev) => prev + text);
+          setStreamChunks((prev) => [...prev, JSON.parse(text) as StreamEvent]);
         });
         setStreamEnded(success);
       })();
@@ -80,25 +89,37 @@ export function useStream(
   }, [driven, streamId, setStreamEnded, streamStarted]);
 
   const body = useMemo<StreamBody>(() => {
-    // console.log(
-    //   "body info p vs. s",
-    //   persistentBody?.text?.length ?? 0,
-    //   streamBody.length
-    //);
-    if (persistentBody) {
-      return persistentBody;
+    if (persistentData) {
+      // Parse the string chunks into StreamEvent objects
+      const parsedChunks = persistentData.chunks
+        .map(chunk => {
+          try {
+            return JSON.parse(chunk.chunk) as StreamEvent;
+          } catch (e) {
+            console.error("Error parsing chunk", e, chunk.chunk);
+            return null;
+          }
+        })
+        .filter((chunk): chunk is StreamEvent => chunk !== null);
+
+      return {
+        chunks: parsedChunks,
+        status: persistentData.stream.status,
+      };
     }
-    let status: "pending" | "streaming" | "done" | "error" | "timeout";
+    
+    let status: Doc<"streams">["status"];
     if (streamEnded === null) {
-      status = streamBody.length > 0 ? "streaming" : "pending";
+      status = streamChunks.length > 0 ? "streaming" : "pending";
     } else {
       status = streamEnded ? "done" : "error";
     }
+    
     return {
-      text: streamBody,
-      status: status as typeof status,
+      chunks: streamChunks,
+      status,
     };
-  }, [persistentBody, streamBody, streamEnded]);
+  }, [persistentData, streamChunks, streamEnded]);
 
   return body;
 }
@@ -118,7 +139,7 @@ export function useStream(
  */
 async function startStreaming(
   url: URL,
-  streamId: StreamId,
+  streamId: Id<"streams">,
   token: string | undefined,
   onUpdate: (text: string) => void
 ) {

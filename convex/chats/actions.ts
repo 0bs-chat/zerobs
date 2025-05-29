@@ -1,6 +1,6 @@
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { action } from "../_generated/server";
+import { action, httpAction } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
 
@@ -44,4 +44,48 @@ export const send = action({
 
     return null;
   },
+});
+
+export const stream = httpAction(async (ctx, req) => {
+  await requireAuth(ctx);
+
+  const res = await req.json() as {
+    streamId: Id<"streams">;
+    lastChunkTime: number;
+  };
+  const streamId = res.streamId;
+  let now = res.lastChunkTime || Date.now();
+
+  const stream = await ctx.runQuery(api.streams.queries.get, {
+    streamId: streamId,
+  });
+  
+  const { readable, writable } = new TransformStream();
+  let writer = writable.getWriter() as WritableStreamDefaultWriter<Uint8Array> | null;
+  const textEncoder = new TextEncoder();
+
+  const buffer = 100;
+  while (true) {
+    const newChunks = await ctx.runQuery(api.streams.queries.getNewChunks, {
+      streamId: streamId,
+      lastChunkTime: now,
+    });
+    if (newChunks.chunks.length === 0) {
+      break;
+    }
+    for (const chunk of newChunks.chunks) {
+      writer?.write(textEncoder.encode(chunk.chunk));
+    }
+    now = newChunks.chunks[newChunks.chunks.length - 1]._creationTime;
+
+    await new Promise((resolve) => setTimeout(resolve, buffer));
+  }
+
+  return new Response(readable, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Vary": "Origin",
+      "Access-Control-Allow-Origin": "*",
+    },
+  });
 });

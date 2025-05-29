@@ -30,13 +30,13 @@ import { getSearchTools, getMCPTools } from "./getTools";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { AIMessage } from "@langchain/core/messages";
-import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
+// import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 
-const checkpointer = PostgresSaver.fromConnString(
-  process.env.POSTGRES_URL || "postgresql://postgres:postgres@database:5432"
-);
-await checkpointer.setup();
+// const checkpointer = PostgresSaver.fromConnString(
+//   process.env.POSTGRES_URL || "postgresql://postgres:postgres@database:5432"
+// );
+// await checkpointer.setup();
 
 type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;
@@ -622,5 +622,5 @@ export const agentGraph = new StateGraph(GraphState)
     false: "plannerAgent",
   })
   .compile({
-    checkpointer: checkpointer,
+    // checkpointer: checkpointer,
   });
