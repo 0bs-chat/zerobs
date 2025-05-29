@@ -19,7 +19,7 @@ function RouteComponent() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-4">
+    <div className="flex flex-col items-center justify-center h-full w-full">
       <Button onClick={() => signIn("anonymous")}>Sign in Anonymously</Button>
       {providers.map((provider) => {
         const isProviderEnabled = useQuery(api.auth.isProviderEnabled, {

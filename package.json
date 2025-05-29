@@ -4,12 +4,9 @@
   "type": "module",
   "scripts": {
     "b": "npx convex dev",
-    "dev": "vite --port 3000",
+    "dev": "vite --port 3000 & bun b",
+    "setup": "bun setup.mjs",
     "start": "vite --port 3000",
-    "d:up": "docker-compose -f docker/docker-compose.yml up -d",
-    "d:down": "docker-compose -f docker/docker-compose.yml down",
-    "d:reset": "docker-compose -f docker/docker-compose.yml down -v",
-    "d:keygen": "docker-compose -f docker/docker-compose.yml exec backend ./generate_admin_key.sh",
     "build": "vite build && tsc",
     "serve": "vite preview",
     "test": "vitest run"
@@ -84,6 +81,7 @@
     "react-hook-form": "^7.56.3",
     "react-resizable-panels": "^3.0.2",
     "recharts": "^2.15.3",
+    "runpod-sdk": "^1.0.7",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.6",

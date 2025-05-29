@@ -29,7 +29,7 @@ export const create = mutation({
       updatedAt: Date.now(),
     });
 
-    await ctx.scheduler.runAfter(0, internal.mcps.actions.start, {
+    await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
       mcpId: newMCPId,
     });
 
@@ -66,18 +66,6 @@ export const update = mutation({
       updatedAt: Date.now(),
     });
 
-    if (args.updates.enabled !== undefined) {
-      if (args.updates.enabled) {
-        await ctx.scheduler.runAfter(0, internal.mcps.actions.start, {
-          mcpId: args.mcpId,
-        });
-      } else if (existingMCP.enabled && !args.updates.enabled) {
-        await ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
-          mcpId: args.mcpId,
-        });
-      }
-    }
-
     return null;
   },
 });
@@ -99,7 +87,7 @@ export const remove = mutation({
       throw new Error("MCP not found");
     }
 
-    await ctx.scheduler.runAfter(0, internal.mcps.actions.stop, {
+    await ctx.scheduler.runAfter(0, internal.mcps.actions.remove, {
       mcpId: args.mcpId,
     });
 

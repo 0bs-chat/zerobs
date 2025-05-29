@@ -3,10 +3,9 @@
 import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
-import type { Id } from "../_generated/dataModel";
-import * as fly from "./fly";
+import { fly, FlyApp, FlyMachine, CreateMachineRequest } from "../utils/flyio";
 
-export const start = internalAction({
+export const create = internalAction({
   args: {
     mcpId: v.id("mcps"),
   },
@@ -23,25 +22,45 @@ export const start = internalAction({
     if (mcp.type !== "stdio") {
       throw new Error("MCP is not a stdio type");
     }
+    if (!mcp.command) {
+        throw new Error("MCP command is not defined");
+    }
 
-    // Check if the machine already exists
-    const machineName = String(mcp._id);
-    const machine = await fly.getMachine(machineName);
-    let sseUrl = mcp.url;
+    const appName = String(mcp._id);
+    const sseUrl = `https://${appName}.fly.dev/sse`;
+    let machine: FlyMachine | null = null;
 
-    if (machine && machine.state === "started") {
-      // Machine exists and is running, get the URL
-      const host = process.env.MCP_RUNNER_HOST || `${process.env.FLY_APP_NAME}.fly.dev`;
-      sseUrl = `https://${host}/sse`;
-    } else if (machine && machine.state !== "started") {
-      // Machine exists but is not running, start it
-      sseUrl = await fly.startMachine(machineName);
-    } else {
-      // Machine doesn't exist, create it
-      const env = mcp.env ? mcp.env : {};
-      const command = mcp.command || "echo 'No command specified'";
-      await fly.createMachine(mcp._id, command, env);
-      sseUrl = await fly.startMachine(machineName);
+    const machineConfig: CreateMachineRequest = {
+        name: `${appName}-machine`,
+        region: "iad",
+        config: {
+            image: "mantrakp04/mcprunner:latest",
+            env: {
+                ...(mcp.env || {}),
+                MCP_COMMAND: mcp.command,
+                IDLE_TIMEOUT_MINS: "15",
+            },
+            guest: { cpus: 1, memory_mb: 1024, cpu_kind: "shared" },
+            services: [
+                {
+                    ports: [{ port: 8000, handlers: ["http"] }],
+                    protocol: "tcp",
+                    internal_port: 8000,
+                }
+            ]
+        }
+    };
+    
+    const app = await fly.createApp({
+      app_name: appName,
+      org_slug: "personal",
+    });
+    if (!app) {
+      throw new Error(`Failed to create app ${appName}`);
+    }
+    machine = await fly.createMachine(appName, machineConfig);
+    if (!machine) {
+      throw new Error(`Failed to create machine for app ${appName}`);
     }
 
     await ctx.runMutation(internal.mcps.crud.update, {
@@ -51,7 +70,7 @@ export const start = internalAction({
   },
 });
 
-export const stop = internalAction({
+export const remove = internalAction({
   args: {
     mcpId: v.id("mcps"),
   },
@@ -62,62 +81,36 @@ export const stop = internalAction({
     if (!mcp) {
       throw new Error("MCP not found");
     }
-    if (!mcp.enabled) {
-      throw new Error("MCP is not enabled");
-    }
-    if (mcp.type !== "stdio") {
-      throw new Error("MCP is not a stdio type");
-    }
 
-    // Stop and delete the machine if it exists
-    const machineName = String(mcp._id);
-    const machine = await fly.getMachine(machineName);
-    if (machine) {
-      if (machine.state === "started") {
-        await fly.stopMachine(machineName);
-      }
-      await fly.deleteMachine(machineName);
+    const appName = String(mcp._id);
+    console.log(`Attempting to remove app ${appName} and its machines...`);
+    const app: FlyApp | null = await fly.getApp(appName);
+    if (app && app.name) {
+        const machines = await fly.listMachines(app.name);
+        if (machines) {
+            for (const machineToDelete of machines) {
+                if (machineToDelete.id) {
+                    console.log(`Deleting machine ${machineToDelete.id} for app ${app.name}...`);
+                    try {
+                        await fly.stopMachine(app.name, machineToDelete.id);
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        await fly.deleteMachine(app.name, machineToDelete.id);
+                        console.log(`Machine ${machineToDelete.id} deleted.`);
+                    } catch (error: any) {
+                        console.error(`Error deleting machine ${machineToDelete.id}:`, error.message ? error.message : error);
+                    }
+                }
+            }
+        }
+        console.log(`Deleting app ${app.name}...`);
+        await fly.deleteApp(app.name);
+        console.log(`App ${app.name} deleted.`);
+    } else {
+      console.log(`App ${appName} not found or name missing, nothing to remove.`);
     }
-
     await ctx.runMutation(internal.mcps.crud.update, {
-      id: args.mcpId,
-      patch: { url: undefined, enabled: false },
+        id: args.mcpId,
+        patch: { url: undefined },
     });
-  },
-});
-
-export const stopIdle = internalAction({
-  args: {},
-  handler: async (ctx, _args) => {
-    try {
-      // Get all machines from Fly.io
-      const machines = await fly.listMachines();
-      
-      // Extract MCP IDs from machine metadata
-      const mcpIds = machines
-        .filter((machine: any) => machine.metadata?.mcpId)
-        .map((machine: any) => machine.metadata.mcpId as Id<"mcps">);
-      
-      if (mcpIds.length === 0) {
-        return;
-      }
-      
-      // Get MCP records from the database
-      const mcps = await ctx.runQuery(internal.mcps.queries.getMultiple, {
-        mcpIds: mcpIds,
-        filters: {
-          enabled: true,
-        },
-      });
-      
-      // Stop each enabled MCP
-      for (const mcp of mcps) {
-        await ctx.runAction(internal.mcps.actions.stop, {
-          mcpId: mcp._id,
-        });
-      }
-    } catch (error) {
-      console.error("Error stopping idle machines:", error);
-    }
   },
 });

@@ -14,7 +14,7 @@ import { useChat } from "@/store/use-chat";
 
 export const ProjectDialog = () => {
   const { projectDialogOpen, setProjectDialogOpen } = useChat();
-  const createProject = useMutation(api.routes.projects.create);
+  const createProject = useMutation(api.projects.mutations.create);
   const { setSelectedProjectId, setResizablePanelsOpen, setResizablePanelTab } = useChat();
 
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {

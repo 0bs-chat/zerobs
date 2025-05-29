@@ -34,6 +34,7 @@ import type * as mcps_spec from "../mcps/spec.js";
 import type * as projectDocuments_actions from "../projectDocuments/actions.js";
 import type * as projectDocuments_mutations from "../projectDocuments/mutations.js";
 import type * as projectDocuments_queries from "../projectDocuments/queries.js";
+import type * as projects_mutations from "../projects/mutations.js";
 import type * as projects_queries from "../projects/queries.js";
 import type * as streams_crud from "../streams/crud.js";
 import type * as streams_mutations from "../streams/mutations.js";
@@ -81,6 +82,7 @@ declare const fullApi: ApiFromModules<{
   "projectDocuments/actions": typeof projectDocuments_actions;
   "projectDocuments/mutations": typeof projectDocuments_mutations;
   "projectDocuments/queries": typeof projectDocuments_queries;
+  "projects/mutations": typeof projects_mutations;
   "projects/queries": typeof projects_queries;
   "streams/crud": typeof streams_crud;
   "streams/mutations": typeof streams_mutations;

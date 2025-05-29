@@ -4,6 +4,13 @@ import { api } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
+import runpodSdk from "runpod-sdk";
+import mime from "mime";
+import { TextLoader } from "langchain/document_loaders/fs/text";
+
+const runpod = runpodSdk(process.env.RUN_POD_KEY!);
+const runpodCrawler = runpod.endpoint(process.env.RUN_POD_CRAWLER_ID!);
+const runpodDocProcessor = runpod.endpoint(process.env.RUN_POD_DOC_PROCESSOR_ID!);
 
 export const load = internalAction({
   args: {
@@ -23,27 +30,37 @@ export const load = internalAction({
     let pageContent = "";
     if (document.type === "file") {
       const documentUrl = new URL((await ctx.storage.getUrl(document.key))!);
-      documentUrl.host = process.env.BACKEND_HOST || "backend";
-      documentUrl.port = process.env.BACKEND_PORT || "3210";
-      pageContent = await fetch(
-        `http://${process.env.CONVERT_FILE_SERVICE_HOST || "services"}:${process.env.CONVERT_FILE_SERVICE_PORT || "5001"}/convert/?source=${encodeURIComponent(documentUrl.toString())}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.SERVICE_PASS || "1234"}`,
-          },
+      const res = await runpodDocProcessor?.runSync({
+        input: {
+          source: documentUrl.toString(),
+        },
+      });
+      if (res?.output.output) {
+        pageContent = res.output.output;
+      } else {
+        try {
+          // try reading the document as document processor can't load txt, or text type files
+          const contentType = mime.getType(document.name);
+          if (contentType?.startsWith("text/")) {
+            const blob = await ctx.storage.get(document.key);
+            if (blob) {
+              const loader = new TextLoader(blob);
+              const docs = await loader.load();
+              pageContent = docs.map((doc) => doc.pageContent).join("\n\n");
+            }
+          }
+        } catch (e) {
+          throw new Error("Failed to process document\n" + e);
         }
-      ).then(async (res) => await res.text());
+      }
     } else if (document.type === "url") {
-      const res = await fetch(
-        `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(document.key)}&max_depth=0`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.SERVICE_PASS || "1234"}`,
-          },
-        }
-      );
-      const data = (await res.json()) as { url: string; markdown: string };
-      pageContent = `# ${data.url}\n\n${data.markdown}`;
+      const res = await runpodCrawler?.runSync({
+        input: {
+          url: document.key,
+          max_depth: 0,
+        },
+      });
+      pageContent = res?.output.output.map((d: { url: string; markdown: string }) => `# ${d.url}\n\n${d.markdown}`).join("\n\n");
     } else if (document.type === "youtube") {
       const loader = YoutubeLoader.createFromUrl(document.key, {
         language: "en",
@@ -57,11 +74,13 @@ export const load = internalAction({
         )
         .join("\n\n");
     } else if (document.type === "site") {
-      const res = await fetch(
-        `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(document.key)}&max_depth=2`
-      );
-      const data = (await res.json()) as { url: string; markdown: string }[];
-      pageContent = data.map((d) => `# ${d.url}\n\n${d.markdown}`).join("\n\n");
+      const res = await runpodCrawler?.runSync({
+        input: {
+          url: document.key,
+          max_depth: 2,
+        },
+      });
+      pageContent = res?.output.output.map((d: { url: string; markdown: string }) => `# ${d.url}\n\n${d.markdown}`).join("\n\n");
     } else {
       throw new Error("Invalid document type");
     }

@@ -5,6 +5,7 @@ import type { Id } from "../../../../../convex/_generated/dataModel";
 import type { NewMCPData } from "./types";
 import { CreateDialog } from "./create-dialog";
 import { MCPCard } from "./mcp-card";
+import { toast } from "sonner";
 
 export const MCPPanel = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -14,7 +15,7 @@ export const MCPPanel = () => {
 
   const createMCP = useMutation(api.mcps.mutations.create);
   const removeMCP = useMutation(api.mcps.mutations.remove);
-  const toggleMCP = useMutation(api.mcps.mutations.toggle);
+  const updateMCP = useMutation(api.mcps.mutations.update);
 
   const handleCreate = async (newMCPData: NewMCPData) => {
     try {
@@ -32,7 +33,7 @@ export const MCPPanel = () => {
         command:
           newMCPData.type === "stdio" ? newMCPData.command : newMCPData.url,
         env,
-        status: "stopped",
+        enabled: false,
       });
 
       setIsCreateOpen(false);
@@ -49,9 +50,10 @@ export const MCPPanel = () => {
     }
   };
 
-  const handleStartStop = async (mcpId: Id<"mcps">) => {
+  const handleStartStop = async (mcpId: Id<"mcps">, enabled: boolean) => {
     try {
-      await toggleMCP({ mcpId });
+      const mcp = await updateMCP({ mcpId, updates: { enabled } });
+      toast.success(enabled ? "MCP started" : "MCP stopped");
     } catch (error) {
       console.error("Failed to start/stop MCP:", error);
     }
@@ -76,7 +78,7 @@ export const MCPPanel = () => {
               _id: mcp._id,
               name: mcp.name,
               command: mcp.command || mcp.url || "",
-              status: mcp.status || "stopped",
+              enabled: mcp.enabled,
             }}
             onStartStop={handleStartStop}
             onDelete={handleDelete}

@@ -57,7 +57,8 @@ RUN . $NVM_DIR/nvm.sh && \
     bun --version
 
 ENV MCP_COMMAND="bunx -y github-repo-mcp"
+ENV IDLE_TIMEOUT_MINS=15
 EXPOSE 8000
-CMD ["/bin/bash", "-c", ". $NVM_DIR/nvm.sh && nvm use default && bunx -y supergateway --stdio '${MCP_COMMAND}' --port 8000 --base-url http://0.0.0.0:8000 --ssePath /sse --messagePath /message"]
+CMD ["/bin/bash", "-c", ". $NVM_DIR/nvm.sh && nvm use default && bunx -y supergateway-idle-timeout --stdio '${MCP_COMMAND}' --port 8000 --base-url http://0.0.0.0:8000 --ssePath /sse --messagePath /message --idle-timeout-mins ${IDLE_TIMEOUT_MINS}"]
 
-# docker build -t mantrakp04/mcprunner:latest -f docker/Dockerfile-mcp .
+# docker build -t mantrakp04/mcprunner:latest . --push

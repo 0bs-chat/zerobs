@@ -20,7 +20,7 @@ export type MCPCardProps = {
     _id: Id<"mcps">;
     name: string;
     command: string;
-    status: string;
+    enabled: boolean;
   };
   onStartStop: (mcpId: Id<"mcps">, isRunning: boolean) => Promise<void>;
   onDelete: (mcpId: Id<"mcps">) => Promise<void>;

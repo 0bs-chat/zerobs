@@ -22,14 +22,14 @@ export const DocumentDialog = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const document = useQuery(
-    api.routes.documents.get,
+    api.documents.queries.get,
     documentDialogDocumentId
       ? { documentId: documentDialogDocumentId }
       : "skip",
   );
 
   const generateDownloadUrl = useMutation(
-    api.routes.documents.generateDownloadUrl,
+    api.documents.mutations.generateDownloadUrl,
   );
 
   useEffect(() => {

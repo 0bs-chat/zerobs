@@ -11,6 +11,16 @@ export const generateUploadUrl = mutation({
   },
 });
 
+export const generateDownloadUrl = mutation({
+  args: {
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+    return await ctx.storage.getUrl(args.storageId);
+  },
+});
+
 export const create = mutation({
   args: {
     name: v.string(),

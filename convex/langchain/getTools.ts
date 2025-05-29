@@ -9,6 +9,11 @@ import { api } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
 import { ToolSchemaBase } from "@langchain/core/tools";
 import type { Doc } from "../_generated/dataModel";
+import runpodSdk from "runpod-sdk";
+
+const runpod = runpodSdk(process.env.RUN_POD_KEY!);
+const runpodCrawler = runpod.endpoint(process.env.RUN_POD_CRAWLER_ID!);
+
 
 export const getSearchTools = () => {
   const tools: {
@@ -19,16 +24,13 @@ export const getSearchTools = () => {
     duckduckgo: new DuckDuckGoSearch({ maxResults: 5 }),
     crawlWeb: tool(
       async ({ url }: { url: string }) => {
-        const response = await fetch(
-          `http://${process.env.CRAWL_URL_SERVICE_HOST || "services"}:${process.env.CRAWL_URL_SERVICE_PORT || "5002"}/crawl/?url=${encodeURIComponent(url)}&max_depth=0`,
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.SERVICE_PASS || "1234"}`,
-            },
-          }
-        );
-        const data = await response.json();
-        return data.markdown as string;
+        const res = await runpodCrawler?.runSync({
+          input: {
+            url,
+            max_depth: 0,
+          },
+        });
+        return res?.output.output.map((d: { url: string; markdown: string }) => `# ${d.url}\n\n${d.markdown}`).join("\n\n");
       },
       {
         name: "crawlWeb",

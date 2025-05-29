@@ -2,7 +2,12 @@ import { exportJWK, exportPKCS8, generateKeyPair } from "jose";
 import { execSync } from "child_process";
 import readline from "readline";
 
-// Function to run a shell command
+/**
+ * Executes a shell command and logs its output.
+ * @param {string} command - The shell command to execute.
+ * @param {string} message - A message to display before executing the command.
+ * @param {boolean} [ignoreError=false] - If true, continues execution even if the command fails.
+ */
 function runCommand(command, message, ignoreError = false) {
   console.log(message);
   try {
@@ -12,7 +17,7 @@ function runCommand(command, message, ignoreError = false) {
     if (!ignoreError) {
       console.error(`❌ Error executing command: ${command}`);
       console.error(error.message);
-      process.exit(1); // Exit if an essential command fails
+      process.exit(1);
     } else {
       console.warn(`⚠️ Command failed, but continuing: ${command}`);
       console.warn(error.message);
@@ -20,7 +25,13 @@ function runCommand(command, message, ignoreError = false) {
   }
 }
 
-// Function to prompt the user for input
+/**
+ * Prompts the user for input.
+ * @param {string} query - The question to ask the user.
+ * @param {boolean} [optional=false] - If true, marks the input as optional.
+ * @param {string} [defaultValue=""] - The default value to use if the user provides no input.
+ * @returns {Promise<string>} The user's input.
+ */
 async function askQuestion(query, optional = false, defaultValue = "") {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -39,13 +50,104 @@ async function askQuestion(query, optional = false, defaultValue = "") {
 
     rl.question(prompt, (answer) => {
       rl.close();
-      if (answer.trim() === "" && defaultValue !== "") {
-        resolve(defaultValue);
-      } else {
-        resolve(answer.trim());
-      }
+      resolve(answer.trim() === "" ? defaultValue : answer.trim());
     });
   });
+}
+
+/**
+ * Defines a required environment variable.
+ * @typedef {Object} RequiredEnvVar
+ * @property {string} name - The name of the environment variable (e.g., "RUN_POD_KEY").
+ * @property {string} prompt - The prompt to display to the user.
+ */
+
+/**
+ * Defines an optional environment variable.
+ * @typedef {Object} OptionalEnvVar
+ * @property {string} name - The name of the environment variable (e.g., "OPENAI_API_KEY").
+ * @property {string} prompt - The prompt to display to the user.
+ * @property {string} [defaultValue=""] - The default value for the variable.
+ */
+
+/**
+ * Collects environment variables from the user.
+ * @returns {Promise<Object.<string, string>>} An object containing the collected environment variables.
+ */
+async function collectEnvironmentVariables() {
+  console.log("\n--- Please provide the following environment variables ---");
+
+  /** @type {RequiredEnvVar[]} */
+  const requiredVars = [
+    { name: "RUN_POD_KEY", prompt: "Enter RUN_POD_KEY" },
+    { name: "RUN_POD_CRAWLER_ID", prompt: "Enter RUN_POD_CRAWLER_ID" },
+    { name: "RUN_POD_DOC_PROCESSOR_ID", prompt: "Enter RUN_POD_DOC_PROCESSOR_ID" },
+    { name: "FLY_API_TOKEN", prompt: "Enter FLY_API_TOKEN" },
+  ];
+
+  /** @type {OptionalEnvVar[]} */
+  const optionalVars = [
+    { name: "OPENAI_API_KEY", prompt: "Enter OPENAI_API_KEY" },
+    { name: "GOOGLE_API_KEY", prompt: "Enter GOOGLE_API_KEY" },
+    { name: "ANTHROPIC_API_KEY", prompt: "Enter ANTHROPIC_API_KEY" },
+    {
+      name: "SITE_URL",
+      prompt: "Enter SITE_URL for your application",
+      defaultValue: "http://localhost:3000",
+    },
+  ];
+
+  const envVars = {};
+
+  for (const { name, prompt } of requiredVars) {
+    const value = await askQuestion(prompt);
+    if (!value) {
+      console.error(`Error: ${name} is a required environment variable.`);
+      process.exit(1);
+    }
+    envVars[name] = value;
+  }
+
+  for (const { name, prompt, defaultValue } of optionalVars) {
+    const value = await askQuestion(prompt, true, defaultValue);
+    if (value) {
+      envVars[name] = value;
+    }
+  }
+
+  return envVars;
+}
+
+/**
+ * Sets Convex environment variables.
+ * @param {Object.<string, string>} envVars - An object containing the environment variables to set.
+ * @param {string} jwtPrivateKey - The JWT private key.
+ * @param {string} jwks - The JWKS.
+ */
+function setConvexEnvironmentVariables(envVars, jwtPrivateKey, jwks) {
+  console.log("\n--- Setting Convex environment variables ---");
+
+  const baseConvexCommands = [
+    `bunx convex env set JWT_PRIVATE_KEY="${jwtPrivateKey}"`,
+    `bunx convex env set JWKS='${jwks}'`,
+  ];
+
+  const dynamicConvexCommands = Object.entries(envVars).map(([key, value]) => {
+    // Escape single quotes for JWKS if it contains them (though JSON.stringify handles this usually)
+    const formattedValue =
+      key === "JWKS" ? `'${value.replace(/'/g, "\\'")}'` : `"${value}"`;
+    return `bunx convex env set ${key}=${formattedValue}`;
+  });
+
+  const allConvexCommands = [...baseConvexCommands, ...dynamicConvexCommands];
+
+  for (const command of allConvexCommands) {
+    const varNameMatch = command.match(/env set ([A-Z_]+)=/);
+    const varName = varNameMatch ? varNameMatch[1] : "an environment variable";
+    runCommand(command, `Setting ${varName}...`);
+  }
+
+  console.log("✅ Convex environment variables set successfully.");
 }
 
 async function setupConvex() {
@@ -54,76 +156,35 @@ async function setupConvex() {
   const keys = await generateKeyPair("RS256", {
     extractable: true,
   });
-  const privateKey = await exportPKCS8(keys.privateKey);
+  // The private key needs to be trimmed and newlines replaced for shell command compatibility.
+  const privateKey = (await exportPKCS8(keys.privateKey))
+    .trimEnd()
+    .replace(/\n/g, " ");
   const publicKey = await exportJWK(keys.publicKey);
   const jwks = JSON.stringify({ keys: [{ use: "sig", ...publicKey }] });
 
-  // --- Prompt for Environment Variables ---
-  console.log("\n--- Please provide the following environment variables ---");
+  const collectedEnvVars = await collectEnvironmentVariables();
 
-  const openaiApiKey = await askQuestion("Enter OPENAI_API_KEY", true, "");
-  const googleApiKey = await askQuestion("Enter GOOGLE_API_KEY", true, "");
-  const anthropicApiKey = await askQuestion("Enter ANTHROPIC_API_KEY", true, "");
-  const siteUrl = await askQuestion("Enter SITE_URL for your application", true, "http://localhost:3000");
-  const runPodKey = await askQuestion("Enter RUN_POD_KEY", false, "");
-  const runPodCrawlerId = await askQuestion("Enter RUN_POD_CRAWLER_ID", false, "");
-  const runPodDocProcessorId = await askQuestion("Enter RUN_POD_DOC_PROCESSOR_ID", false, "");
+  // Add the internally generated keys to the collected variables for setting
+  const allEnvVarsToSet = {
+    ...collectedEnvVars,
+    JWT_PRIVATE_KEY: privateKey,
+    JWKS: jwks,
+  };
 
-  if (!runPodKey) {
-    console.error("RUN_POD_KEY is required.");
-    process.exit(1);
-  }
-  if (!runPodCrawlerId) {
-    console.error("RUN_POD_CRAWLER_ID is required.");
-    process.exit(1);
-  }
-  if (!runPodDocProcessorId) {
-    console.error("RUN_POD_DOC_PROCESSOR_ID is required.");
-    process.exit(1);
-  }
+  setConvexEnvironmentVariables(
+    allEnvVarsToSet,
+    allEnvVarsToSet.JWT_PRIVATE_KEY, // Pass specific values for clarity if needed, though they are in allEnvVarsToSet
+    allEnvVarsToSet.JWKS,
+  );
 
-  console.log("\n--- Setting Convex environment variables ---");
-
-  // --- Dynamic Convex Commands ---
-  const convexEnvCommands = [
-    `bunx convex env set JWT_PRIVATE_KEY="${privateKey
-      .trimEnd()
-      .replace(/\n/g, " ")}"`,
-    `bunx convex env set JWKS='${jwks}'`,
-    `bunx convex env set SITE_URL="${siteUrl}"`,
-    `bunx convex env set RUN_POD_KEY="${runPodKey}"`,
-  ];
-
-  if (openaiApiKey) {
-    convexEnvCommands.push(
-      `bunx convex env set OPENAI_API_KEY="${openaiApiKey}"`,
-    );
-  }
-  if (googleApiKey) {
-    convexEnvCommands.push(
-      `bunx convex env set GOOGLE_API_KEY="${googleApiKey}"`,
-    );
-  }
-  if (anthropicApiKey) {
-    convexEnvCommands.push(
-      `bunx convex env set ANTHROPIC_API_KEY="${anthropicApiKey}"`,
-    );
-  }
-
-  for (const command of convexEnvCommands) {
-    // Extract variable name for more specific logging
-    const varNameMatch = command.match(/env set ([A-Z_]+)="?['"]?/);
-    const varName = varNameMatch ? varNameMatch[1] : "an environment variable";
-    runCommand(command, `Setting ${varName}...`);
-  }
-
-  console.log("✅ Convex environment variables set successfully.");
+  console.log("\n🎉 Convex setup complete!");
 }
 
 async function main() {
   await setupConvex();
 
-  console.log("\n🎉 Setup script finished!");
+  console.log("\nAll setup tasks finished!");
 }
 
 main().catch((error) => {
