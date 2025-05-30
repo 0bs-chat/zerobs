@@ -8,22 +8,21 @@ import {
   SidebarHeader,
   SidebarGroupContent,
   SidebarMenuButton,
-  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useLocation } from "@tanstack/react-router";
 import { api } from "../../convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 
 import {
-  DeleteIcon,
-  EllipsisVertical,
   PinIcon,
   PinOffIcon,
   PlusIcon,
+  SearchIcon,
   TrashIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 
 export function AppSidebar() {
   const chats = useQuery(api.chats.queries.getAll, {
@@ -47,7 +46,7 @@ export function AppSidebar() {
         zerobs
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup className="flex flex-col px-4">
+        <SidebarGroup className="flex flex-col px-4 gap-2">
           <div className="flex flex-col">
             <Button
               variant="outline"
@@ -62,7 +61,17 @@ export function AppSidebar() {
               </div>
             </Button>
           </div>
+          <div className="flex items-center border-b border-border">
+            <SearchIcon className="w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search chats"
+              className="border-none focus-visible:border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+              type="text"
+              style={{ backgroundColor: "transparent" }}
+            />
+          </div>
         </SidebarGroup>
+
         {chats && (
           <div className="flex flex-col">
             {/* Pinned Chats Group */}

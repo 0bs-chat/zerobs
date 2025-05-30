@@ -7,7 +7,7 @@ export function TopNav() {
       className="fixed top-0 left-0 right-0 z-50 bg-transparent"
       style={{ pointerEvents: "auto" }}
     >
-      <div className="w-full p-2 flex items-center justify-between">
+      <div className="w-full py-2 px-4 flex items-center justify-between">
         <div className="flex-shrink-0">
           <SidebarTrigger className="h-8 w-8 cursor-pointer border" />
         </div>
