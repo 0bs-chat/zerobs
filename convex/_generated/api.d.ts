@@ -27,10 +27,8 @@ import type * as langchain_index from "../langchain/index.js";
 import type * as langchain_models from "../langchain/models.js";
 import type * as mcps_actions from "../mcps/actions.js";
 import type * as mcps_crud from "../mcps/crud.js";
-import type * as mcps_fly from "../mcps/fly.js";
 import type * as mcps_mutations from "../mcps/mutations.js";
 import type * as mcps_queries from "../mcps/queries.js";
-import type * as mcps_spec from "../mcps/spec.js";
 import type * as projectDocuments_actions from "../projectDocuments/actions.js";
 import type * as projectDocuments_mutations from "../projectDocuments/mutations.js";
 import type * as projectDocuments_queries from "../projectDocuments/queries.js";
@@ -39,6 +37,8 @@ import type * as projects_queries from "../projects/queries.js";
 import type * as streams_crud from "../streams/crud.js";
 import type * as streams_mutations from "../streams/mutations.js";
 import type * as streams_queries from "../streams/queries.js";
+import type * as utils_flyio_index from "../utils/flyio/index.js";
+import type * as utils_flyio_types from "../utils/flyio/types.js";
 import type * as utils_helpers from "../utils/helpers.js";
 
 import type {
@@ -75,10 +75,8 @@ declare const fullApi: ApiFromModules<{
   "langchain/models": typeof langchain_models;
   "mcps/actions": typeof mcps_actions;
   "mcps/crud": typeof mcps_crud;
-  "mcps/fly": typeof mcps_fly;
   "mcps/mutations": typeof mcps_mutations;
   "mcps/queries": typeof mcps_queries;
-  "mcps/spec": typeof mcps_spec;
   "projectDocuments/actions": typeof projectDocuments_actions;
   "projectDocuments/mutations": typeof projectDocuments_mutations;
   "projectDocuments/queries": typeof projectDocuments_queries;
@@ -87,6 +85,8 @@ declare const fullApi: ApiFromModules<{
   "streams/crud": typeof streams_crud;
   "streams/mutations": typeof streams_mutations;
   "streams/queries": typeof streams_queries;
+  "utils/flyio/index": typeof utils_flyio_index;
+  "utils/flyio/types": typeof utils_flyio_types;
   "utils/helpers": typeof utils_helpers;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
