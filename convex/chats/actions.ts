@@ -59,7 +59,7 @@ export const stream = httpAction(async (ctx, req) => {
   const stream = await ctx.runQuery(api.streams.queries.get, {
     streamId: streamId,
   });
-  
+
   const { readable, writable } = new TransformStream();
   let writer = writable.getWriter() as WritableStreamDefaultWriter<Uint8Array> | null;
   const textEncoder = new TextEncoder();
@@ -70,13 +70,17 @@ export const stream = httpAction(async (ctx, req) => {
       streamId: streamId,
       lastChunkTime: now,
     });
-    if (newChunks.chunks.length === 0) {
-      break;
-    }
+
     for (const chunk of newChunks.chunks) {
       writer?.write(textEncoder.encode(chunk.chunk));
     }
     now = newChunks.chunks[newChunks.chunks.length - 1]._creationTime;
+
+    if (["done", "error"].includes(newChunks.stream.status)) {
+      break;
+    }
+
+    console.log("newChunks", JSON.stringify(newChunks, null, 2));
 
     await new Promise((resolve) => setTimeout(resolve, buffer));
   }

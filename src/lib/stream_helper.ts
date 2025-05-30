@@ -3,80 +3,46 @@
 /// React helpers for persistent text streaming.
 import { useQuery } from "convex/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { FunctionReference } from "convex/server";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { StreamEvent } from "@langchain/core/tracers/log_stream";
+import { api } from "../../convex/_generated/api";
 
 if (typeof window === "undefined") {
   throw new Error("this is frontend code, but it's running somewhere else!");
 }
 
-/**
- * React hook for persistent text streaming.
- *
- * @param getChunks - A query function reference that returns the chunks
- * of a stream using the component's `getStreamBody` method.
- * @param streamUrl - The URL of the http action that will kick off the stream
- * generation and stream the result back to the client using the component's
- * `stream` method.
- * @param driven - Whether this particular session is driving the stream. Set this
- * to true if this is the client session that first created the stream using the
- * component's `createStream` method. If you're simply reloading an existing
- * stream, set this to false.
- * @param streamId - The ID of the stream. If this is not provided, the return
- * value will be an empty string for the stream body and the status will be
- * `pending`.
- * @returns The body and status of the stream.
- */
 type StreamBody = {
   chunks: StreamEvent[];
   status: Doc<"streams">["status"];
 }
 
 export function useStream(
-  getChunks: FunctionReference<
-    "query",
-    "public",
-    { streamId: string },
-    {
-      stream: Doc<"streams">;
-      chunks: Doc<"streamChunks">[];
-    }
-  >,
-  streamUrl: URL,
-  driven: boolean,
   streamId?: Id<"streams">,
-  token?: string
 ) {
   const [streamEnded, setStreamEnded] = useState(null as boolean | null);
 
-  // Used to prevent strict mode from causing multiple streams to be started.
   const streamStarted = useRef(false);
 
-  const usePersistence = useMemo(() => {
-    // Something is wrong with the stream, so we need to use the database value.
-    if (streamEnded === false) {
-      return true;
-    }
-    // If we're not driving the stream, we must use the database value.
-    if (!driven) {
-      return true;
-    }
-    // Otherwise, we'll try to drive the stream and use the HTTP response.
-    return false;
-  }, [driven, streamId, streamEnded]);
-//  console.log("usePersistence", usePersistence);
   const persistentData = useQuery(
-    getChunks,
-    usePersistence && streamId ? { streamId: streamId! } : "skip"
+    api.streams.queries.getChunks,
+    streamId ? { streamId: streamId! } : "skip"
   );
   const [streamChunks, setStreamChunks] = useState<StreamEvent[]>([]);
+  let lastChunkTime = persistentData?.chunks && persistentData.chunks.length > 0
+    ? persistentData?.chunks[persistentData.chunks.length - 1]._creationTime : Date.now();
+  console.log(JSON.stringify({
+    lastChunkTime,
+    streamId: streamId || "skip",
+    streamStarted: streamStarted.current,
+    streamEnded,
+    persistentData: persistentData?.chunks.length,
+    streamChunks,
+  }, null, 2));
 
   useEffect(() => {
-    if (driven && streamId && !streamStarted.current) {
-      // Kick off HTTP action.
+    if (streamId && !streamStarted.current) {
       void (async () => {
-        const success = await startStreaming(streamUrl, streamId, token, (text) => {
+        const success = await startStreaming(streamId, lastChunkTime, (text) => {
           setStreamChunks((prev) => [...prev, JSON.parse(text) as StreamEvent]);
         });
         setStreamEnded(success);
@@ -86,7 +52,7 @@ export function useStream(
         streamStarted.current = true;
       };
     }
-  }, [driven, streamId, setStreamEnded, streamStarted]);
+  }, [streamId, setStreamEnded, streamStarted]);
 
   const body = useMemo<StreamBody>(() => {
     if (persistentData) {
@@ -124,31 +90,18 @@ export function useStream(
   return body;
 }
 
-/**
- * Internal helper for starting a stream.
- *
- * @param url - The URL of the http action that will kick off the stream
- * generation and stream the result back to the client using the component's
- * `stream` method.
- * @param streamId - The ID of the stream.
- * @param onUpdate - A function that updates the stream body.
- * @returns A promise that resolves to a boolean indicating whether the stream
- * was started successfully. It can fail if the http action is not found, or
- * CORS fails, or an exception is raised, or the stream is already running
- * or finished, etc.
- */
 async function startStreaming(
-  url: URL,
   streamId: Id<"streams">,
-  token: string | undefined,
+  lastChunkTime: number,
   onUpdate: (text: string) => void
 ) {
-  const response = await fetch(url, {
+  const response = await fetch(`${import.meta.env.VITE_CONVEX_URL}/stream`, {
     method: "POST",
     body: JSON.stringify({
       streamId: streamId,
+      lastChunkTime: lastChunkTime,
     }),
-    headers: { "Content-Type": "application/json", ...(token ? { "Authorization": `Bearer ${token}` } : {}) },
+    headers: { "Content-Type": "application/json" },
   });
   // Adapted from https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams
   if (response.status === 205) {

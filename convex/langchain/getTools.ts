@@ -74,8 +74,8 @@ export const getMCPTools = async (ctx: ActionCtx) => {
         useNodeEventSource: true,
         reconnect: {
           enabled: true,
-          maxAttempts: 2,
-          delayMs: 100,
+          maxAttempts: 4,
+          delayMs: 15000,
         },
       },
     ])

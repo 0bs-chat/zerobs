@@ -2,7 +2,7 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api } from "../_generated/api";
-import { Doc } from "../_generated/dataModel";
+import { Doc, Id } from "../_generated/dataModel";
 
 export const get = query({
   args: {
@@ -12,7 +12,9 @@ export const get = query({
     const { userId } = await requireAuth(ctx);
     const stream = await ctx.db.query("streams")
       .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("_id"), args.streamId))
       .first();
+    
     if (!stream) {
       throw new Error("Stream not found");
     }
@@ -28,13 +30,12 @@ export const getChunks = query({
     stream: Doc<"streams">;
     chunks: Doc<"streamChunks">[];
   }> => {
-    const stream =await ctx.runQuery(api.streams.queries.get, {
+    const stream = await ctx.runQuery(api.streams.queries.get, {
       streamId: args.streamId,
     });
-    
+
     const chunks = await ctx.db.query("streamChunks")
       .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
-      .order("desc")
       .collect();
     
     return {
@@ -53,22 +54,23 @@ export const getNewChunks = query({
     stream: Doc<"streams">;
     chunks: Doc<"streamChunks">[];
   }> => {
-    const stream =await ctx.runQuery(api.streams.queries.get, {
+    const stream = await ctx.runQuery(api.streams.queries.get, {
       streamId: args.streamId,
     });
 
-    if (!["streaming", "pending"].includes(stream.status)) {
-      return {
-        stream,
-        chunks: [],
-      }
-    }
+    // if (!["streaming", "pending"].includes(stream.status)) {
+    //   return {
+    //     stream,
+    //     chunks: [],
+    //   }
+    // }
 
     const chunks = await ctx.db.query("streamChunks")
       .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
       .order("asc")
       .filter((q) => q.gt(q.field("_creationTime"), args.lastChunkTime))
       .collect();
+    
     return {
       stream,
       chunks,

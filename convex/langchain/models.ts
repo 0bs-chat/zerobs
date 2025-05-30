@@ -40,7 +40,7 @@ export const models: ModelConfig[] = [
     label: "gemini-2.5-flash",
     icon_url:
       "https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://gemini.google.com/app&size=256",
-    model: "gemini-2.5-flash",
+    model: "gemini-2.5-flash-preview-05-20",
     provider: "google",
     providerType: "google",
     tags: ["text", "image", "audio", "video", "pdf"],
@@ -87,9 +87,12 @@ export function getModel(modelName: string): BaseChatModel {
       });
 
     case "google":
-      return new ChatGoogleGenerativeAI({
+      return new ChatOpenAI({
         model: modelConfig.model,
         apiKey: apiKey,
+        configuration: {
+          baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        }
       });
 
     default:
