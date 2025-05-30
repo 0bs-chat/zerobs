@@ -1,0 +1,20 @@
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { ModeToggle } from "@/components/theme-switcher";
+
+export function TopNav() {
+  return (
+    <nav
+      className="fixed top-0 left-0 right-0 z-50 bg-transparent"
+      style={{ pointerEvents: "auto" }}
+    >
+      <div className="w-full py-2 px-4 flex items-center justify-between">
+        <div className="flex-shrink-0">
+          <SidebarTrigger className="h-8 w-8 cursor-pointer border" />
+        </div>
+        <div className="flex-shrink-0">
+          <ModeToggle />
+        </div>
+      </div>
+    </nav>
+  );
+}

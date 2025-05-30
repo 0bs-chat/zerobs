@@ -45,9 +45,9 @@ export const ChatInput = () => {
 
       {/* Input */}
       <AutosizeTextarea
-        minHeight={40}
+        minHeight={56}
         maxHeight={192}
-        className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
+        className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-4"
         defaultValue={chatInput?.text}
         onChange={(e) => debouncedUpdate(e.target.value)}
         placeholder="Type a message..."

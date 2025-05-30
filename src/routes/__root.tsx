@@ -4,10 +4,11 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { useConvexAuth } from "convex/react";
 import { Loader } from "lucide-react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DocumentDialog } from "@/components/document-dialog";
 import { ProjectDialog } from "@/components/project-dialog";
+import { TopNav } from "@/components/topnav";
 
 export const Route = createRootRoute({
   component: () => {
@@ -33,9 +34,7 @@ export const Route = createRootRoute({
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <SidebarProvider className="flex h-svh">
           <AppSidebar />
-          <div className="fixed top-2 left-2 z-50">
-            <SidebarTrigger />
-          </div>
+          <TopNav />
           <Outlet />
           <DocumentDialog />
           <ProjectDialog />
