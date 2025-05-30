@@ -8,11 +8,9 @@ export function TopNav() {
       style={{ pointerEvents: "auto" }}
     >
       <div className="w-full p-2 flex items-center justify-between">
-        {/* Left: Sidebar trigger */}
         <div className="flex-shrink-0">
-          <SidebarTrigger />
+          <SidebarTrigger className="h-8 w-8 cursor-pointer border" />
         </div>
-        {/* Right: Theme switcher */}
         <div className="flex-shrink-0">
           <ModeToggle />
         </div>

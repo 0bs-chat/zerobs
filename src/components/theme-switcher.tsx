@@ -12,6 +12,7 @@ export function ModeToggle() {
     <Button
       variant="outline"
       size="icon"
+      className="h-8 w-8 cursor-pointer"
       onClick={() => {
         setTheme(
           document.documentElement.classList.contains("dark") ? "light" : "dark"
