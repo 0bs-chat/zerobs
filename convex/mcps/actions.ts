@@ -43,7 +43,7 @@ export const create = internalAction({
             guest: { cpus: 1, memory_mb: 1024, cpu_kind: "shared" },
             services: [
                 {
-                    ports: [{ port: 8000, handlers: ["http"] }],
+                    ports: [{ port: 443, handlers: ["tls", "http"] }],
                     protocol: "tcp",
                     internal_port: 8000,
                 }
@@ -55,9 +55,16 @@ export const create = internalAction({
       app_name: appName,
       org_slug: "personal",
     });
-    if (!app) {
-      throw new Error(`Failed to create app ${appName}`);
+    if (!app || !app.id) {
+      throw new Error(`Failed to create app ${appName} or app ID is missing`);
     }
+
+    try {
+      await fly.allocateIpAddress(appName, "v4");
+    } catch (error: any) {
+        console.error(`Error allocating IP for ${appName}:`, error.message ? error.message : error);
+    }
+
     machine = await fly.createMachine(appName, machineConfig);
     if (!machine) {
       throw new Error(`Failed to create machine for app ${appName}`);
@@ -75,42 +82,12 @@ export const remove = internalAction({
     mcpId: v.id("mcps"),
   },
   handler: async (ctx, args) => {
-    const mcp = await ctx.runQuery(internal.mcps.crud.read, {
-      id: args.mcpId,
-    });
-    if (!mcp) {
-      throw new Error("MCP not found");
-    }
-
-    const appName = String(mcp._id);
-    console.log(`Attempting to remove app ${appName} and its machines...`);
+    const appName = String(args.mcpId);
     const app: FlyApp | null = await fly.getApp(appName);
     if (app && app.name) {
-        const machines = await fly.listMachines(app.name);
-        if (machines) {
-            for (const machineToDelete of machines) {
-                if (machineToDelete.id) {
-                    console.log(`Deleting machine ${machineToDelete.id} for app ${app.name}...`);
-                    try {
-                        await fly.stopMachine(app.name, machineToDelete.id);
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        await fly.deleteMachine(app.name, machineToDelete.id);
-                        console.log(`Machine ${machineToDelete.id} deleted.`);
-                    } catch (error: any) {
-                        console.error(`Error deleting machine ${machineToDelete.id}:`, error.message ? error.message : error);
-                    }
-                }
-            }
-        }
-        console.log(`Deleting app ${app.name}...`);
         await fly.deleteApp(app.name);
-        console.log(`App ${app.name} deleted.`);
     } else {
       console.log(`App ${appName} not found or name missing, nothing to remove.`);
     }
-    await ctx.runMutation(internal.mcps.crud.update, {
-        id: args.mcpId,
-        patch: { url: undefined },
-    });
   },
 });

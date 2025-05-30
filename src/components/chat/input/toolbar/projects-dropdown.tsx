@@ -1,45 +1,21 @@
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { useState } from "react";
 import { FoldersIcon, PlusIcon } from "lucide-react";
 import { useChat } from "@/store/use-chat";
 
 export const ProjectsDropdown = () => {
-  const [newProjectOpen, setNewProjectOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-
-  const projects = useQuery(api.routes.projects.getAll, {
+  const projects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 3, cursor: null },
   });
-  const createProject = useMutation(api.routes.projects.create);
   const { setSelectedProjectId, setResizablePanelsOpen, setResizablePanelTab, setProjectDialogOpen } =
     useChat();
-
-  const handleCreateProject = async () => {
-    if (!name.trim()) return;
-    await createProject({ name, description: description.trim() || undefined });
-    setNewProjectOpen(false);
-    setName("");
-    setDescription("");
-  };
 
   return (
     <DropdownMenuSub>

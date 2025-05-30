@@ -17,20 +17,28 @@ export const add = action({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
+    const document = await ctx.runAction(internal.documents.actions.load, {
+      documentId: args.documentId,
+      metadata: {
+        projectId: args.projectId,
+      },
+    });
+
     const projectDocumentId = await ctx.runMutation(api.projectDocuments.mutations.create, {
       projectId: args.projectId,
       documentId: args.documentId,
     });
 
-    const document = await ctx.runAction(internal.documents.actions.load, {
-      documentId: args.documentId,
-      metadata: {
+    if (document.metadata) {
+      document.metadata.source = projectDocumentId;
+    } else {
+      document.metadata = {
         source: projectDocumentId,
         projectId: args.projectId,
-      },
-    });
+      };
+    }
 
-    const vectorStore = new ConvexVectorStore(getEmbeddingModel("embeddings"), {
+    const vectorStore = new ConvexVectorStore(getEmbeddingModel("text-embedding-004"), {
       ctx,
     });
 

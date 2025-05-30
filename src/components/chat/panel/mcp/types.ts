@@ -1,4 +1,4 @@
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../../../convex/_generated/dataModel";
 
 export type EnvVar = {
   key: string;
@@ -16,12 +16,7 @@ export type NewMCPData = {
 };
 
 export type MCPCardProps = {
-  mcp: {
-    _id: Id<"mcps">;
-    name: string;
-    command: string;
-    enabled: boolean;
-  };
-  onStartStop: (mcpId: Id<"mcps">, isRunning: boolean) => Promise<void>;
+  mcp: Doc<"mcps">;
+  onStartStop: (mcpId: Id<"mcps">, enabled: boolean) => Promise<void>;
   onDelete: (mcpId: Id<"mcps">) => Promise<void>;
 };

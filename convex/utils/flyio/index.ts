@@ -40,35 +40,59 @@ const flyRequest = async (
       errorText,
     );
     if (response.status === 404) {
-      return null; // For GET requests where not found is a valid case
+      return null;
     }
     throw new Error(
       `Fly API request failed: ${response.status} ${errorText}`,
     );
   }
 
-  if (response.status === 204 || response.status === 202 || response.status === 201 && method === "DELETE") { // No content for DELETE or some POST/PUT
+  if (response.status === 204 || response.status === 202 || (response.status === 201 && method === "DELETE")) {
     return null;
   }
   
-  // Handle cases where 201 might return content (like app creation, though API spec says no content)
-  // or where 200 might return empty if that's valid for a specific endpoint.
   const contentType = response.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
-    // Check if there's content to parse
     const textContent = await response.text();
     if (textContent) {
-        try {
-            return JSON.parse(textContent);
-        } catch (e) {
-            console.error("Failed to parse JSON response:", textContent);
-            throw new Error("Failed to parse JSON response from Fly API.");
-        }
+        return JSON.parse(textContent);
     } else {
-        return null; // No content but application/json header
+        return null;
     }
   }
-  return null; // Default for non-JSON or truly empty responses
+  return null;
+};
+
+const flyGraphqlRequest = async (query: string, variables?: Record<string, any>) => {
+  const headers: HeadersInit = {
+    Authorization: `Bearer ${FLY_API_TOKEN}`,
+    "Content-Type": "application/json",
+  };
+
+  const response = await fetch("https://api.fly.io/graphql", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ query, variables }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(
+      `Fly GraphQL API Error: ${response.status} ${response.statusText}`,
+      errorText,
+    );
+    throw new Error(
+      `Fly GraphQL API request failed: ${response.status} ${errorText}`,
+    );
+  }
+
+  const responseData = await response.json();
+  if (responseData.errors) {
+    console.error("Fly GraphQL API Errors:", responseData.errors);
+    throw new Error(`GraphQL query failed: ${JSON.stringify(responseData.errors)}`);
+  }
+  return responseData.data;
+
 };
 
 export const fly = {
@@ -78,12 +102,8 @@ export const fly = {
 
   createApp: async (
     params: CreateAppRequest,
-  ): Promise<FlyApp | null> => { // Fly API for app creation might return 201 with no body
-    // The openapi spec indicates 201 with no content.
-    // However, let's assume we want to GET the app after creation to confirm.
+  ): Promise<FlyApp | null> => {
     await flyRequest(`/apps`, "POST", params);
-    // Attempt to get the app after creation to return its details.
-    // This assumes app_name is present and correct in params.
     if (params.app_name) {
         return fly.getApp(params.app_name);
     }
@@ -129,64 +149,32 @@ export const fly = {
   deleteMachine: async (
     appName: string,
     machineId: string,
-  ): Promise<void> => {
+  ) => {
     await flyRequest(`/apps/${appName}/machines/${machineId}`, "DELETE");
   },
 
-  stopMachine: async ( appName: string, machineId: string): Promise<void> => {
+  stopMachine: async ( appName: string, machineId: string) => {
     await flyRequest(`/apps/${appName}/machines/${machineId}/stop`, "POST", {});
   },
 
-  startMachine: async ( appName: string, machineId: string): Promise<void> => {
+  startMachine: async ( appName: string, machineId: string) => {
     await flyRequest(`/apps/${appName}/machines/${machineId}/start`, "POST", {});
-  }
+  },
+
+  allocateIpAddress: async (appId: string, type: "v4" | "v6" = "v4") => {
+    const mutation = `
+      mutation AllocateIpAddress($appId: ID!, $type: IPAddressType!) {
+        allocateIpAddress(input: {appId: $appId, type: $type, region: "global"}) {
+          ipAddress {
+            id
+            address
+            type
+            region
+            createdAt
+          }
+        }
+      }
+    `;
+    return flyGraphqlRequest(mutation, { appId, type });
+  },
 };
-
-// async function main() {
-//   try {
-//     // const newApp = await fly.createApp({ app_name: "my-test-app-123", org_slug: "personal" });
-//     // console.log("Created app:", newApp);
-
-//     const app = await fly.getApp("my-test-app-123");
-//     console.log("Got app:", app);
-
-//     if (app && app.name) {
-//         // const newMachine = await fly.createMachine(app.name, {
-//         //   name: "my-test-machine",
-//         //   region: "iad",
-//         //   config: {
-//         //     image: "nginx",
-//         //     guest: { cpus: 1, memory_mb: 256, cpu_kind: "shared" },
-//         //     services: [
-//         //         {
-//         //             ports: [{ port: 80, handlers: ["http"] }],
-//         //             protocol: "tcp",
-//         //             internal_port: 80,
-//         //         }
-//         //     ]
-//         //   },
-//         // });
-//         // console.log("Created machine:", newMachine);
-        
-//         const machines = await fly.listMachines(app.name);
-//         console.log("Machines:", machines);
-
-//         if (machines && machines.length > 0 && machines[0].id) {
-//             // await fly.stopMachine(app.name, machines[0].id);
-//             // console.log("Stopped machine");
-//             // await new Promise(resolve => setTimeout(resolve, 5000)); // wait for stop
-//             // await fly.startMachine(app.name, machines[0].id);
-//             // console.log("Started machine");
-
-//             // await fly.deleteMachine(app.name, machines[0].id);
-//             // console.log("Deleted machine");
-//         }
-//         // await fly.deleteApp(app.name);
-//         // console.log("Deleted app");
-//     }
-//   } catch (error) {
-//     console.error("Error in example usage:", error);
-//   }
-// }
-
-// main();

@@ -17,8 +17,8 @@ export const load = internalAction({
     documentId: v.id("documents"),
     metadata: v.optional(
       v.object({
-        source: v.id("projectDocuments"),
-        projectId: v.id("projects"),
+        source: v.optional(v.id("projectDocuments")),
+        projectId: v.optional(v.id("projects")),
       })
     ),
   },

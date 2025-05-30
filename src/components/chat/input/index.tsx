@@ -9,7 +9,8 @@ import { DocumentList } from "./document-list";
 import { Toolbar } from "./toolbar";
 
 export const ChatInput = () => {
-  const { chatId } = useParams({ from: "/chat_/$chatId/" });
+  const params = useParams({ strict: false });
+  const chatId: Id<"chats"> | "new" = params.chatId ? (params.chatId as Id<"chats">) : "new";
 
   const chatInput = useQuery(api.chatInput.queries.get, {
     chatId: chatId as Id<"chats"> | "new",
@@ -35,7 +36,7 @@ export const ChatInput = () => {
   };
 
   return (
-    <div className="flex flex-col w-4xl mx-auto items-center bg-muted rounded-lg">
+    <div className="flex flex-col max-w-4xl w-full mx-auto items-center bg-muted rounded-lg">
       {/* Document List (Shadcn Scroll Area) */}
       <DocumentList
         documentIds={chatInput?.documents}

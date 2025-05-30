@@ -14,8 +14,8 @@ export const MCPPanel = () => {
   });
 
   const createMCP = useMutation(api.mcps.mutations.create);
-  const removeMCP = useMutation(api.mcps.mutations.remove);
   const updateMCP = useMutation(api.mcps.mutations.update);
+  const removeMCP = useMutation(api.mcps.mutations.remove);
 
   const handleCreate = async (newMCPData: NewMCPData) => {
     try {
@@ -33,7 +33,7 @@ export const MCPPanel = () => {
         command:
           newMCPData.type === "stdio" ? newMCPData.command : newMCPData.url,
         env,
-        enabled: false,
+        enabled: true,
       });
 
       setIsCreateOpen(false);
@@ -50,9 +50,9 @@ export const MCPPanel = () => {
     }
   };
 
-  const handleStartStop = async (mcpId: Id<"mcps">, enabled: boolean) => {
+  const toggleMCP = async (mcpId: Id<"mcps">, enabled: boolean) => {
     try {
-      const mcp = await updateMCP({ mcpId, updates: { enabled } });
+      await updateMCP({ mcpId, updates: { enabled: !enabled } });
       toast.success(enabled ? "MCP started" : "MCP stopped");
     } catch (error) {
       console.error("Failed to start/stop MCP:", error);
@@ -74,13 +74,8 @@ export const MCPPanel = () => {
         {mcps?.page.map((mcp) => (
           <MCPCard
             key={mcp._id}
-            mcp={{
-              _id: mcp._id,
-              name: mcp.name,
-              command: mcp.command || mcp.url || "",
-              enabled: mcp.enabled,
-            }}
-            onStartStop={handleStartStop}
+            mcp={mcp}
+            onStartStop={toggleMCP}
             onDelete={handleDelete}
           />
         ))}

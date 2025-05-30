@@ -68,9 +68,9 @@ const getTagInfo = (tag: string) => {
 
 export const Toolbar = () => {
   const { resizablePanelsOpen, setResizablePanelsOpen } = useChat();
-  const params = useParams({ from: "/chat_/$chatId/" });
-  const navigate = useNavigate({ from: "/chat/$chatId" });
-  const chatId = params?.chatId as Id<"chats"> | "new";
+  const params = useParams({ strict: false });
+  const navigate = useNavigate();
+  const chatId: Id<"chats"> | "new" = params.chatId ? (params.chatId as Id<"chats">) : "new";
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const chatInput = useQuery(api.chatInput.queries.get, {

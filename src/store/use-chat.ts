@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { Id } from "../../convex/_generated/dataModel";
 
-interface ChatState {
+export const useChat = create<{
   resizablePanelsOpen: boolean;
   setResizablePanelsOpen: (open: boolean) => void;
 
@@ -23,9 +23,7 @@ interface ChatState {
 
   projectDialogOpen: boolean;
   setProjectDialogOpen: (open: boolean) => void;
-}
-
-export const useChat = create<ChatState>((set) => ({
+}>((set) => ({
   resizablePanelsOpen: false,
   setResizablePanelsOpen: (open) => set({ resizablePanelsOpen: open }),
 

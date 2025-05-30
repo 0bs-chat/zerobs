@@ -1,5 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 import { useChat } from "@/store/use-chat";
@@ -85,7 +85,7 @@ export const ProjectsPanel = () => {
   const { selectedProjectId, setSelectedProjectId, setProjectDialogOpen } = useChat();
   const generateUploadUrl = useMutation(api.documents.mutations.generateUploadUrl);
   const updateProject = useMutation(api.projects.mutations.update);
-  const addDocumentToProject = useMutation(api.projectDocuments.mutations.create);
+  const addDocumentToProject = useAction(api.projectDocuments.actions.add);
   const toggleSelectAll = useMutation(api.projectDocuments.mutations.toggleSelect);
   const createDocument = useMutation(api.documents.mutations.create);
 
