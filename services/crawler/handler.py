@@ -26,22 +26,26 @@ async def crawl_url(url, max_depth=2):
 
 async def handler(job):
     """Handler function that will be used to process jobs."""
-    input_data = job.get('input', {})
-    
-    # Get parameters
-    url = input_data.get('url', "https://docs.crawl4ai.com/core/deep-crawling/")
-    max_depth = input_data.get('max_depth', 0)
-    
-    if not url:
-        return {"error": "Missing 'url' in input", "status_code": 400}
-    
-    try:
-        # Use runpod's asyncio event loop to run the async crawl function
-        results = await crawl_url(url, max_depth)
-        return {"output": results, "status_code": 200}
+    input_data = job.get('input', [])
+    results = []
+    for input in input_data:
+        # Get parameters
+        url = input.get('url', "https://docs.crawl4ai.com/core/deep-crawling/")
+        max_depth = input.get('max_depth', 0)
         
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return {"error": f"An unexpected error occurred during crawling: {e}", "status_code": 500}
+        if not url:
+            return {"error": "Missing 'url' in input", "status_code": 400}
+        
+        try:
+            # Use runpod's asyncio event loop to run the async crawl function
+            results.append(await crawl_url(url, max_depth))
+            
+        except Exception as e:
+            results.append({
+                "url": url,
+                "markdown": str(e)
+            })
+
+    return {"output": results, "status_code": 200}
 
 runpod.serverless.start({"handler": handler})

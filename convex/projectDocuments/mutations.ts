@@ -2,6 +2,7 @@ import { requireAuth } from "../utils/helpers";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
+import { Id } from "../_generated/dataModel";
 
 export const create = mutation({
   args: {
@@ -23,10 +24,32 @@ export const create = mutation({
       projectId: args.projectId,
       documentId: args.documentId,
       selected: true,
+      status: "processing",
       updatedAt: Date.now(),
     });
 
     return projectDocumentId;
+  },
+});
+
+export const createMultiple = mutation({
+  args: {
+    projectId: v.id("projects"),
+    documentIds: v.array(v.id("documents")),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    let projectDocumentIds: Id<"projectDocuments">[] = [];
+    await Promise.all(args.documentIds.map(async (documentId) => {
+      const projectDocumentId = await ctx.runMutation(api.projectDocuments.mutations.create, {
+        projectId: args.projectId,
+        documentId: documentId,
+      });
+      projectDocumentIds.push(projectDocumentId);
+    }));
+
+    return projectDocumentIds;
   },
 });
 
@@ -35,6 +58,7 @@ export const update = mutation({
     projectDocumentId: v.id("projectDocuments"),
     update: v.object({
       selected: v.optional(v.boolean()),
+      status: v.optional(v.union(v.literal("processing"), v.literal("done"), v.literal("error"))),
     }),
   },
   handler: async (ctx, args) => {

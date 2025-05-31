@@ -26,6 +26,7 @@ export const create = mutation({
     name: v.string(),
     type: v.union(
       v.literal("file"),
+      v.literal("text"),
       v.literal("url"),
       v.literal("site"),
       v.literal("youtube")

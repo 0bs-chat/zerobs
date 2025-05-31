@@ -8,6 +8,7 @@ export default defineSchema({
     name: v.string(),
     type: v.union(
       v.literal("file"),
+      v.literal("text"),
       v.literal("url"),
       v.literal("site"),
       v.literal("youtube")
@@ -25,7 +26,11 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_user_updated", ["userId", "updatedAt"]),
+    .index("by_user_updated", ["userId", "updatedAt"])
+    .searchIndex("by_name", {
+      searchField: "name",
+      filterFields: ["userId"],
+    }),
   chatInput: defineTable({
     chatId: v.union(v.id("chats"), v.literal("new")),
     userId: v.id("users"),
@@ -65,6 +70,7 @@ export default defineSchema({
     projectId: v.id("projects"),
     documentId: v.id("documents"),
     selected: v.boolean(),
+    status: v.union(v.literal("processing"), v.literal("done"), v.literal("error")),
     updatedAt: v.number(),
   })
     .index("by_project", ["projectId"])

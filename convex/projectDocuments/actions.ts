@@ -11,32 +11,23 @@ import { requireAuth } from "../utils/helpers";
 
 export const add = action({
   args: {
-    documentId: v.id("documents"),
+    documentIds: v.array(v.id("documents")),
     projectId: v.id("projects"),
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const document = await ctx.runAction(internal.documents.actions.load, {
-      documentId: args.documentId,
+    const projectDocumentIds = await ctx.runMutation(api.projectDocuments.mutations.createMultiple, {
+      documentIds: args.documentIds,
+      projectId: args.projectId,
+    });
+
+    const document = await ctx.runAction(internal.documents.actions.loadDocuments, {
+      documentIds: args.documentIds,
       metadata: {
         projectId: args.projectId,
       },
     });
-
-    const projectDocumentId = await ctx.runMutation(api.projectDocuments.mutations.create, {
-      projectId: args.projectId,
-      documentId: args.documentId,
-    });
-
-    if (document.metadata) {
-      document.metadata.source = projectDocumentId;
-    } else {
-      document.metadata = {
-        source: projectDocumentId,
-        projectId: args.projectId,
-      };
-    }
 
     const vectorStore = new ConvexVectorStore(getEmbeddingModel("text-embedding-004"), {
       ctx,
@@ -47,7 +38,10 @@ export const add = action({
       chunkOverlap: 200,
     });
 
-    const chunks = await textSplitter.splitDocuments([new Document({...document})]);
+    const chunks = await textSplitter.splitDocuments(document.map((doc) => new Document({
+      pageContent: doc.pageContent,
+      metadata: doc.metadata,
+    })));
 
     await vectorStore.addDocuments(chunks);
   },

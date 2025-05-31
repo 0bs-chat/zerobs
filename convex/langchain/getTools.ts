@@ -64,6 +64,13 @@ export const getMCPTools = async (ctx: ActionCtx) => {
     },
   });
 
+  if (mcps.page.length === 0) {
+    return {
+      tools: [],
+      groupedTools: {},
+    };
+  }
+
   const mcpServers: Record<string, Connection> = Object.fromEntries(
     mcps.page.map((mcp: Doc<"mcps">) => [
       mcp.name,

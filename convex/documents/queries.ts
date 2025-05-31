@@ -2,6 +2,8 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { paginationOptsValidator } from "convex/server";
+import { api } from "../_generated/api";
+import { Doc } from "../_generated/dataModel";
 
 export const get = query({
   args: {
@@ -43,28 +45,12 @@ export const getMultiple = query({
   args: {
     documentIds: v.array(v.id("documents")),
   },
-  handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
+  handler: async (ctx, args): Promise<Doc<"documents">[]> => {
+    const docs =  await Promise.all(args.documentIds.map((id) => ctx.runQuery(api.documents.queries.get, {
+      documentId: id,
+    })));
 
-    const sources = await Promise.all(
-      args.documentIds.map(async (documentId) => {
-        const source = await ctx.db
-          .query("documents")
-          .withIndex("by_id", (q) => q.eq("_id", documentId))
-          .first();
-        if (!source) {
-          throw new Error("Source not found");
-        }
-
-        if (source.userId !== userId) {
-          throw new Error("Unauthorized");
-        }
-
-        return source;
-      })
-    );
-
-    return sources;
+    return docs;
   },
 });
 

@@ -15,4 +15,5 @@ ADD test_input.json .
 # Run the handler
 CMD python -u /handler.py
 
-# docker build --platform linux/amd64 --tag mantrakp04/doc_processor:v3 . --push
+# docker build --platform linux/amd64 --tag mantrakp04/doc_processor:v1 . --push
+# docker run -it --runtime=nvidia --rm mantrakp04/doc_processor:v1

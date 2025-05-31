@@ -18,4 +18,5 @@ RUN uv run playwright install --with-deps
 # Run the handler
 CMD python -u /handler.py
 
-# docker build --platform linux/amd64 --tag mantrakp04/crawler:v2 . --push
+# docker build --platform linux/amd64 --tag mantrakp04/crawler:v1 . --push
+# docker run -it --rm mantrakp04/crawler:v1

@@ -1,5 +1,7 @@
 {
   "input": {
-    "source": "https://arxiv.org/pdf/2408.09869"
+    "sources": [
+      "https://arxiv.org/pdf/2408.09869"
+    ]
   }
 }

@@ -49,8 +49,7 @@ async function* streamHelper(
       }) ?? []),
     ],
   });
-  console.log("humanMessage", JSON.stringify(humanMessage, null, 2));
-
+  
   await ctx.runMutation(api.chatInput.mutations.update, {
     updates: {
       text: "",
