@@ -241,7 +241,7 @@ export const Toolbar = () => {
           <TooltipTrigger>
             <Toggle
               variant="outline"
-              className="bg-input/30"
+              className="bg-input/30 "
               pressed={chatInput?.webSearch}
               onPressedChange={() => {
                 updateChatInputMutation({

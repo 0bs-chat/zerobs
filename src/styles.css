@@ -15,7 +15,6 @@ code {
   font-family:
     source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
-
 :root {
   --background:
     oklch(0.9777 0.0041 301.4256);
@@ -65,8 +64,6 @@ code {
     oklch(0.8540 0.0882 76.8292);
   --chart-5:
     oklch(0.7857 0.0645 258.0839);
-  --radius:
-    0.5rem;
   --sidebar:
     oklch(0.9554 0.0082 301.3541);
   --sidebar-foreground:
@@ -89,22 +86,8 @@ code {
     "Lora", Georgia, serif;
   --font-mono:
     "Fira Code", "Courier New", monospace;
-  --shadow-color:
-    hsl(0 0% 0%);
-  --shadow-opacity:
-    0.06;
-  --shadow-blur:
-    5px;
-  --shadow-spread:
-    1px;
-  --shadow-offset-x:
-    1px;
-  --shadow-offset-y:
-    2px;
-  --letter-spacing:
-    0em;
-  --spacing:
-    0.25rem;
+  --radius:
+    0.5rem;
   --shadow-2xs:
     1px 2px 5px 1px hsl(0 0% 0% / 0.03);
   --shadow-xs:
@@ -121,6 +104,22 @@ code {
     1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 8px 10px 0px hsl(0 0% 0% / 0.06);
   --shadow-2xl:
     1px 2px 5px 1px hsl(0 0% 0% / 0.15);
+  --shadow-color:
+    hsl(0 0% 0%);
+  --shadow-opacity:
+    0.06;
+  --shadow-blur:
+    5px;
+  --shadow-spread:
+    1px;
+  --shadow-offset-x:
+    1px;
+  --shadow-offset-y:
+    2px;
+  --letter-spacing:
+    0em;
+  --spacing:
+    0.25rem;
   --tracking-normal:
     0em;
 }
@@ -190,30 +189,14 @@ code {
     oklch(0.2847 0.0346 291.2726);
   --sidebar-ring:
     oklch(0.7058 0.0777 302.0489);
-  --radius:
-    0.5rem;
   --font-sans:
     Geist, sans-serif;
   --font-serif:
     "Lora", Georgia, serif;
   --font-mono:
     "Fira Code", "Courier New", monospace;
-  --shadow-color:
-    hsl(0 0% 0%);
-  --shadow-opacity:
-    0.06;
-  --shadow-blur:
-    5px;
-  --shadow-spread:
-    1px;
-  --shadow-offset-x:
-    1px;
-  --shadow-offset-y:
-    2px;
-  --letter-spacing:
-    0em;
-  --spacing:
-    0.25rem;
+  --radius:
+    0.5rem;
   --shadow-2xs:
     1px 2px 5px 1px hsl(0 0% 0% / 0.03);
   --shadow-xs:
@@ -230,7 +213,22 @@ code {
     1px 2px 5px 1px hsl(0 0% 0% / 0.06), 1px 8px 10px 0px hsl(0 0% 0% / 0.06);
   --shadow-2xl:
     1px 2px 5px 1px hsl(0 0% 0% / 0.15);
-  --tracking-normal: 0em;
+  --shadow-color:
+    hsl(0 0% 0%);
+  --shadow-opacity:
+    0.06;
+  --shadow-blur:
+    5px;
+  --shadow-spread:
+    1px;
+  --shadow-offset-x:
+    1px;
+  --shadow-offset-y:
+    2px;
+  --letter-spacing:
+    0em;
+  --spacing:
+    0.25rem;
 }
 
 @theme inline {
@@ -258,10 +256,6 @@ code {
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -270,12 +264,27 @@ code {
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
   --font-sans:
     Geist, sans-serif;
   --font-mono:
     "Fira Code", "Courier New", monospace;
   --font-serif:
     "Lora", Georgia, serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
   --radius:
     0.5rem;
   --tracking-tighter:
@@ -288,23 +297,24 @@ code {
     calc(var(--tracking-normal) + 0.05em);
   --tracking-widest:
     calc(var(--tracking-normal) + 0.1em);
-  --tracking-normal: var(--tracking-normal);
-  --shadow-2xl: var(--shadow-2xl);
-  --shadow-xl: var(--shadow-xl);
-  --shadow-lg: var(--shadow-lg);
-  --shadow-md: var(--shadow-md);
-  --shadow: var(--shadow);
-  --shadow-sm: var(--shadow-sm);
-  --shadow-xs: var(--shadow-xs);
-  --shadow-2xs: var(--shadow-2xs);
-  --spacing: var(--spacing);
-  --letter-spacing: var(--letter-spacing);
-  --shadow-offset-y: var(--shadow-offset-y);
-  --shadow-offset-x: var(--shadow-offset-x);
-  --shadow-spread: var(--shadow-spread);
-  --shadow-blur: var(--shadow-blur);
-  --shadow-opacity: var(--shadow-opacity);
-  --color-shadow-color: var(--shadow-color);
+  --tracking-normal:
+    var(--tracking-normal);
+  --spacing:
+    var(--spacing);
+  --letter-spacing:
+    var(--letter-spacing);
+  --shadow-offset-y:
+    var(--shadow-offset-y);
+  --shadow-offset-x:
+    var(--shadow-offset-x);
+  --shadow-spread:
+    var(--shadow-spread);
+  --shadow-blur:
+    var(--shadow-blur);
+  --shadow-opacity:
+    var(--shadow-opacity);
+  --color-shadow-color:
+    var(--shadow-color);
 }
 
 @layer base {
