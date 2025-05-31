@@ -22,13 +22,16 @@ export const ChatMessages = () => {
             ))}
           </div>
         )}
-        {
-          stream.status === "pending" && (
-            <div className="flex flex-col gap-2">
-              <div>Loading...</div>
-            </div>
-          )
-        }
+
+        {stream.status === "pending" && stream.chunks.length != 0 ? (
+          <div className="flex flex-col gap-2">
+            <div>Loading...</div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div>No messages</div>
+          </div>
+        )}
       </div>
     </ScrollArea>
   );

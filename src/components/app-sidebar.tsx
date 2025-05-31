@@ -41,6 +41,7 @@ export function AppSidebar() {
   const updateChat = useMutation(api.chats.mutations.update);
   const removeChat = useMutation(api.chats.mutations.remove);
   const createChat = useMutation(api.chats.mutations.create);
+  const createChatInput = useMutation(api.chatInput.mutations.create);
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -54,7 +55,14 @@ export function AppSidebar() {
               variant="default"
               className="w-full cursor-pointer"
               onClick={() => {
-                createChat({ name: "New chat" });
+                createChat({ name: "New chat" }).then((newChatId) => {
+                  createChatInput({
+                    chatId: newChatId,
+                    agentMode: false,
+                    plannerMode: false,
+                    webSearch: false,
+                  });
+                });
               }}
             >
               <div className="flex items-center gap-2">
