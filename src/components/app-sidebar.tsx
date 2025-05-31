@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { ModeToggle } from "./theme-switcher";
 
 export function AppSidebar() {
   const chats = useQuery(api.chats.queries.getAll, {

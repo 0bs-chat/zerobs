@@ -1,5 +1,5 @@
 import { Outlet, createRootRoute, Navigate } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+// import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { useConvexAuth } from "convex/react";
@@ -40,7 +40,7 @@ export const Route = createRootRoute({
           <ProjectDialog />
         </SidebarProvider>
         <Toaster />
-        <TanStackRouterDevtools />
+        {/* <TanStackRouterDevtools /> */}
       </ThemeProvider>
     );
   },

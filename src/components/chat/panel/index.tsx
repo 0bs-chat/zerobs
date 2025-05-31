@@ -12,14 +12,16 @@ export const Panel = () => {
     <Tabs
       value={resizablePanelTab}
       onValueChange={(value) => setResizablePanelTab(value as TabValue)}
-      className="p-2"
+      className="py-2 px-4 "
     >
-      <TabsList className="w-full">
-        <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
-        <TabsTrigger value="projects">Projects</TabsTrigger>
-        <TabsTrigger value="settings">Settings</TabsTrigger>
-        <TabsTrigger value="mcp">MCP</TabsTrigger>
-      </TabsList>
+      <div className="flex items-center justify-between gap-2 pr-10">
+        <TabsList className="w-full flex justify-center ">
+          <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="mcp">MCP</TabsTrigger>
+        </TabsList>
+      </div>
       <TabsContent value="artifacts">Artifacts</TabsContent>
 
       <TabsContent value="projects">

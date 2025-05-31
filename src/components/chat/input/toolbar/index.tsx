@@ -9,8 +9,6 @@ import {
   BotIcon,
   ChevronUpIcon,
   GithubIcon,
-  PanelRightCloseIcon,
-  PanelRightOpenIcon,
   PaperclipIcon,
   PlusIcon,
   ImageIcon,
@@ -23,7 +21,6 @@ import {
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { Toggle } from "@/components/ui/toggle";
-import { useChat } from "@/store/use-chat";
 import {
   Select,
   SelectContent,
@@ -41,7 +38,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
 
 const getTagInfo = (tag: string) => {
   switch (tag) {
@@ -67,10 +64,11 @@ const getTagInfo = (tag: string) => {
 };
 
 export const Toolbar = () => {
-  const { resizablePanelsOpen, setResizablePanelsOpen } = useChat();
   const params = useParams({ strict: false });
   const navigate = useNavigate();
-  const chatId: Id<"chats"> | "new" = params.chatId ? (params.chatId as Id<"chats">) : "new";
+  const chatId: Id<"chats"> | "new" = params.chatId
+    ? (params.chatId as Id<"chats">)
+    : "new";
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const chatInput = useQuery(api.chatInput.queries.get, {
@@ -78,14 +76,16 @@ export const Toolbar = () => {
   });
   const updateChatInputMutation = useMutation(api.chatInput.mutations.update);
   const generateUploadUrlMutation = useMutation(
-    api.documents.mutations.generateUploadUrl,
+    api.documents.mutations.generateUploadUrl
   );
   const createDocumentMutation = useMutation(api.documents.mutations.create);
   const getModelAction = useAction(api.chatInput.actions.getModels);
   const createChatMutation = useMutation(api.chats.mutations.create);
   const createChatInputMutation = useMutation(api.chatInput.mutations.create);
   const sendAction = useAction(api.chats.actions.send);
-  const [getModelResult, setGetModelResult] = useState<Awaited<ReturnType<typeof getModelAction>> | null>(null);
+  const [getModelResult, setGetModelResult] = useState<Awaited<
+    ReturnType<typeof getModelAction>
+  > | null>(null);
 
   useEffect(() => {
     const fetchModel = async () => {
@@ -164,7 +164,7 @@ export const Toolbar = () => {
       });
 
       toast(
-        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`,
+        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`
       );
     } catch (error) {
       console.error("Upload error:", error);
@@ -203,40 +203,55 @@ export const Toolbar = () => {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Toggle variant="outline" className="bg-input/30" pressed={chatInput?.agentMode} onPressedChange={() => {
-          updateChatInputMutation({
-            chatId,
-            updates: {
-              agentMode: !chatInput?.agentMode,
-            },
-          });
-        }}>
+        <Toggle
+          variant="outline"
+          className="bg-input/30"
+          pressed={chatInput?.agentMode}
+          onPressedChange={() => {
+            updateChatInputMutation({
+              chatId,
+              updates: {
+                agentMode: !chatInput?.agentMode,
+              },
+            });
+          }}
+        >
           <BotIcon className="h-4 w-4" />
           Agent
         </Toggle>
 
-        <Toggle variant="outline" className="bg-input/30" pressed={chatInput?.plannerMode} onPressedChange={() => {
-          updateChatInputMutation({
-            chatId,
-            updates: {
-              plannerMode: !chatInput?.plannerMode,
-            },
-          });
-        }}>
+        <Toggle
+          variant="outline"
+          className="bg-input/30"
+          pressed={chatInput?.plannerMode}
+          onPressedChange={() => {
+            updateChatInputMutation({
+              chatId,
+              updates: {
+                plannerMode: !chatInput?.plannerMode,
+              },
+            });
+          }}
+        >
           <BrainIcon className="h-4 w-4" />
           Smort
         </Toggle>
 
         <Tooltip delayDuration={300}>
           <TooltipTrigger>
-            <Toggle variant="outline" className="bg-input/30" pressed={chatInput?.webSearch} onPressedChange={() => {
-              updateChatInputMutation({
-                chatId,
-                updates: {
-                  webSearch: !chatInput?.webSearch,
-                },
-              });
-            }}>
+            <Toggle
+              variant="outline"
+              className="bg-input/30"
+              pressed={chatInput?.webSearch}
+              onPressedChange={() => {
+                updateChatInputMutation({
+                  chatId,
+                  updates: {
+                    webSearch: !chatInput?.webSearch,
+                  },
+                });
+              }}
+            >
               <Globe2Icon className="h-4 w-4" />
             </Toggle>
           </TooltipTrigger>
@@ -244,18 +259,6 @@ export const Toolbar = () => {
             <p>Search the web</p>
           </TooltipContent>
         </Tooltip>
-
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setResizablePanelsOpen(!resizablePanelsOpen)}
-        >
-          {resizablePanelsOpen ? (
-            <PanelRightCloseIcon className="h-4 w-4" />
-          ) : (
-            <PanelRightOpenIcon className="h-4 w-4" />
-          )}
-        </Button>
       </div>
 
       <div className="flex flex-row items-center gap-1">
@@ -275,20 +278,24 @@ export const Toolbar = () => {
               <SelectItem
                 key={model.model}
                 value={model.model}
-                className="min-w-[500px]"
+                className={`${
+                  model.model === getModelResult?.selectedModel.model
+                    ? "bg-accent"
+                    : ""
+                }`}
               >
                 <div className="flex flex-col w-full gap-2">
-                  <span>{model.label}</span>
+                  <span className={`text-foreground`}>{model.label}</span>
                   {model.tags && (
-                    <div className="flex flex-row gap-1">
+                    <div className="flex flex-row gap-1 ">
                       {model.tags?.map((tag) => {
                         const { icon: Icon, className } = getTagInfo(tag);
                         return (
                           <Badge
                             key={tag}
-                            className={`flex items-center gap-1 ${className}`}
+                            className={`flex items-center gap-1 text-foreground ${className}`}
                           >
-                            <Icon className="h-3 w-3" />
+                            <Icon className="h-3 w-3 " />
                             {tag}
                           </Badge>
                         );
@@ -301,7 +308,11 @@ export const Toolbar = () => {
           </SelectContent>
         </Select>
 
-        <Button variant="ghost" size="icon" onClick={async () => await handleSubmit()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={async () => await handleSubmit()}
+        >
           <ChevronUpIcon className="h-4 w-4" />
         </Button>
       </div>

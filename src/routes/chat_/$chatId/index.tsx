@@ -25,7 +25,7 @@ function RouteComponent() {
       {resizablePanelsOpen && (
         <>
           <ResizableHandle />
-          <ResizablePanel defaultSize={50} minSize={25} maxSize={55}>
+          <ResizablePanel defaultSize={40} minSize={25} maxSize={50}>
             <Panel />
           </ResizablePanel>
         </>

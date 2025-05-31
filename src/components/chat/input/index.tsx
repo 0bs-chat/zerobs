@@ -10,7 +10,9 @@ import { Toolbar } from "./toolbar";
 
 export const ChatInput = () => {
   const params = useParams({ strict: false });
-  const chatId: Id<"chats"> | "new" = params.chatId ? (params.chatId as Id<"chats">) : "new";
+  const chatId: Id<"chats"> | "new" = params.chatId
+    ? (params.chatId as Id<"chats">)
+    : "new";
 
   const chatInput = useQuery(api.chatInput.queries.get, {
     chatId: chatId as Id<"chats"> | "new",

@@ -15,7 +15,8 @@ import { useChat } from "@/store/use-chat";
 export const ProjectDialog = () => {
   const { projectDialogOpen, setProjectDialogOpen } = useChat();
   const createProject = useMutation(api.projects.mutations.create);
-  const { setSelectedProjectId, setResizablePanelsOpen, setResizablePanelTab } = useChat();
+  const { setSelectedProjectId, setResizablePanelsOpen, setResizablePanelTab } =
+    useChat();
 
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,12 +46,7 @@ export const ProjectDialog = () => {
         <form onSubmit={handleCreateProject} className="space-y-4 py-4">
           <div className="space-y-2">
             <label htmlFor="name">Name</label>
-            <Input
-              id="name"
-              name="name"
-              placeholder="Project name"
-              required
-            />
+            <Input id="name" name="name" placeholder="Project name" required />
           </div>
           <div className="space-y-2">
             <label htmlFor="description">Description (Optional)</label>
@@ -61,7 +57,11 @@ export const ProjectDialog = () => {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setProjectDialogOpen(false)}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setProjectDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit">Create</Button>
@@ -70,4 +70,4 @@ export const ProjectDialog = () => {
       </DialogContent>
     </Dialog>
   );
-}; 
+};
