@@ -17,7 +17,6 @@ type ReturnType = {
   pageContent: string;
   metadata?: {
     projectId?: Id<"projects">;
-    source?: Id<"documents">;
   };
 };
 
@@ -28,7 +27,6 @@ export const loadDocuments = internalAction({
     documentIds: v.array(v.id("documents")),
     metadata: v.optional(
       v.object({
-        source: v.optional(v.id("documents")),
         projectId: v.optional(v.id("projects")),
       })
     ),
@@ -109,11 +107,11 @@ export const loadDocuments = internalAction({
       maxDepth: number
     ) {
       if (!group.length) return;
-      const inputs = group.map(({ doc }) => ({
+      const sources = group.map(({ doc }) => ({
         url: doc.key,
         max_depth: maxDepth,
       }));
-      const rp = await crawler?.runSync({ input: { inputs } });
+      const rp = await crawler?.runSync({ input: { sources } });
       if (!rp) {
         throw new Error("Crawler endpoint failed");
       }

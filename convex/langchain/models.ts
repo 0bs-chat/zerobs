@@ -181,20 +181,20 @@ export async function formatDocument(
       content = {
         type: "text",
         source_type: "text",
-        text: text,
+        text: `# ${document.name}\n\n${text}\n\n`,
       };
     } else {
       try {
-        const doc = await ctx.runAction(internal.documents.actions.load, {
-          documentId: document._id,
-        });
+        const doc = (await ctx.runAction(internal.documents.actions.loadDocuments, {
+          documentIds: [document._id],
+        }))[0];
         const text = await formatDocumentsAsString([
           new Document({...doc}),
         ]);
         content = {
           type: "text",
           source_type: "text",
-          text: text,
+          text: `# ${document.name}\n\n${text}\n\n`,
         };
       } catch (e) {
         throw new Error(`Failed to format document ${document.name}: ${e}`);
@@ -202,16 +202,16 @@ export async function formatDocument(
     }
   } else {
     try {
-      const doc = await ctx.runAction(internal.documents.actions.load, {
-        documentId: document._id,
-      });
+      const doc = (await ctx.runAction(internal.documents.actions.loadDocuments, {
+        documentIds: [document._id],
+      }))[0];
       const text = await formatDocumentsAsString([
         new Document({...doc}),
       ]);
       content = {
         type: "text",
         source_type: "text",
-        text: text,
+        text: `# ${document.name}\n\n${text}\n\n`,
       };
     } catch (e) {
       throw new Error(`Failed to format document ${document.name}: ${e}`);

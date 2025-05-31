@@ -26,7 +26,7 @@ async def crawl_url(url, max_depth=2):
 
 async def handler(job):
     """Handler function that will be used to process jobs."""
-    input_data = job.get('input', [])
+    input_data = (job.get('input', [])).get('sources', [])
     results = []
     for input in input_data:
         # Get parameters

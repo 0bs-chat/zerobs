@@ -22,15 +22,25 @@ export const add = action({
       projectId: args.projectId,
     });
 
-    const document = await ctx.runAction(internal.documents.actions.loadDocuments, {
+    const documents = await ctx.runAction(internal.documents.actions.loadDocuments, {
       documentIds: args.documentIds,
       metadata: {
         projectId: args.projectId,
       },
     });
+    const documentsWithSource = documents.map((doc, index) => {
+      return {
+        ...doc,
+        metadata: {
+          ...doc.metadata,
+          source: projectDocumentIds[index],
+        },
+      };
+    });
 
     const vectorStore = new ConvexVectorStore(getEmbeddingModel("text-embedding-004"), {
       ctx,
+      table: "projectVectors",
     });
 
     const textSplitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
@@ -38,7 +48,7 @@ export const add = action({
       chunkOverlap: 200,
     });
 
-    const chunks = await textSplitter.splitDocuments(document.map((doc) => new Document({
+    const chunks = await textSplitter.splitDocuments(documentsWithSource.map((doc) => new Document({
       pageContent: doc.pageContent,
       metadata: doc.metadata,
     })));

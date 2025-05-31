@@ -156,7 +156,7 @@ export const ProjectsPanel = () => {
       documentIds.map(async (documentId) => {
         await addDocumentToProject({
           projectId,
-          documentId: documentId as Id<"documents">,
+          documentIds: [documentId as Id<"documents">],
         });
       }),
     );
@@ -177,7 +177,7 @@ export const ProjectsPanel = () => {
 
       await addDocumentToProject({
         projectId: selectedProjectId as Id<"projects">,
-        documentId: documentId as Id<"documents">,
+        documentIds: [documentId as Id<"documents">],
       });
     } catch (error) {
       console.error("Failed to add URL:", error);
@@ -200,7 +200,7 @@ export const ProjectsPanel = () => {
 
       await addDocumentToProject({
         projectId: selectedProjectId as Id<"projects">,
-        documentId: documentId as Id<"documents">,
+        documentIds: [documentId as Id<"documents">],
       });
     } catch (error) {
       console.error("Failed to crawl site:", error);
@@ -221,7 +221,7 @@ export const ProjectsPanel = () => {
 
     await addDocumentToProject({
       projectId: selectedProjectId as Id<"projects">,
-      documentId: documentId as Id<"documents">,
+      documentIds: [documentId as Id<"documents">],
     });
   };
 
