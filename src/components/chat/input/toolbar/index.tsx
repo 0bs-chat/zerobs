@@ -39,6 +39,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { GitHubDialog } from "../github-dialog";
 
 const getTagInfo = (tag: string) => {
   switch (tag) {
@@ -70,6 +71,7 @@ export const Toolbar = () => {
     ? (params.chatId as Id<"chats">)
     : "new";
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isGitHubDialogOpen, setIsGitHubDialogOpen] = useState(false);
 
   const chatInput = useQuery(api.chatInput.queries.get, {
     chatId,
@@ -78,7 +80,9 @@ export const Toolbar = () => {
   const generateUploadUrlMutation = useMutation(
     api.documents.mutations.generateUploadUrl
   );
-  const createMultipleMutation = useMutation(api.documents.mutations.createMultiple);
+  const createMultipleMutation = useMutation(
+    api.documents.mutations.createMultiple
+  );
   const getModelAction = useAction(api.chatInput.actions.getModels);
   const createChatMutation = useMutation(api.chats.mutations.create);
   const createChatInputMutation = useMutation(api.chatInput.mutations.create);
@@ -196,13 +200,23 @@ export const Toolbar = () => {
               <PaperclipIcon className="w-4 h-4" />
               Attach Documents
             </DropdownMenuItem>
-            <DropdownMenuItem disabled>
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                setIsGitHubDialogOpen(true);
+              }}
+            >
               <GithubIcon className="w-4 h-4" />
               Add GitHub Repo
             </DropdownMenuItem>
             <ProjectsDropdown />
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <GitHubDialog
+          open={isGitHubDialogOpen}
+          onOpenChange={setIsGitHubDialogOpen}
+        />
 
         <Toggle
           variant="outline"

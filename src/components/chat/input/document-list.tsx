@@ -41,7 +41,7 @@ export const DocumentList = ({
   };
 
   return (
-    <ScrollArea className="w-full max-h-24 w-full px-1 pt-1">
+    <ScrollArea className="w-full max-h-24 px-1 pt-1">
       {documents.map((doc) => (
         <Badge
           key={doc._id}
