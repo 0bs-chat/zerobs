@@ -31,7 +31,6 @@ import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { AIMessage } from "@langchain/core/messages";
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
-import { ConvexSaverInternal } from "../checkpointer/checkpointer";
 
 type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;

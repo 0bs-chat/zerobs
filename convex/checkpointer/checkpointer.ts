@@ -12,7 +12,6 @@ import {
   type CheckpointListOptions,
 } from "@langchain/langgraph-checkpoint";
 import type { SerializerProtocol } from "@langchain/langgraph-checkpoint";
-import { Buffer } from "buffer";
 import { internal } from "../_generated/api";
 
 // Use a more specific context type to ensure we have the right methods
