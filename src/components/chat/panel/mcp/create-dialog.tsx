@@ -12,6 +12,7 @@ import { useState } from "react";
 import type { NewMCPData } from "./types";
 import { EnvVarInput } from "./env-var-input";
 import { TypeSelector } from "./type-selector";
+import { PlusIcon } from "lucide-react";
 
 interface CreateDialogProps {
   isOpen: boolean;
@@ -46,7 +47,10 @@ export const CreateDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button>Create MCP</Button>
+        <Button size="sm">
+          <PlusIcon className="size-4" />
+          Create MCP
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

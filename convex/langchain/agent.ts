@@ -30,7 +30,6 @@ import { getSearchTools, getMCPTools } from "./getTools";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { AIMessage } from "@langchain/core/messages";
-// import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 
 // const checkpointer = PostgresSaver.fromConnString(
@@ -93,13 +92,9 @@ async function retrieve(
   config: RunnableConfig
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
-  const vectorStore = new ConvexVectorStore(getEmbeddingModel("embeddings"), {
+  const vectorStore = new ConvexVectorStore(getEmbeddingModel("text-embedding-004"), {
     ctx: formattedConfig.ctx,
-    table: "projectVectors",
-    index: "byEmbedding",
-    textField: "text",
-    embeddingField: "embedding",
-    metadataField: "metadata",
+    table: "documentVectors",
   });
   if (!formattedConfig.chatInput.model) {
     throw new Error("Model is required");
@@ -165,8 +160,7 @@ async function retrieve(
             q.or(
               ...includedProjectDocuments.map((doc) =>
                 q.eq("metadata", {
-                  projectId: formattedConfig.chatInput.projectId,
-                  source: doc,
+                  source: doc.documentId
                 })
               )
             ),

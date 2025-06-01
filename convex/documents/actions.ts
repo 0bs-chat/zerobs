@@ -1,169 +1,125 @@
 "use node";
 
-import { api } from "../_generated/api";
-import { internalAction } from "../_generated/server";
+import { api, internal } from "../_generated/api";
+import { ActionCtx, internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
 import runpodSdk from "runpod-sdk";
-import type { Id } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
+import { formatDocumentsAsString } from "langchain/util/document";
+import { Document } from "langchain/document";
+import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
+import { getEmbeddingModel } from "../langchain/models";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
 const runpod = runpodSdk(process.env.RUN_POD_KEY!);
 const crawler = runpod.endpoint(process.env.RUN_POD_CRAWLER_ID!);
-const docProcessor = runpod.endpoint(
-  process.env.RUN_POD_DOC_PROCESSOR_ID!
-);
+const docProcessor = runpod.endpoint(process.env.RUN_POD_DOC_PROCESSOR_ID!);
 
-type ReturnType = {
-  pageContent: string;
-  metadata?: {
-    projectId?: Id<"projects">;
-  };
-};
-
-type Intermediate = ReturnType & { idx: number };
-
-export const loadDocuments = internalAction({
+export const addDocuments = internalAction({
   args: {
-    documentIds: v.array(v.id("documents")),
-    metadata: v.optional(
-      v.object({
-        projectId: v.optional(v.id("projects")),
-      })
-    ),
+    documents: v.array(v.id("documents")),
   },
-  handler: async (ctx, args): Promise<ReturnType[]> => {
-    // 1) fetch all docs
-    const docs = await ctx.runQuery(
-      api.documents.queries.getMultiple,
-      { documentIds: args.documentIds }
-    );
-
-    // 2) group by type in one pass
-    const groups: Record<string, Array<{ doc: typeof docs[0]; idx: number }>> =
-      {
-        file: [],
-        text: [],
-        url: [],
-        site: [],
-        youtube: [],
-      };
-    docs.forEach((doc, idx) => {
-      const bucket = groups[doc.type];
-      if (bucket) bucket.push({ doc, idx });
+  handler: async (ctx, args) => {
+    const documents = await ctx.runQuery(internal.documents.queries.getMultipleInternal, {
+      documentIds: args.documents,
     });
 
-    const results: Intermediate[] = [];
-    const meta = args.metadata;
-
-    function makeResult(
-      pageContent: string,
-      idx: number
-    ): Intermediate {
-      return {
-        pageContent,
-        ...(meta ? { metadata: { ...meta } } : {}),
-        idx,
-      };
-    }
-
-    // 3) process file documents in batch
-    if (groups.file.length) {
-      const sources = await Promise.all(
-        groups.file.map(async ({ doc }) => {
-          const url = await ctx.storage.getUrl(doc.key);
-          if (!url) {
-            throw new Error(`No signed URL for file: ${doc.key}`);
-          }
-          return url;
-        })
-      );
-      const rp = await docProcessor?.runSync({ input: { sources } });
-      if (!rp) {
-        throw new Error("Document processor endpoint failed");
+    // Sort documents by type
+    const documentsByType = documents.reduce((acc, document) => {
+      acc[document.type] = acc[document.type] || [];
+      acc[document.type].push(document);
+      return acc;
+    }, {} as Record<string, Doc<"documents">[]>);
+    
+    // map document._id to results
+    const results = (await Promise.all(Object.keys(documentsByType).map(async (type) => {
+      let texts: string[] = [];
+      switch (type) {
+        case "file":
+          texts = await processFile(ctx, documentsByType[type]);
+          break;
+        case "text":
+          texts = await processText(ctx, documentsByType[type]);
+          break;
+        case "url":
+          texts = await processUrlOrSite(ctx, documentsByType[type], 0);
+          break;
+        case "site":
+          texts = await processUrlOrSite(ctx, documentsByType[type], 2);
+          break;
+        case "youtube":
+          texts = await processYoutube(ctx, documentsByType[type]);
       }
-      const pages = rp.output.output as string[];
-      pages.forEach((pc, i) => {
-        results.push(makeResult(pc, groups.file[i].idx));
-      });
-    }
 
-    // 4) process text documents in batch
-    if (groups.text.length) {
-      const texts = await Promise.all(
-        groups.text.map(({ doc }) =>
-          ctx.storage.get(doc.key).then((r) => r?.text())
-        )
-      );
-      texts.forEach((txt, i) => {
-        const { doc } = groups.text[i];
-        const content = `# ${doc.name}\n\n${txt}`;
-        results.push(makeResult(content, groups.text[i].idx));
-      });
-    }
-
-    // 5) helper to call the crawler
-    async function crawl(
-      group: Array<{ doc: typeof docs[0]; idx: number }>,
-      maxDepth: number
-    ) {
-      if (!group.length) return;
-      const sources = group.map(({ doc }) => ({
-        url: doc.key,
-        max_depth: maxDepth,
+      return texts.map((text, index) => ({
+        id: documentsByType[type][index]._id,
+        text,
       }));
-      const rp = await crawler?.runSync({ input: { sources } });
-      if (!rp) {
-        throw new Error("Crawler endpoint failed");
-      }
-      const out = rp.output.output as { url: string; markdown: string }[];
-      out.forEach((item, i) => {
-        const idx = group[i].idx;
-        if (Array.isArray(item)) {
-          // site => array of pages
-          const combined = item
-            .map(
-              ({ url, markdown }) => `# ${url}\n\n${markdown}\n\n`
-            )
-            .join("\n\n");
-          results.push(makeResult(combined, idx));
-        } else {
-          // url => single page
-          const { url, markdown } = item;
-          const page = `# ${url}\n\n${markdown}\n\n`;
-          results.push(makeResult(page, idx));
-        }
-      });
-    }
+    }))).flat();
 
-    await crawl(groups.url, 0);
-    await crawl(groups.site, 2);
+    // Construct langchain document
+    const processedDocs = results.map((result) => (new Document({
+      pageContent: result.text,
+      metadata: {
+        source: result.id
+      },
+    })));
 
-    // 6) process YouTube in parallel
-    if (groups.youtube.length) {
-      await Promise.all(
-        groups.youtube.map(async ({ doc, idx }) => {
-          const loader = YoutubeLoader.createFromUrl(doc.key, {
-            language: "en",
-            addVideoInfo: true,
-          });
-          const ytDocs = await loader.load();
-          ytDocs.forEach((yt) => {
-            const header = `# ${JSON.stringify(
-              yt.metadata,
-              null,
-              2
-            )}\n\n`;
-            results.push(makeResult(header + yt.pageContent, idx));
-          });
-        })
-      );
-    }
+    const vectorStore = new ConvexVectorStore(getEmbeddingModel("text-embedding-004"), {
+      ctx,
+      table: "documentVectors",
+      index: "byEmbedding",
+      textField: "text",
+      embeddingField: "embedding",
+      metadataField: "metadata",
+    });
 
-    // 7) sort back into original order and strip idx
-    return results
-      .sort((a, b) => a.idx - b.idx)
-      .map(({ pageContent, metadata }) =>
-        metadata ? { pageContent, metadata } : { pageContent }
-      );
+    const textSplitter = RecursiveCharacterTextSplitter.fromLanguage("markdown", {
+      chunkSize: 1000,
+      chunkOverlap: 200,
+    });
+
+    const chunks = await textSplitter.splitDocuments(processedDocs);
+    await vectorStore.addDocuments(chunks);
+
+    await ctx.runMutation(api.documents.mutations.updateMultiple, {
+      documentIds: results.map((result) => result.id),
+      status: "done",
+    });
   },
 });
+
+async function processFile(ctx: ActionCtx, documents: Doc<"documents">[]): Promise<string[]> {
+  const fileUrls = await Promise.all(documents.map(async (document) => await ctx.storage.getUrl(document.key)));
+  
+  return (await docProcessor?.runSync({
+    input: {
+      sources: fileUrls,
+    }
+  }))?.output.output as string[];
+}
+
+async function processText(ctx: ActionCtx, documents: Doc<"documents">[]): Promise<string[]> {
+  const blobs = await Promise.all(documents.map(async (document) => await ctx.storage.get(document.key)));
+  return await Promise.all(blobs.map(async (blob) => blob ? await blob.text() : "Failed to load text"));
+}
+
+async function processUrlOrSite(ctx: ActionCtx, documents: Doc<"documents">[], depth: number): Promise<string[]> {
+  return ((await crawler?.runSync({
+    input: {
+      sources: documents.map((document) => ({
+        url: document.key,
+        max_depth: depth,
+      })),
+    }
+  }))?.output.output as { url: string, markdown: string }[][]).map((urls) => urls.map((url) => `### ${url.url}\n${url.markdown}\n`).join("\n"));
+}
+
+async function processYoutube(ctx: ActionCtx, documents: Doc<"documents">[]): Promise<string[]> {
+  return (await Promise.all(documents.map(async (document) => {
+    const loader = YoutubeLoader.createFromUrl(document.key, { addVideoInfo: true, language: "en" });
+    const docs = await loader.load();
+    return formatDocumentsAsString(docs);
+  })));
+}

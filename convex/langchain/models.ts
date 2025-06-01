@@ -1,9 +1,6 @@
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { ChatAnthropic } from "@langchain/anthropic";
-import {
-  ChatGoogleGenerativeAI,
-  GoogleGenerativeAIEmbeddings,
-} from "@langchain/google-genai";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Embeddings } from "@langchain/core/embeddings";
 import type { Doc } from "../_generated/dataModel";
@@ -13,9 +10,7 @@ import type {
   MessageContentComplex,
   DataContentBlock,
 } from "@langchain/core/messages";
-import { internal } from "../_generated/api";
-import { formatDocumentsAsString } from "langchain/util/document";
-import { Document } from "@langchain/core/documents";
+import { api } from "../_generated/api";
 
 const API_KEY_MAP = {
   anthropic: process.env.ANTHROPIC_API_KEY,
@@ -140,8 +135,7 @@ export async function formatDocument(
   let content: MessageContentComplex | DataContentBlock;
 
   if (document.type === "file") {
-    const buffer = await (await ctx.storage.get(document.key))?.arrayBuffer();
-    const base64 = Buffer.from(buffer!).toString("base64");
+    const base64 = Buffer.from(await (await ctx.storage.get(document.key))?.arrayBuffer()!).toString("base64");
     const mimeType = mime.getType(document.name) ?? "application/octet-stream";
     const fileType = mimeType.split("/")[0];
 
@@ -185,16 +179,14 @@ export async function formatDocument(
       };
     } else {
       try {
-        const doc = (await ctx.runAction(internal.documents.actions.loadDocuments, {
-          documentIds: [document._id],
-        }))[0];
-        const text = await formatDocumentsAsString([
-          new Document({...doc}),
-        ]);
+        const vectors = await ctx.runQuery(api.documents.queries.getAllVectors, {
+          documentId: document._id,
+        });
+        const text = vectors.map((vector) => vector.text).join("\n");
         content = {
           type: "text",
           source_type: "text",
-          text: `# ${document.name}\n\n${text}\n\n`,
+          text: `# ${document.name}\n${text}\n`,
         };
       } catch (e) {
         throw new Error(`Failed to format document ${document.name}: ${e}`);
@@ -202,12 +194,10 @@ export async function formatDocument(
     }
   } else {
     try {
-      const doc = (await ctx.runAction(internal.documents.actions.loadDocuments, {
-        documentIds: [document._id],
-      }))[0];
-      const text = await formatDocumentsAsString([
-        new Document({...doc}),
-      ]);
+      const vectors = await ctx.runQuery(api.documents.queries.getAllVectors, {
+        documentId: document._id,
+      });
+      const text = vectors.map((vector) => vector.text).join("\n");
       content = {
         type: "text",
         source_type: "text",

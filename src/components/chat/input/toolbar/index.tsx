@@ -78,7 +78,7 @@ export const Toolbar = () => {
   const generateUploadUrlMutation = useMutation(
     api.documents.mutations.generateUploadUrl
   );
-  const createDocumentMutation = useMutation(api.documents.mutations.create);
+  const createMultipleMutation = useMutation(api.documents.mutations.createMultiple);
   const getModelAction = useAction(api.chatInput.actions.getModels);
   const createChatMutation = useMutation(api.chats.mutations.create);
   const createChatInputMutation = useMutation(api.chatInput.mutations.create);
@@ -120,7 +120,7 @@ export const Toolbar = () => {
 
   const handleFileUpload = async (files: FileList) => {
     try {
-      const uploadedDocumentIds: Id<"documents">[] = [];
+      const uploadedStorageIds: Id<"_storage">[] = [];
 
       for (const file of Array.from(files)) {
         // Get upload URL
@@ -139,22 +139,28 @@ export const Toolbar = () => {
 
         // Create document
         const { storageId } = await result.json();
-        const documentId = await createDocumentMutation({
-          name: file.name,
-          type: "file",
-          size: file.size,
-          key: storageId as Id<"_storage">,
-        });
 
-        uploadedDocumentIds.push(documentId);
+        uploadedStorageIds.push(storageId);
       }
+
+      const documentIds = await createMultipleMutation({
+        documents: uploadedStorageIds.map((storageId, index) => {
+          const file = files[index];
+          return {
+            name: file.name,
+            type: "file",
+            size: file.size,
+            key: storageId,
+          };
+        }),
+      });
 
       // Update chat input with new documents
       const existingDocuments = chatInput?.documents || [];
       await updateChatInputMutation({
         chatId,
         updates: {
-          documents: [...existingDocuments, ...uploadedDocumentIds],
+          documents: [...existingDocuments, ...documentIds],
         },
       });
 

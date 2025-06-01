@@ -167,6 +167,6 @@ export const getSelected = query({
       .filter((q) => q.eq(q.field("selected"), args.selected))
       .collect();
 
-    return projectDocuments.map((projectDocument) => projectDocument._id);
+    return projectDocuments;
   },
 });

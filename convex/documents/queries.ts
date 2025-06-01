@@ -1,4 +1,4 @@
-import { query } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { paginationOptsValidator } from "convex/server";
@@ -54,6 +54,16 @@ export const getMultiple = query({
   },
 });
 
+export const getMultipleInternal = internalQuery({
+  args: {
+    documentIds: v.array(v.id("documents")),
+  },
+  handler: async (ctx, args) => {
+    return (await Promise.all(args.documentIds.map((id) => ctx.db.get(id)))).filter((doc) => doc !== null);
+  },
+});
+
+
 export const getByKey = query({
   args: {
     key: v.union(v.id("_storage"), v.string()),
@@ -74,5 +84,18 @@ export const getByKey = query({
     }
 
     return source;
+  },
+});
+
+export const getAllVectors = query({
+  args: {
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, args) => {
+    const vectors = await ctx.db.query("documentVectors")
+      .filter((q) => q.eq(q.field("metadata.source"), args.documentId))
+      .order("asc")
+      .collect();
+    return vectors;
   },
 });

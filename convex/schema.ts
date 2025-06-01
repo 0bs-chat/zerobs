@@ -15,10 +15,20 @@ export default defineSchema({
     ),
     size: v.number(),
     key: v.union(v.id("_storage"), v.string()),
+    status: v.union(v.literal("processing"), v.literal("done"), v.literal("error")),
     userId: v.id("users"),
   })
     .index("by_key", ["key"])
     .index("by_user", ["userId"]),
+  documentVectors: defineTable({
+    embedding: v.array(v.number()),
+    text: v.string(),
+    metadata: v.any(),
+  }).vectorIndex("byEmbedding", {
+    vectorField: "embedding",
+    dimensions: 768,
+    filterFields: ["metadata"],
+  }),
   chats: defineTable({
     name: v.string(),
     userId: v.id("users"),
@@ -70,20 +80,10 @@ export default defineSchema({
     projectId: v.id("projects"),
     documentId: v.id("documents"),
     selected: v.boolean(),
-    status: v.union(v.literal("processing"), v.literal("done"), v.literal("error")),
     updatedAt: v.number(),
   })
     .index("by_project", ["projectId"])
     .index("by_project_document", ["projectId", "documentId"]),
-  projectVectors: defineTable({
-    embedding: v.array(v.number()),
-    text: v.string(),
-    metadata: v.any(),
-  }).vectorIndex("byEmbedding", {
-    vectorField: "embedding",
-    dimensions: 768,
-    filterFields: ["metadata"],
-  }),
   mcps: defineTable({
     name: v.string(),
     type: v.union(v.literal("sse"), v.literal("stdio")),

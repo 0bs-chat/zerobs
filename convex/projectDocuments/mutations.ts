@@ -2,7 +2,6 @@ import { requireAuth } from "../utils/helpers";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
-import { Id } from "../_generated/dataModel";
 
 export const create = mutation({
   args: {
@@ -24,7 +23,6 @@ export const create = mutation({
       projectId: args.projectId,
       documentId: args.documentId,
       selected: true,
-      status: "processing",
       updatedAt: Date.now(),
     });
 
@@ -40,16 +38,18 @@ export const createMultiple = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    let projectDocumentIds: Id<"projectDocuments">[] = [];
+    await ctx.runQuery(api.projects.queries.get, {
+      projectId: args.projectId,
+    });
+
     await Promise.all(args.documentIds.map(async (documentId) => {
-      const projectDocumentId = await ctx.runMutation(api.projectDocuments.mutations.create, {
+      await ctx.runMutation(api.projectDocuments.mutations.create, {
         projectId: args.projectId,
         documentId: documentId,
       });
-      projectDocumentIds.push(projectDocumentId);
     }));
 
-    return projectDocumentIds;
+    return true;
   },
 });
 
@@ -58,7 +58,6 @@ export const update = mutation({
     projectDocumentId: v.id("projectDocuments"),
     update: v.object({
       selected: v.optional(v.boolean()),
-      status: v.optional(v.union(v.literal("processing"), v.literal("done"), v.literal("error"))),
     }),
   },
   handler: async (ctx, args) => {
@@ -101,13 +100,6 @@ export const remove = mutation({
 
     // Delete the project document
     await ctx.db.delete(args.projectDocumentId);
-
-    // Delete the associated vectors
-    const vectors = await ctx.db
-      .query("projectVectors")
-      .filter((q) => q.eq(q.field("metadata.source"), args.projectDocumentId))
-      .collect();
-    await Promise.all(vectors.map((vector) => ctx.db.delete(vector._id)));
 
     return true;
   },
