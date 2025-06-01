@@ -97,4 +97,39 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_updated", ["userId", "updatedAt"])
     .index("by_enabled", ["enabled"]),
+  checkpoints: defineTable({
+    thread_id: v.string(),
+    checkpoint_ns: v.string(),
+    checkpoint_id: v.string(),
+    parent_checkpoint_id: v.optional(v.string()),
+    checkpoint: v.any(),
+    metadata: v.any(),
+    namespace: v.string(),
+    _creationTime: v.optional(v.number()),
+  })
+    .index("by_thread", ["namespace", "thread_id", "checkpoint_ns"])
+    .index("by_checkpoint", ["namespace", "thread_id", "checkpoint_ns", "checkpoint_id"]),
+  checkpoint_blobs: defineTable({
+    thread_id: v.string(),
+    checkpoint_ns: v.string(),
+    channel: v.string(),
+    version: v.string(),
+    type: v.string(),
+    blob: v.optional(v.bytes()),
+    namespace: v.string(),
+  })
+    .index("by_channel", ["namespace", "thread_id", "checkpoint_ns", "channel", "version"]),
+  checkpoint_writes: defineTable({
+    thread_id: v.string(),
+    checkpoint_ns: v.string(),
+    checkpoint_id: v.string(),
+    task_id: v.string(),
+    idx: v.number(),
+    channel: v.string(),
+    type: v.string(),
+    blob: v.bytes(),
+    namespace: v.string(),
+  })
+    .index("by_checkpoint", ["namespace", "thread_id", "checkpoint_ns", "checkpoint_id"])
+    .index("by_task", ["namespace", "thread_id", "checkpoint_ns", "checkpoint_id", "task_id", "idx"]),
 });

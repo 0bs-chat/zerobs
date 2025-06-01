@@ -81,7 +81,7 @@ export const remove = internalAction({
   args: {
     mcpId: v.id("mcps"),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const appName = String(args.mcpId);
     const app: FlyApp | null = await fly.getApp(appName);
     if (app && app.name) {

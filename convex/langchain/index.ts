@@ -8,6 +8,7 @@ import type { Doc } from "../_generated/dataModel";
 import { HumanMessage } from "@langchain/core/messages";
 import { formatDocument } from "./models";
 import { api, internal } from "../_generated/api";
+import { createConvexCheckpointer } from "../checkpointer/checkpointer";
 
 export const chat = internalAction({
   args: {
@@ -58,7 +59,8 @@ async function* streamHelper(
     chatId: args.chatInput.chatId,
   });
 
-  const response = agentGraph.streamEvents(
+  const checkpointer = createConvexCheckpointer(ctx);
+  const response = (agentGraph.compile({ checkpointer})).streamEvents(
     {
       messages: [humanMessage],
     },
