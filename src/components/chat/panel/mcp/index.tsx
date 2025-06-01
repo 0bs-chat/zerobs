@@ -60,7 +60,7 @@ export const MCPPanel = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">MCPs</h2>
         <CreateDialog
@@ -70,7 +70,7 @@ export const MCPPanel = () => {
         />
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-2">
         {mcps?.page.map((mcp) => (
           <MCPCard
             key={mcp._id}
