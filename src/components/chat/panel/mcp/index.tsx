@@ -24,7 +24,7 @@ export const MCPPanel = () => {
           ? Object.fromEntries(
               newMCPData.envVars
                 .filter((env) => env.key && env.value)
-                .map((env) => [env.key, env.value]),
+                .map((env) => [env.key, env.value])
             )
           : {};
 
@@ -60,9 +60,9 @@ export const MCPPanel = () => {
   };
 
   return (
-    <div className="space-y-4 mt-2">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">MCPs</h2>
+        <h2 className="text-xl font-semibold">MCPs</h2>
         <CreateDialog
           isOpen={isCreateOpen}
           onOpenChange={setIsCreateOpen}

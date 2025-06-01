@@ -29,7 +29,7 @@ export const Panel = () => {
           <ProjectsPanel />
         </TabsContent>
 
-        <TabsContent value="settings">Settings</TabsContent>
+        <TabsContent value="settings"></TabsContent>
 
         <TabsContent value="mcp">
           <MCPPanel />
