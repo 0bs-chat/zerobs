@@ -7,7 +7,6 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   BotIcon,
-  ChevronUpIcon,
   GithubIcon,
   PaperclipIcon,
   PlusIcon,
@@ -18,6 +17,7 @@ import {
   AudioLinesIcon,
   BrainIcon,
   Globe2Icon,
+  ArrowUp,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { Toggle } from "@/components/ui/toggle";
@@ -98,28 +98,23 @@ export const Toolbar = () => {
   }, [chatId, getModelAction]);
 
   const handleSubmit = async () => {
-    let toChatId: Id<"chats">;
-    if (params.chatId === "new") {
-      const newChatId = await createChatMutation({
-        name: "New Chat",
-      });
-      await createChatInputMutation({
-        chatId: newChatId,
-        documents: chatInput?.documents,
-        text: chatInput?.text,
-        projectId: chatInput?.projectId,
-        plannerMode: chatInput?.plannerMode,
-        agentMode: chatInput?.agentMode,
-        webSearch: chatInput?.webSearch,
-        model: getModelResult?.selectedModel.model ?? "",
-      });
-      toChatId = newChatId;
-      await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
-    } else {
-      toChatId = params.chatId as Id<"chats">;
-    }
+    // Always create a new chat and chat input, no need to check for "new"
+    const newChatId = await createChatMutation({
+      name: "New Chat",
+    });
+    await createChatInputMutation({
+      chatId: newChatId,
+      documents: chatInput?.documents,
+      text: chatInput?.text,
+      projectId: chatInput?.projectId,
+      plannerMode: chatInput?.plannerMode,
+      agentMode: chatInput?.agentMode,
+      webSearch: chatInput?.webSearch,
+      model: getModelResult?.selectedModel.model ?? "",
+    });
+    await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
     await sendAction({
-      chatId: toChatId,
+      chatId: newChatId,
     });
   };
 
@@ -313,7 +308,7 @@ export const Toolbar = () => {
           size="icon"
           onClick={async () => await handleSubmit()}
         >
-          <ChevronUpIcon className="h-4 w-4" />
+          <ArrowUp className="h-4 w-4" />
         </Button>
       </div>
     </div>
