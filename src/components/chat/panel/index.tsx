@@ -22,17 +22,19 @@ export const Panel = () => {
           <TabsTrigger value="mcp">MCP</TabsTrigger>
         </TabsList>
       </div>
-      <TabsContent value="artifacts">Artifacts</TabsContent>
+      <div className="flex flex-col gap-2 pt-3">
+        <TabsContent value="artifacts"></TabsContent>
 
-      <TabsContent value="projects">
-        <ProjectsPanel />
-      </TabsContent>
+        <TabsContent value="projects">
+          <ProjectsPanel />
+        </TabsContent>
 
-      <TabsContent value="settings">Settings</TabsContent>
+        <TabsContent value="settings">Settings</TabsContent>
 
-      <TabsContent value="mcp">
-        <MCPPanel />
-      </TabsContent>
+        <TabsContent value="mcp">
+          <MCPPanel />
+        </TabsContent>
+      </div>
     </Tabs>
   );
 };

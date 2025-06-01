@@ -11,6 +11,7 @@ import {
   PaperclipIcon,
   PlusIcon,
   Trash2Icon,
+  TrashIcon,
   XIcon,
   YoutubeIcon,
 } from "lucide-react";
@@ -30,7 +31,9 @@ interface ProjectDocumentProps {
 }
 
 const ProjectDocument = ({ projectDocument }: ProjectDocumentProps) => {
-  const updateProjectDocument = useMutation(api.projectDocuments.mutations.update);
+  const updateProjectDocument = useMutation(
+    api.projectDocuments.mutations.update
+  );
   const removeDocument = useMutation(api.projectDocuments.mutations.remove);
 
   const getDocumentIcon = (type: string) => {
@@ -46,7 +49,7 @@ const ProjectDocument = ({ projectDocument }: ProjectDocumentProps) => {
   };
 
   return (
-    <div className="p-4 flex items-center justify-between group hover:bg-accent/50 transition-colors rounded-md">
+    <div className="py-2 px-4 flex items-center justify-between group rounded-md hover:bg-accent/30 transition-colors">
       <div className="flex items-center gap-3">
         <Checkbox
           checked={projectDocument.selected}
@@ -67,27 +70,30 @@ const ProjectDocument = ({ projectDocument }: ProjectDocumentProps) => {
           </p>
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
+
+      <Trash2Icon
+        className="size-6 hover:text-destructive opacity-0 group-hover:opacity-100 hover:duration-300 hover:transition-all transition-opacity  text-muted-foreground group/btn"
         onClick={() =>
           removeDocument({ projectDocumentId: projectDocument._id })
         }
-        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity group/btn"
-      >
-        <Trash2Icon className="size-4 text-red-300 group-hover/btn:text-red-500 transition-colors" />
-      </Button>
+      />
     </div>
   );
 };
 
 export const ProjectsPanel = () => {
-  const { selectedProjectId, setSelectedProjectId, setProjectDialogOpen } = useChat();
-  const generateUploadUrl = useMutation(api.documents.mutations.generateUploadUrl);
+  const { selectedProjectId, setSelectedProjectId, setProjectDialogOpen } =
+    useChat();
+  const generateUploadUrl = useMutation(
+    api.documents.mutations.generateUploadUrl
+  );
   const updateProject = useMutation(api.projects.mutations.update);
   const addDocumentToProject = useAction(api.projectDocuments.actions.add);
-  const toggleSelectAll = useMutation(api.projectDocuments.mutations.toggleSelect);
+  const toggleSelectAll = useMutation(
+    api.projectDocuments.mutations.toggleSelect
+  );
   const createDocument = useMutation(api.documents.mutations.create);
+  const removeProject = useMutation(api.projects.mutations.remove);
 
   const allProjects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 20, cursor: null },
@@ -99,7 +105,7 @@ export const ProjectsPanel = () => {
       ? {
           projectId: selectedProjectId as Id<"projects">,
         }
-      : "skip",
+      : "skip"
   );
 
   const projectDocuments = useQuery(
@@ -109,7 +115,7 @@ export const ProjectsPanel = () => {
           projectId: selectedProjectId as Id<"projects">,
           paginationOpts: { numItems: 50, cursor: null },
         }
-      : "skip",
+      : "skip"
   );
 
   const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
@@ -135,7 +141,7 @@ export const ProjectsPanel = () => {
         });
         const { storageId } = await result.json();
         fileIdMap.set(storageId as Id<"_storage">, file);
-      }),
+      })
     );
 
     const projectId = selectedProjectId as Id<"projects">;
@@ -149,7 +155,7 @@ export const ProjectsPanel = () => {
           key: storageId as Id<"_storage">,
         });
         return documentId;
-      }),
+      })
     );
 
     await Promise.all(
@@ -158,7 +164,7 @@ export const ProjectsPanel = () => {
           projectId,
           documentIds: [documentId as Id<"documents">],
         });
-      }),
+      })
     );
   };
 
@@ -236,22 +242,26 @@ export const ProjectsPanel = () => {
 
   if (!project) {
     return (
-      <div className="flex flex-col gap-2 h-full px-2 pt-2">
+      <div className="flex flex-col gap-3 h-full ">
         <div className="flex items-center text-center justify-between">
-          <h2 className="text-2xl font-bold">Select a Project</h2>
-          <Button variant="outline" size="sm" onClick={() => setProjectDialogOpen(true)}>
+          <h2 className="text-xl font-bold">Select a Project</h2>
+          <Button
+            variant="default"
+            size="sm"
+            className="bg-primary text-primary-foreground"
+            onClick={() => setProjectDialogOpen(true)}
+          >
             <PlusIcon className="size-4" />
-            New Project
           </Button>
         </div>
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[400px] gap-2">
           {allProjects?.page.map((project) => (
             <Card
               key={project._id}
-              className="mb-2 p-4 cursor-pointer hover:bg-accent transition-colors"
+              className="group relative group/card mb-2 px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-accent/30 duration-300 transition-colors"
               onClick={() => setSelectedProjectId(project._id)}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-1">
                 <h3 className="font-medium">{project.name}</h3>
                 {project.description && (
                   <p className="text-sm text-muted-foreground">
@@ -259,6 +269,18 @@ export const ProjectsPanel = () => {
                   </p>
                 )}
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute bg-background hover:text-destructive-foreground hover:transition-all hover:duration-300 right-2 opacity-0 group-hover/card:opacity-100 hover:bg-destructive  transition-opacity duration-300"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  removeProject({ projectId: project._id });
+                }}
+              >
+                <TrashIcon className="size-5" />
+              </Button>
             </Card>
           ))}
         </ScrollArea>
@@ -267,17 +289,16 @@ export const ProjectsPanel = () => {
   }
 
   return (
-    <div className="flex flex-col gap-2 h-full px-2 pt-2">
-      <div className="flex flex-col gap-0">
+    <div className="flex flex-col gap-4 h-full ">
+      <div className="flex flex-col gap-0 ">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold translate-y-[-0.1rem]">{project.name}</h2>
+          <h2 className="text-2xl font-bold">{project.name}</h2>
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            onClick={() =>
-              setSelectedProjectId(undefined as unknown as Id<"projects">)
-            }
-            className="h-8 w-8"
+            onClick={() => {
+              setSelectedProjectId(undefined as unknown as Id<"projects">);
+            }}
           >
             <XIcon className="size-4" />
           </Button>
@@ -292,22 +313,22 @@ export const ProjectsPanel = () => {
         <AutosizeTextarea
           defaultValue={project.systemPrompt}
           onChange={(e) => debouncedUpdateSystemPrompt(e.target.value)}
-          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-1"
+          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-2"
           minHeight={80}
           maxHeight={200}
         />
       </div>
 
-      <div>
-        <div className="flex items-center justify-between py-1">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between ">
           <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold">Project Documents</h3>
+            <h3 className="text-lg font-semibold">Documents</h3>
             {projectDocuments &&
               projectDocuments.projectDocuments.length > 0 && (
                 <div className="flex items-center gap-2">
                   <Checkbox
                     checked={projectDocuments.projectDocuments.every(
-                      (projectDocument) => projectDocument.selected,
+                      (projectDocument) => projectDocument.selected
                     )}
                     onCheckedChange={(checked) =>
                       handleSelectAll(checked.valueOf() as boolean)
@@ -321,9 +342,12 @@ export const ProjectsPanel = () => {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="default" size="sm">
-                <PlusIcon className="size-4 mr-2" />
-                Add Document
+              <Button
+                variant="default"
+                size="sm"
+                className="bg-primary text-primary-foreground"
+              >
+                <PlusIcon className="size-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
