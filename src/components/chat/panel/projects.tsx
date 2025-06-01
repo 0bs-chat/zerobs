@@ -252,6 +252,7 @@ export const ProjectsPanel = () => {
             onClick={() => setProjectDialogOpen(true)}
           >
             <PlusIcon className="size-4" />
+            New Project
           </Button>
         </div>
         <ScrollArea className="h-[400px] gap-2">
@@ -270,9 +271,9 @@ export const ProjectsPanel = () => {
                 )}
               </div>
               <Button
-                variant="ghost"
+                variant="default"
                 size="icon"
-                className="absolute bg-background hover:text-destructive-foreground hover:transition-all hover:duration-300 right-2 opacity-0 group-hover/card:opacity-100 hover:bg-destructive  transition-opacity duration-300"
+                className="h-9 w-9  absolute right-2 hover:bg-destructive hover:text-destructive-foreground  border border-border opacity-0 group-hover/card:opacity-100"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -292,19 +293,20 @@ export const ProjectsPanel = () => {
     <div className="flex flex-col gap-4 h-full ">
       <div className="flex flex-col gap-0 ">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">{project.name}</h2>
+          <h2 className="text-xl font-bold">{project.name}</h2>
           <Button
             variant="outline"
             size="icon"
+            className="cursor-pointer"
             onClick={() => {
               setSelectedProjectId(undefined as unknown as Id<"projects">);
             }}
           >
-            <XIcon className="size-4" />
+            <XIcon className="size-5" />
           </Button>
         </div>
         {project.description && (
-          <p className="text-muted-foreground/80">{project.description}</p>
+          <p className="text-muted-foreground">{project.description}</p>
         )}
       </div>
 
@@ -348,6 +350,7 @@ export const ProjectsPanel = () => {
                 className="bg-primary text-primary-foreground"
               >
                 <PlusIcon className="size-4" />
+                Add Document
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

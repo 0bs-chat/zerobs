@@ -7,7 +7,7 @@ export const MCPCard = ({ mcp, onStartStop, onDelete }: MCPCardProps) => {
   return (
     <Card className="px-4 py-3">
       <div className="flex justify-between items-center">
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col">
           <CardTitle className="text-lg font-semibold">{mcp.name}</CardTitle>
           <CardDescription className="text-sm text-muted-foreground">
             {mcp.command}
@@ -28,6 +28,7 @@ export const MCPCard = ({ mcp, onStartStop, onDelete }: MCPCardProps) => {
           <Button
             variant="destructive"
             size="icon"
+            className="cursor-pointer"
             onClick={() => onDelete(mcp._id)}
           >
             <Trash2 className="h-4 w-4" />
