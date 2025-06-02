@@ -31,9 +31,11 @@ export const Route = createRootRoute({
 
     if (isLoading) {
       return (
-        <div className="flex justify-center items-center h-screen bg-background">
-          <Loader className="w-10 h-10 animate-spin" />
-        </div>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <div className="flex justify-center items-center h-screen bg-background">
+            <Loader className="w-10 h-10 animate-spin" />
+          </div>
+        </ThemeProvider>
       );
     }
 

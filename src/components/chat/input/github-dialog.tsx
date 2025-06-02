@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,9 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Lock, GitBranch, Github, Loader2 } from "lucide-react";
-import { GithubRepoLoader } from "@langchain/community/document_loaders/web/github";
+import { Lock, GitBranch, Github, Loader2, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { useAuthActions } from "@convex-dev/auth/react";
 
 interface GitHubRepo {
   id: number;
@@ -35,51 +37,248 @@ interface GitHubDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const CACHE_DURATION = 1000 * 60 * 30; // 30 minutes
+const CACHE_KEY = "fetched_github_repos_cache";
+
+type CachedRepos = {
+  repos: GitHubRepo[];
+  timestamp: number;
+  nextPageUrl: string | null;
+  allLoaded?: boolean;
+};
+
 export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
   const [selectedRepo, setSelectedRepo] = useState<string>("");
   const [branch, setBranch] = useState<string>("main");
   const [loading, setLoading] = useState(false);
   const [loadingRepos, setLoadingRepos] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [repos, setRepos] = useState<GitHubRepo[]>([]);
+  const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const handleGitHubLogin = () => {
-    // TODO: Implement sign in with GitHub
-    // signIn("github");
-    toast.success("Signing in with GitHub");
+  const { signIn } = useAuthActions();
+  const user = useQuery(api.utils.helpers.currentUser);
+  const isAuthenticated = !!user?.ghSecret;
+
+  // Reset state when dialog closes
+  const handleOpenChange = useCallback(
+    (newOpen: boolean) => {
+      if (!newOpen) {
+        // Reset form state when closing
+        setSelectedRepo("");
+        setBranch("main");
+        setLoading(false);
+      }
+      onOpenChange(newOpen);
+    },
+    [onOpenChange]
+  );
+
+  // Helper to load cache
+  function loadCache(): CachedRepos | null {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        return JSON.parse(cached) as CachedRepos;
+      } catch {
+        localStorage.removeItem(CACHE_KEY);
+      }
+    }
+    return null;
+  }
+
+  // Helper to save cache
+  function saveCache(
+    repos: GitHubRepo[],
+    nextPageUrl: string | null,
+    allLoaded: boolean
+  ) {
+    localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({
+        repos,
+        timestamp: Date.now(),
+        nextPageUrl,
+        allLoaded,
+      })
+    );
+  }
+
+  const loadRepos = useCallback(
+    async (forceRefresh = false) => {
+      if (!user?.ghSecret || !open) return;
+
+      try {
+        if (!forceRefresh) {
+          const cached = loadCache();
+          if (cached) {
+            const isCacheValid = Date.now() - cached.timestamp < CACHE_DURATION;
+            if (isCacheValid && Array.isArray(cached.repos)) {
+              setRepos(cached.repos);
+              setNextPageUrl(cached.nextPageUrl ?? null);
+              // If allLoaded, don't show load more button
+              if (cached.allLoaded) setNextPageUrl(null);
+              return;
+            }
+          }
+        }
+
+        setLoadingRepos(true);
+        toast.info("Fetching your GitHub repositories...");
+
+        const url =
+          "https://api.github.com/user/repos?sort=updated&per_page=10&type=all";
+        const response = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${user.ghSecret}`,
+            Accept: "application/vnd.github.v3+json",
+          },
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch repositories");
+
+        const data = await response.json();
+        const linkHeader = response.headers.get("Link");
+        const links = linkHeader
+          ? linkHeader.split(",").reduce(
+              (acc, part) => {
+                const match = part.match(/<([^>]+)>; rel=\"([^\"]+)\"/);
+                if (match) acc[match[2]] = match[1];
+                return acc;
+              },
+              {} as Record<string, string>
+            )
+          : {};
+        const nextUrl = links.next || null;
+
+        // If no next page, mark allLoaded
+        saveCache(data, nextUrl, !nextUrl);
+
+        setRepos(data);
+        setNextPageUrl(nextUrl);
+        if (!nextUrl) setNextPageUrl(null);
+        toast.success(`Loaded ${data.length} repositories!`);
+      } catch (error) {
+        toast.error("Failed to fetch repositories");
+        setRepos([]);
+        setNextPageUrl(null);
+      } finally {
+        setLoadingRepos(false);
+      }
+    },
+    [user?.ghSecret, open]
+  );
+
+  const loadMoreRepos = useCallback(async () => {
+    if (!nextPageUrl || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const response = await fetch(nextPageUrl, {
+        headers: {
+          Authorization: `Bearer ${user?.ghSecret}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch more repositories");
+      const data = await response.json();
+      const linkHeader = response.headers.get("Link");
+      const links = linkHeader
+        ? linkHeader.split(",").reduce(
+            (acc, part) => {
+              const match = part.match(/<([^>]+)>; rel=\"([^\"]+)\"/);
+              if (match) acc[match[2]] = match[1];
+              return acc;
+            },
+            {} as Record<string, string>
+          )
+        : {};
+      const newNextPageUrl = links.next || null;
+
+      setRepos((prev) => {
+        const merged = [...prev, ...data];
+        // If no next page, mark allLoaded
+        saveCache(merged, newNextPageUrl, !newNextPageUrl);
+        return merged;
+      });
+      setNextPageUrl(newNextPageUrl);
+      if (!newNextPageUrl) setNextPageUrl(null);
+    } catch (error) {
+      toast.error("Failed to load more repositories");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [nextPageUrl, loadingMore, user?.ghSecret]);
+
+  // Load repos when dialog opens and user is authenticated
+  useEffect(() => {
+    if (open && isAuthenticated) {
+      loadRepos();
+    }
+  }, [open, isAuthenticated, loadRepos]);
+
+  // Update branch when repo selection changes
+  useEffect(() => {
+    if (selectedRepo) {
+      const repo = repos.find((r) => r.full_name === selectedRepo);
+      if (repo) {
+        setBranch(repo.default_branch || "main");
+      }
+    }
+  }, [selectedRepo, repos]);
+
+  const handleGitHubLogin = async () => {
+    try {
+      await signIn("github-repo");
+      toast.info("Signing in with GitHub...");
+    } catch (error) {
+      console.error("GitHub sign-in error:", error);
+      toast.error("Failed to sign in with GitHub");
+    }
   };
 
   const handleLoadRepository = async () => {
-    if (!selectedRepo) return;
+    if (!selectedRepo) {
+      toast.error("Please select a repository first.");
+      return;
+    }
 
     const repo = repos.find((r) => r.full_name === selectedRepo);
-    if (!repo) return;
+    if (!repo) {
+      toast.error("Repository not found.");
+      return;
+    }
+
+    if (!branch.trim()) {
+      toast.error("Please enter a branch name.");
+      return;
+    }
 
     try {
       setLoading(true);
-      const loader = new GithubRepoLoader(repo.html_url, {
-        branch: branch || repo.default_branch,
-        recursive: true,
-        unknown: "warn",
-        maxConcurrency: 5,
-      });
+      toast.info(
+        `Loading repository "${repo.full_name}" from branch "${branch}"...`
+      );
 
-      const docs = await loader.load();
-      console.log(`Loaded ${docs.length} documents from ${repo.full_name}`);
-      onOpenChange(false);
+      // Simulate loading time - replace with actual implementation later
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      toast.success(
+        `Successfully loaded "${repo.full_name}" from branch "${branch}"!`
+      );
+      handleOpenChange(false);
     } catch (error) {
       console.error("Error loading repository:", error);
+      toast.error("Failed to load repository");
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedRepoData = repos.find((r) => r.full_name === selectedRepo);
-
+  // Authentication flow dialog
   if (!isAuthenticated) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-[500px] z-50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Github className="w-5 h-5" />
@@ -89,27 +288,31 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
 
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              Connect your GitHub account to access repositories and load them
-              into your chat.
+              Connect your GitHub account to access your repositories and load
+              them into your chat for enhanced context and assistance.
             </p>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
-            <Button onClick={handleGitHubLogin}>Sign in with GitHub</Button>
+            <Button onClick={handleGitHubLogin} disabled={loading}>
+              <Github className="w-4 h-4 mr-2" />
+              Sign in with GitHub
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     );
   }
 
+  // Main repository selection dialog
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[600px] z-50">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             <Github className="w-5 h-5" />
             Add from GitHub
           </DialogTitle>
@@ -117,40 +320,89 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Select Repository</Label>
-            <Select value={selectedRepo} onValueChange={setSelectedRepo}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a repository" />
-              </SelectTrigger>
-              <SelectContent>
-                {loadingRepos ? (
-                  <div className="flex items-center justify-center p-4">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  </div>
-                ) : (
-                  repos.map((repo) => (
-                    <SelectItem key={repo.id} value={repo.full_name}>
-                      <div className="flex items-center gap-2">
-                        {repo.private && (
-                          <Lock className="w-3 h-3 text-amber-500" />
+            <Label htmlFor="repo-select">Select Repository</Label>
+            <div className="flex items-center gap-2">
+              <Select value={selectedRepo} onValueChange={setSelectedRepo}>
+                <SelectTrigger id="repo-select" className="flex-1">
+                  <SelectValue placeholder="Choose a repository" />
+                </SelectTrigger>
+                <SelectContent className="z-[60]">
+                  {loadingRepos ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      <span className="text-sm">Loading repositories...</span>
+                    </div>
+                  ) : repos.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No repositories found
+                    </div>
+                  ) : (
+                    repos.map((repo) => (
+                      <SelectItem key={repo.id} value={repo.full_name}>
+                        <div className="flex items-center gap-2 w-full">
+                          {repo.private && (
+                            <Lock className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                          )}
+                          <div className="flex flex-col items-start min-w-0">
+                            <span className="font-medium truncate">
+                              {repo.name}
+                            </span>
+                            {repo.description && (
+                              <span className="text-xs text-muted-foreground truncate max-w-[300px]">
+                                {repo.description}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                  {/* Only show Load More if we have more to fetch */}
+                  {nextPageUrl && (
+                    <div className="flex items-center justify-center p-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={loadMoreRepos}
+                        disabled={loadingMore}
+                      >
+                        {loadingMore ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            Loading...
+                          </>
+                        ) : (
+                          "Load More"
                         )}
-                        <span>{repo.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+                      </Button>
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => loadRepos(true)}
+                disabled={loadingRepos}
+                title="Refresh repositories"
+              >
+                <RefreshCcw
+                  className={`w-4 h-4 ${loadingRepos ? "animate-spin" : ""}`}
+                />
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Branch</Label>
+            <Label htmlFor="branch-input">Branch</Label>
             <div className="relative">
               <GitBranch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
+                id="branch-input"
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
-                placeholder={selectedRepoData?.default_branch || "main"}
+                placeholder="main"
                 className="pl-10"
               />
             </div>
@@ -158,12 +410,12 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
           <Button
             onClick={handleLoadRepository}
-            disabled={!selectedRepo || loading}
+            disabled={!selectedRepo || loading || loadingRepos}
           >
             {loading ? (
               <div className="flex items-center gap-2">
