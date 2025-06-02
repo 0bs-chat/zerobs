@@ -21,16 +21,11 @@ import { toast } from "sonner";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
-
-interface GitHubRepo {
-  id: number;
-  name: string;
-  full_name: string;
-  private: boolean;
-  default_branch: string;
-  html_url: string;
-  description?: string;
-}
+import {
+  fetchRepositories,
+  loadRepository,
+  type GitHubRepo,
+} from "@/lib/github";
 
 interface GitHubDialogProps {
   open: boolean;
@@ -126,38 +121,17 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
         setLoadingRepos(true);
         toast.info("Fetching your GitHub repositories...");
 
-        const url =
-          "https://api.github.com/user/repos?sort=updated&per_page=10&type=all";
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${user.ghSecret}`,
-            Accept: "application/vnd.github.v3+json",
-          },
+        const result = await fetchRepositories({
+          accessToken: user.ghSecret,
         });
 
-        if (!response.ok) throw new Error("Failed to fetch repositories");
-
-        const data = await response.json();
-        const linkHeader = response.headers.get("Link");
-        const links = linkHeader
-          ? linkHeader.split(",").reduce(
-              (acc, part) => {
-                const match = part.match(/<([^>]+)>; rel=\"([^\"]+)\"/);
-                if (match) acc[match[2]] = match[1];
-                return acc;
-              },
-              {} as Record<string, string>
-            )
-          : {};
-        const nextUrl = links.next || null;
-
         // If no next page, mark allLoaded
-        saveCache(data, nextUrl, !nextUrl);
+        saveCache(result.repos, result.nextPageUrl, !result.nextPageUrl);
 
-        setRepos(data);
-        setNextPageUrl(nextUrl);
-        if (!nextUrl) setNextPageUrl(null);
-        toast.success(`Loaded ${data.length} repositories!`);
+        setRepos(result.repos);
+        setNextPageUrl(result.nextPageUrl);
+        if (!result.nextPageUrl) setNextPageUrl(null);
+        toast.success(`Loaded ${result.repos.length} repositories!`);
       } catch (error) {
         toast.error("Failed to fetch repositories");
         setRepos([]);
@@ -170,38 +144,22 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
   );
 
   const loadMoreRepos = useCallback(async () => {
-    if (!nextPageUrl || loadingMore) return;
+    if (!nextPageUrl || loadingMore || !user?.ghSecret) return;
     setLoadingMore(true);
     try {
-      const response = await fetch(nextPageUrl, {
-        headers: {
-          Authorization: `Bearer ${user?.ghSecret}`,
-          Accept: "application/vnd.github.v3+json",
-        },
+      const result = await fetchRepositories({
+        accessToken: user.ghSecret,
+        url: nextPageUrl,
       });
-      if (!response.ok) throw new Error("Failed to fetch more repositories");
-      const data = await response.json();
-      const linkHeader = response.headers.get("Link");
-      const links = linkHeader
-        ? linkHeader.split(",").reduce(
-            (acc, part) => {
-              const match = part.match(/<([^>]+)>; rel=\"([^\"]+)\"/);
-              if (match) acc[match[2]] = match[1];
-              return acc;
-            },
-            {} as Record<string, string>
-          )
-        : {};
-      const newNextPageUrl = links.next || null;
 
       setRepos((prev) => {
-        const merged = [...prev, ...data];
+        const merged = [...prev, ...result.repos];
         // If no next page, mark allLoaded
-        saveCache(merged, newNextPageUrl, !newNextPageUrl);
+        saveCache(merged, result.nextPageUrl, !result.nextPageUrl);
         return merged;
       });
-      setNextPageUrl(newNextPageUrl);
-      if (!newNextPageUrl) setNextPageUrl(null);
+      setNextPageUrl(result.nextPageUrl);
+      if (!result.nextPageUrl) setNextPageUrl(null);
     } catch (error) {
       toast.error("Failed to load more repositories");
     } finally {
@@ -253,19 +211,29 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
       return;
     }
 
+    if (!user?.ghSecret) {
+      toast.error("GitHub authentication required.");
+      return;
+    }
+
     try {
       setLoading(true);
       toast.info(
         `Loading repository "${repo.full_name}" from branch "${branch}"...`
       );
 
-      // Simulate loading time - replace with actual implementation later
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const result = await loadRepository({
+        accessToken: user.ghSecret,
+        repoFullName: repo.full_name,
+        branch: branch.trim(),
+      });
 
-      toast.success(
-        `Successfully loaded "${repo.full_name}" from branch "${branch}"!`
-      );
-      handleOpenChange(false);
+      if (result.success) {
+        toast.success(result.message);
+        handleOpenChange(false);
+      } else {
+        toast.error(result.message);
+      }
     } catch (error) {
       console.error("Error loading repository:", error);
       toast.error("Failed to load repository");
@@ -288,8 +256,7 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
 
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              Connect your GitHub account to access your repositories and load
-              them into your chat for enhanced context and assistance.
+              Connect your GitHub account to access your repositories.
             </p>
           </div>
 
@@ -327,57 +294,59 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
                   <SelectValue placeholder="Choose a repository" />
                 </SelectTrigger>
                 <SelectContent className="z-[60]">
-                  {loadingRepos ? (
-                    <div className="flex items-center justify-center p-4">
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      <span className="text-sm">Loading repositories...</span>
-                    </div>
-                  ) : repos.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
-                      No repositories found
-                    </div>
-                  ) : (
-                    repos.map((repo) => (
-                      <SelectItem key={repo.id} value={repo.full_name}>
-                        <div className="flex items-center gap-2 w-full">
-                          {repo.private && (
-                            <Lock className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                          )}
-                          <div className="flex flex-col items-start min-w-0">
-                            <span className="font-medium truncate">
-                              {repo.name}
-                            </span>
-                            {repo.description && (
-                              <span className="text-xs text-muted-foreground truncate max-w-[300px]">
-                                {repo.description}
-                              </span>
+                  <div className="h-[300px] overflow-y-auto scrollbar-hide">
+                    {loadingRepos ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        <span className="text-sm">Loading repositories...</span>
+                      </div>
+                    ) : repos.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        No repositories found
+                      </div>
+                    ) : (
+                      repos.map((repo) => (
+                        <SelectItem key={repo.id} value={repo.full_name}>
+                          <div className="flex items-center gap-2 w-full">
+                            {repo.private && (
+                              <Lock className="w-3 h-3 text-amber-500 flex-shrink-0" />
                             )}
+                            <div className="flex flex-col items-start min-w-0">
+                              <span className="font-medium truncate">
+                                {repo.name}
+                              </span>
+                              {repo.description && (
+                                <span className="text-xs text-muted-foreground truncate max-w-[300px]">
+                                  {repo.description}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </SelectItem>
-                    ))
-                  )}
-                  {/* Only show Load More if we have more to fetch */}
-                  {nextPageUrl && (
-                    <div className="flex items-center justify-center p-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={loadMoreRepos}
-                        disabled={loadingMore}
-                      >
-                        {loadingMore ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                            Loading...
-                          </>
-                        ) : (
-                          "Load More"
-                        )}
-                      </Button>
-                    </div>
-                  )}
+                        </SelectItem>
+                      ))
+                    )}
+                    {/* Only show Load More if we have more to fetch */}
+                    {nextPageUrl && (
+                      <div className="flex items-center justify-center p-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={loadMoreRepos}
+                          disabled={loadingMore}
+                        >
+                          {loadingMore ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              Loading...
+                            </>
+                          ) : (
+                            "Load More"
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </SelectContent>
               </Select>
               <Button
