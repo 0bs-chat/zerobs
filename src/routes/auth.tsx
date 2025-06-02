@@ -1,7 +1,7 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "@/components/ui/button";
-import { useQuery, useConvexAuth } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
 
@@ -11,16 +11,23 @@ export const Route = createFileRoute("/auth")({
 
 function RouteComponent() {
   const { signIn } = useAuthActions();
-  const { isAuthenticated } = useConvexAuth();
   const providers = ["github", "google"] as const;
-
-  if (isAuthenticated) {
-    return <Navigate to="/" />;
-  }
+  const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full">
-      <Button onClick={() => signIn("anonymous")}>Sign in Anonymously</Button>
+    <div className="flex flex-col items-center gap-2 justify-center h-full w-full">
+      <Button
+        variant="default"
+        className="px-4 text-lg py-6 cursor-pointer"
+        onClick={() => {
+          signIn("anonymous");
+          toast.success("Signed in anonymously");
+          navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
+        }}
+      >
+        Anonymous Sign in 🥷
+      </Button>
+
       {providers.map((provider) => {
         const isProviderEnabled = useQuery(api.auth.isProviderEnabled, {
           provider,
@@ -28,6 +35,8 @@ function RouteComponent() {
         if (isProviderEnabled) {
           return (
             <Button
+              variant="default"
+              className="px-4 text-lg py-6 cursor-pointer"
               key={provider}
               onClick={() => {
                 console.log("Signing in with", provider);

@@ -9,9 +9,9 @@ import {
   SidebarGroupContent,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
-import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
+import { Navigate, useNavigate, useParams } from "@tanstack/react-router";
 import { api } from "../../convex/_generated/api";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 
 import {
   PinIcon,
@@ -25,18 +25,16 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
 export function AppSidebar() {
+  const { isAuthenticated } = useConvexAuth();
   const navigate = useNavigate();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" />;
+  }
 
   const chats = useQuery(api.chats.queries.getAll, {
     paginationOpts: { numItems: 10, cursor: null },
   });
-
-  const restrictedRoutes = ["/auth"];
-  const { pathname } = useLocation();
-
-  if (restrictedRoutes.includes(pathname)) {
-    return null;
-  }
 
   const selectedChatId = useParams({ strict: false }).chatId;
 

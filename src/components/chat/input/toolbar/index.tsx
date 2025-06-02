@@ -103,24 +103,25 @@ export const Toolbar = () => {
   }, [chatId, getModelAction]);
 
   const handleSubmit = async () => {
-    // Always create a new chat and chat input, no need to check for "new"
-    const newChatId = await createChatMutation({
-      name: "New Chat",
-    });
-    await createChatInputMutation({
-      chatId: newChatId,
-      documents: chatInput?.documents,
-      text: chatInput?.text,
-      projectId: chatInput?.projectId,
-      plannerMode: chatInput?.plannerMode,
-      agentMode: chatInput?.agentMode,
-      webSearch: chatInput?.webSearch,
-      model: getModelResult?.selectedModel.model ?? "",
-    });
-    await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
-    await sendAction({
-      chatId: newChatId,
-    });
+    if (chatId === "new") {
+      const newChatId = await createChatMutation({
+        name: "New Chat",
+      });
+      await createChatInputMutation({
+        chatId: newChatId,
+        documents: chatInput?.documents,
+        text: chatInput?.text,
+        projectId: chatInput?.projectId,
+        plannerMode: chatInput?.plannerMode,
+        agentMode: chatInput?.agentMode,
+        webSearch: chatInput?.webSearch,
+        model: getModelResult?.selectedModel.model ?? "",
+      });
+      await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
+      await sendAction({
+        chatId: newChatId,
+      });
+    }
   };
 
   const handleFileUpload = async (files: FileList) => {

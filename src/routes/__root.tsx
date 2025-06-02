@@ -1,5 +1,5 @@
-import { Outlet, createRootRoute, Navigate } from "@tanstack/react-router";
-// import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { Navigate, Outlet, createRootRoute } from "@tanstack/react-router";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { useConvexAuth } from "convex/react";
@@ -11,7 +11,6 @@ import { ProjectDialog } from "@/components/project-dialog";
 import { TopNav } from "@/components/topnav";
 import { ResizablePanelGroup } from "@/components/ui/resizable";
 import { ResizablePanel } from "@/components/ui/resizable";
-import { ChatInput } from "@/components/chat/input";
 import { ResizableHandle } from "@/components/ui/resizable";
 import { Panel } from "@/components/chat/panel";
 import { useChat } from "@/store/use-chat";
@@ -21,11 +20,7 @@ export const Route = createRootRoute({
     const { isLoading, isAuthenticated } = useConvexAuth();
     const { resizablePanelsOpen } = useChat();
 
-    if (
-      !isLoading &&
-      !isAuthenticated &&
-      !location.pathname.startsWith("/auth")
-    ) {
+    if (!isAuthenticated) {
       return <Navigate to="/auth" />;
     }
 
@@ -50,7 +45,6 @@ export const Route = createRootRoute({
             <ResizablePanelGroup direction="horizontal">
               <ResizablePanel className="flex flex-col h-full p-2 items-center justify-end gap-2">
                 <Outlet />
-                <ChatInput />
               </ResizablePanel>
               {resizablePanelsOpen && (
                 <>
@@ -64,7 +58,7 @@ export const Route = createRootRoute({
           </div>
         </SidebarProvider>
         <Toaster />
-        {/* <TanStackRouterDevtools /> */}
+        <TanStackRouterDevtools />
       </ThemeProvider>
     );
   },
