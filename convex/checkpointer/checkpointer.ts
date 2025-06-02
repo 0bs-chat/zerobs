@@ -1,127 +1,247 @@
 "use node";
-
-import type { ActionCtx } from "../_generated/server";
+import { ActionCtx } from "../_generated/server";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import {
   BaseCheckpointSaver,
   type Checkpoint,
-  type CheckpointMetadata,
-  type CheckpointTuple,
-  type PendingWrite,
-  type ChannelVersions,
   type CheckpointListOptions,
+  type CheckpointTuple,
+  type SerializerProtocol,
+  type PendingWrite,
+  type CheckpointMetadata,
+  copyCheckpoint,
 } from "@langchain/langgraph-checkpoint";
-import type { SerializerProtocol } from "@langchain/langgraph-checkpoint";
 import { internal } from "../_generated/api";
+import { v } from "convex/values";
 
-// Use a more specific context type to ensure we have the right methods
-type WriteableConvexCtx = ActionCtx;
-type ReadableConvexCtx = ActionCtx
+export class ConvexCheckpointSaver extends BaseCheckpointSaver {
+  ctx: ActionCtx;
+  namespace: string;
 
-export class ConvexSaverInternal extends BaseCheckpointSaver {
-  private namespace: string;
-
-  constructor(private ctx: ReadableConvexCtx, serde?: SerializerProtocol, namespace = "default") {
+  constructor(
+    ctx: ActionCtx,
+    namespace: string = "default",
+    serde?: SerializerProtocol
+  ) {
     super(serde);
+    this.ctx = ctx;
     this.namespace = namespace;
   }
 
-  private getThreadId(config: RunnableConfig): string {
-    return config.configurable?.thread_id || "default";
+  // Helper method to recursively serialize Langchain objects into plain objects for Convex
+  private _serializeRecursively(value: any): any {
+    // Handle null or undefined
+    if (value === null || value === undefined) {
+      return value;
+    }
+
+    // Handle arrays
+    if (Array.isArray(value)) {
+      return value.map((item) => this._serializeRecursively(item));
+    }
+
+    // Handle plain objects, including Langchain objects
+    if (typeof value === "object") {
+      // Check if it's a serializable Langchain object (has lc property with value 1)
+      if (value.lc === 1 && value.type === "constructor" && Array.isArray(value.id)) {
+        try {
+          const [type, serialized] = this.serde.dumpsTyped(value);
+          return {
+            __lc_convex_serialized__: true,
+            type,
+            data: new TextDecoder().decode(serialized),
+          };
+        } catch (e) {
+          console.error("Failed to serialize Langchain object:", e);
+          // Fall back to plain object serialization
+        }
+      }
+
+      // Handle other objects recursively
+      const result: Record<string, any> = {};
+      for (const [key, val] of Object.entries(value)) {
+        result[key] = this._serializeRecursively(val);
+      }
+      return result;
+    }
+
+    // Return primitives as is
+    return value;
   }
 
-  private getCheckpointNs(config: RunnableConfig): string {
-    return config.configurable?.checkpoint_ns || "default";
+  // Helper method to recursively deserialize plain objects back into Langchain objects
+  private _deserializeRecursively(value: any): any {
+    // Handle null or undefined
+    if (value === null || value === undefined) {
+      return value;
+    }
+
+    // Handle arrays
+    if (Array.isArray(value)) {
+      return value.map((item) => this._deserializeRecursively(item));
+    }
+
+    // Handle plain objects, including serialized Langchain objects
+    if (typeof value === "object") {
+      // Check if it's a serialized Langchain object
+      if (value.__lc_convex_serialized__ === true && value.type && value.data) {
+        try {
+          return this.serde.loadsTyped(
+            value.type,
+            new TextEncoder().encode(value.data)
+          );
+        } catch (e) {
+          console.error("Failed to deserialize Langchain object:", e);
+          // Return the serialized form if deserialization fails
+          return value;
+        }
+      }
+
+      // Handle other objects recursively
+      const result: Record<string, any> = {};
+      for (const [key, val] of Object.entries(value)) {
+        result[key] = this._deserializeRecursively(val);
+      }
+      return result;
+    }
+
+    // Return primitives as is
+    return value;
   }
 
   async getTuple(config: RunnableConfig): Promise<CheckpointTuple | undefined> {
-    const threadId = this.getThreadId(config);
-    const checkpointNs = this.getCheckpointNs(config);
-    const checkpointId = config.configurable?.checkpoint_id;
+    const {
+      thread_id,
+      checkpoint_ns = "",
+      checkpoint_id,
+    } = config.configurable ?? {};
 
-    // Get the checkpoint
-    const checkpointRow = await this.ctx.runQuery(internal.checkpointer.queries.getCheckpoint, {
-      thread_id: threadId,
-      checkpoint_ns: checkpointNs,
-      checkpoint_id: checkpointId,
-      namespace: this.namespace,
-    });
-
-    if (!checkpointRow) {
+    if (!thread_id) {
       return undefined;
     }
 
-    // Get channel values
-    const channelValues = await this.ctx.runQuery(internal.checkpointer.queries.getChannelValues, {
-      thread_id: threadId,
-      checkpoint_ns: checkpointNs,
-      channel_versions: checkpointRow.checkpoint.channel_versions,
+    // Get the checkpoint
+    const checkpoint = await this.ctx.runQuery(internal.checkpointer.queries.getCheckpoint, {
+      thread_id,
+      checkpoint_ns,
+      checkpoint_id,
       namespace: this.namespace,
     });
 
-    // Deserialize channel values
-    const channels: Record<string, any> = {};
-    for (const { channel, type, blob } of channelValues) {
-      if (blob) {
-        // Convert ArrayBuffer to Uint8Array
-        const uint8Array = new Uint8Array(blob);
-        channels[channel] = this.serde.loadsTyped(type, uint8Array);
-      }
+    if (!checkpoint) {
+      return undefined;
     }
 
-    // Reconstruct the original checkpoint with properly deserialized channel values
-    const originalCheckpoint = {
-      ...checkpointRow.checkpoint,
-      // Merge the deserialized channel values from blobs with any already in the checkpoint
-      channel_values: {
-        ...checkpointRow.checkpoint.channel_values,
-        ...channels
+    let finalConfig = config;
+    if (!checkpoint_id) {
+      finalConfig = {
+        configurable: {
+          thread_id: checkpoint.thread_id,
+          checkpoint_ns: checkpoint.checkpoint_ns,
+          checkpoint_id: checkpoint.checkpoint_id,
+        },
+      };
+    }
+
+    if (
+      finalConfig.configurable?.thread_id === undefined ||
+      finalConfig.configurable?.checkpoint_id === undefined
+    ) {
+      throw new Error("Missing thread_id or checkpoint_id");
+    }
+
+    // Get pending writes
+    const pendingWritesData = await this.ctx.runQuery(
+      internal.checkpointer.queries.getPendingWrites,
+      {
+        thread_id: checkpoint.thread_id,
+        checkpoint_ns: checkpoint.checkpoint_ns,
+        checkpoint_id: checkpoint.checkpoint_id,
+        namespace: this.namespace,
       }
-    };
+    );
+
+    const pendingWrites = await Promise.all(
+      pendingWritesData.map(async (write) => {
+        return [
+          write.task_id,
+          write.channel,
+          await this.serde.loadsTyped(
+            write.type ?? "json",
+            new TextDecoder().decode(write.blob)
+          ),
+        ] as [string, string, unknown];
+      })
+    );
 
     // Get pending sends
-    const pendingSends = await this.ctx.runQuery(internal.checkpointer.queries.getPendingSends, {
-      thread_id: threadId,
-      checkpoint_ns: checkpointNs,
-      parent_checkpoint_id: checkpointRow.parent_checkpoint_id,
-      namespace: this.namespace,
-    });
+    const pendingSendsData = await this.ctx.runQuery(
+      internal.checkpointer.queries.getPendingSends,
+      {
+        thread_id: checkpoint.thread_id,
+        checkpoint_ns: checkpoint.checkpoint_ns,
+        parent_checkpoint_id: checkpoint.parent_checkpoint_id,
+        namespace: this.namespace,
+      }
+    );
 
-    // Deserialize pending sends
-    const sends: [string, string, unknown][] = [];
-    for (const { type, blob } of pendingSends) {
-      // Convert ArrayBuffer to Uint8Array
-      const uint8Array = new Uint8Array(blob);
-      const decoded = this.serde.loadsTyped(type, uint8Array);
-      // Ensure we have a 3-element tuple
-      const send = Array.isArray(decoded) && decoded.length === 2 
-        ? [decoded[0], "", decoded[1]] as [string, string, unknown]
-        : decoded as [string, string, unknown];
-      sends.push(send);
+    const pending_sends = await Promise.all(
+      pendingSendsData.map((send) =>
+        this.serde.loadsTyped(
+          send.type ?? "json",
+          new TextDecoder().decode(send.blob)
+        )
+      )
+    );
+
+    // Reconstruct the checkpoint with channel values
+    const channelValues = await this.ctx.runQuery(
+      internal.checkpointer.queries.getChannelValues,
+      {
+        thread_id: checkpoint.thread_id,
+        checkpoint_ns: checkpoint.checkpoint_ns,
+        channel_versions: checkpoint.checkpoint.channel_versions || {},
+        namespace: this.namespace,
+      }
+    );
+
+    // Deserialize the checkpoint and metadata
+    const deserializedCheckpointObj = this._deserializeRecursively(checkpoint.checkpoint);
+    const deserializedMetadata = this._deserializeRecursively(checkpoint.metadata);
+
+    const deserializedCheckpoint = {
+      ...deserializedCheckpointObj,
+      pending_sends,
+    } as Checkpoint;
+
+    // Add channel values to checkpoint
+    if (channelValues.length > 0) {
+      const channelData: Record<string, unknown> = {};
+      for (const channelValue of channelValues) {
+        if (channelValue.blob) {
+          channelData[channelValue.channel] = await this.serde.loadsTyped(
+            channelValue.type ?? "json",
+            new TextDecoder().decode(channelValue.blob)
+          );
+        }
+      }
+      Object.assign(deserializedCheckpoint, channelData);
     }
 
     return {
-      config: {
-        ...config,
-        configurable: {
-          ...config.configurable,
-          thread_id: threadId,
-          checkpoint_ns: checkpointNs,
-          checkpoint_id: checkpointRow.checkpoint_id,
-        },
-      },
-      checkpoint: originalCheckpoint,
-      metadata: checkpointRow.metadata || {},
-      parentConfig: checkpointRow.parent_checkpoint_id
+      checkpoint: deserializedCheckpoint,
+      config: finalConfig,
+      metadata: deserializedMetadata as CheckpointMetadata,
+      parentConfig: checkpoint.parent_checkpoint_id
         ? {
-            ...config,
             configurable: {
-              ...config.configurable,
-              checkpoint_id: checkpointRow.parent_checkpoint_id,
+              thread_id: checkpoint.thread_id,
+              checkpoint_ns: checkpoint.checkpoint_ns,
+              checkpoint_id: checkpoint.parent_checkpoint_id,
             },
           }
         : undefined,
-      pendingWrites: sends,
+      pendingWrites,
     };
   }
 
@@ -129,91 +249,122 @@ export class ConvexSaverInternal extends BaseCheckpointSaver {
     config: RunnableConfig,
     options?: CheckpointListOptions
   ): AsyncGenerator<CheckpointTuple> {
-    const threadId = this.getThreadId(config);
-    const checkpointNs = this.getCheckpointNs(config);
+    const { limit, before, filter } = options ?? {};
+    const thread_id = config.configurable?.thread_id;
+    const checkpoint_ns = config.configurable?.checkpoint_ns ?? "";
+
+    if (!thread_id) {
+      return;
+    }
 
     const checkpoints = await this.ctx.runQuery(internal.checkpointer.queries.listCheckpoints, {
-      thread_id: threadId,
-      checkpoint_ns: checkpointNs,
-      checkpoint_id: options?.filter?.checkpoint_id,
-      filter: options?.filter || {},
-      before: options?.before?.configurable?.checkpoint_id,
-      limit: options?.limit,
+      thread_id,
+      checkpoint_ns,
+      filter: filter || {},
+      before: before?.configurable?.checkpoint_id,
+      limit,
       namespace: this.namespace,
     });
 
-    for (const checkpointRow of checkpoints) {
-      // Get channel values for this checkpoint
-      const channelValues = await this.ctx.runQuery(internal.checkpointer.queries.getChannelValues, {
-        thread_id: threadId,
-        checkpoint_ns: checkpointNs,
-        channel_versions: checkpointRow.checkpoint.channel_versions,
-        namespace: this.namespace,
-      });
-
-      // Deserialize channel values
-      const channels: Record<string, any> = {};
-      for (const { channel, type, blob } of channelValues) {
-        if (blob) {
-          // Convert ArrayBuffer to Uint8Array
-          const uint8Array = new Uint8Array(blob);
-          channels[channel] = this.serde.loadsTyped(type, uint8Array);
+    for (const checkpoint of checkpoints) {
+      // Get pending writes
+      const pendingWritesData = await this.ctx.runQuery(
+        internal.checkpointer.queries.getPendingWrites,
+        {
+          thread_id: checkpoint.thread_id,
+          checkpoint_ns: checkpoint.checkpoint_ns,
+          checkpoint_id: checkpoint.checkpoint_id,
+          namespace: this.namespace,
         }
-      }
+      );
 
-      // Reconstruct the original checkpoint with properly deserialized channel values
-      const originalCheckpoint = {
-        ...checkpointRow.checkpoint,
-        // Merge the deserialized channel values from blobs with any already in the checkpoint
-        channel_values: {
-          ...checkpointRow.checkpoint.channel_values,
-          ...channels
-        }
-      };
+      const pendingWrites = await Promise.all(
+        pendingWritesData.map(async (write) => {
+          return [
+            write.task_id,
+            write.channel,
+            await this.serde.loadsTyped(
+              write.type ?? "json",
+              new TextDecoder().decode(write.blob)
+            ),
+          ] as [string, string, unknown];
+        })
+      );
 
       // Get pending sends
-      const pendingSends = await this.ctx.runQuery(internal.checkpointer.queries.getPendingSends, {
-        thread_id: threadId,
-        checkpoint_ns: checkpointNs,
-        parent_checkpoint_id: checkpointRow.parent_checkpoint_id,
-        namespace: this.namespace,
-      });
+      const pendingSendsData = await this.ctx.runQuery(
+        internal.checkpointer.queries.getPendingSends,
+        {
+          thread_id: checkpoint.thread_id,
+          checkpoint_ns: checkpoint.checkpoint_ns,
+          parent_checkpoint_id: checkpoint.parent_checkpoint_id,
+          namespace: this.namespace,
+        }
+      );
 
-      // Deserialize pending sends
-      const sends: [string, string, unknown][] = [];
-      for (const { type, blob } of pendingSends) {
-        // Convert ArrayBuffer to Uint8Array
-        const uint8Array = new Uint8Array(blob);
-        const decoded = this.serde.loadsTyped(type, uint8Array);
-        // Ensure we have a 3-element tuple
-        const send = Array.isArray(decoded) && decoded.length === 2 
-          ? [decoded[0], "", decoded[1]] as [string, string, unknown]
-          : decoded as [string, string, unknown];
-        sends.push(send);
+      const pending_sends = await Promise.all(
+        pendingSendsData.map((send) =>
+          this.serde.loadsTyped(
+            send.type ?? "json",
+            new TextDecoder().decode(send.blob)
+          )
+        )
+      );
+
+      // Get channel values
+      const channelValues = await this.ctx.runQuery(
+        internal.checkpointer.queries.getChannelValues,
+        {
+          thread_id: checkpoint.thread_id,
+          checkpoint_ns: checkpoint.checkpoint_ns,
+          channel_versions: checkpoint.checkpoint.channel_versions || {},
+          namespace: this.namespace,
+        }
+      );
+
+      // Deserialize the checkpoint and metadata
+      const deserializedCheckpointObj = this._deserializeRecursively(checkpoint.checkpoint);
+      const deserializedMetadata = this._deserializeRecursively(checkpoint.metadata);
+
+      const deserializedCheckpoint = {
+        ...deserializedCheckpointObj,
+        pending_sends,
+      } as Checkpoint;
+
+      // Add channel values to checkpoint
+      if (channelValues.length > 0) {
+        const channelData: Record<string, unknown> = {};
+        for (const channelValue of channelValues) {
+          if (channelValue.blob) {
+            channelData[channelValue.channel] = await this.serde.loadsTyped(
+              channelValue.type ?? "json",
+              new TextDecoder().decode(channelValue.blob)
+            );
+          }
+        }
+        Object.assign(deserializedCheckpoint, channelData);
       }
 
       yield {
         config: {
-          ...config,
           configurable: {
-            ...config.configurable,
-            thread_id: threadId,
-            checkpoint_ns: checkpointNs,
-            checkpoint_id: checkpointRow.checkpoint_id,
+            thread_id: checkpoint.thread_id,
+            checkpoint_ns: checkpoint.checkpoint_ns,
+            checkpoint_id: checkpoint.checkpoint_id,
           },
         },
-        checkpoint: originalCheckpoint,
-        metadata: checkpointRow.metadata || {},
-        parentConfig: checkpointRow.parent_checkpoint_id
+        checkpoint: deserializedCheckpoint,
+        metadata: deserializedMetadata as CheckpointMetadata,
+        parentConfig: checkpoint.parent_checkpoint_id
           ? {
-              ...config,
               configurable: {
-                ...config.configurable,
-                checkpoint_id: checkpointRow.parent_checkpoint_id,
+                thread_id: checkpoint.thread_id,
+                checkpoint_ns: checkpoint.checkpoint_ns,
+                checkpoint_id: checkpoint.parent_checkpoint_id,
               },
             }
           : undefined,
-        pendingWrites: sends,
+        pendingWrites,
       };
     }
   }
@@ -221,76 +372,67 @@ export class ConvexSaverInternal extends BaseCheckpointSaver {
   async put(
     config: RunnableConfig,
     checkpoint: Checkpoint,
-    metadata: CheckpointMetadata,
-    newVersions: ChannelVersions
+    metadata: CheckpointMetadata
   ): Promise<RunnableConfig> {
-    if (!this.isWriteableCtx(this.ctx)) {
-      throw new Error("Cannot perform mutation with read-only context");
+    if (!config.configurable) {
+      throw new Error("Empty configuration supplied.");
     }
 
-    const threadId = this.getThreadId(config);
-    const checkpointNs = this.getCheckpointNs(config);
-    const checkpointId = checkpoint.id;
-    const parentCheckpointId = config.configurable?.checkpoint_id;
+    const thread_id = config.configurable?.thread_id;
+    const checkpoint_ns = config.configurable?.checkpoint_ns ?? "";
+    const parent_checkpoint_id = config.configurable?.checkpoint_id;
 
-    // Create a safe copy of the checkpoint for Convex
-    // We need to ensure complex objects are properly serialized
-    const safeCheckpoint = {
-      ...checkpoint,
-      // Stringify any complex objects to ensure they're Convex-compatible
-      channel_values: Object.fromEntries(
-        Object.entries(checkpoint.channel_values).map(([key, value]) => {
-          // If the value is a complex object, serialize it
-          if (value !== null && typeof value === 'object') {
-            // Store serialized data in the checkpoint's type field
-            return [key, JSON.parse(JSON.stringify(value))];
-          }
-          return [key, value];
-        })
-      )
-    };
+    if (!thread_id) {
+      throw new Error(
+        `Missing "thread_id" field in passed "config.configurable".`
+      );
+    }
 
-    // Serialize channel blobs
+    const preparedCheckpoint: Partial<Checkpoint> = copyCheckpoint(checkpoint);
+    delete preparedCheckpoint.pending_sends;
+
+    // Serialize checkpoint and metadata for Convex storage
+    const serializedCheckpoint = this._serializeRecursively(preparedCheckpoint);
+    const serializedMetadata = this._serializeRecursively(metadata);
+
+    // Prepare blobs for channels
     const blobs = [];
-    for (const [channel, version] of Object.entries(newVersions)) {
-      const value = checkpoint.channel_values[channel];
-      if (value !== undefined) {
-        const [type, blob] = this.serde.dumpsTyped(value);
-        
-        // Convert to ArrayBuffer for Convex compatibility
-        const arrayBuffer = blob ? blob.buffer : undefined;
-        
-        blobs.push({
-          thread_id: threadId,
-          checkpoint_ns: checkpointNs,
-          channel,
-          version: String(version),
-          type,
-          blob: arrayBuffer,
-          namespace: this.namespace,
-        });
+    if (checkpoint.channel_versions) {
+      for (const [channel, version] of Object.entries(
+        checkpoint.channel_versions
+      )) {
+        const channelValue = (checkpoint as any)[channel];
+        if (channelValue !== undefined) {
+          const [type, serializedValue] = this.serde.dumpsTyped(channelValue);
+          blobs.push({
+            thread_id,
+            checkpoint_ns,
+            channel,
+            version: String(version),
+            type,
+            blob: new Uint8Array(serializedValue).buffer,
+            namespace: this.namespace,
+          });
+        }
       }
     }
 
-    // Save checkpoint and blobs
     await this.ctx.runMutation(internal.checkpointer.mutations.putCheckpoint, {
-      thread_id: threadId,
-      checkpoint_ns: checkpointNs,
-      checkpoint_id: checkpointId,
-      parent_checkpoint_id: parentCheckpointId,
-      checkpoint: safeCheckpoint,
-      metadata: JSON.parse(JSON.stringify(metadata)), // Ensure metadata is also Convex-compatible
+      thread_id,
+      checkpoint_ns,
+      checkpoint_id: checkpoint.id,
+      parent_checkpoint_id,
+      checkpoint: serializedCheckpoint,
+      metadata: serializedMetadata,
       blobs,
       namespace: this.namespace,
     });
 
     return {
-      ...config,
       configurable: {
-        ...config.configurable,
-        thread_id: threadId,
-        checkpoint_ns: checkpointNs,
-        checkpoint_id: checkpointId,
+        thread_id,
+        checkpoint_ns,
+        checkpoint_id: checkpoint.id,
       },
     };
   }
@@ -300,85 +442,36 @@ export class ConvexSaverInternal extends BaseCheckpointSaver {
     writes: PendingWrite[],
     taskId: string
   ): Promise<void> {
-    if (!this.isWriteableCtx(this.ctx)) {
-      throw new Error("Cannot perform mutation with read-only context");
+    if (!config.configurable) {
+      throw new Error("Empty configuration supplied.");
     }
 
-    const threadId = this.getThreadId(config);
-    const checkpointNs = this.getCheckpointNs(config);
-    const checkpointId = config.configurable?.checkpoint_id;
-
-    if (!checkpointId) {
-      throw new Error("Checkpoint ID is required for putWrites");
+    if (!config.configurable?.thread_id) {
+      throw new Error("Missing thread_id field in config.configurable.");
     }
 
-    const serializedWrites = writes.map((write, idx) => {
-      const channel = write[0];
-      const value = write[1];
-      const [type, blob] = this.serde.dumpsTyped(value);
+    if (!config.configurable?.checkpoint_id) {
+      throw new Error("Missing checkpoint_id field in config.configurable.");
+    }
 
-      // Convert to Uint8Array for Convex compatibility
-      // Convex expects ArrayBuffer, not Node.js Buffer objects
-      const arrayBuffer = blob ? blob.buffer : new ArrayBuffer(0);
-
+    const writeRows = writes.map((write, idx) => {
+      const [type, serializedWrite] = this.serde.dumpsTyped(write[1]);
       return {
-        thread_id: threadId,
-        checkpoint_ns: checkpointNs,
-        checkpoint_id: checkpointId,
+        thread_id: config.configurable!.thread_id,
+        checkpoint_ns: config.configurable!.checkpoint_ns ?? "",
+        checkpoint_id: config.configurable!.checkpoint_id,
         task_id: taskId,
         idx,
-        channel,
+        channel: write[0],
         type,
-        blob: arrayBuffer,
+        blob: new Uint8Array(serializedWrite).buffer,
         namespace: this.namespace,
       };
     });
 
     await this.ctx.runMutation(internal.checkpointer.mutations.putWrites, {
-      writes: serializedWrites,
+      writes: writeRows,
       namespace: this.namespace,
     });
   }
-
-  async aget(config: RunnableConfig): Promise<CheckpointTuple | undefined> {
-    return this.getTuple(config);
-  }
-
-  async *alist(
-    config: RunnableConfig,
-    options?: CheckpointListOptions
-  ): AsyncGenerator<CheckpointTuple> {
-    yield* this.list(config, options);
-  }
-
-  async aput(
-    config: RunnableConfig,
-    checkpoint: Checkpoint,
-    metadata: CheckpointMetadata,
-    newVersions: ChannelVersions
-  ): Promise<RunnableConfig> {
-    return this.put(config, checkpoint, metadata, newVersions);
-  }
-
-  async aputWrites(
-    config: RunnableConfig,
-    writes: PendingWrite[],
-    taskId: string
-  ): Promise<void> {
-    return this.putWrites(config, writes, taskId);
-  }
-
-  // Helper method to check if context supports write operations
-  private isWriteableCtx(ctx: ReadableConvexCtx): ctx is WriteableConvexCtx {
-    return 'runMutation' in ctx;
-  }
-}
-
-// Factory function for different Convex contexts
-export function createConvexCheckpointer(
-  ctx: ReadableConvexCtx,
-  serde?: SerializerProtocol,
-  namespace?: string
-): ConvexSaverInternal {
-  return new ConvexSaverInternal(ctx, serde, namespace);
 }

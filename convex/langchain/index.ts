@@ -8,13 +8,7 @@ import type { Doc } from "../_generated/dataModel";
 import { HumanMessage } from "@langchain/core/messages";
 import { formatDocument } from "./models";
 import { api, internal } from "../_generated/api";
-import { createConvexCheckpointer } from "../checkpointer/checkpointer";
-import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres"
-
-const pgcheckpointer = PostgresSaver.fromConnString(
-  "postgresql://db_owner:npg_smWExcVX64oB@ep-steep-hat-a6146p9t-pooler.us-west-2.aws.neon.tech/db?sslmode=require"
-);
-await pgcheckpointer.setup();
+import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
 
 export const chat = internalAction({
   args: {
@@ -32,6 +26,12 @@ export const chat = internalAction({
         chunk: JSON.stringify(event),
       });
     }
+    await ctx.runMutation(api.streams.mutations.update, {
+      streamId: chatInput.streamId!,
+      updates: {
+        status: "done",
+      },
+    });
   },
 });
 
@@ -65,7 +65,7 @@ async function* streamHelper(
     chatId: args.chatInput.chatId,
   });
 
-  const checkpointer = createConvexCheckpointer(ctx);
+  const checkpointer = new ConvexCheckpointSaver(ctx);
   const response = (agentGraph.compile({ checkpointer: checkpointer })).streamEvents(
     {
       messages: [humanMessage],
@@ -90,7 +90,7 @@ export const getState = internalAction({
     chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
-    const checkpointer = createConvexCheckpointer(ctx);
+    const checkpointer = new ConvexCheckpointSaver(ctx);
     const agent = agentGraph.compile({ checkpointer: checkpointer });
     return JSON.stringify(await agent.getState({ configurable: { thread_id: args.chatId } }))
   },

@@ -17,12 +17,12 @@ export const update = mutation({
       streamId: args.streamId,
     });
 
-    // if (args.updates.status === "done") {
-    //   const chunks = await ctx.db.query("streamChunks")
-    //     .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
-    //     .collect();
-    //   await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
-    // }
+    if (args.updates.status === "done") {
+      const chunks = await ctx.db.query("streamChunks")
+        .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
+        .collect();
+      await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
+    }
 
     await ctx.db.patch(args.streamId, {
       ...args.updates,
@@ -68,7 +68,7 @@ export const remove = mutation({
 
 export const cleanUp = internalMutation({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     // Get and delete all "done" streams immediately
     const doneStreams = await ctx.db.query("streams")
       .withIndex("by_status", (q) => q.eq("status", "done"))

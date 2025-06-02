@@ -125,7 +125,7 @@ export default defineSchema({
     channel: v.string(),
     version: v.string(),
     type: v.string(),
-    blob: v.optional(v.bytes()),
+    blob: v.bytes(),
     namespace: v.string(),
   })
     .index("by_channel", ["namespace", "thread_id", "checkpoint_ns", "channel", "version"]),

@@ -16,7 +16,7 @@ export const putCheckpoint = internalMutation({
       channel: v.string(),
       version: v.string(),
       type: v.string(),
-      blob: v.optional(v.bytes()),
+      blob: v.bytes(),
       namespace: v.string(),
     })),
     namespace: v.string(),
