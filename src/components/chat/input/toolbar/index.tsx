@@ -223,7 +223,7 @@ export const Toolbar = () => {
 
         <Toggle
           variant="outline"
-          className="bg-input/30"
+          className="hover:transition hover:duration-500 "
           pressed={chatInput?.agentMode}
           onPressedChange={() => {
             updateChatInputMutation({
@@ -240,7 +240,7 @@ export const Toolbar = () => {
 
         <Toggle
           variant="outline"
-          className="bg-input/30"
+          className="hover:transition hover:duration-500 "
           pressed={chatInput?.plannerMode}
           onPressedChange={() => {
             updateChatInputMutation({
@@ -259,7 +259,7 @@ export const Toolbar = () => {
           <TooltipTrigger>
             <Toggle
               variant="outline"
-              className="bg-input/30 "
+              className="hover:transition hover:duration-500 "
               pressed={chatInput?.webSearch}
               onPressedChange={() => {
                 updateChatInputMutation({

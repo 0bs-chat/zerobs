@@ -1,5 +1,5 @@
-import { Navigate, Outlet, createRootRoute } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { Outlet, createRootRoute } from "@tanstack/react-router";
+// import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { useConvexAuth } from "convex/react";
@@ -17,12 +17,8 @@ import { useChat } from "@/store/use-chat";
 
 export const Route = createRootRoute({
   component: () => {
-    const { isLoading, isAuthenticated } = useConvexAuth();
+    const { isLoading } = useConvexAuth();
     const { resizablePanelsOpen } = useChat();
-
-    if (!isAuthenticated) {
-      return <Navigate to="/auth" />;
-    }
 
     if (isLoading) {
       return (
@@ -58,7 +54,7 @@ export const Route = createRootRoute({
           </div>
         </SidebarProvider>
         <Toaster />
-        <TanStackRouterDevtools />
+        {/* <TanStackRouterDevtools /> */}
       </ThemeProvider>
     );
   },
