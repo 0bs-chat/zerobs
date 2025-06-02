@@ -1,5 +1,5 @@
 "use node";
-import { ActionCtx } from "../_generated/server";
+import { ActionCtx, MutationCtx, QueryCtx } from "../_generated/server";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import {
   BaseCheckpointSaver,
@@ -12,14 +12,17 @@ import {
   copyCheckpoint,
 } from "@langchain/langgraph-checkpoint";
 import { internal } from "../_generated/api";
-import { v } from "convex/values";
+
+const canRunMutation = (ctx: ActionCtx | MutationCtx | QueryCtx): ctx is MutationCtx | ActionCtx => {
+  return ['runMutation', 'runAction'].every(key => key in ctx);
+}
 
 export class ConvexCheckpointSaver extends BaseCheckpointSaver {
-  ctx: ActionCtx;
+  ctx: ActionCtx | MutationCtx | QueryCtx;
   namespace: string;
 
   constructor(
-    ctx: ActionCtx,
+    ctx: ActionCtx | MutationCtx | QueryCtx,
     namespace: string = "default",
     serde?: SerializerProtocol
   ) {
@@ -378,6 +381,10 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
       throw new Error("Empty configuration supplied.");
     }
 
+    if (!canRunMutation(this.ctx)) {
+      throw new Error("QueryCtx does not support put.");
+    }
+
     const thread_id = config.configurable?.thread_id;
     const checkpoint_ns = config.configurable?.checkpoint_ns ?? "";
     const parent_checkpoint_id = config.configurable?.checkpoint_id;
@@ -468,6 +475,10 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
         namespace: this.namespace,
       };
     });
+
+    if (!canRunMutation(this.ctx)) {
+      throw new Error("QueryCtx does not support putWrites.");
+    }
 
     await this.ctx.runMutation(internal.checkpointer.mutations.putWrites, {
       writes: writeRows,
