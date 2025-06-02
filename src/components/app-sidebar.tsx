@@ -40,8 +40,6 @@ export function AppSidebar() {
 
   const updateChat = useMutation(api.chats.mutations.update);
   const removeChat = useMutation(api.chats.mutations.remove);
-  const createChat = useMutation(api.chats.mutations.create);
-  const createChatInput = useMutation(api.chatInput.mutations.create);
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -55,14 +53,7 @@ export function AppSidebar() {
               variant="default"
               className="w-full cursor-pointer"
               onClick={() => {
-                createChat({ name: "New chat" }).then((newChatId) => {
-                  createChatInput({
-                    chatId: newChatId,
-                    agentMode: false,
-                    plannerMode: false,
-                    webSearch: false,
-                  });
-                });
+                navigate({ to: "/chat/$chatId", params: { chatId: "new" }, replace: true });
               }}
             >
               <div className="flex items-center gap-2">
@@ -89,9 +80,9 @@ export function AppSidebar() {
               const isPinned = group === "pinned";
               const groupChats = chats.page
                 .filter((chat) => (isPinned ? chat.pinned : !chat.pinned))
-                .sort((a, b) =>
-                  isPinned ? 0 : b._creationTime - a._creationTime
-                );
+                // .sort((a, b) =>
+                //   isPinned ? 0 : b._creationTime - a._creationTime
+                // ); // already sorted server side https://docs.convex.dev/database/reading-data/indexes#sorting-with-indexes
 
               // Don't render pinned group if no pinned chats
               if (isPinned && groupChats.length === 0) return null;

@@ -9,7 +9,7 @@ export function TopNav() {
   const { resizablePanelsOpen, setResizablePanelsOpen } = useChat();
 
   return (
-    <div className=" fixed right-0 z-50 py-2 px-4 flex items-center gap-4 w-full bg-transparent justify-between pointer-events-none">
+    <div className="fixed right-0 z-50 py-2 px-4 flex items-center gap-4 w-full bg-transparent justify-between pointer-events-none z-50">
       <div className="flex items-center gap-2 justify-center top-0 left-0 pointer-events-auto">
         <SidebarTrigger className="h-8 w-8  border bg-background " />
       </div>

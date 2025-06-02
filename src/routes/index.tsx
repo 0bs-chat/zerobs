@@ -1,16 +1,14 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useConvexAuth } from "convex/react";
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   component: App,
 });
 
 function App() {
-  const { isAuthenticated } = useConvexAuth();
 
-  return isAuthenticated ? (
-    <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
-  ) : (
-    <Navigate to="/auth" />
+  return (
+    <div>
+      <h1>Hello</h1>
+    </div>
   );
 }

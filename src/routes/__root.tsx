@@ -1,8 +1,8 @@
-import { Outlet, createRootRoute } from "@tanstack/react-router";
+import { Navigate, Outlet, createRootRoute } from "@tanstack/react-router";
 // import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { useConvexAuth } from "convex/react";
+import { useConvexAuth, useQueries } from "convex/react";
 import { Loader } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -17,9 +17,9 @@ import { useChat } from "@/store/use-chat";
 
 export const Route = createRootRoute({
   component: () => {
-    const { isLoading } = useConvexAuth();
+    const { isLoading, isAuthenticated } = useConvexAuth();
     const { resizablePanelsOpen } = useChat();
-
+    
     if (isLoading) {
       return (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -30,29 +30,40 @@ export const Route = createRootRoute({
       );
     }
 
+    if (location.pathname === "/landing") {
+      return <Outlet />;
+    }
+    
+
     return (
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <SidebarProvider className="flex h-svh">
-          <AppSidebar />
-          <TopNav />
-          <DocumentDialog />
-          <ProjectDialog />
-          <div className="flex-1">
-            <ResizablePanelGroup direction="horizontal">
-              <ResizablePanel className="flex flex-col h-full p-2 items-center justify-end gap-2">
-                <Outlet />
-              </ResizablePanel>
-              {resizablePanelsOpen && (
-                <>
-                  <ResizableHandle />
-                  <ResizablePanel defaultSize={40} minSize={25} maxSize={50}>
-                    <Panel />
-                  </ResizablePanel>
-                </>
-              )}
-            </ResizablePanelGroup>
-          </div>
-        </SidebarProvider>
+        {!isAuthenticated && location.pathname !== "/auth" && <Navigate to="/auth" />}
+        {!isAuthenticated && location.pathname === "/auth" && <Outlet />}
+        {isAuthenticated && location.pathname === "/auth" && <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />}
+        {isAuthenticated && location.pathname === "/" && <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />}
+        {isAuthenticated && (
+          <SidebarProvider className="flex h-svh">
+            <AppSidebar />
+            <TopNav />
+            <DocumentDialog />
+            <ProjectDialog />
+            <div className="flex-1">
+              <ResizablePanelGroup direction="horizontal">
+                <ResizablePanel className="flex flex-col h-full p-2 items-center justify-end gap-2">
+                  <Outlet />
+                </ResizablePanel>
+                {resizablePanelsOpen && (
+                  <>
+                    <ResizableHandle />
+                    <ResizablePanel defaultSize={40} minSize={25} maxSize={50}>
+                      <Panel />
+                    </ResizablePanel>
+                  </>
+                )}
+              </ResizablePanelGroup>
+            </div>
+          </SidebarProvider>
+        )}
         <Toaster />
         {/* <TanStackRouterDevtools /> */}
       </ThemeProvider>
