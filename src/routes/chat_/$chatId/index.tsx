@@ -8,7 +8,7 @@ export const Route = createFileRoute("/chat_/$chatId/")({
 
 function RouteComponent() {
   return (
-    <div className="flex flex-col h-full w-full gap-1">
+    <div className="flex flex-col h-full w-full gap-1 py-2">
       <ChatMessages />
       <ChatInput />
     </div>

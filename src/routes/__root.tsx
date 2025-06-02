@@ -2,7 +2,7 @@ import { Navigate, Outlet, createRootRoute } from "@tanstack/react-router";
 // import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { useConvexAuth, useQueries } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import { Loader } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -19,8 +19,13 @@ export const Route = createRootRoute({
   component: () => {
     const { isLoading, isAuthenticated } = useConvexAuth();
     const { resizablePanelsOpen } = useChat();
-    
-    if (isLoading) {
+
+    const urlPath = location.pathname;
+
+    const privateRoutes = ["/chat", "/", "/chat/$chatId"];
+    const publicRoutes = ["/landing", "/auth"];
+
+    if (isLoading && !isAuthenticated) {
       return (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <div className="flex justify-center items-center h-screen bg-background">
@@ -30,17 +35,30 @@ export const Route = createRootRoute({
       );
     }
 
-    if (location.pathname === "/landing") {
-      return <Outlet />;
-    }
-    
-
     return (
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        {!isAuthenticated && location.pathname !== "/auth" && <Navigate to="/auth" />}
-        {!isAuthenticated && location.pathname === "/auth" && <Outlet />}
-        {isAuthenticated && location.pathname === "/auth" && <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />}
-        {isAuthenticated && location.pathname === "/" && <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />}
+        {/* landing route */}
+        {!isAuthenticated && !publicRoutes.includes(urlPath) && (
+          <Navigate
+            to="/landing"
+            viewTransition={true}
+            reloadDocument={true}
+            replace
+          />
+        )}
+
+        {isAuthenticated && publicRoutes.includes(urlPath) && (
+          <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
+        )}
+
+        {/* auth routes */}
+        {!isAuthenticated && publicRoutes.includes(urlPath) && <Outlet />}
+
+        {isAuthenticated && privateRoutes.includes(urlPath) && (
+          <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
+        )}
+
+        {/* chat route */}
         {isAuthenticated && (
           <SidebarProvider className="flex h-svh">
             <AppSidebar />

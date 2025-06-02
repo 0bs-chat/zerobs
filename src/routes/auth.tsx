@@ -11,23 +11,22 @@ export const Route = createFileRoute("/auth")({
 
 function RouteComponent() {
   const { signIn } = useAuthActions();
-  const providers = ["github", "google"] as const;
   const navigate = useNavigate();
+  const providers = ["github", "google"] as const;
 
   return (
-    <div className="flex flex-col items-center gap-2 justify-center h-full w-full">
+    <div className="flex flex-col items-center gap-2 justify-center h-screen w-screen">
       <Button
         variant="default"
-        className="px-4 text-lg py-6 cursor-pointer"
-        onClick={() => {
-          signIn("anonymous");
+        className="px-4 text-lg py-6 cursor-pointer w-56"
+        onClick={async () => {
+          await signIn("anonymous");
           toast.success("Signed in anonymously");
           navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
         }}
       >
-        Anonymous Sign in 🥷
+        🥷 Anonymous Sign in
       </Button>
-
       {providers.map((provider) => {
         const isProviderEnabled = useQuery(api.auth.isProviderEnabled, {
           provider,
@@ -36,7 +35,7 @@ function RouteComponent() {
           return (
             <Button
               variant="default"
-              className="px-4 text-lg py-6 cursor-pointer"
+              className="px-4 text-lg py-6 cursor-pointer w-56"
               key={provider}
               onClick={() => {
                 console.log("Signing in with", provider);
@@ -44,7 +43,9 @@ function RouteComponent() {
                 toast.success(`Signing in with ${provider}`);
               }}
             >
-              Sign in with {provider}
+              <div className="flex items-center gap-2 justify-center">
+                <span className="text-lg">Sign in with {provider}</span>
+              </div>
             </Button>
           );
         }
