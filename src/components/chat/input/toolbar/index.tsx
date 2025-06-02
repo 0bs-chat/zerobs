@@ -72,6 +72,7 @@ export const Toolbar = () => {
     : "new";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isGitHubDialogOpen, setIsGitHubDialogOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const chatInput = useQuery(api.chatInput.queries.get, {
     chatId,
@@ -189,7 +190,7 @@ export const Toolbar = () => {
         onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
       />
       <div className="flex flex-row items-center gap-1">
-        <DropdownMenu>
+        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon">
               <PlusIcon className="h-4 w-4" />
@@ -203,6 +204,7 @@ export const Toolbar = () => {
             <DropdownMenuItem
               onSelect={(e) => {
                 e.preventDefault();
+                setIsDropdownOpen(false);
                 setIsGitHubDialogOpen(true);
               }}
             >
