@@ -47,54 +47,6 @@ export const send = action({
   },
 });
 
-export const stream = httpAction(async (ctx, req) => {
-  await requireAuth(ctx);
-
-  const res = await req.json() as {
-    streamId: Id<"streams">;
-    lastChunkTime: number;
-  };
-  const streamId = res.streamId;
-  let now = res.lastChunkTime || Date.now();
-
-  const stream = await ctx.runQuery(api.streams.queries.get, {
-    streamId: streamId,
-  });
-
-  const { readable, writable } = new TransformStream();
-  let writer = writable.getWriter() as WritableStreamDefaultWriter<Uint8Array> | null;
-  const textEncoder = new TextEncoder();
-
-  const buffer = 100;
-  while (true) {
-    const newChunks = await ctx.runQuery(api.streams.queries.getNewChunks, {
-      streamId: streamId,
-      lastChunkTime: now,
-    });
-
-    for (const chunk of newChunks.chunks) {
-      writer?.write(textEncoder.encode(chunk.chunk));
-    }
-    now = newChunks.chunks[newChunks.chunks.length - 1]._creationTime;
-
-    if (["done", "error"].includes(newChunks.stream.status)) {
-      break;
-    }
-
-    console.log("newChunks", JSON.stringify(newChunks, null, 2));
-
-    await new Promise((resolve) => setTimeout(resolve, buffer));
-  }
-
-  return new Response(readable, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Vary": "Origin",
-      "Access-Control-Allow-Origin": "*",
-    },
-  });
-});
-
 export const messages = action({
   args: {
     chatId: v.id("chats"),

@@ -18,27 +18,6 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     ...(process.env.AUTH_SLACK_SECRET && process.env.AUTH_SLACK_ID
       ? [Slack]
       : []),
-    ...(process.env.AUTH_GITHUB_REPO_SECRET && process.env.AUTH_GITHUB_REPO_ID
-      ? [GitHub({
-        id: "github-repo",
-        clientId: process.env.AUTH_GITHUB_REPO_ID,
-        clientSecret: process.env.AUTH_GITHUB_REPO_SECRET,
-        authorization: {
-          params: {
-            scope: "read:user user:email repo"
-          }
-        },
-        profile(profile, tokens) {
-          return {
-            id: profile.id.toString(),
-            name: profile.name ?? profile.login,
-            email: profile.email,
-            image: profile.avatar_url,
-            ghSecret: tokens.access_token,
-          };
-        },
-      })]
-      : []),
   ],
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {
@@ -61,7 +40,6 @@ export const isProviderEnabled = query({
       v.literal("github"),
       v.literal("google"),
       v.literal("slack"),
-      v.literal("github-repo"),
     ),
   },
   handler: async (_, args) => {
@@ -73,9 +51,6 @@ export const isProviderEnabled = query({
     }
     if (args.provider === "slack") {
       return process.env.AUTH_SLACK_SECRET && process.env.AUTH_SLACK_ID;
-    }
-    if (args.provider === "github-repo") {
-      return process.env.AUTH_GITHUB_REPO_SECRET && process.env.AUTH_GITHUB_REPO_ID;
     }
     return false;
   },

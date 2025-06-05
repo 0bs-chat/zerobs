@@ -122,6 +122,11 @@ export const Toolbar = () => {
         chatId: newChatId,
       });
     }
+    if (chatId !== "new") {
+      await sendAction({
+        chatId,
+      });
+    }
   };
 
   const handleFileUpload = async (files: FileList) => {

@@ -20,12 +20,12 @@ import { Lock, GitBranch, Github, Loader2, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { useAuthActions } from "@convex-dev/auth/react";
 import {
   fetchRepositories,
   loadRepository,
   type GitHubRepo,
 } from "@/lib/github";
+import { useAuthToken } from "@convex-dev/auth/react";
 
 interface GitHubDialogProps {
   open: boolean;
@@ -43,6 +43,7 @@ type CachedRepos = {
 };
 
 export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
+  const token = useAuthToken();
   const [selectedRepo, setSelectedRepo] = useState<string>("");
   const [branch, setBranch] = useState<string>("main");
   const [loading, setLoading] = useState(false);
@@ -51,9 +52,8 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
   const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const { signIn } = useAuthActions();
-  const user = useQuery(api.utils.helpers.currentUser);
-  const isAuthenticated = !!user?.ghSecret;
+  const ghSecret = useQuery(api.apiKeys.queries.getFromName, { name: "github_access_token" });
+  const isAuthenticated = !!ghSecret?.key;
 
   // Reset state when dialog closes
   const handleOpenChange = useCallback(
@@ -101,7 +101,7 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
 
   const loadRepos = useCallback(
     async (forceRefresh = false) => {
-      if (!user?.ghSecret || !open) return;
+      if (!ghSecret || !open) return;
 
       try {
         if (!forceRefresh) {
@@ -122,7 +122,7 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
         toast.info("Fetching your GitHub repositories...");
 
         const result = await fetchRepositories({
-          accessToken: user.ghSecret,
+          accessToken: ghSecret.key,
         });
 
         // If no next page, mark allLoaded
@@ -140,15 +140,15 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
         setLoadingRepos(false);
       }
     },
-    [user?.ghSecret, open]
+    [ghSecret?.key, open]
   );
 
   const loadMoreRepos = useCallback(async () => {
-    if (!nextPageUrl || loadingMore || !user?.ghSecret) return;
+    if (!nextPageUrl || loadingMore || !ghSecret?.key) return;
     setLoadingMore(true);
     try {
       const result = await fetchRepositories({
-        accessToken: user.ghSecret,
+        accessToken: ghSecret.key,
         url: nextPageUrl,
       });
 
@@ -165,7 +165,7 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
     } finally {
       setLoadingMore(false);
     }
-  }, [nextPageUrl, loadingMore, user?.ghSecret]);
+  }, [nextPageUrl, loadingMore, ghSecret?.key]);
 
   // Load repos when dialog opens and user is authenticated
   useEffect(() => {
@@ -186,8 +186,9 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
 
   const handleGitHubLogin = async () => {
     try {
-      await signIn("github-repo");
-      toast.info("Signing in with GitHub...");
+      window.location.href = `https://github.com/login/oauth/authorize?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&redirect_uri=${import.meta.env.VITE_CONVEX_SITE_URL}/github_repo/callback&state=${token}`;
+      
+      toast.info("Redirecting to GitHub...");
     } catch (error) {
       console.error("GitHub sign-in error:", error);
       toast.error("Failed to sign in with GitHub");
@@ -211,7 +212,7 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
       return;
     }
 
-    if (!user?.ghSecret) {
+    if (!ghSecret?.key) {
       toast.error("GitHub authentication required.");
       return;
     }
@@ -223,7 +224,7 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
       );
 
       const result = await loadRepository({
-        accessToken: user.ghSecret,
+        accessToken: ghSecret.key,
         repoFullName: repo.full_name,
         branch: branch.trim(),
       });

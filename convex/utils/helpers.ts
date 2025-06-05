@@ -16,14 +16,3 @@ export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
   const userId = user.subject.split("|")[0] as Id<"users">;
   return { user, userId };
 }
-
-export const currentUser = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (userId === null) {
-      return null;
-    }
-    return await ctx.db.get(userId);
-  },
-});

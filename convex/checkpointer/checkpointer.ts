@@ -31,85 +31,40 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
     this.namespace = namespace;
   }
 
-  // Helper method to recursively serialize Langchain objects into plain objects for Convex
-  private _serializeRecursively(value: any): any {
-    // Handle null or undefined
-    if (value === null || value === undefined) {
-      return value;
+  private _serializeToConvexAny(value: any): [string, string | ArrayBuffer] {
+    const [type, serialized] = this.serde.dumpsTyped(value);
+    if (serialized instanceof Uint8Array) {
+      return [type, serialized.buffer];
     }
-
-    // Handle arrays
-    if (Array.isArray(value)) {
-      return value.map((item) => this._serializeRecursively(item));
-    }
-
-    // Handle plain objects, including Langchain objects
-    if (typeof value === "object") {
-      // Check if it's a serializable Langchain object (has lc property with value 1)
-      if (value.lc === 1 && value.type === "constructor" && Array.isArray(value.id)) {
-        try {
-          const [type, serialized] = this.serde.dumpsTyped(value);
-          return {
-            __lc_convex_serialized__: true,
-            type,
-            data: new TextDecoder().decode(serialized),
-          };
-        } catch (e) {
-          console.error("Failed to serialize Langchain object:", e);
-          // Fall back to plain object serialization
-        }
-      }
-
-      // Handle other objects recursively
-      const result: Record<string, any> = {};
-      for (const [key, val] of Object.entries(value)) {
-        result[key] = this._serializeRecursively(val);
-      }
-      return result;
-    }
-
-    // Return primitives as is
-    return value;
+    return [type, serialized];
   }
 
-  // Helper method to recursively deserialize plain objects back into Langchain objects
-  private _deserializeRecursively(value: any): any {
-    // Handle null or undefined
-    if (value === null || value === undefined) {
-      return value;
+  private _serializeToConvexBytes(value: any): { type: string, blob: ArrayBuffer } {
+    const [type, serializedData] = this.serde.dumpsTyped(value);
+    if (serializedData instanceof Uint8Array) {
+      return { type, blob: serializedData.buffer };
+    } else {
+      // Assuming string data (e.g., JSON) needs to be text-encoded for v.bytes()
+      return { type, blob: new TextEncoder().encode(serializedData).buffer };
     }
+  }
 
-    // Handle arrays
-    if (Array.isArray(value)) {
-      return value.map((item) => this._deserializeRecursively(item));
+  private async _deserializeFromConvexAny(dbTuple: [string, string | ArrayBuffer]): Promise<any> {
+    const [type, data] = dbTuple;
+    if (data instanceof ArrayBuffer) {
+      return this.serde.loadsTyped(type, new Uint8Array(data));
+    } else {
+      return this.serde.loadsTyped(type, data);
     }
+  }
 
-    // Handle plain objects, including serialized Langchain objects
-    if (typeof value === "object") {
-      // Check if it's a serialized Langchain object
-      if (value.__lc_convex_serialized__ === true && value.type && value.data) {
-        try {
-          return this.serde.loadsTyped(
-            value.type,
-            new TextEncoder().encode(value.data)
-          );
-        } catch (e) {
-          console.error("Failed to deserialize Langchain object:", e);
-          // Return the serialized form if deserialization fails
-          return value;
-        }
-      }
-
-      // Handle other objects recursively
-      const result: Record<string, any> = {};
-      for (const [key, val] of Object.entries(value)) {
-        result[key] = this._deserializeRecursively(val);
-      }
-      return result;
+  private async _deserializeFromConvexBytes(dbType: string | undefined, dbBlob: ArrayBuffer): Promise<any> {
+    const effectiveType = dbType ?? "json";
+    if (effectiveType === "bytes") {
+      return this.serde.loadsTyped(effectiveType, new Uint8Array(dbBlob));
+    } else {
+      return this.serde.loadsTyped(effectiveType, new TextDecoder().decode(dbBlob));
     }
-
-    // Return primitives as is
-    return value;
   }
 
   async getTuple(config: RunnableConfig): Promise<CheckpointTuple | undefined> {
@@ -166,13 +121,11 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
 
     const pendingWrites = await Promise.all(
       pendingWritesData.map(async (write) => {
+        const deserializedValue = await this._deserializeFromConvexBytes(write.type, write.blob);
         return [
           write.task_id,
           write.channel,
-          await this.serde.loadsTyped(
-            write.type ?? "json",
-            new TextDecoder().decode(write.blob)
-          ),
+          deserializedValue,
         ] as [string, string, unknown];
       })
     );
@@ -190,14 +143,13 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
 
     const pending_sends = await Promise.all(
       pendingSendsData.map((send) =>
-        this.serde.loadsTyped(
-          send.type ?? "json",
-          new TextDecoder().decode(send.blob)
-        )
+        this._deserializeFromConvexBytes(send.type, send.blob)
       )
     );
 
     // Reconstruct the checkpoint with channel values
+    const deserializedCheckpointCore = await this._deserializeFromConvexAny(checkpoint.checkpoint as [string, string | ArrayBuffer]);
+
     const channelValues = await this.ctx.runQuery(
       internal.checkpointer.queries.getChannelValues,
       {
@@ -208,12 +160,8 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
       }
     );
 
-    // Deserialize the checkpoint and metadata
-    const deserializedCheckpointObj = this._deserializeRecursively(checkpoint.checkpoint);
-    const deserializedMetadata = this._deserializeRecursively(checkpoint.metadata);
-
-    const deserializedCheckpoint = {
-      ...deserializedCheckpointObj,
+    const updatedCheckpoint = {
+      ...deserializedCheckpointCore,
       pending_sends,
     } as Checkpoint;
 
@@ -222,19 +170,19 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
       const channelData: Record<string, unknown> = {};
       for (const channelValue of channelValues) {
         if (channelValue.blob) {
-          channelData[channelValue.channel] = await this.serde.loadsTyped(
-            channelValue.type ?? "json",
-            new TextDecoder().decode(channelValue.blob)
+          channelData[channelValue.channel] = await this._deserializeFromConvexBytes(
+            channelValue.type,
+            channelValue.blob
           );
         }
       }
-      Object.assign(deserializedCheckpoint, channelData);
+      Object.assign(updatedCheckpoint, channelData);
     }
 
     return {
-      checkpoint: deserializedCheckpoint,
+      checkpoint: updatedCheckpoint,
       config: finalConfig,
-      metadata: deserializedMetadata as CheckpointMetadata,
+      metadata: checkpoint.metadata as CheckpointMetadata,
       parentConfig: checkpoint.parent_checkpoint_id
         ? {
             configurable: {
@@ -283,13 +231,11 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
 
       const pendingWrites = await Promise.all(
         pendingWritesData.map(async (write) => {
+          const deserializedValue = await this._deserializeFromConvexBytes(write.type, write.blob);
           return [
             write.task_id,
             write.channel,
-            await this.serde.loadsTyped(
-              write.type ?? "json",
-              new TextDecoder().decode(write.blob)
-            ),
+            deserializedValue,
           ] as [string, string, unknown];
         })
       );
@@ -307,14 +253,12 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
 
       const pending_sends = await Promise.all(
         pendingSendsData.map((send) =>
-          this.serde.loadsTyped(
-            send.type ?? "json",
-            new TextDecoder().decode(send.blob)
-          )
+          this._deserializeFromConvexBytes(send.type, send.blob)
         )
       );
 
       // Get channel values
+      const deserializedCheckpointCore = await this._deserializeFromConvexAny(checkpoint.checkpoint as [string, string | ArrayBuffer]);
       const channelValues = await this.ctx.runQuery(
         internal.checkpointer.queries.getChannelValues,
         {
@@ -325,12 +269,8 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
         }
       );
 
-      // Deserialize the checkpoint and metadata
-      const deserializedCheckpointObj = this._deserializeRecursively(checkpoint.checkpoint);
-      const deserializedMetadata = this._deserializeRecursively(checkpoint.metadata);
-
-      const deserializedCheckpoint = {
-        ...deserializedCheckpointObj,
+      const updatedCheckpoint = {
+        ...deserializedCheckpointCore,
         pending_sends,
       } as Checkpoint;
 
@@ -339,13 +279,13 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
         const channelData: Record<string, unknown> = {};
         for (const channelValue of channelValues) {
           if (channelValue.blob) {
-            channelData[channelValue.channel] = await this.serde.loadsTyped(
-              channelValue.type ?? "json",
-              new TextDecoder().decode(channelValue.blob)
+            channelData[channelValue.channel] = await this._deserializeFromConvexBytes(
+              channelValue.type,
+              channelValue.blob
             );
           }
         }
-        Object.assign(deserializedCheckpoint, channelData);
+        Object.assign(updatedCheckpoint, channelData);
       }
 
       yield {
@@ -356,8 +296,8 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
             checkpoint_id: checkpoint.checkpoint_id,
           },
         },
-        checkpoint: deserializedCheckpoint,
-        metadata: deserializedMetadata as CheckpointMetadata,
+        checkpoint: updatedCheckpoint,
+        metadata: checkpoint.metadata as CheckpointMetadata,
         parentConfig: checkpoint.parent_checkpoint_id
           ? {
               configurable: {
@@ -399,8 +339,8 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
     delete preparedCheckpoint.pending_sends;
 
     // Serialize checkpoint and metadata for Convex storage
-    const serializedCheckpoint = this._serializeRecursively(preparedCheckpoint);
-    const serializedMetadata = this._serializeRecursively(metadata);
+    const finalSerializedCheckpoint = this._serializeToConvexAny(preparedCheckpoint);
+    const finalSerializedMetadata = this._serializeToConvexAny(metadata);
 
     // Prepare blobs for channels
     const blobs = [];
@@ -410,14 +350,14 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
       )) {
         const channelValue = (checkpoint as any)[channel];
         if (channelValue !== undefined) {
-          const [type, serializedValue] = this.serde.dumpsTyped(channelValue);
+          const { type: blobType, blob: blobBytes } = this._serializeToConvexBytes(channelValue);
           blobs.push({
             thread_id,
             checkpoint_ns,
             channel,
             version: String(version),
-            type,
-            blob: new Uint8Array(serializedValue).buffer,
+            type: blobType,
+            blob: blobBytes,
             namespace: this.namespace,
           });
         }
@@ -429,8 +369,8 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
       checkpoint_ns,
       checkpoint_id: checkpoint.id,
       parent_checkpoint_id,
-      checkpoint: serializedCheckpoint,
-      metadata: serializedMetadata,
+      checkpoint: finalSerializedCheckpoint,
+      metadata: finalSerializedMetadata,
       blobs,
       namespace: this.namespace,
     });
@@ -462,7 +402,7 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
     }
 
     const writeRows = writes.map((write, idx) => {
-      const [type, serializedWrite] = this.serde.dumpsTyped(write[1]);
+      const { type: writeType, blob: writeBytes } = this._serializeToConvexBytes(write[1]);
       return {
         thread_id: config.configurable!.thread_id,
         checkpoint_ns: config.configurable!.checkpoint_ns ?? "",
@@ -470,8 +410,8 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
         task_id: taskId,
         idx,
         channel: write[0],
-        type,
-        blob: new Uint8Array(serializedWrite).buffer,
+        type: writeType,
+        blob: writeBytes,
         namespace: this.namespace,
       };
     });

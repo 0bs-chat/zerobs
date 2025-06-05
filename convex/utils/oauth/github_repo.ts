@@ -1,0 +1,81 @@
+import { httpAction } from "../../_generated/server";
+
+const GITHUB_CLIENT_ID = process.env.AUTH_GITHUB_REPO_ID;
+const GITHUB_CLIENT_SECRET = process.env.AUTH_GITHUB_REPO_SECRET;
+
+export const handleCallback = httpAction(async (ctx, request) => {
+  if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+    return new Response("GitHub credentials not configured", { status: 500 });
+  }
+
+  try {
+    const url = new URL(request.url);
+    const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
+
+    if (!code || !state) {
+      return new Response("Missing code or state parameter", { status: 400 });
+    }
+
+    console.log("code", code);
+    console.log("state", state);
+
+    // Fetch the user's github token
+    const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        client_id: GITHUB_CLIENT_ID,
+        client_secret: GITHUB_CLIENT_SECRET,
+        code,
+        redirect_uri: `${process.env.CONVEX_SITE_URL}/github_repo/callback`,
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+    console.log("accessToken", accessToken);
+
+    if (!accessToken) {
+      throw new Error("No access token received from GitHub");
+    }
+
+    // Use the access token to get user information from GitHub
+    const githubUserResponse = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `token ${accessToken}`,
+      },
+    });
+
+    if (!githubUserResponse.ok) {
+      throw new Error("Failed to get GitHub user information");
+    }
+
+    await fetch(`${process.env.CONVEX_SITE_URL}/github_repo/add_api_key`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${state}`,
+      },
+      body: JSON.stringify({
+        name: "github_access_token",
+        key: accessToken,
+      }),
+    });
+
+    const redirectUrl = new URL(`${process.env.SITE_URL || '/'}`);
+
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: redirectUrl.toString(),
+      },
+    });
+  } catch (error) {
+    console.error("Error in GitHub OAuth callback:", error);
+    return new Response("Internal Server Error", { status: 500 });
+  }
+});

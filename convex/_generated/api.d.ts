@@ -8,6 +8,9 @@
  * @module
  */
 
+import type * as apiKeys_actions from "../apiKeys/actions.js";
+import type * as apiKeys_mutations from "../apiKeys/mutations.js";
+import type * as apiKeys_queries from "../apiKeys/queries.js";
 import type * as auth from "../auth.js";
 import type * as chatInput_actions from "../chatInput/actions.js";
 import type * as chatInput_mutations from "../chatInput/mutations.js";
@@ -42,6 +45,7 @@ import type * as streams_queries from "../streams/queries.js";
 import type * as utils_flyio_index from "../utils/flyio/index.js";
 import type * as utils_flyio_types from "../utils/flyio/types.js";
 import type * as utils_helpers from "../utils/helpers.js";
+import type * as utils_oauth_github_repo from "../utils/oauth/github_repo.js";
 
 import type {
   ApiFromModules,
@@ -58,6 +62,9 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  "apiKeys/actions": typeof apiKeys_actions;
+  "apiKeys/mutations": typeof apiKeys_mutations;
+  "apiKeys/queries": typeof apiKeys_queries;
   auth: typeof auth;
   "chatInput/actions": typeof chatInput_actions;
   "chatInput/mutations": typeof chatInput_mutations;
@@ -92,6 +99,7 @@ declare const fullApi: ApiFromModules<{
   "utils/flyio/index": typeof utils_flyio_index;
   "utils/flyio/types": typeof utils_flyio_types;
   "utils/helpers": typeof utils_helpers;
+  "utils/oauth/github_repo": typeof utils_oauth_github_repo;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
