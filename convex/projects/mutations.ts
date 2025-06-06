@@ -40,17 +40,11 @@ export const update = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
+    await requireAuth(ctx);
 
-    const existingProject = await ctx.db
-      .query("projects")
-      .withIndex("by_user_updated", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.projectId))
-      .first();
-
-    if (!existingProject) {
-      throw new Error("Project not found");
-    }
+    const existingProject = await ctx.runQuery(api.projects.queries.get, {
+      projectId: args.projectId,
+    });
 
     await ctx.db.patch(existingProject._id, {
       ...args.updates,
@@ -68,15 +62,9 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const existingProject = await ctx.db
-      .query("projects")
-      .withIndex("by_user_updated", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.projectId))
-      .first();
-
-    if (!existingProject) {
-      throw new Error("Project not found");
-    }
+    const existingProject = await ctx.runQuery(api.projects.queries.get, {
+      projectId: args.projectId,
+    });
 
     // First get all project documents
     const projectDocuments = await ctx.db

@@ -12,16 +12,11 @@ export const get = query({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const chat = await ctx.db
-      .query("chats")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.chatId))
-      .first();
-
-    if (!chat) {
+    const chat = await ctx.db.get(args.chatId);
+    if (!chat || chat.userId !== userId) {
       throw new Error("Chat not found");
     }
-
+    
     return chat;
   },
 });
@@ -58,7 +53,7 @@ export const getMultiple = query({
     chatIds: v.array(v.id("chats")),
   },
   handler: async (ctx, args): Promise<Doc<"chats">[]> => {
-    const { userId } = await requireAuth(ctx);
+    await requireAuth(ctx);
 
     return await Promise.all(
       args.chatIds.map(async (chatId) => {

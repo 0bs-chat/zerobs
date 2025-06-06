@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import type { Doc } from "../_generated/dataModel";
 import { paginationOptsValidator } from "convex/server";
+import { api } from "../_generated/api";
 
 export const get = query({
   args: {
@@ -11,13 +12,9 @@ export const get = query({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const mcp = await ctx.db
-      .query("mcps")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.mcpId))
-      .first();
+    const mcp = await ctx.db.get(args.mcpId);
 
-    if (!mcp) {
+    if (!mcp || mcp.userId !== userId) {
       throw new Error("MCP not found");
     }
 
@@ -63,19 +60,23 @@ export const getMultiple = internalQuery({
   handler: async (ctx, args): Promise<Doc<"mcps">[]> => {
     const mcps = await Promise.all(
       args.mcpIds.map(async (mcpId) => {
-        const mcp = await ctx.db
-          .query("mcps")
-          .filter((q) => q.eq(q.field("_id"), mcpId))
-          .filter((q) =>
-            args.filters?.enabled === undefined
-              ? true
-              : q.eq(q.field("enabled"), args.filters.enabled),
-          )
-          .first();
-        if (!mcp) {
-          return null;
+        const mcp = await ctx.runQuery(api.mcps.queries.get, {
+          mcpId,
+        });
+
+        if (!args.filters) {
+          return mcp;
         }
-        return mcp;
+
+        if (args.filters.enabled && mcp?.enabled) {
+          return mcp;
+        }
+
+        if (!args.filters.enabled && !mcp?.enabled) {
+          return mcp;
+        }
+
+        return null;
       }),
     );
 

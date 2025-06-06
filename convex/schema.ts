@@ -11,7 +11,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_key", ["key"]),
+    .index("by_key_user", ["key", "userId"]),
   documents: defineTable({
     name: v.string(),
     type: v.union(
@@ -96,7 +96,7 @@ export default defineSchema({
     selected: v.boolean(),
   })
     .index("by_project", ["projectId"])
-    .index("by_project_document", ["projectId", "documentId"]),
+    .index("by_document_project", ["documentId", "projectId"]),
   mcps: defineTable({
     name: v.string(),
     type: v.union(v.literal("sse"), v.literal("stdio")),

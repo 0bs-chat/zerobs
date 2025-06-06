@@ -1,4 +1,4 @@
-import { internal } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import { internalMutation, mutation } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
@@ -51,15 +51,9 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const existingMCP = await ctx.db
-      .query("mcps")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.mcpId))
-      .first();
-
-    if (!existingMCP) {
-      throw new Error("MCP not found");
-    }
+    await ctx.runQuery(api.mcps.queries.get, {
+      mcpId: args.mcpId,
+    });
 
     await ctx.db.patch(args.mcpId, {
       ...args.updates,
@@ -75,17 +69,11 @@ export const remove = mutation({
     mcpId: v.id("mcps"),
   },
   handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
+    await requireAuth(ctx);
 
-    const existingMCP = await ctx.db
-      .query("mcps")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.mcpId))
-      .first();
-
-    if (!existingMCP) {
-      throw new Error("MCP not found");
-    }
+    await ctx.runQuery(api.mcps.queries.get, {
+      mcpId: args.mcpId,
+    });
 
     await ctx.scheduler.runAfter(0, internal.mcps.actions.remove, {
       mcpId: args.mcpId,

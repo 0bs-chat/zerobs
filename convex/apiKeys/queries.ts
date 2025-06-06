@@ -41,11 +41,17 @@ export const getFromName = query({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    return await ctx.db
+    const apiKeyDoc = await ctx.db
       .query("apiKeys")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("name"), args.name))
       .first();
+
+    if (!apiKeyDoc) {
+      throw new Error("API key not found");
+    }
+
+    return await verifyApiKey(ctx, apiKeyDoc);
   },
 });
 
@@ -58,8 +64,9 @@ export const getFromKey = query({
 
     const apiKeyDoc = await ctx.db
       .query("apiKeys")
-      .withIndex("by_key", (q) => q.eq("key", args.key))
-      .filter((q) => q.eq(q.field("userId"), userId))
+      .withIndex("by_key_user", (q) =>
+        q.eq("key", args.key).eq("userId", userId),
+      )
       .first();
 
     if (!apiKeyDoc) {

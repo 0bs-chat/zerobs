@@ -1,5 +1,5 @@
 import { requireAuth } from "../utils/helpers";
-import { query } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
 import type { Id, Doc } from "../_generated/dataModel";
@@ -117,6 +117,32 @@ export const getAll = query({
       projectDocuments: Array.from(projectDocumentsMap.values()),
       project,
     };
+  },
+});
+
+export const getByDocumentId = internalQuery({
+  args: {
+    documentId: v.id("documents"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const projectDocument = await ctx.db
+      .query("projectDocuments")
+      .withIndex("by_document_project", (q) =>
+        q.eq("documentId", args.documentId),
+      )
+      .first();
+
+    if (!projectDocument) {
+      throw new Error("Project document not found");
+    }
+
+    await ctx.runQuery(api.projects.queries.get, {
+      projectId: projectDocument.projectId,
+    });
+
+    return projectDocument;
   },
 });
 

@@ -1,9 +1,9 @@
 import { requireAuth } from "../utils/helpers";
-import { mutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 
-export const create = mutation({
+export const create = internalMutation({
   args: {
     projectId: v.id("projects"),
     documentId: v.id("documents"),
@@ -18,6 +18,17 @@ export const create = mutation({
     await ctx.runQuery(api.documents.queries.get, {
       documentId: args.documentId,
     });
+
+    const projectDocument = await ctx.runQuery(
+      internal.projectDocuments.queries.getByDocumentId,
+      {
+        documentId: args.documentId,
+      },
+    );
+
+    if (projectDocument) {
+      throw new Error("Document already in project");
+    }
 
     const projectDocumentId = await ctx.db.insert("projectDocuments", {
       projectId: args.projectId,
@@ -43,7 +54,7 @@ export const createMultiple = mutation({
 
     await Promise.all(
       args.documentIds.map(async (documentId) => {
-        await ctx.runMutation(api.projectDocuments.mutations.create, {
+        await ctx.runMutation(internal.projectDocuments.mutations.create, {
           projectId: args.projectId,
           documentId: documentId,
         });

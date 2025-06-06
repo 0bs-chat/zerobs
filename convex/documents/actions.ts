@@ -1,6 +1,6 @@
 "use node";
 
-import { api, internal } from "../_generated/api";
+import { internal } from "../_generated/api";
 import { ActionCtx, internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
