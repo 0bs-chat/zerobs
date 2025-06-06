@@ -29,7 +29,7 @@ export const Route = createRootRoute({
     if (isLoading && !isAuthenticated) {
       return (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          <div className="flex justify-center items-center h-screen bg-background">
+          <div className="flex justify-center items-center h-screen font-sans bg-background">
             <Loader className="w-10 h-10 animate-spin" />
           </div>
         </ThemeProvider>
@@ -61,7 +61,7 @@ export const Route = createRootRoute({
 
         {/* chat route */}
         {isAuthenticated && (
-          <SidebarProvider className="flex h-svh">
+          <SidebarProvider className="flex h-svh font-sans">
             <AppSidebar />
             <TopNav />
             <DocumentDialog />

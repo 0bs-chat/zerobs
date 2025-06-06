@@ -8,8 +8,8 @@ export const Route = createFileRoute("/landing/")({
 function RouteComponent() {
   return (
     <ThemeProvider>
-      <main className="flex min-h-screen items-center justify-center ">
-        <div className=" flex flex-col text-center gap-2">
+      <main className="flex min-h-screen items-center justify-center font-mono">
+        <div className="flex flex-col text-center gap-2">
           <div
             className="flex items-center justify-between w-full"
             style={{ pointerEvents: "auto" }}
@@ -34,7 +34,7 @@ function RouteComponent() {
                 to="/auth"
                 className="hover:cursor-pointer dark:text-black 
                 text-black hover:text-white dark:bg-white 
-                px-2 transition duration-500 font-medium "
+                px-2 transition duration-500 font-medium"
               >
                 try now
               </Link>
