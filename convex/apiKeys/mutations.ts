@@ -6,7 +6,7 @@ import { api } from "../_generated/api";
 
 const JWT_PRIVATE_KEY_PEM = process.env.JWT_PRIVATE_KEY;
 
-export const addApiKey = mutation({
+export const create = mutation({
   args: {
     name: v.string(),
     key: v.string(),
@@ -33,11 +33,13 @@ export const addApiKey = mutation({
       .setIssuedAt()
       .sign(privateKey);
 
-    const existingApiKey = await ctx.runQuery(api.apiKeys.queries.getFromName, {
-      name: args.name,
-    });
-    if (existingApiKey) {
-      await ctx.db.delete(existingApiKey._id);
+    const existingApiKeyDoc = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("name"), args.name))
+      .first();
+    if (existingApiKeyDoc) {
+      await ctx.db.delete(existingApiKeyDoc._id);
     }
 
     await ctx.db.insert("apiKeys", {
@@ -51,7 +53,7 @@ export const addApiKey = mutation({
   },
 });
 
-export const deleteApiKey = mutation({
+export const remove = mutation({
   args: {
     key: v.string(),
   },

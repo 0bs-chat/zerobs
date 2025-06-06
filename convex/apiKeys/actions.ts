@@ -8,7 +8,7 @@ export const addApiKey = httpAction(async (ctx, request) => {
   const name = res.name;
   const key = res.key;
 
-  await ctx.runMutation(api.apiKeys.mutations.addApiKey, {
+  await ctx.runMutation(api.apiKeys.mutations.create, {
     name,
     key,
   });
