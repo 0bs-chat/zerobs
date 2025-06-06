@@ -16,7 +16,9 @@ export const ChatMessages = () => {
 
   const getMessages = useAction(api.chats.actions.messages);
 
-  const [messages, setMessages] = useState<StateSnapshot | undefined>(undefined);
+  const [messages, setMessages] = useState<StateSnapshot | undefined>(
+    undefined
+  );
   useEffect(() => {
     if (stream.status === "done" && params.chatId !== "new") {
       getMessages({ chatId: params.chatId as Id<"chats"> }).then((messages) => {
@@ -27,7 +29,7 @@ export const ChatMessages = () => {
 
   return (
     <ScrollArea className="flex-1 overflow-hidden">
-      <div className="flex flex-col max-w-4xl mx-auto">
+      <div className="flex-1 flex-col max-w-4xl mx-auto">
         {JSON.stringify(messages, null, 2)}
         {stream.status === "streaming" && (
           <div className="flex flex-col gap-2">

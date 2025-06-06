@@ -8,14 +8,18 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { FoldersIcon, PlusIcon } from "lucide-react";
-import { useChat } from "@/store/use-chat";
+import { useChatStore } from "@/store/chatStore";
 
 export const ProjectsDropdown = () => {
   const projects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 3, cursor: null },
   });
-  const { setSelectedProjectId, setResizablePanelsOpen, setResizablePanelTab, setProjectDialogOpen } =
-    useChat();
+  const {
+    setSelectedProjectId,
+    setResizablePanelsOpen,
+    setResizablePanelTab,
+    setProjectDialogOpen,
+  } = useChatStore();
 
   return (
     <DropdownMenuSub>

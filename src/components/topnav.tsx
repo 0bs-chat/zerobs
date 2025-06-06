@@ -1,6 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/theme-switcher";
-import { useChat } from "@/store/use-chat";
+import { useChatStore } from "@/store/chatStore";
 import { LogOutIcon, PanelRightCloseIcon } from "lucide-react";
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
@@ -8,22 +8,21 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { toast } from "sonner";
 
 export function TopNav() {
-  const { resizablePanelsOpen, setResizablePanelsOpen } = useChat();
+  const { resizablePanelsOpen, setResizablePanelsOpen } = useChatStore();
   const { signOut } = useAuthActions();
 
   return (
     <div className="fixed right-0 py-2 px-4 flex items-center gap-4 w-full bg-transparent justify-between pointer-events-none z-50">
       <div className="flex items-center gap-2 justify-center top-0 left-0 pointer-events-auto">
-        <SidebarTrigger className="h-8 w-8  border bg-background " />
+        <SidebarTrigger className="h-8 w-8" />
       </div>
       <div className="flex items-center gap-2 justify-center top-0 right-0 pointer-events-auto">
         {!resizablePanelsOpen ? (
           <Button
             variant="ghost"
             size="icon"
-            className="cursor-pointer hover:scale-105 transition-all duration-300 hover:text-destructive hover:bg-destructive/90"
+            className="cursor-pointer transition-all duration-300 hover:text-destructive hover:bg-destructive/20 pointer-events-auto dark:hover:text-foreground dark:hover:bg-destructive/60"
             onClick={() => {
-              localStorage.clear();
               signOut();
               toast.success("Signed out");
             }}
@@ -33,7 +32,7 @@ export function TopNav() {
         ) : null}
         {!resizablePanelsOpen ? <ModeToggle /> : null}
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           onClick={() => setResizablePanelsOpen(!resizablePanelsOpen)}
         >

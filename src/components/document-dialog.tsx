@@ -4,7 +4,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useChat } from "@/store/use-chat";
+import { useChatStore } from "@/store/chatStore";
 import { api } from "../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import type { Id } from "convex/_generated/dataModel";
@@ -18,18 +18,16 @@ export const DocumentDialog = () => {
     documentDialogOpen,
     documentDialogDocumentId,
     setDocumentDialogOpen,
-  } = useChat();
+  } = useChatStore();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const document = useQuery(
     api.documents.queries.get,
-    documentDialogDocumentId
-      ? { documentId: documentDialogDocumentId }
-      : "skip",
+    documentDialogDocumentId ? { documentId: documentDialogDocumentId } : "skip"
   );
 
   const generateDownloadUrl = useMutation(
-    api.documents.mutations.generateDownloadUrl,
+    api.documents.mutations.generateDownloadUrl
   );
 
   useEffect(() => {

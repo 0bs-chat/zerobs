@@ -13,16 +13,17 @@ import { ResizablePanelGroup } from "@/components/ui/resizable";
 import { ResizablePanel } from "@/components/ui/resizable";
 import { ResizableHandle } from "@/components/ui/resizable";
 import { Panel } from "@/components/chat/panel";
-import { useChat } from "@/store/use-chat";
+import { useChatStore } from "@/store/chatStore";
 
 export const Route = createRootRoute({
   component: () => {
     const { isLoading, isAuthenticated } = useConvexAuth();
-    const { resizablePanelsOpen } = useChat();
+    const { resizablePanelsOpen } = useChatStore();
 
     const urlPath = location.pathname;
 
     const privateRoutes = ["/chat", "/", "/chat/$chatId"];
+
     const publicRoutes = ["/landing", "/auth"];
 
     if (isLoading && !isAuthenticated) {

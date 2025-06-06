@@ -43,8 +43,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="text-center w-full items-center justify-center text-lg font-bold">
-        zerobs
+      <SidebarHeader className="flex items-center justify-end w-full  font-bold text-xl py-3">
+        0bs
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="flex flex-col px-4 gap-2">
@@ -53,7 +53,11 @@ export function AppSidebar() {
               variant="default"
               className="w-full cursor-pointer"
               onClick={() => {
-                navigate({ to: "/chat/$chatId", params: { chatId: "new" }, replace: true });
+                navigate({
+                  to: "/chat/$chatId",
+                  params: { chatId: "new" },
+                  replace: true,
+                });
               }}
             >
               <div className="flex items-center gap-2">
@@ -78,11 +82,12 @@ export function AppSidebar() {
             {["pinned", "history"].map((group) => {
               // Filter chats based on group
               const isPinned = group === "pinned";
-              const groupChats = chats.page
-                .filter((chat) => (isPinned ? chat.pinned : !chat.pinned))
-                // .sort((a, b) =>
-                //   isPinned ? 0 : b._creationTime - a._creationTime
-                // ); // already sorted server side https://docs.convex.dev/database/reading-data/indexes#sorting-with-indexes
+              const groupChats = chats.page.filter((chat) =>
+                isPinned ? chat.pinned : !chat.pinned
+              );
+              // .sort((a, b) =>
+              //   isPinned ? 0 : b._creationTime - a._creationTime
+              // ); // already sorted server side https://docs.convex.dev/database/reading-data/indexes#sorting-with-indexes
 
               // Don't render pinned group if no pinned chats
               if (isPinned && groupChats.length === 0) return null;
@@ -120,7 +125,7 @@ export function AppSidebar() {
                           className={`flex-1 flex items-center justify-between truncate text-sm`}
                         >
                           <span className="truncate">{chat.name}</span>
-                          <div className="flex items-center gap-2 opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 ml-2">
+                          <div className="flex items-center gap-2 opacity-0 group-hover/item:opacity-100 transition-opacity-[0s,0.3s] duration-0 group-hover/item:duration-300 ml-2">
                             {isPinned ? (
                               <PinOffIcon
                                 className="w-4 h-4 text-muted-foreground hover:cursor-pointer"
@@ -151,7 +156,11 @@ export function AppSidebar() {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                navigate({ to: "/" });
+                                navigate({
+                                  to: "/chat/$chatId",
+                                  params: { chatId: "new" },
+                                  replace: true,
+                                });
                                 removeChat({ chatId: chat._id });
                                 toast.success("Chat deleted");
                               }}

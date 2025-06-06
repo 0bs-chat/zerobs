@@ -87,7 +87,7 @@ export function getModel(modelName: string): BaseChatModel {
         apiKey: apiKey,
         configuration: {
           baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-        }
+        },
       });
 
     default:
@@ -135,7 +135,9 @@ export async function formatDocument(
   let content: MessageContentComplex | DataContentBlock;
 
   if (document.type === "file") {
-    const base64 = Buffer.from(await (await ctx.storage.get(document.key))?.arrayBuffer()!).toString("base64");
+    const base64 = Buffer.from(
+      await (await ctx.storage.get(document.key))?.arrayBuffer()!
+    ).toString("base64");
     const mimeType = mime.getType(document.name) ?? "application/octet-stream";
     const fileType = mimeType.split("/")[0];
 
@@ -179,9 +181,12 @@ export async function formatDocument(
       };
     } else {
       try {
-        const vectors = await ctx.runQuery(api.documents.queries.getAllVectors, {
-          documentId: document._id,
-        });
+        const vectors = await ctx.runQuery(
+          api.documents.queries.getAllVectors,
+          {
+            documentId: document._id,
+          }
+        );
         const text = vectors.map((vector) => vector.text).join("\n");
         content = {
           type: "text",

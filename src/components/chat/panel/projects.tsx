@@ -2,7 +2,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Doc, Id } from "../../../../convex/_generated/dataModel";
-import { useChat } from "@/store/use-chat";
+import { useChatStore } from "@/store/chatStore";
 import { Card } from "@/components/ui/card";
 import {
   FileIcon,
@@ -83,7 +83,7 @@ const ProjectDocument = ({ projectDocument }: ProjectDocumentProps) => {
 
 export const ProjectsPanel = () => {
   const { selectedProjectId, setSelectedProjectId, setProjectDialogOpen } =
-    useChat();
+    useChatStore();
   const generateUploadUrl = useMutation(
     api.documents.mutations.generateUploadUrl
   );

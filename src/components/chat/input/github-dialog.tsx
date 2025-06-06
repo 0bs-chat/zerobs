@@ -26,6 +26,7 @@ import {
   type GitHubRepo,
 } from "@/lib/github";
 import { useAuthToken } from "@convex-dev/auth/react";
+import { useNavigate } from "@tanstack/react-router";
 
 interface GitHubDialogProps {
   open: boolean;
@@ -52,8 +53,13 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
   const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const ghSecret = useQuery(api.apiKeys.queries.getFromName, { name: "github_access_token" });
+  const ghSecret = useQuery(api.apiKeys.queries.getFromName, {
+    name: "github_access_token",
+  });
   const isAuthenticated = !!ghSecret?.key;
+
+  const navigate = useNavigate();
+  const currentIdPath = location.pathname;
 
   // Reset state when dialog closes
   const handleOpenChange = useCallback(
@@ -187,8 +193,12 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
   const handleGitHubLogin = async () => {
     try {
       window.location.href = `https://github.com/login/oauth/authorize?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&redirect_uri=${import.meta.env.VITE_CONVEX_SITE_URL}/github_repo/callback&state=${token}`;
-      
+
       toast.info("Redirecting to GitHub...");
+      //       await signIn("github-repo", {
+      //         redirectTo: currentIdPath,
+      //       });
+      //       toast.info("Signing in with GitHub...");
     } catch (error) {
       console.error("GitHub sign-in error:", error);
       toast.error("Failed to sign in with GitHub");

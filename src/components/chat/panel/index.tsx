@@ -1,12 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useChat } from "@/store/use-chat";
+import { useChatStore } from "@/store/chatStore";
 import { ProjectsPanel } from "./projects";
 import { MCPPanel } from "./mcp/index";
 
 type TabValue = "artifacts" | "projects" | "settings" | "mcp";
 
 export const Panel = () => {
-  const { resizablePanelTab, setResizablePanelTab } = useChat();
+  const { resizablePanelTab, setResizablePanelTab } = useChatStore();
 
   return (
     <Tabs

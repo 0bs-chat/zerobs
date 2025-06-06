@@ -5,7 +5,7 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import { FileIcon, LinkIcon, XIcon, YoutubeIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useChat } from "@/store/use-chat";
+import { useChatStore } from "@/store/chatStore";
 
 export const DocumentList = ({
   documentIds = [],
@@ -18,7 +18,7 @@ export const DocumentList = ({
     documentIds,
   });
 
-  const { setDocumentDialogDocumentId, setDocumentDialogOpen } = useChat();
+  const { setDocumentDialogDocumentId, setDocumentDialogOpen } = useChatStore();
 
   if (!documents?.length) return null;
 

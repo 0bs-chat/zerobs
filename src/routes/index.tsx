@@ -6,8 +6,8 @@ export const Route = createFileRoute("/")({
 
 function RouteComponent() {
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-4xl font-bold"> 👋 hi!</h1>
+    <div className="flex flex-col items-center justify-end h-full w-full gap-1 py-2">
+      {/* <ChatInput /> */}
     </div>
   );
 }

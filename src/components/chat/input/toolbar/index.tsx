@@ -31,7 +31,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import type { Id } from "convex/_generated/dataModel";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
@@ -40,6 +40,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { GitHubDialog } from "../github-dialog";
+import { DocumentList } from "../document-list";
+import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
+import { useChatPreferencesStore } from "@/store/useChatPreferencesStore";
 
 const getTagInfo = (tag: string) => {
   switch (tag) {
@@ -64,19 +67,21 @@ const getTagInfo = (tag: string) => {
   }
 };
 
-export const Toolbar = () => {
+export const ChatInputToolbar = () => {
   const params = useParams({ strict: false });
+  const chatId: Id<"chats"> = params.chatId as Id<"chats">;
   const navigate = useNavigate();
-  const chatId: Id<"chats"> | "new" = params.chatId
-    ? (params.chatId as Id<"chats">)
-    : "new";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isGitHubDialogOpen, setIsGitHubDialogOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { preferences, updatePreferences } = useChatPreferencesStore();
+  const { chatInputText, setChatInputText } = useChatPreferencesStore();
 
-  const chatInput = useQuery(api.chatInput.queries.get, {
-    chatId,
-  });
+  const chatInputQuery = useQuery(
+    api.chatInput.queries.get,
+    chatId !== "new" ? { chatId } : "skip"
+  );
+
   const updateChatInputMutation = useMutation(api.chatInput.mutations.update);
   const generateUploadUrlMutation = useMutation(
     api.documents.mutations.generateUploadUrl
@@ -102,33 +107,16 @@ export const Toolbar = () => {
     fetchModel();
   }, [chatId, getModelAction]);
 
-  const handleSubmit = async () => {
-    if (chatId === "new") {
-      const newChatId = await createChatMutation({
-        name: "New Chat",
-      });
-      await createChatInputMutation({
-        chatId: newChatId,
-        documents: chatInput?.documents,
-        text: chatInput?.text,
-        projectId: chatInput?.projectId,
-        plannerMode: chatInput?.plannerMode,
-        agentMode: chatInput?.agentMode,
-        webSearch: chatInput?.webSearch,
-        model: getModelResult?.selectedModel.model ?? "",
-      });
-      await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
-      await sendAction({
-        chatId: newChatId,
-      });
-    }
-    if (chatId !== "new") {
-      await sendAction({
-        chatId,
-      });
-    }
+  const handleRemoveDocument = (documentId: Id<"documents">) => {
+    if (!chatInputQuery?.documents) return;
+    if (chatId === "new") return;
+    updateChatInputMutation({
+      chatId: chatId,
+      updates: {
+        documents: chatInputQuery?.documents.filter((id) => id !== documentId),
+      },
+    });
   };
-
   const handleFileUpload = async (files: FileList) => {
     try {
       const uploadedStorageIds: Id<"_storage">[] = [];
@@ -167,7 +155,7 @@ export const Toolbar = () => {
       });
 
       // Update chat input with new documents
-      const existingDocuments = chatInput?.documents || [];
+      const existingDocuments = chatInputQuery?.documents || [];
       await updateChatInputMutation({
         chatId,
         updates: {
@@ -186,158 +174,210 @@ export const Toolbar = () => {
     }
   };
 
+  const handleSubmit = async () => {
+    if (chatId === "new") {
+      const newChatId = await createChatMutation({ name: "New Chat" });
+      await createChatInputMutation({
+        chatId: newChatId,
+        text: chatInputText,
+        model: preferences?.model,
+        agentMode: preferences?.agentMode,
+        plannerMode: preferences?.plannerMode,
+        webSearch: preferences?.webSearch,
+        documents: chatInputQuery?.documents,
+        projectId: chatInputQuery?.projectId,
+      });
+      navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
+      setChatInputText("");
+      await sendAction({ chatId: newChatId });
+    } else {
+      await updateChatInputMutation({
+        chatId: chatId,
+        updates: {
+          text: chatInputText,
+          documents: chatInputQuery?.documents,
+          projectId: chatInputQuery?.projectId,
+          plannerMode: preferences?.plannerMode,
+          agentMode: preferences?.agentMode,
+          webSearch: preferences?.webSearch,
+          model: preferences?.model,
+        },
+      });
+      setChatInputText("");
+      await sendAction({ chatId: chatId });
+    }
+  };
+
   return (
-    <div className="flex flex-row justify-between items-center w-full p-1">
-      <input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        multiple
-        onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+    <div className="flex flex-col max-w-4xl w-full mx-auto items-center bg-muted rounded-lg">
+      {/* Document List (Shadcn Scroll Area) */}
+      <DocumentList
+        documentIds={chatInputQuery?.documents}
+        onRemove={handleRemoveDocument}
       />
-      <div className="flex flex-row items-center gap-1">
-        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
-              <PlusIcon className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <PaperclipIcon className="w-4 h-4" />
-              Attach Documents
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault();
-                setIsDropdownOpen(false);
-                setIsGitHubDialogOpen(true);
-              }}
-            >
-              <GithubIcon className="w-4 h-4" />
-              Add GitHub Repo
-            </DropdownMenuItem>
-            <ProjectsDropdown />
-          </DropdownMenuContent>
-        </DropdownMenu>
 
-        <GitHubDialog
-          open={isGitHubDialogOpen}
-          onOpenChange={setIsGitHubDialogOpen}
+      {/* Input */}
+      <AutosizeTextarea
+        minHeight={56}
+        maxHeight={192}
+        className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-3"
+        value={chatInputText}
+        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+          setChatInputText(e.target.value);
+        }}
+        onKeyDown={useCallback(
+          async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              await handleSubmit();
+            }
+          },
+          [handleSubmit]
+        )}
+        placeholder="Type a message..."
+      />
+
+      <div className="flex flex-row justify-between items-center w-full p-1">
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          multiple
+          onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
         />
-
-        <Toggle
-          variant="outline"
-          className="hover:transition hover:duration-500 "
-          pressed={chatInput?.agentMode}
-          onPressedChange={() => {
-            updateChatInputMutation({
-              chatId,
-              updates: {
-                agentMode: !chatInput?.agentMode,
-              },
-            });
-          }}
-        >
-          <BotIcon className="h-4 w-4" />
-          Agent
-        </Toggle>
-
-        <Toggle
-          variant="outline"
-          className="hover:transition hover:duration-500 "
-          pressed={chatInput?.plannerMode}
-          onPressedChange={() => {
-            updateChatInputMutation({
-              chatId,
-              updates: {
-                plannerMode: !chatInput?.plannerMode,
-              },
-            });
-          }}
-        >
-          <BrainIcon className="h-4 w-4" />
-          Smort
-        </Toggle>
-
-        <Tooltip delayDuration={300}>
-          <TooltipTrigger>
-            <Toggle
-              variant="outline"
-              className="hover:transition hover:duration-500 "
-              pressed={chatInput?.webSearch}
-              onPressedChange={() => {
-                updateChatInputMutation({
-                  chatId,
-                  updates: {
-                    webSearch: !chatInput?.webSearch,
-                  },
-                });
-              }}
-            >
-              <Globe2Icon className="h-4 w-4" />
-            </Toggle>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Search the web</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-
-      <div className="flex flex-row items-center gap-1">
-        <Select
-          onValueChange={(value) =>
-            updateChatInputMutation({
-              chatId,
-              updates: {
-                model: value,
-              },
-            })
-          }
-        >
-          <SelectTrigger>{getModelResult?.selectedModel.label}</SelectTrigger>
-          <SelectContent>
-            {getModelResult?.models.map((model) => (
-              <SelectItem
-                key={model.model}
-                value={model.model}
-                className={`${
-                  model.model === getModelResult?.selectedModel.model
-                    ? "bg-accent"
-                    : ""
-                }`}
+        <div className="flex flex-row items-center gap-1">
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <PlusIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                <PaperclipIcon className="w-4 h-4" />
+                Attach Documents
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setIsDropdownOpen(false);
+                  setIsGitHubDialogOpen(true);
+                }}
               >
-                <div className="flex flex-col w-full gap-2">
-                  <span className={`text-foreground`}>{model.label}</span>
-                  {model.tags && (
-                    <div className="flex flex-row gap-1 ">
-                      {model.tags?.map((tag) => {
-                        const { icon: Icon, className } = getTagInfo(tag);
-                        return (
-                          <Badge
-                            key={tag}
-                            className={`flex items-center gap-1 text-foreground ${className}`}
-                          >
-                            <Icon className="h-3 w-3 " />
-                            {tag}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+                <GithubIcon className="w-4 h-4" />
+                Add GitHub Repo
+              </DropdownMenuItem>
+              <ProjectsDropdown />
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={async () => await handleSubmit()}
-        >
-          <ArrowUp className="h-4 w-4" />
-        </Button>
+          <GitHubDialog
+            open={isGitHubDialogOpen}
+            onOpenChange={setIsGitHubDialogOpen}
+          />
+
+          <Toggle
+            variant="outline"
+            className="hover:transition hover:duration-500"
+            pressed={preferences?.agentMode}
+            onPressedChange={() => {
+              updatePreferences({
+                agentMode: !preferences?.agentMode,
+              });
+            }}
+          >
+            <BotIcon className="h-4 w-4" />
+            Agent
+          </Toggle>
+
+          <Toggle
+            variant="outline"
+            className="hover:transition hover:duration-500"
+            pressed={preferences?.plannerMode}
+            onPressedChange={() => {
+              updatePreferences({
+                plannerMode: !preferences?.plannerMode,
+              });
+            }}
+          >
+            <BrainIcon className="h-4 w-4" />
+            Smort
+          </Toggle>
+
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Toggle
+                variant="outline"
+                className={`hover:transition hover:duration-500 ${preferences?.webSearch ? "bg-accent text-accent-foreground" : ""}`}
+                aria-pressed={preferences?.webSearch}
+                pressed={preferences?.webSearch}
+                onPressedChange={() => {
+                  updatePreferences({
+                    webSearch: !preferences?.webSearch,
+                  });
+                }}
+              >
+                <Globe2Icon className="h-4 w-4" />
+              </Toggle>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Search the web</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        <div className="flex flex-row items-center gap-1">
+          <Select
+            onValueChange={(value) =>
+              updatePreferences({
+                model: value,
+              })
+            }
+          >
+            <SelectTrigger>{getModelResult?.selectedModel.label}</SelectTrigger>
+            <SelectContent>
+              {getModelResult?.models.map((model) => (
+                <SelectItem
+                  key={model.model}
+                  value={model.model}
+                  className={`${
+                    model.model === getModelResult?.selectedModel.model
+                      ? "bg-accent"
+                      : ""
+                  }`}
+                >
+                  <div className="flex flex-col w-full gap-2">
+                    <span className={`text-foreground`}>{model.label}</span>
+                    {model.tags && (
+                      <div className="flex flex-row gap-1 ">
+                        {model.tags?.map((tag) => {
+                          const { icon: Icon, className } = getTagInfo(tag);
+                          return (
+                            <Badge
+                              key={tag}
+                              className={`flex items-center gap-1 text-foreground ${className}`}
+                            >
+                              <Icon className="h-3 w-3 " />
+                              {tag}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={async () => await handleSubmit()}
+          >
+            <ArrowUp className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

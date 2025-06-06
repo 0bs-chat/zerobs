@@ -10,13 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useChat } from "@/store/use-chat";
+import { useChatStore } from "@/store/chatStore";
 
 export const ProjectDialog = () => {
-  const { projectDialogOpen, setProjectDialogOpen } = useChat();
+  const { projectDialogOpen, setProjectDialogOpen } = useChatStore();
   const createProject = useMutation(api.projects.mutations.create);
   const { setSelectedProjectId, setResizablePanelsOpen, setResizablePanelTab } =
-    useChat();
+    useChatStore();
 
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
