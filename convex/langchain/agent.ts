@@ -44,7 +44,7 @@ const plan = z
       additional_context: z
         .string()
         .describe("Additional context that may be needed to execute the step"),
-    })
+    }),
   )
   .describe("A step by step plan to achieve the objective")
   .min(1)
@@ -68,7 +68,7 @@ const GraphState = Annotation.Root({
 
 async function shouldRetrieve(
   _state: typeof GraphState.State,
-  config: RunnableConfig
+  config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
@@ -84,13 +84,16 @@ async function shouldRetrieve(
 
 async function retrieve(
   state: typeof GraphState.State,
-  config: RunnableConfig
+  config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
-  const vectorStore = new ConvexVectorStore(getEmbeddingModel("text-embedding-004"), {
-    ctx: formattedConfig.ctx,
-    table: "documentVectors",
-  });
+  const vectorStore = new ConvexVectorStore(
+    getEmbeddingModel("text-embedding-004"),
+    {
+      ctx: formattedConfig.ctx,
+      table: "documentVectors",
+    },
+  );
   if (!formattedConfig.chatInput.model) {
     throw new Error("Model is required");
   }
@@ -99,7 +102,7 @@ async function retrieve(
     type: "vectorStore" | "webSearch",
     model: string,
     state: typeof GraphState.State,
-    config: ExtendedRunnableConfig
+    config: ExtendedRunnableConfig,
   ) {
     const promptTemplate = ChatPromptTemplate.fromMessages([
       [
@@ -119,8 +122,8 @@ async function retrieve(
             .describe("Queries for the " + type + ".")
             .max(3)
             .min(1),
-        })
-      )
+        }),
+      ),
     );
 
     const queries = await modelWithOutputParser.invoke({
@@ -139,14 +142,14 @@ async function retrieve(
       {
         projectId: formattedConfig.chatInput.projectId,
         selected: true,
-      }
+      },
     );
 
     const queries = await generateQueries(
       "vectorStore",
       formattedConfig.chatInput.model,
       state,
-      formattedConfig
+      formattedConfig,
     );
     await Promise.all(
       queries.map(async (query) => {
@@ -155,13 +158,13 @@ async function retrieve(
             q.or(
               ...includedProjectDocuments.map((doc) =>
                 q.eq("metadata", {
-                  source: doc.documentId
-                })
-              )
+                  source: doc.documentId,
+                }),
+              ),
             ),
         });
         documents.push(...results);
-      })
+      }),
     );
   }
   if (formattedConfig.chatInput.webSearch) {
@@ -171,7 +174,7 @@ async function retrieve(
       "webSearch",
       formattedConfig.chatInput.model,
       state,
-      formattedConfig
+      formattedConfig,
     );
     await Promise.all(
       queries.map(async (query) => {
@@ -202,8 +205,8 @@ async function retrieve(
           }[] = JSON.parse(searchResults);
           const urlMarkdownContents = await Promise.all(
             searchResultsArray.map((result) =>
-              searchTools.crawlWeb.invoke({ url: result.url })
-            )
+              searchTools.crawlWeb.invoke({ url: result.url }),
+            ),
           );
           const docs = searchResultsArray.map((result, index) => {
             return new Document({
@@ -215,7 +218,7 @@ async function retrieve(
           });
           documents.push(...docs);
         }
-      })
+      }),
     );
   }
 
@@ -224,7 +227,7 @@ async function retrieve(
     model: string,
     document: DocumentInterface,
     message: BaseMessage,
-    config: ExtendedRunnableConfig
+    config: ExtendedRunnableConfig,
   ) {
     const promptTemplate = ChatPromptTemplate.fromMessages([
       [
@@ -242,8 +245,8 @@ async function retrieve(
           relevant: z
             .boolean()
             .describe("Whether the document is relevant to the user question"),
-        })
-      )
+        }),
+      ),
     );
 
     const gradedDocument = await modelWithOutputParser.invoke(
@@ -251,7 +254,7 @@ async function retrieve(
         document: document,
         message: message,
       },
-      config
+      config,
     );
 
     return gradedDocument.relevant;
@@ -263,11 +266,11 @@ async function retrieve(
           formattedConfig.chatInput.model!,
           document,
           state.messages.slice(-1)[0],
-          formattedConfig
+          formattedConfig,
         ))
           ? document
           : null;
-      })
+      }),
     )
   ).filter((document) => document !== null);
 
@@ -278,14 +281,14 @@ async function retrieve(
 
 async function passToShouldPlan(
   _state: typeof GraphState.State,
-  _config: RunnableConfig
+  _config: RunnableConfig,
 ) {
   return {};
 }
 
 async function shouldPlan(
   _state: typeof GraphState.State,
-  config: RunnableConfig
+  config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
@@ -313,13 +316,13 @@ async function agent(state: typeof GraphState.State, config: RunnableConfig) {
         `   - Display math must be wrapped in double dollar signs: $$ content $$.\n` +
         `- When generating code:\n` +
         `   - Ensure it is properly formatted using Prettier with a print width of 80 characters\n` +
-        `   - Present it in Markdown code blocks with the correct language extension indicated\n`
+        `   - Present it in Markdown code blocks with the correct language extension indicated\n`,
     ),
     ...(state.documents && state.documents.length > 0
       ? [
           new HumanMessage(
             "Here are the documents that are relevant to the question: " +
-              formatDocumentsAsString(state.documents)
+              formatDocumentsAsString(state.documents),
           ),
         ]
       : []),
@@ -355,7 +358,7 @@ async function agent(state: typeof GraphState.State, config: RunnableConfig) {
           llm: getModel(formattedConfig.chatInput.model!),
           tools,
           prompt: `You are a ${groupName} assistant`,
-        })
+        }),
     );
 
     agent = createSupervisor({
@@ -372,12 +375,12 @@ async function agent(state: typeof GraphState.State, config: RunnableConfig) {
     {
       messages: state.messages,
     },
-    config
+    config,
   );
 
   const newMessages = response.messages.slice(
     state.messages.length,
-    response.messages.length
+    response.messages.length,
   );
 
   return {
@@ -399,14 +402,14 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   ]);
 
   const modelWithOutputParser = promptTemplate.pipe(
-    getModel(formattedConfig.chatInput.model!).withStructuredOutput(plan)
+    getModel(formattedConfig.chatInput.model!).withStructuredOutput(plan),
   );
 
   const response = await modelWithOutputParser.invoke(
     {
       messages: state.messages,
     },
-    config
+    config,
   );
 
   return {
@@ -416,7 +419,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
 
 async function plannerAgent(
   state: typeof GraphState.State,
-  config: RunnableConfig
+  config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
@@ -441,13 +444,13 @@ async function plannerAgent(
         `   - Display math must be wrapped in double dollar signs: $$ content $$.\n` +
         `- When generating code:\n` +
         `   - Ensure it is properly formatted using Prettier with a print width of 80 characters\n` +
-        `   - Present it in Markdown code blocks with the correct language extension indicated\n`
+        `   - Present it in Markdown code blocks with the correct language extension indicated\n`,
     ),
     ...(state.documents.length > 0
       ? [
           new HumanMessage(
             "Here are the documents that are relevant to the question: " +
-              formatDocumentsAsString(state.documents)
+              formatDocumentsAsString(state.documents),
           ),
         ]
       : []),
@@ -480,7 +483,7 @@ async function plannerAgent(
           llm: getModel(formattedConfig.chatInput.model!),
           tools,
           prompt: `You are a ${groupName} assistant`,
-        })
+        }),
     );
 
     agent = createSupervisor({
@@ -497,7 +500,7 @@ async function plannerAgent(
     {
       messages: state.messages,
     },
-    config
+    config,
   );
 
   const newMessages = response.messages.slice(-1).map((message) => {
@@ -513,7 +516,7 @@ async function plannerAgent(
 
 async function replanner(
   state: typeof GraphState.State,
-  config: RunnableConfig
+  config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
@@ -527,7 +530,7 @@ async function replanner(
       `Your original plan was this:\n{plan}\n\n` +
       `You have currently done the following steps:\n${new MessagesPlaceholder("pastSteps")}\n\n` +
       `Update your plan accordingly. If no more steps are needed and you can return to the user, then respond with that and use the 'response' function. ` +
-      `Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`
+      `Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
   );
 
   const outputParser = z.union([
@@ -539,8 +542,8 @@ async function replanner(
 
   const modelWithOutputParser = promptTemplate.pipe(
     getModel(formattedConfig.chatInput.model!).withStructuredOutput(
-      outputParser
-    )
+      outputParser,
+    ),
   );
 
   const response = await modelWithOutputParser.invoke(
@@ -551,13 +554,13 @@ async function replanner(
         .filter((message) => message.response_metadata["planSteps"])
         .map((message, index) => [
           new AIMessage(
-            `${index}: ${JSON.stringify(message.response_metadata["planSteps"])}`
+            `${index}: ${JSON.stringify(message.response_metadata["planSteps"])}`,
           ),
           message,
         ])
         .flat(),
     },
-    config
+    config,
   );
 
   if (typeof response === "object" && "response" in response) {

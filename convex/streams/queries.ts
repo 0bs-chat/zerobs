@@ -10,11 +10,12 @@ export const get = query({
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
-    const stream = await ctx.db.query("streams")
+    const stream = await ctx.db
+      .query("streams")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("_id"), args.streamId))
       .first();
-    
+
     if (!stream) {
       throw new Error("Stream not found");
     }
@@ -26,7 +27,10 @@ export const getChunks = query({
   args: {
     streamId: v.id("streams"),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     stream: Doc<"streams">;
     chunks: Doc<"streamChunks">[];
   }> => {
@@ -34,14 +38,15 @@ export const getChunks = query({
       streamId: args.streamId,
     });
 
-    const chunks = await ctx.db.query("streamChunks")
+    const chunks = await ctx.db
+      .query("streamChunks")
       .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
       .collect();
-    
+
     return {
       stream,
       chunks,
-    }
+    };
   },
 });
 
@@ -50,7 +55,10 @@ export const getNewChunks = query({
     streamId: v.id("streams"),
     lastChunkTime: v.number(),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     stream: Doc<"streams">;
     chunks: Doc<"streamChunks">[];
   }> => {
@@ -65,15 +73,16 @@ export const getNewChunks = query({
     //   }
     // }
 
-    const chunks = await ctx.db.query("streamChunks")
+    const chunks = await ctx.db
+      .query("streamChunks")
       .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
       .order("asc")
       .filter((q) => q.gt(q.field("_creationTime"), args.lastChunkTime))
       .collect();
-    
+
     return {
       stream,
       chunks,
-    }
+    };
   },
 });

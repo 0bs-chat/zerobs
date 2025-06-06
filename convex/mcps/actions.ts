@@ -23,7 +23,7 @@ export const create = internalAction({
       throw new Error("MCP is not a stdio type");
     }
     if (!mcp.command) {
-        throw new Error("MCP command is not defined");
+      throw new Error("MCP command is not defined");
     }
 
     const appName = String(mcp._id);
@@ -31,26 +31,26 @@ export const create = internalAction({
     let machine: FlyMachine | null = null;
 
     const machineConfig: CreateMachineRequest = {
-        name: `${appName}-machine`,
-        region: "iad",
-        config: {
-            image: "mantrakp04/mcprunner:latest",
-            env: {
-                ...(mcp.env || {}),
-                MCP_COMMAND: mcp.command,
-                IDLE_TIMEOUT_MINS: "15",
-            },
-            guest: { cpus: 1, memory_mb: 1024, cpu_kind: "shared" },
-            services: [
-                {
-                    ports: [{ port: 443, handlers: ["tls", "http"] }],
-                    protocol: "tcp",
-                    internal_port: 8000,
-                }
-            ]
-        }
+      name: `${appName}-machine`,
+      region: "iad",
+      config: {
+        image: "mantrakp04/mcprunner:latest",
+        env: {
+          ...(mcp.env || {}),
+          MCP_COMMAND: mcp.command,
+          IDLE_TIMEOUT_MINS: "15",
+        },
+        guest: { cpus: 1, memory_mb: 1024, cpu_kind: "shared" },
+        services: [
+          {
+            ports: [{ port: 443, handlers: ["tls", "http"] }],
+            protocol: "tcp",
+            internal_port: 8000,
+          },
+        ],
+      },
     };
-    
+
     const app = await fly.createApp({
       app_name: appName,
       org_slug: "personal",
@@ -62,7 +62,10 @@ export const create = internalAction({
     try {
       await fly.allocateIpAddress(appName, "v4");
     } catch (error: any) {
-        console.error(`Error allocating IP for ${appName}:`, error.message ? error.message : error);
+      console.error(
+        `Error allocating IP for ${appName}:`,
+        error.message ? error.message : error,
+      );
     }
 
     machine = await fly.createMachine(appName, machineConfig);
@@ -85,9 +88,11 @@ export const remove = internalAction({
     const appName = String(args.mcpId);
     const app: FlyApp | null = await fly.getApp(appName);
     if (app && app.name) {
-        await fly.deleteApp(app.name);
+      await fly.deleteApp(app.name);
     } else {
-      console.log(`App ${appName} not found or name missing, nothing to remove.`);
+      console.log(
+        `App ${appName} not found or name missing, nothing to remove.`,
+      );
     }
   },
 });

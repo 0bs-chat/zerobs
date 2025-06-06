@@ -2,6 +2,10 @@ import { requireAuth } from "../utils/helpers";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 
+// TODO: Optimization
+// - Instead of fetching the chat and checking if its new, check if before fetching
+//  but this will create a race condition requring additional type safety, annoying af
+
 export const create = mutation({
   args: {
     chatId: v.union(v.id("chats"), v.literal("new")),
@@ -19,8 +23,8 @@ export const create = mutation({
     // Check if chatInput already exists
     const existingChatInput = await ctx.db
       .query("chatInput")
-      .withIndex("by_user_chat", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId)
+      .withIndex("by_chat_user", (q) =>
+        q.eq("chatId", args.chatId).eq("userId", userId),
       )
       .first();
 
@@ -40,16 +44,9 @@ export const create = mutation({
     }
 
     const newChatInputId = await ctx.db.insert("chatInput", {
-      chatId: args.chatId,
       userId,
-      documents: args.documents,
-      text: args.text,
-      projectId: args.projectId,
-      model: args.model,
-      agentMode: args.agentMode,
-      plannerMode: args.plannerMode,
-      webSearch: args.webSearch,
       updatedAt: Date.now(),
+      ...args,
     });
     const newChatInput = await ctx.db.get(newChatInputId);
 
@@ -83,8 +80,8 @@ export const update = mutation({
 
     let existingChatInput = await ctx.db
       .query("chatInput")
-      .withIndex("by_user_chat", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId)
+      .withIndex("by_chat_user", (q) =>
+        q.eq("chatId", args.chatId).eq("userId", userId),
       )
       .first();
 
@@ -121,8 +118,8 @@ export const remove = mutation({
 
     const existingChatInput = await ctx.db
       .query("chatInput")
-      .withIndex("by_user_chat", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId)
+      .withIndex("by_chat_user", (q) =>
+        q.eq("chatId", args.chatId).eq("userId", userId),
       )
       .first();
 

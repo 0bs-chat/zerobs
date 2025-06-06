@@ -23,7 +23,6 @@ export const create = mutation({
       projectId: args.projectId,
       documentId: args.documentId,
       selected: true,
-      updatedAt: Date.now(),
     });
 
     return projectDocumentId;
@@ -42,12 +41,14 @@ export const createMultiple = mutation({
       projectId: args.projectId,
     });
 
-    await Promise.all(args.documentIds.map(async (documentId) => {
-      await ctx.runMutation(api.projectDocuments.mutations.create, {
-        projectId: args.projectId,
-        documentId: documentId,
-      });
-    }));
+    await Promise.all(
+      args.documentIds.map(async (documentId) => {
+        await ctx.runMutation(api.projectDocuments.mutations.create, {
+          projectId: args.projectId,
+          documentId: documentId,
+        });
+      }),
+    );
 
     return true;
   },
@@ -63,16 +64,12 @@ export const update = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    await ctx.runQuery(
-      api.projectDocuments.queries.get,
-      {
-        projectDocumentId: args.projectDocumentId,
-      }
-    );
+    await ctx.runQuery(api.projectDocuments.queries.get, {
+      projectDocumentId: args.projectDocumentId,
+    });
 
     await ctx.db.patch(args.projectDocumentId, {
       ...args.update,
-      updatedAt: Date.now(),
     });
 
     return true;
@@ -90,7 +87,7 @@ export const remove = mutation({
       api.projectDocuments.queries.get,
       {
         projectDocumentId: args.projectDocumentId,
-      }
+      },
     );
 
     // Delete the associated document
@@ -127,8 +124,8 @@ export const toggleSelect = mutation({
         ctx.runMutation(api.projectDocuments.mutations.update, {
           projectDocumentId: projectDocument._id,
           update: { selected: args.selected },
-        })
-      )
+        }),
+      ),
     );
 
     return true;

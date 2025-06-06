@@ -7,7 +7,14 @@ export const update = mutation({
   args: {
     streamId: v.id("streams"),
     updates: v.object({
-      status: v.optional(v.union(v.literal("pending"), v.literal("streaming"), v.literal("done"), v.literal("error"))),
+      status: v.optional(
+        v.union(
+          v.literal("pending"),
+          v.literal("streaming"),
+          v.literal("done"),
+          v.literal("error"),
+        ),
+      ),
     }),
   },
   handler: async (ctx, args) => {
@@ -18,7 +25,8 @@ export const update = mutation({
     });
 
     if (args.updates.status === "done") {
-      const chunks = await ctx.db.query("streamChunks")
+      const chunks = await ctx.db
+        .query("streamChunks")
         .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
         .collect();
       await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
@@ -59,7 +67,8 @@ export const remove = mutation({
       streamId: args.streamId,
     });
     await ctx.db.delete(args.streamId);
-    const chunks = await ctx.db.query("streamChunks")
+    const chunks = await ctx.db
+      .query("streamChunks")
       .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
       .collect();
     await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
@@ -70,30 +79,38 @@ export const cleanUp = internalMutation({
   args: {},
   handler: async (ctx, _args) => {
     // Get and delete all "done" streams immediately
-    const doneStreams = await ctx.db.query("streams")
-      .withIndex("by_status", (q) => q.eq("status", "done"))
+    const doneStreams = await ctx.db
+      .query("streams")
+      .withIndex("by_status_user", (q) => q.eq("status", "done"))
       .collect();
-    const doneChunks = await Promise.all(doneStreams.map(async (stream) => {
-      const chunks = await ctx.db.query("streamChunks")
-        .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
-        .collect();
-      await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
-      return chunks;
-    }));
-    
+    const doneChunks = await Promise.all(
+      doneStreams.map(async (stream) => {
+        const chunks = await ctx.db
+          .query("streamChunks")
+          .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
+          .collect();
+        await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
+        return chunks;
+      }),
+    );
+
     // Get and delete "error" streams that are more than 15 minutes old
     const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
-    const errorStreams = await ctx.db.query("streams")
-      .withIndex("by_status", (q) => q.eq("status", "error"))
+    const errorStreams = await ctx.db
+      .query("streams")
+      .withIndex("by_status_user", (q) => q.eq("status", "error"))
       .filter((q) => q.lt(q.field("_creationTime"), fifteenMinutesAgo))
       .collect();
-    const errorChunks = await Promise.all(errorStreams.map(async (stream) => {
-      const chunks = await ctx.db.query("streamChunks")
-        .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
-        .collect();
-      await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
-      return chunks;
-    }));
+    const errorChunks = await Promise.all(
+      errorStreams.map(async (stream) => {
+        const chunks = await ctx.db
+          .query("streamChunks")
+          .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
+          .collect();
+        await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
+        return chunks;
+      }),
+    );
 
     return [...doneChunks, ...errorChunks].flat().length;
   },

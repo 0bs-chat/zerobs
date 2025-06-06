@@ -9,7 +9,7 @@ export const getModels = action({
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{
     selectedModel: ModelConfig;
     models: ModelConfig[];

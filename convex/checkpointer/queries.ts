@@ -17,10 +17,11 @@ export const getCheckpoint = internalQuery({
       return await ctx.db
         .query("checkpoints")
         .withIndex("by_checkpoint", (q) =>
-          q.eq("namespace", namespace)
-           .eq("thread_id", thread_id)
-           .eq("checkpoint_ns", checkpoint_ns)
-           .eq("checkpoint_id", checkpoint_id)
+          q
+            .eq("namespace", namespace)
+            .eq("thread_id", thread_id)
+            .eq("checkpoint_ns", checkpoint_ns)
+            .eq("checkpoint_id", checkpoint_id),
         )
         .first();
     } else {
@@ -28,13 +29,14 @@ export const getCheckpoint = internalQuery({
       const checkpoints = await ctx.db
         .query("checkpoints")
         .withIndex("by_thread", (q) =>
-          q.eq("namespace", namespace)
-           .eq("thread_id", thread_id)
-           .eq("checkpoint_ns", checkpoint_ns)
+          q
+            .eq("namespace", namespace)
+            .eq("thread_id", thread_id)
+            .eq("checkpoint_ns", checkpoint_ns),
         )
         .order("desc")
         .first();
-      
+
       return checkpoints;
     }
   },
@@ -51,7 +53,7 @@ export const getChannelValues = internalQuery({
   handler: async (ctx, args) => {
     const { thread_id, checkpoint_ns, channel_versions, namespace } = args;
 
-    if (!channel_versions || typeof channel_versions !== 'object') {
+    if (!channel_versions || typeof channel_versions !== "object") {
       return [];
     }
 
@@ -60,11 +62,12 @@ export const getChannelValues = internalQuery({
       const blob = await ctx.db
         .query("checkpoint_blobs")
         .withIndex("by_channel", (q) =>
-          q.eq("namespace", namespace)
-           .eq("thread_id", thread_id)
-           .eq("checkpoint_ns", checkpoint_ns)
-           .eq("channel", channel)
-           .eq("version", String(version))
+          q
+            .eq("namespace", namespace)
+            .eq("thread_id", thread_id)
+            .eq("checkpoint_ns", checkpoint_ns)
+            .eq("channel", channel)
+            .eq("version", String(version)),
         )
         .first();
 
@@ -99,10 +102,11 @@ export const getPendingSends = internalQuery({
     const writes = await ctx.db
       .query("checkpoint_writes")
       .withIndex("by_checkpoint", (q) =>
-        q.eq("namespace", namespace)
-         .eq("thread_id", thread_id)
-         .eq("checkpoint_ns", checkpoint_ns)
-         .eq("checkpoint_id", parent_checkpoint_id)
+        q
+          .eq("namespace", namespace)
+          .eq("thread_id", thread_id)
+          .eq("checkpoint_ns", checkpoint_ns)
+          .eq("checkpoint_id", parent_checkpoint_id),
       )
       .filter((q) => q.eq(q.field("channel"), "__pregel_tasks__"))
       .collect();
@@ -130,10 +134,11 @@ export const getPendingWrites = internalQuery({
     const writes = await ctx.db
       .query("checkpoint_writes")
       .withIndex("by_checkpoint", (q) =>
-        q.eq("namespace", namespace)
-         .eq("thread_id", thread_id)
-         .eq("checkpoint_ns", checkpoint_ns)
-         .eq("checkpoint_id", checkpoint_id)
+        q
+          .eq("namespace", namespace)
+          .eq("thread_id", thread_id)
+          .eq("checkpoint_ns", checkpoint_ns)
+          .eq("checkpoint_id", checkpoint_id),
       )
       .collect();
 
@@ -160,19 +165,30 @@ export const listCheckpoints = internalQuery({
     namespace: v.string(),
   },
   handler: async (ctx, args) => {
-    const { thread_id, checkpoint_ns, checkpoint_id, filter, before, limit, namespace } = args;
+    const {
+      thread_id,
+      checkpoint_ns,
+      checkpoint_id,
+      filter,
+      before,
+      limit,
+      namespace,
+    } = args;
 
     let query = ctx.db
       .query("checkpoints")
       .withIndex("by_thread", (q) =>
-        q.eq("namespace", namespace)
-         .eq("thread_id", thread_id)
-         .eq("checkpoint_ns", checkpoint_ns)
+        q
+          .eq("namespace", namespace)
+          .eq("thread_id", thread_id)
+          .eq("checkpoint_ns", checkpoint_ns),
       );
 
     // Apply filters
     if (checkpoint_id) {
-      query = query.filter((q) => q.eq(q.field("checkpoint_id"), checkpoint_id));
+      query = query.filter((q) =>
+        q.eq(q.field("checkpoint_id"), checkpoint_id),
+      );
     }
 
     if (before) {
@@ -182,16 +198,16 @@ export const listCheckpoints = internalQuery({
     // Apply metadata filter if provided
     if (filter && Object.keys(filter).length > 0) {
       query = query.filter((q) => {
-        // Simple metadata filtering - in a real implementation, 
+        // Simple metadata filtering - in a real implementation,
         // you might want more sophisticated JSON querying
         let filterExpression = q.eq(q.field("metadata"), q.field("metadata")); // Always true base
-        
+
         for (const key of Object.keys(filter)) {
           // Safer access without direct indexing
           const value = filter[key];
           filterExpression = q.and(
             filterExpression,
-            q.eq(q.field(`metadata.${key}`), value)
+            q.eq(q.field(`metadata.${key}`), value),
           );
         }
         return filterExpression;
@@ -200,10 +216,10 @@ export const listCheckpoints = internalQuery({
 
     // Collect and then sort results manually since we can't use order() after filter()
     const results = await query.collect();
-    
+
     // Sort by creation time descending
-    const sortedResults = results.sort((a, b) => 
-      (b._creationTime || 0) - (a._creationTime || 0)
+    const sortedResults = results.sort(
+      (a, b) => (b._creationTime || 0) - (a._creationTime || 0),
     );
 
     // Apply limit if provided

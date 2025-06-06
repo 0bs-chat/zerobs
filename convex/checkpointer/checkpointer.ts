@@ -13,9 +13,11 @@ import {
 } from "@langchain/langgraph-checkpoint";
 import { internal } from "../_generated/api";
 
-const canRunMutation = (ctx: ActionCtx | MutationCtx | QueryCtx): ctx is MutationCtx | ActionCtx => {
-  return ['runMutation', 'runAction'].every(key => key in ctx);
-}
+const canRunMutation = (
+  ctx: ActionCtx | MutationCtx | QueryCtx,
+): ctx is MutationCtx | ActionCtx => {
+  return ["runMutation", "runAction"].every((key) => key in ctx);
+};
 
 export class ConvexCheckpointSaver extends BaseCheckpointSaver {
   ctx: ActionCtx | MutationCtx | QueryCtx;
@@ -24,7 +26,7 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
   constructor(
     ctx: ActionCtx | MutationCtx | QueryCtx,
     namespace: string = "default",
-    serde?: SerializerProtocol
+    serde?: SerializerProtocol,
   ) {
     super(serde);
     this.ctx = ctx;
@@ -39,7 +41,10 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
     return [type, serialized];
   }
 
-  private _serializeToConvexBytes(value: any): { type: string, blob: ArrayBuffer } {
+  private _serializeToConvexBytes(value: any): {
+    type: string;
+    blob: ArrayBuffer;
+  } {
     const [type, serializedData] = this.serde.dumpsTyped(value);
     if (serializedData instanceof Uint8Array) {
       return { type, blob: serializedData.buffer };
@@ -49,7 +54,9 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
     }
   }
 
-  private async _deserializeFromConvexAny(dbTuple: [string, string | ArrayBuffer]): Promise<any> {
+  private async _deserializeFromConvexAny(
+    dbTuple: [string, string | ArrayBuffer],
+  ): Promise<any> {
     const [type, data] = dbTuple;
     if (data instanceof ArrayBuffer) {
       return this.serde.loadsTyped(type, new Uint8Array(data));
@@ -58,12 +65,18 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
     }
   }
 
-  private async _deserializeFromConvexBytes(dbType: string | undefined, dbBlob: ArrayBuffer): Promise<any> {
+  private async _deserializeFromConvexBytes(
+    dbType: string | undefined,
+    dbBlob: ArrayBuffer,
+  ): Promise<any> {
     const effectiveType = dbType ?? "json";
     if (effectiveType === "bytes") {
       return this.serde.loadsTyped(effectiveType, new Uint8Array(dbBlob));
     } else {
-      return this.serde.loadsTyped(effectiveType, new TextDecoder().decode(dbBlob));
+      return this.serde.loadsTyped(
+        effectiveType,
+        new TextDecoder().decode(dbBlob),
+      );
     }
   }
 
@@ -79,12 +92,15 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
     }
 
     // Get the checkpoint
-    const checkpoint = await this.ctx.runQuery(internal.checkpointer.queries.getCheckpoint, {
-      thread_id,
-      checkpoint_ns,
-      checkpoint_id,
-      namespace: this.namespace,
-    });
+    const checkpoint = await this.ctx.runQuery(
+      internal.checkpointer.queries.getCheckpoint,
+      {
+        thread_id,
+        checkpoint_ns,
+        checkpoint_id,
+        namespace: this.namespace,
+      },
+    );
 
     if (!checkpoint) {
       return undefined;
@@ -116,18 +132,21 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
         checkpoint_ns: checkpoint.checkpoint_ns,
         checkpoint_id: checkpoint.checkpoint_id,
         namespace: this.namespace,
-      }
+      },
     );
 
     const pendingWrites = await Promise.all(
       pendingWritesData.map(async (write) => {
-        const deserializedValue = await this._deserializeFromConvexBytes(write.type, write.blob);
-        return [
-          write.task_id,
-          write.channel,
-          deserializedValue,
-        ] as [string, string, unknown];
-      })
+        const deserializedValue = await this._deserializeFromConvexBytes(
+          write.type,
+          write.blob,
+        );
+        return [write.task_id, write.channel, deserializedValue] as [
+          string,
+          string,
+          unknown,
+        ];
+      }),
     );
 
     // Get pending sends
@@ -138,17 +157,19 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
         checkpoint_ns: checkpoint.checkpoint_ns,
         parent_checkpoint_id: checkpoint.parent_checkpoint_id,
         namespace: this.namespace,
-      }
+      },
     );
 
     const pending_sends = await Promise.all(
       pendingSendsData.map((send) =>
-        this._deserializeFromConvexBytes(send.type, send.blob)
-      )
+        this._deserializeFromConvexBytes(send.type, send.blob),
+      ),
     );
 
     // Reconstruct the checkpoint with channel values
-    const deserializedCheckpointCore = await this._deserializeFromConvexAny(checkpoint.checkpoint as [string, string | ArrayBuffer]);
+    const deserializedCheckpointCore = await this._deserializeFromConvexAny(
+      checkpoint.checkpoint as [string, string | ArrayBuffer],
+    );
 
     const channelValues = await this.ctx.runQuery(
       internal.checkpointer.queries.getChannelValues,
@@ -157,7 +178,7 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
         checkpoint_ns: checkpoint.checkpoint_ns,
         channel_versions: checkpoint.checkpoint.channel_versions || {},
         namespace: this.namespace,
-      }
+      },
     );
 
     const updatedCheckpoint = {
@@ -170,10 +191,11 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
       const channelData: Record<string, unknown> = {};
       for (const channelValue of channelValues) {
         if (channelValue.blob) {
-          channelData[channelValue.channel] = await this._deserializeFromConvexBytes(
-            channelValue.type,
-            channelValue.blob
-          );
+          channelData[channelValue.channel] =
+            await this._deserializeFromConvexBytes(
+              channelValue.type,
+              channelValue.blob,
+            );
         }
       }
       Object.assign(updatedCheckpoint, channelData);
@@ -198,7 +220,7 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
 
   async *list(
     config: RunnableConfig,
-    options?: CheckpointListOptions
+    options?: CheckpointListOptions,
   ): AsyncGenerator<CheckpointTuple> {
     const { limit, before, filter } = options ?? {};
     const thread_id = config.configurable?.thread_id;
@@ -208,14 +230,17 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
       return;
     }
 
-    const checkpoints = await this.ctx.runQuery(internal.checkpointer.queries.listCheckpoints, {
-      thread_id,
-      checkpoint_ns,
-      filter: filter || {},
-      before: before?.configurable?.checkpoint_id,
-      limit,
-      namespace: this.namespace,
-    });
+    const checkpoints = await this.ctx.runQuery(
+      internal.checkpointer.queries.listCheckpoints,
+      {
+        thread_id,
+        checkpoint_ns,
+        filter: filter || {},
+        before: before?.configurable?.checkpoint_id,
+        limit,
+        namespace: this.namespace,
+      },
+    );
 
     for (const checkpoint of checkpoints) {
       // Get pending writes
@@ -226,18 +251,21 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
           checkpoint_ns: checkpoint.checkpoint_ns,
           checkpoint_id: checkpoint.checkpoint_id,
           namespace: this.namespace,
-        }
+        },
       );
 
       const pendingWrites = await Promise.all(
         pendingWritesData.map(async (write) => {
-          const deserializedValue = await this._deserializeFromConvexBytes(write.type, write.blob);
-          return [
-            write.task_id,
-            write.channel,
-            deserializedValue,
-          ] as [string, string, unknown];
-        })
+          const deserializedValue = await this._deserializeFromConvexBytes(
+            write.type,
+            write.blob,
+          );
+          return [write.task_id, write.channel, deserializedValue] as [
+            string,
+            string,
+            unknown,
+          ];
+        }),
       );
 
       // Get pending sends
@@ -248,17 +276,19 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
           checkpoint_ns: checkpoint.checkpoint_ns,
           parent_checkpoint_id: checkpoint.parent_checkpoint_id,
           namespace: this.namespace,
-        }
+        },
       );
 
       const pending_sends = await Promise.all(
         pendingSendsData.map((send) =>
-          this._deserializeFromConvexBytes(send.type, send.blob)
-        )
+          this._deserializeFromConvexBytes(send.type, send.blob),
+        ),
       );
 
       // Get channel values
-      const deserializedCheckpointCore = await this._deserializeFromConvexAny(checkpoint.checkpoint as [string, string | ArrayBuffer]);
+      const deserializedCheckpointCore = await this._deserializeFromConvexAny(
+        checkpoint.checkpoint as [string, string | ArrayBuffer],
+      );
       const channelValues = await this.ctx.runQuery(
         internal.checkpointer.queries.getChannelValues,
         {
@@ -266,7 +296,7 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
           checkpoint_ns: checkpoint.checkpoint_ns,
           channel_versions: checkpoint.checkpoint.channel_versions || {},
           namespace: this.namespace,
-        }
+        },
       );
 
       const updatedCheckpoint = {
@@ -279,10 +309,11 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
         const channelData: Record<string, unknown> = {};
         for (const channelValue of channelValues) {
           if (channelValue.blob) {
-            channelData[channelValue.channel] = await this._deserializeFromConvexBytes(
-              channelValue.type,
-              channelValue.blob
-            );
+            channelData[channelValue.channel] =
+              await this._deserializeFromConvexBytes(
+                channelValue.type,
+                channelValue.blob,
+              );
           }
         }
         Object.assign(updatedCheckpoint, channelData);
@@ -315,7 +346,7 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
   async put(
     config: RunnableConfig,
     checkpoint: Checkpoint,
-    metadata: CheckpointMetadata
+    metadata: CheckpointMetadata,
   ): Promise<RunnableConfig> {
     if (!config.configurable) {
       throw new Error("Empty configuration supplied.");
@@ -331,7 +362,7 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
 
     if (!thread_id) {
       throw new Error(
-        `Missing "thread_id" field in passed "config.configurable".`
+        `Missing "thread_id" field in passed "config.configurable".`,
       );
     }
 
@@ -339,18 +370,20 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
     delete preparedCheckpoint.pending_sends;
 
     // Serialize checkpoint and metadata for Convex storage
-    const finalSerializedCheckpoint = this._serializeToConvexAny(preparedCheckpoint);
+    const finalSerializedCheckpoint =
+      this._serializeToConvexAny(preparedCheckpoint);
     const finalSerializedMetadata = this._serializeToConvexAny(metadata);
 
     // Prepare blobs for channels
     const blobs = [];
     if (checkpoint.channel_versions) {
       for (const [channel, version] of Object.entries(
-        checkpoint.channel_versions
+        checkpoint.channel_versions,
       )) {
         const channelValue = (checkpoint as any)[channel];
         if (channelValue !== undefined) {
-          const { type: blobType, blob: blobBytes } = this._serializeToConvexBytes(channelValue);
+          const { type: blobType, blob: blobBytes } =
+            this._serializeToConvexBytes(channelValue);
           blobs.push({
             thread_id,
             checkpoint_ns,
@@ -387,7 +420,7 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
   async putWrites(
     config: RunnableConfig,
     writes: PendingWrite[],
-    taskId: string
+    taskId: string,
   ): Promise<void> {
     if (!config.configurable) {
       throw new Error("Empty configuration supplied.");
@@ -402,7 +435,8 @@ export class ConvexCheckpointSaver extends BaseCheckpointSaver {
     }
 
     const writeRows = writes.map((write, idx) => {
-      const { type: writeType, blob: writeBytes } = this._serializeToConvexBytes(write[1]);
+      const { type: writeType, blob: writeBytes } =
+        this._serializeToConvexBytes(write[1]);
       return {
         thread_id: config.configurable!.thread_id,
         checkpoint_ns: config.configurable!.checkpoint_ns ?? "",

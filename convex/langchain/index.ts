@@ -15,7 +15,7 @@ export const chat = internalAction({
     chatInputId: v.id("chatInput"),
   },
   handler: async (ctx, args) => {
-    const chatInput = await ctx.runQuery(api.chatInput.queries.getById, {
+    const chatInput = await ctx.runQuery(internal.chatInput.queries.getById, {
       chatInputId: args.chatInputId,
     });
     const stream = await streamHelper(ctx, { chatInput });
@@ -39,7 +39,7 @@ async function* streamHelper(
   ctx: ActionCtx,
   args: {
     chatInput: Doc<"chatInput">;
-  }
+  },
 ) {
   const humanMessage = new HumanMessage({
     content: [
@@ -56,7 +56,7 @@ async function* streamHelper(
       }) ?? []),
     ],
   });
-  
+
   await ctx.runMutation(api.chatInput.mutations.update, {
     updates: {
       text: "",
@@ -66,19 +66,21 @@ async function* streamHelper(
   });
 
   const checkpointer = new ConvexCheckpointSaver(ctx);
-  const response = (agentGraph.compile({ checkpointer: checkpointer })).streamEvents(
-    {
-      messages: [humanMessage],
-    },
-    {
-      version: "v2",
-      configurable: {
-        ctx,
-        chatInput: args.chatInput,
-        thread_id: args.chatInput.chatId,
+  const response = agentGraph
+    .compile({ checkpointer: checkpointer })
+    .streamEvents(
+      {
+        messages: [humanMessage],
       },
-    }
-  );
+      {
+        version: "v2",
+        configurable: {
+          ctx,
+          chatInput: args.chatInput,
+          thread_id: args.chatInput.chatId,
+        },
+      },
+    );
 
   for await (const event of response) {
     yield event;
@@ -92,6 +94,8 @@ export const getState = internalAction({
   handler: async (ctx, args) => {
     const checkpointer = new ConvexCheckpointSaver(ctx);
     const agent = agentGraph.compile({ checkpointer: checkpointer });
-    return JSON.stringify(await agent.getState({ configurable: { thread_id: args.chatId } }))
+    return JSON.stringify(
+      await agent.getState({ configurable: { thread_id: args.chatId } }),
+    );
   },
 });

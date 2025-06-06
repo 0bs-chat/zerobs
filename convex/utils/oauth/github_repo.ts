@@ -21,19 +21,22 @@ export const handleCallback = httpAction(async (_ctx, request) => {
     console.log("state", state);
 
     // Fetch the user's github token
-    const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
+    const tokenResponse = await fetch(
+      "https://github.com/login/oauth/access_token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          client_id: GITHUB_CLIENT_ID,
+          client_secret: GITHUB_CLIENT_SECRET,
+          code,
+          redirect_uri: `${process.env.CONVEX_SITE_URL}/github_repo/callback`,
+        }),
       },
-      body: JSON.stringify({
-        client_id: GITHUB_CLIENT_ID,
-        client_secret: GITHUB_CLIENT_SECRET,
-        code,
-        redirect_uri: `${process.env.CONVEX_SITE_URL}/github_repo/callback`,
-      }),
-    });
+    );
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
@@ -58,7 +61,7 @@ export const handleCallback = httpAction(async (_ctx, request) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${state}`,
+        Authorization: `Bearer ${state}`,
       },
       body: JSON.stringify({
         name: "github_access_token",
@@ -66,7 +69,7 @@ export const handleCallback = httpAction(async (_ctx, request) => {
       }),
     });
 
-    const redirectUrl = new URL(`${process.env.SITE_URL || '/'}`);
+    const redirectUrl = new URL(`${process.env.SITE_URL || "/"}`);
 
     return new Response(null, {
       status: 302,

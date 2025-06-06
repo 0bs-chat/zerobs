@@ -28,25 +28,18 @@ export const update = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
-    const { chatId, updates } = args;
+    await requireAuth(ctx);
 
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(args.updates).length === 0) {
       // No actual updates provided
       return null;
     }
 
-    const existingChat = await ctx.db
-      .query("chats")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), chatId))
-      .first();
+    await ctx.runQuery(api.chats.queries.get, {
+      chatId: args.chatId,
+    });
 
-    if (!existingChat) {
-      throw new Error("Chat not found");
-    }
-
-    await ctx.db.patch(existingChat._id, { ...updates, updatedAt: Date.now() });
+    await ctx.db.patch(args.chatId, { ...args.updates, updatedAt: Date.now() });
     return null;
   },
 });
@@ -58,15 +51,9 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const existingChat = await ctx.db
-      .query("chats")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.chatId))
-      .first();
-
-    if (!existingChat) {
-      throw new Error("Chat not found");
-    }
+    await ctx.runQuery(api.chats.queries.get, {
+      chatId: args.chatId,
+    });
 
     // Delete associated chat stream
     const chatStream = await ctx.db
@@ -83,8 +70,8 @@ export const remove = mutation({
     // Delete associated chat input
     const chatInput = await ctx.db
       .query("chatInput")
-      .withIndex("by_user_chat", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId)
+      .withIndex("by_chat_user", (q) =>
+        q.eq("chatId", args.chatId).eq("userId", userId),
       )
       .first();
 

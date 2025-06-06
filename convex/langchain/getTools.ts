@@ -14,7 +14,6 @@ import runpodSdk from "runpod-sdk";
 const runpod = runpodSdk(process.env.RUN_POD_KEY!);
 const runpodCrawler = runpod.endpoint(process.env.RUN_POD_CRAWLER_ID!);
 
-
 export const getSearchTools = () => {
   const tools: {
     tavily?: TavilySearch;
@@ -30,7 +29,12 @@ export const getSearchTools = () => {
             max_depth: 0,
           },
         });
-        return res?.output.output.map((d: { url: string; markdown: string }) => `# ${d.url}\n\n${d.markdown}`).join("\n\n");
+        return res?.output.output
+          .map(
+            (d: { url: string; markdown: string }) =>
+              `# ${d.url}\n\n${d.markdown}`,
+          )
+          .join("\n\n");
       },
       {
         name: "crawlWeb",
@@ -38,7 +42,7 @@ export const getSearchTools = () => {
         schema: z.object({
           url: z.string().describe("The url to crawl"),
         }),
-      }
+      },
     ),
   };
 
@@ -85,7 +89,7 @@ export const getMCPTools = async (ctx: ActionCtx) => {
           delayMs: 15000,
         },
       },
-    ])
+    ]),
   );
 
   const client = new MultiServerMCPClient({

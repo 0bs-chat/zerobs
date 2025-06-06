@@ -10,15 +10,17 @@ export const putCheckpoint = internalMutation({
     parent_checkpoint_id: v.optional(v.string()),
     checkpoint: v.any(),
     metadata: v.any(),
-    blobs: v.array(v.object({
-      thread_id: v.string(),
-      checkpoint_ns: v.string(),
-      channel: v.string(),
-      version: v.string(),
-      type: v.string(),
-      blob: v.bytes(),
-      namespace: v.string(),
-    })),
+    blobs: v.array(
+      v.object({
+        thread_id: v.string(),
+        checkpoint_ns: v.string(),
+        channel: v.string(),
+        version: v.string(),
+        type: v.string(),
+        blob: v.bytes(),
+        namespace: v.string(),
+      }),
+    ),
     namespace: v.string(),
   },
   handler: async (ctx, args) => {
@@ -37,10 +39,11 @@ export const putCheckpoint = internalMutation({
     const existingCheckpoint = await ctx.db
       .query("checkpoints")
       .withIndex("by_checkpoint", (q) =>
-        q.eq("namespace", namespace)
-         .eq("thread_id", thread_id)
-         .eq("checkpoint_ns", checkpoint_ns)
-         .eq("checkpoint_id", checkpoint_id)
+        q
+          .eq("namespace", namespace)
+          .eq("thread_id", thread_id)
+          .eq("checkpoint_ns", checkpoint_ns)
+          .eq("checkpoint_id", checkpoint_id),
       )
       .first();
 
@@ -67,11 +70,12 @@ export const putCheckpoint = internalMutation({
       const existingBlob = await ctx.db
         .query("checkpoint_blobs")
         .withIndex("by_channel", (q) =>
-          q.eq("namespace", namespace)
-           .eq("thread_id", blob.thread_id)
-           .eq("checkpoint_ns", blob.checkpoint_ns)
-           .eq("channel", blob.channel)
-           .eq("version", blob.version)
+          q
+            .eq("namespace", namespace)
+            .eq("thread_id", blob.thread_id)
+            .eq("checkpoint_ns", blob.checkpoint_ns)
+            .eq("channel", blob.channel)
+            .eq("version", blob.version),
         )
         .first();
 
@@ -86,17 +90,19 @@ export const putCheckpoint = internalMutation({
 // Mutation to save checkpoint writes
 export const putWrites = internalMutation({
   args: {
-    writes: v.array(v.object({
-      thread_id: v.string(),
-      checkpoint_ns: v.string(),
-      checkpoint_id: v.string(),
-      task_id: v.string(),
-      idx: v.number(),
-      channel: v.string(),
-      type: v.string(),
-      blob: v.bytes(),
-      namespace: v.string(),
-    })),
+    writes: v.array(
+      v.object({
+        thread_id: v.string(),
+        checkpoint_ns: v.string(),
+        checkpoint_id: v.string(),
+        task_id: v.string(),
+        idx: v.number(),
+        channel: v.string(),
+        type: v.string(),
+        blob: v.bytes(),
+        namespace: v.string(),
+      }),
+    ),
     namespace: v.string(),
   },
   handler: async (ctx, args) => {
@@ -106,12 +112,13 @@ export const putWrites = internalMutation({
       const existingWrite = await ctx.db
         .query("checkpoint_writes")
         .withIndex("by_task", (q) =>
-          q.eq("namespace", namespace)
-           .eq("thread_id", write.thread_id)
-           .eq("checkpoint_ns", write.checkpoint_ns)
-           .eq("checkpoint_id", write.checkpoint_id)
-           .eq("task_id", write.task_id)
-           .eq("idx", write.idx)
+          q
+            .eq("namespace", namespace)
+            .eq("thread_id", write.thread_id)
+            .eq("checkpoint_ns", write.checkpoint_ns)
+            .eq("checkpoint_id", write.checkpoint_id)
+            .eq("task_id", write.task_id)
+            .eq("idx", write.idx),
         )
         .first();
 

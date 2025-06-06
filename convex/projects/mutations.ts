@@ -44,7 +44,7 @@ export const update = mutation({
 
     const existingProject = await ctx.db
       .query("projects")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_user_updated", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("_id"), args.projectId))
       .first();
 
@@ -70,7 +70,7 @@ export const remove = mutation({
 
     const existingProject = await ctx.db
       .query("projects")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_user_updated", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("_id"), args.projectId))
       .first();
 
@@ -89,8 +89,8 @@ export const remove = mutation({
       projectDocuments.map((projectDocument) =>
         ctx.runMutation(api.projectDocuments.mutations.remove, {
           projectDocumentId: projectDocument._id,
-        })
-      )
+        }),
+      ),
     );
 
     // Finally delete the project

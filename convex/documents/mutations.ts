@@ -1,4 +1,4 @@
-import { mutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
@@ -14,61 +14,54 @@ export const generateUploadUrl = mutation({
 
 export const generateDownloadUrl = mutation({
   args: {
-    storageId: v.id("_storage"),
+    documentId: v.id("documents"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<string> => {
     await requireAuth(ctx);
-    return await ctx.storage.getUrl(args.storageId);
-  },
-});
 
-export const create = mutation({
-  args: {
-    name: v.string(),
-    type: v.union(
-      v.literal("file"),
-      v.literal("text"),
-      v.literal("url"),
-      v.literal("site"),
-      v.literal("youtube")
-    ),
-    size: v.number(),
-    key: v.union(v.id("_storage"), v.string()),
-  },
-  handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
+    const document = await ctx.runQuery(api.documents.queries.get, {
+      documentId: args.documentId,
+    })
+    const url = await ctx.storage.getUrl(document.key as Id<"_storage">);
+    if (!url) {
+      throw new Error("Failed to generate download url");
+    }
 
-    const document = await ctx.db.insert("documents", {
-      userId: userId,
-      status: "processing",
-      ...args,
-    });
-
-    return document;
+    return url;
   },
 });
 
 export const createMultiple = mutation({
   args: {
-    documents: v.array(v.object({
-      name: v.string(),
-      type: v.union(v.literal("file"), v.literal("text"), v.literal("url"), v.literal("site"), v.literal("youtube")),
-      size: v.number(),
-      key: v.union(v.id("_storage"), v.string()),
-    })),
+    documents: v.array(
+      v.object({
+        name: v.string(),
+        type: v.union(
+          v.literal("file"),
+          v.literal("text"),
+          v.literal("url"),
+          v.literal("site"),
+          v.literal("youtube"),
+        ),
+        size: v.number(),
+        key: v.union(v.id("_storage"), v.string()),
+      }),
+    ),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const documentIds = await Promise.all(args.documents.map(async (document) => {
-      const documentId = await ctx.db.insert("documents", {
-        userId: userId,
-        status: "processing",
-        ...document,
-      });
+    const documentIds = await Promise.all(
+      args.documents.map(async (document) => {
+        const documentId = await ctx.db.insert("documents", {
+          userId: userId,
+          status: "processing",
+          ...document,
+        });
 
-      return documentId;
-    }));
+        return documentId;
+      }),
+    );
 
     await ctx.scheduler.runAfter(0, internal.documents.actions.addDocuments, {
       documents: documentIds,
@@ -78,17 +71,25 @@ export const createMultiple = mutation({
   },
 });
 
-export const updateMultiple = mutation({
+export const updateMultiple = internalMutation({
   args: {
-    documentIds: v.array(v.id("documents")),
-    status: v.union(v.literal("processing"), v.literal("done"), v.literal("error")),
+    documents: v.array(v.object({
+      documentId: v.id("documents"),
+      status: v.union(
+        v.literal("processing"),
+        v.literal("done"),
+        v.literal("error"),
+      ),
+    })),
   },
   handler: async (ctx, args) => {
-    await Promise.all(args.documentIds.map(async (documentId) => {
-      await ctx.db.patch(documentId, {
-        status: args.status,
-      });
-    }));
+    await Promise.all(
+      args.documents.map(async (document) => {
+        await ctx.db.patch(document.documentId, {
+          status: document.status,
+        });
+      }),
+    );
   },
 });
 
@@ -113,16 +114,18 @@ export const remove = mutation({
 
     await ctx.db.delete(args.documentId);
 
-    const documentVectors = await ctx.db.query("documentVectors")
+    const documentVectors = await ctx.db
+      .query("documentVectors")
       .filter((q) => q.eq(q.field("metadata.source"), args.documentId))
       .collect();
 
-    await Promise.all(documentVectors.map((vector) => ctx.db.delete(vector._id)));
+    await Promise.all(
+      documentVectors.map((vector) => ctx.db.delete(vector._id)),
+    );
 
     try {
       await ctx.storage.delete(document.key as Id<"_storage">);
-    } catch (error) {
-    }
+    } catch (error) {}
 
     return true;
   },

@@ -10,13 +10,10 @@ export const get = query({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const { userId } = await requireAuth(ctx);
 
-    const source = await ctx.db
-      .query("documents")
-      .withIndex("by_id", (q) => q.eq("_id", args.documentId))
-      .first();
-    if (!source) {
+    const source = await ctx.db.get(args.documentId);
+    if (!source || source.userId !== userId) {
       throw new Error("Source not found");
     }
 
@@ -46,9 +43,13 @@ export const getMultiple = query({
     documentIds: v.array(v.id("documents")),
   },
   handler: async (ctx, args): Promise<Doc<"documents">[]> => {
-    const docs =  await Promise.all(args.documentIds.map((id) => ctx.runQuery(api.documents.queries.get, {
-      documentId: id,
-    })));
+    const docs = await Promise.all(
+      args.documentIds.map((id) =>
+        ctx.runQuery(api.documents.queries.get, {
+          documentId: id,
+        }),
+      ),
+    );
 
     return docs;
   },
@@ -59,10 +60,11 @@ export const getMultipleInternal = internalQuery({
     documentIds: v.array(v.id("documents")),
   },
   handler: async (ctx, args) => {
-    return (await Promise.all(args.documentIds.map((id) => ctx.db.get(id)))).filter((doc) => doc !== null);
+    return (
+      await Promise.all(args.documentIds.map((id) => ctx.db.get(id)))
+    ).filter((doc) => doc !== null);
   },
 });
-
 
 export const getByKey = query({
   args: {
@@ -73,26 +75,23 @@ export const getByKey = query({
 
     const source = await ctx.db
       .query("documents")
-      .withIndex("by_key", (q) => q.eq("key", args.key))
+      .withIndex("by_key_user", (q) => q.eq("key", args.key).eq("userId", userId))
       .first();
     if (!source) {
       throw new Error("Source not found");
-    }
-
-    if (source.userId !== userId) {
-      throw new Error("Unauthorized");
     }
 
     return source;
   },
 });
 
-export const getAllVectors = query({
+export const getAllVectors = internalQuery({
   args: {
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    const vectors = await ctx.db.query("documentVectors")
+    const vectors = await ctx.db
+      .query("documentVectors")
       .filter((q) => q.eq(q.field("metadata.source"), args.documentId))
       .order("asc")
       .collect();

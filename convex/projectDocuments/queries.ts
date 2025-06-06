@@ -11,7 +11,7 @@ export const get = query({
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<
     Doc<"projectDocuments"> & {
       project: Doc<"projects">;
@@ -54,7 +54,7 @@ export const getAll = query({
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<{
     projectDocuments: (Doc<"projectDocuments"> & {
       document: Doc<"documents">;
@@ -84,7 +84,7 @@ export const getAll = query({
 
     const documents = await ctx.runQuery(api.documents.queries.getMultiple, {
       documentIds: projectDocuments.page.map(
-        (projectDocument) => projectDocument.documentId
+        (projectDocument) => projectDocument.documentId,
       ),
     });
     if (!documents) {
@@ -93,7 +93,7 @@ export const getAll = query({
 
     const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
     documents.forEach((document: Doc<"documents">) =>
-      documentsMap.set(document._id, document)
+      documentsMap.set(document._id, document),
     );
 
     const projectDocumentsMap = new Map<
@@ -126,7 +126,7 @@ export const getMultiple = query({
   },
   handler: async (
     ctx,
-    args
+    args,
   ): Promise<
     (Doc<"projectDocuments"> & {
       project: Doc<"projects">;
@@ -141,14 +141,14 @@ export const getMultiple = query({
           api.projectDocuments.queries.get,
           {
             projectDocumentId,
-          }
+          },
         );
         if (!projectDocument) {
           throw new Error("Project document not found");
         }
 
         return projectDocument;
-      })
+      }),
     );
   },
 });

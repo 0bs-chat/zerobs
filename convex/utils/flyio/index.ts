@@ -42,28 +42,33 @@ const flyRequest = async (
     if (response.status === 404) {
       return null;
     }
-    throw new Error(
-      `Fly API request failed: ${response.status} ${errorText}`,
-    );
+    throw new Error(`Fly API request failed: ${response.status} ${errorText}`);
   }
 
-  if (response.status === 204 || response.status === 202 || (response.status === 201 && method === "DELETE")) {
+  if (
+    response.status === 204 ||
+    response.status === 202 ||
+    (response.status === 201 && method === "DELETE")
+  ) {
     return null;
   }
-  
+
   const contentType = response.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
     const textContent = await response.text();
     if (textContent) {
-        return JSON.parse(textContent);
+      return JSON.parse(textContent);
     } else {
-        return null;
+      return null;
     }
   }
   return null;
 };
 
-const flyGraphqlRequest = async (query: string, variables?: Record<string, any>) => {
+const flyGraphqlRequest = async (
+  query: string,
+  variables?: Record<string, any>,
+) => {
   const headers: HeadersInit = {
     Authorization: `Bearer ${FLY_API_TOKEN}`,
     "Content-Type": "application/json",
@@ -89,10 +94,11 @@ const flyGraphqlRequest = async (query: string, variables?: Record<string, any>)
   const responseData = await response.json();
   if (responseData.errors) {
     console.error("Fly GraphQL API Errors:", responseData.errors);
-    throw new Error(`GraphQL query failed: ${JSON.stringify(responseData.errors)}`);
+    throw new Error(
+      `GraphQL query failed: ${JSON.stringify(responseData.errors)}`,
+    );
   }
   return responseData.data;
-
 };
 
 export const fly = {
@@ -100,12 +106,10 @@ export const fly = {
     return flyRequest(`/apps/${appName}`, "GET") as Promise<FlyApp | null>;
   },
 
-  createApp: async (
-    params: CreateAppRequest,
-  ): Promise<FlyApp | null> => {
+  createApp: async (params: CreateAppRequest): Promise<FlyApp | null> => {
     await flyRequest(`/apps`, "POST", params);
     if (params.app_name) {
-        return fly.getApp(params.app_name);
+      return fly.getApp(params.app_name);
     }
     return null;
   },
@@ -115,10 +119,9 @@ export const fly = {
   },
 
   listMachines: async (appName: string): Promise<FlyMachine[]> => {
-    return (await flyRequest(
-      `/apps/${appName}/machines`,
-      "GET",
-    )) as Promise<FlyMachine[]>;
+    return (await flyRequest(`/apps/${appName}/machines`, "GET")) as Promise<
+      FlyMachine[]
+    >;
   },
 
   createMachine: async (
@@ -138,27 +141,31 @@ export const fly = {
       params,
     ) as Promise<FlyMachine | null>;
   },
-  
-  getMachine: async (appName: string, machineId: string): Promise<FlyMachine | null> => {
+
+  getMachine: async (
+    appName: string,
+    machineId: string,
+  ): Promise<FlyMachine | null> => {
     return flyRequest(
-        `/apps/${appName}/machines/${machineId}`,
-        "GET"
+      `/apps/${appName}/machines/${machineId}`,
+      "GET",
     ) as Promise<FlyMachine | null>;
   },
 
-  deleteMachine: async (
-    appName: string,
-    machineId: string,
-  ) => {
+  deleteMachine: async (appName: string, machineId: string) => {
     await flyRequest(`/apps/${appName}/machines/${machineId}`, "DELETE");
   },
 
-  stopMachine: async ( appName: string, machineId: string) => {
+  stopMachine: async (appName: string, machineId: string) => {
     await flyRequest(`/apps/${appName}/machines/${machineId}/stop`, "POST", {});
   },
 
-  startMachine: async ( appName: string, machineId: string) => {
-    await flyRequest(`/apps/${appName}/machines/${machineId}/start`, "POST", {});
+  startMachine: async (appName: string, machineId: string) => {
+    await flyRequest(
+      `/apps/${appName}/machines/${machineId}/start`,
+      "POST",
+      {},
+    );
   },
 
   allocateIpAddress: async (appId: string, type: "v4" | "v6" = "v4") => {

@@ -10,7 +10,7 @@ import type {
   MessageContentComplex,
   DataContentBlock,
 } from "@langchain/core/messages";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 
 const API_KEY_MAP = {
   anthropic: process.env.ANTHROPIC_API_KEY,
@@ -125,7 +125,7 @@ export function getEmbeddingModel(modelName: string): Embeddings {
 export async function formatDocument(
   document: Doc<"documents">,
   model: string,
-  ctx: ActionCtx
+  ctx: ActionCtx,
 ) {
   const modelConfig = models.find((m) => m.model === model);
   if (!modelConfig) {
@@ -136,7 +136,7 @@ export async function formatDocument(
 
   if (document.type === "file") {
     const base64 = Buffer.from(
-      await (await ctx.storage.get(document.key))?.arrayBuffer()!
+      await (await ctx.storage.get(document.key))?.arrayBuffer()!,
     ).toString("base64");
     const mimeType = mime.getType(document.name) ?? "application/octet-stream";
     const fileType = mimeType.split("/")[0];
@@ -182,10 +182,10 @@ export async function formatDocument(
     } else {
       try {
         const vectors = await ctx.runQuery(
-          api.documents.queries.getAllVectors,
+          internal.documents.queries.getAllVectors,
           {
             documentId: document._id,
-          }
+          },
         );
         const text = vectors.map((vector) => vector.text).join("\n");
         content = {
@@ -199,7 +199,7 @@ export async function formatDocument(
     }
   } else {
     try {
-      const vectors = await ctx.runQuery(api.documents.queries.getAllVectors, {
+      const vectors = await ctx.runQuery(internal.documents.queries.getAllVectors, {
         documentId: document._id,
       });
       const text = vectors.map((vector) => vector.text).join("\n");

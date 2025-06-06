@@ -19,14 +19,18 @@ export default defineSchema({
       v.literal("text"),
       v.literal("url"),
       v.literal("site"),
-      v.literal("youtube")
+      v.literal("youtube"),
     ),
     size: v.number(),
     key: v.union(v.id("_storage"), v.string()),
-    status: v.union(v.literal("processing"), v.literal("done"), v.literal("error")),
+    status: v.union(
+      v.literal("processing"),
+      v.literal("done"),
+      v.literal("error"),
+    ),
     userId: v.id("users"),
   })
-    .index("by_key", ["key"])
+    .index("by_key_user", ["key", "userId"])
     .index("by_user", ["userId"]),
   documentVectors: defineTable({
     embedding: v.array(v.number()),
@@ -63,32 +67,33 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_user_chat", ["chatId", "userId"]),
+    .index("by_chat_user", ["chatId", "userId"]),
   streams: defineTable({
     userId: v.id("users"),
-    status: v.union(v.literal("pending"), v.literal("streaming"), v.literal("done"), v.literal("error")),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("streaming"),
+      v.literal("done"),
+      v.literal("error"),
+    ),
   })
     .index("by_user", ["userId"])
-    .index("by_status", ["status"]),
+    .index("by_status_user", ["status", "userId"]),
   streamChunks: defineTable({
     streamId: v.id("streams"),
     chunk: v.string(),
-  })
-    .index("by_stream", ["streamId"]),
+  }).index("by_stream", ["streamId"]),
   projects: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
     systemPrompt: v.optional(v.string()),
     userId: v.id("users"),
     updatedAt: v.number(),
-  })
-    .index("by_user", ["userId"])
-    .index("by_user_updated", ["userId", "updatedAt"]),
+  }).index("by_user_updated", ["userId", "updatedAt"]),
   projectDocuments: defineTable({
     projectId: v.id("projects"),
     documentId: v.id("documents"),
     selected: v.boolean(),
-    updatedAt: v.number(),
   })
     .index("by_project", ["projectId"])
     .index("by_project_document", ["projectId", "documentId"]),
@@ -104,7 +109,7 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_updated", ["userId", "updatedAt"])
-    .index("by_enabled", ["enabled"]),
+    .index("by_enabled_user", ["enabled", "userId"]),
   checkpoints: defineTable({
     thread_id: v.string(),
     checkpoint_ns: v.string(),
@@ -116,7 +121,12 @@ export default defineSchema({
     _creationTime: v.optional(v.number()),
   })
     .index("by_thread", ["namespace", "thread_id", "checkpoint_ns"])
-    .index("by_checkpoint", ["namespace", "thread_id", "checkpoint_ns", "checkpoint_id"]),
+    .index("by_checkpoint", [
+      "namespace",
+      "thread_id",
+      "checkpoint_ns",
+      "checkpoint_id",
+    ]),
   checkpoint_blobs: defineTable({
     thread_id: v.string(),
     checkpoint_ns: v.string(),
@@ -125,8 +135,13 @@ export default defineSchema({
     type: v.string(),
     blob: v.bytes(),
     namespace: v.string(),
-  })
-    .index("by_channel", ["namespace", "thread_id", "checkpoint_ns", "channel", "version"]),
+  }).index("by_channel", [
+    "namespace",
+    "thread_id",
+    "checkpoint_ns",
+    "channel",
+    "version",
+  ]),
   checkpoint_writes: defineTable({
     thread_id: v.string(),
     checkpoint_ns: v.string(),
@@ -138,6 +153,18 @@ export default defineSchema({
     blob: v.bytes(),
     namespace: v.string(),
   })
-    .index("by_checkpoint", ["namespace", "thread_id", "checkpoint_ns", "checkpoint_id"])
-    .index("by_task", ["namespace", "thread_id", "checkpoint_ns", "checkpoint_id", "task_id", "idx"]),
+    .index("by_checkpoint", [
+      "namespace",
+      "thread_id",
+      "checkpoint_ns",
+      "checkpoint_id",
+    ])
+    .index("by_task", [
+      "namespace",
+      "thread_id",
+      "checkpoint_ns",
+      "checkpoint_id",
+      "task_id",
+      "idx",
+    ]),
 });

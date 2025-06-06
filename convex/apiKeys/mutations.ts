@@ -1,7 +1,7 @@
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
-import * as jose from 'jose';
+import * as jose from "jose";
 import { api } from "../_generated/api";
 
 const JWT_PRIVATE_KEY_PEM = process.env.JWT_PRIVATE_KEY;
@@ -33,7 +33,9 @@ export const addApiKey = mutation({
       .setIssuedAt()
       .sign(privateKey);
 
-    const existingApiKey = await ctx.runQuery(api.apiKeys.queries.getFromName, { name: args.name });
+    const existingApiKey = await ctx.runQuery(api.apiKeys.queries.getFromName, {
+      name: args.name,
+    });
     if (existingApiKey) {
       await ctx.db.delete(existingApiKey._id);
     }
@@ -56,7 +58,9 @@ export const deleteApiKey = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const apiKey = await ctx.runQuery(api.apiKeys.queries.getFromKey, { key: args.key });
+    const apiKey = await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+      key: args.key,
+    });
 
     await ctx.db.delete(apiKey._id);
   },

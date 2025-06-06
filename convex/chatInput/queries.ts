@@ -1,4 +1,4 @@
-import { query } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 
@@ -11,11 +11,11 @@ export const get = query({
 
     const chatInput = await ctx.db
       .query("chatInput")
-      .withIndex("by_user_chat", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId)
+      .withIndex("by_chat_user", (q) =>
+        q.eq("chatId", args.chatId).eq("userId", userId),
       )
       .first();
-    if (!chatInput && args.chatId !== "new") {
+    if (!chatInput) {
       throw new Error("Chat input not found");
     }
 
@@ -37,20 +37,15 @@ export const get = query({
   },
 });
 
-export const getById = query({
+export const getById = internalQuery({
   args: {
     chatInputId: v.id("chatInput"),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const chatInput = await ctx.db
-      .query("chatInput")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("_id"), args.chatInputId))
-      .first();
-
-    if (!chatInput) {
+    const chatInput = await ctx.db.get(args.chatInputId);
+    if (!chatInput || chatInput.userId !== userId) {
       throw new Error("Chat input not found");
     }
 

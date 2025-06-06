@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { Doc } from "../_generated/dataModel";
 import { query, QueryCtx } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
-import * as jose from 'jose';
+import * as jose from "jose";
 
 const JWKS_URI = process.env.JWKS;
 
@@ -24,7 +24,7 @@ async function verifyApiKey(ctx: QueryCtx, apiKeyDoc: Doc<"apiKeys">) {
     algorithms: ["RS256"],
   });
 
-  if (typeof payload.sub !== 'string' || typeof payload.name !== 'string') {
+  if (typeof payload.sub !== "string" || typeof payload.name !== "string") {
     throw new Error("Invalid API key");
   }
 
@@ -41,7 +41,8 @@ export const getFromName = query({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    return await ctx.db.query("apiKeys")
+    return await ctx.db
+      .query("apiKeys")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("name"), args.name))
       .first();
@@ -55,7 +56,8 @@ export const getFromKey = query({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const apiKeyDoc = await ctx.db.query("apiKeys")
+    const apiKeyDoc = await ctx.db
+      .query("apiKeys")
       .withIndex("by_key", (q) => q.eq("key", args.key))
       .filter((q) => q.eq(q.field("userId"), userId))
       .first();
@@ -82,6 +84,8 @@ export const getAll = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
-    return await Promise.all(userApiKeys.map((apiKeyDoc) => verifyApiKey(ctx, apiKeyDoc)));
+    return await Promise.all(
+      userApiKeys.map((apiKeyDoc) => verifyApiKey(ctx, apiKeyDoc)),
+    );
   },
 });
