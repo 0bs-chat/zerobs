@@ -66,3 +66,18 @@ export const getMultiple = query({
     );
   },
 });
+
+export const search = query({
+  args: {
+    query: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const chats = await ctx.db.query("chats")
+      .withSearchIndex("by_name", (q) => q.search("name", args.query).eq("userId", userId))
+      .take(10);
+
+    return chats;
+  },
+});
