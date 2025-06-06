@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 
 export const create = mutation({
   args: {
@@ -62,7 +62,7 @@ export const remove = mutation({
       .first();
 
     if (chatStream) {
-      await ctx.runMutation(api.streams.mutations.remove, {
+      await ctx.runMutation(internal.streams.mutations.remove, {
         streamId: chatStream._id,
       });
     }
@@ -76,7 +76,7 @@ export const remove = mutation({
       .first();
 
     if (chatInput) {
-      await ctx.runMutation(api.chatInput.mutations.remove, {
+      await ctx.runMutation(internal.chatInput.mutations.remove, {
         chatId: args.chatId,
       });
     }

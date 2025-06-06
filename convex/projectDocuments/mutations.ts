@@ -102,7 +102,7 @@ export const remove = mutation({
     );
 
     // Delete the associated document
-    await ctx.runMutation(api.documents.mutations.remove, {
+    await ctx.runMutation(internal.documents.mutations.remove, {
       documentId: projectDocument.document._id,
     });
 

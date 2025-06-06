@@ -1,4 +1,4 @@
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import { requireAuth } from "../utils/helpers";
 import { httpAction } from "../_generated/server";
 
@@ -8,7 +8,7 @@ export const addApiKey = httpAction(async (ctx, request) => {
   const name = res.name;
   const key = res.key;
 
-  await ctx.runMutation(api.apiKeys.mutations.create, {
+  await ctx.runMutation(internal.apiKeys.mutations.create, {
     name,
     key,
   });

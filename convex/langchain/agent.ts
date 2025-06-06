@@ -31,6 +31,7 @@ import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { AIMessage } from "@langchain/core/messages";
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
+import { internal } from "../_generated/api";
 
 type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;
@@ -138,7 +139,7 @@ async function retrieve(
   let documents: DocumentInterface[] = [];
   if (formattedConfig.chatInput.projectId) {
     const includedProjectDocuments = await formattedConfig.ctx.runQuery(
-      api.projectDocuments.queries.getSelected,
+      internal.projectDocuments.queries.getSelected,
       {
         projectId: formattedConfig.chatInput.projectId,
         selected: true,

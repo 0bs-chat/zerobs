@@ -21,7 +21,7 @@ export const get = query({
   },
 });
 
-export const getAll = query({
+export const getAll = internalQuery({
   args: {
     paginationOpts: paginationOptsValidator,
   },

@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
 
-export const update = mutation({
+export const update = internalMutation({
   args: {
     streamId: v.id("streams"),
     updates: v.object({
@@ -57,7 +57,7 @@ export const appendStream = internalMutation({
   },
 });
 
-export const remove = mutation({
+export const remove = internalMutation({
   args: {
     streamId: v.id("streams"),
   },

@@ -179,7 +179,7 @@ export const getMultiple = query({
   },
 });
 
-export const getSelected = query({
+export const getSelected = internalQuery({
   args: {
     projectId: v.id("projects"),
     selected: v.boolean(),

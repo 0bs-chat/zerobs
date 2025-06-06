@@ -1,12 +1,12 @@
-import { mutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import * as jose from "jose";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 
 const JWT_PRIVATE_KEY_PEM = process.env.JWT_PRIVATE_KEY;
 
-export const create = mutation({
+export const create = internalMutation({
   args: {
     name: v.string(),
     key: v.string(),
@@ -60,7 +60,7 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const apiKey = await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+    const apiKey = await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
       key: args.key,
     });
 

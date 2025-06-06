@@ -93,7 +93,7 @@ export const updateMultiple = internalMutation({
   },
 });
 
-export const remove = mutation({
+export const remove = internalMutation({
   args: {
     documentId: v.id("documents"),
   },

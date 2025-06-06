@@ -26,7 +26,7 @@ export const chat = internalAction({
         chunk: JSON.stringify(event),
       });
     }
-    await ctx.runMutation(api.streams.mutations.update, {
+    await ctx.runMutation(internal.streams.mutations.update, {
       streamId: chatInput.streamId!,
       updates: {
         status: "done",

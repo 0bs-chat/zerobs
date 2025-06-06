@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { Doc } from "../_generated/dataModel";
-import { query, QueryCtx } from "../_generated/server";
+import { query, QueryCtx, internalQuery } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import * as jose from "jose";
 
@@ -55,7 +55,7 @@ export const getFromName = query({
   },
 });
 
-export const getFromKey = query({
+export const getFromKey = internalQuery({
   args: {
     key: v.string(),
   },

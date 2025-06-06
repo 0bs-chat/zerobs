@@ -1,5 +1,5 @@
 import { requireAuth } from "../utils/helpers";
-import { mutation } from "../_generated/server";
+import { mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 
 // TODO: Optimization
@@ -109,7 +109,7 @@ export const update = mutation({
   },
 });
 
-export const remove = mutation({
+export const remove = internalMutation({
   args: {
     chatId: v.union(v.id("chats"), v.literal("new")),
   },
