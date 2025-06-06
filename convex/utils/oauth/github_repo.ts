@@ -3,7 +3,7 @@ import { httpAction } from "../../_generated/server";
 const GITHUB_CLIENT_ID = process.env.AUTH_GITHUB_REPO_ID;
 const GITHUB_CLIENT_SECRET = process.env.AUTH_GITHUB_REPO_SECRET;
 
-export const handleCallback = httpAction(async (ctx, request) => {
+export const handleCallback = httpAction(async (_ctx, request) => {
   if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
     return new Response("GitHub credentials not configured", { status: 500 });
   }
@@ -54,7 +54,7 @@ export const handleCallback = httpAction(async (ctx, request) => {
       throw new Error("Failed to get GitHub user information");
     }
 
-    await fetch(`${process.env.CONVEX_SITE_URL}/github_repo/add_api_key`, {
+    await fetch(`${process.env.CONVEX_SITE_URL}/apiKeys/add`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
