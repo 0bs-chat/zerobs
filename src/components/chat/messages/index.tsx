@@ -3,16 +3,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStream } from "@/lib/stream_helper";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
-import { useAction, useQuery } from "convex/react";
+import { useAction } from "convex/react";
 import type { StateSnapshot } from "@langchain/langgraph";
 import { useEffect, useState } from "react";
 
 export const ChatMessages = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
-  const chatInput = useQuery(api.chatInput.queries.get, {
-    chatId: params.chatId as Id<"chats"> | "new",
-  });
-  const stream = useStream(chatInput?.streamId);
+  const stream = useStream(params.chatId as Id<"chats"> | "new");
 
   const getMessages = useAction(api.chats.actions.messages);
 
@@ -24,6 +21,8 @@ export const ChatMessages = () => {
       getMessages({ chatId: params.chatId as Id<"chats"> }).then((messages) => {
         setMessages(JSON.parse(messages) as StateSnapshot);
       });
+    } else if (params.chatId === "new") {
+      setMessages(undefined);
     }
   }, [stream.status, params.chatId]);
 
@@ -39,7 +38,7 @@ export const ChatMessages = () => {
           </div>
         )}
         <div className="flex flex-col gap-2">
-          {stream.status === "pending" && stream.chunks.length != 0 ? (
+          {stream.status === "pending" && stream.chunks && stream.chunks.length != 0 ? (
             <div>Loading...</div>
           ) : null}
         </div>

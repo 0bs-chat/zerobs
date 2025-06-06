@@ -53,7 +53,7 @@ export default defineSchema({
       searchField: "name",
       filterFields: ["userId"],
     }),
-  chatInput: defineTable({
+  chatInputs: defineTable({
     chatId: v.union(v.id("chats"), v.literal("new")),
     userId: v.id("users"),
     documents: v.optional(v.array(v.id("documents"))),

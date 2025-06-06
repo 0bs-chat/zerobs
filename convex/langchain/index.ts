@@ -2,44 +2,74 @@
 
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
-import { agentGraph } from "./agent";
 import type { ActionCtx } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
 import { HumanMessage } from "@langchain/core/messages";
 import { formatDocument } from "./models";
 import { api, internal } from "../_generated/api";
 import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
+import { agentGraph } from "./agent";
 
 export const chat = internalAction({
   args: {
-    chatInputId: v.id("chatInput"),
+    chatInputId: v.id("chatInputs"),
   },
   handler: async (ctx, args) => {
-    const chatInput = await ctx.runQuery(internal.chatInput.queries.getById, {
-      chatInputId: args.chatInputId,
-    });
+    const chatInput = await ctx.runQuery(
+      internal.chatInputs.queries.getById,
+      { chatInputId: args.chatInputId }
+    );
     const stream = await streamHelper(ctx, { chatInput });
 
+    // ---- new batching logic ----
+    const streamId = chatInput.streamId!;
+    const BUFFER_FLUSH_DELAY = 100; // ms
+    let lastFlush = Date.now();
+    const buffer: string[] = [];
+
     for await (const event of stream) {
-      await ctx.runMutation(internal.streams.mutations.appendStream, {
-        streamId: chatInput.streamId!,
-        chunk: JSON.stringify(event),
-      });
+      // collect
+      buffer.push(JSON.stringify(event));
+
+      // if it's been >100ms since last flush, send a batch
+      if (Date.now() - lastFlush >= BUFFER_FLUSH_DELAY) {
+        await ctx.runMutation(
+          internal.streams.mutations.appendChunks,
+          {
+            streamId,
+            chunks: buffer.splice(0, buffer.length),
+          }
+        );
+        lastFlush = Date.now();
+      }
     }
-    await ctx.runMutation(internal.streams.mutations.update, {
-      streamId: chatInput.streamId!,
-      updates: {
-        status: "done",
-      },
-    });
+
+    // flush any remaining events
+    if (buffer.length > 0) {
+      await ctx.runMutation(
+        internal.streams.mutations.appendChunks,
+        {
+          streamId,
+          chunks: buffer.splice(0, buffer.length),
+        }
+      );
+    }
+    // ---- end batching logic ----
+
+    // finally mark the stream done
+    await ctx.runMutation(
+      internal.streams.mutations.update,
+      {
+        streamId,
+        updates: { status: "done" },
+      }
+    );
   },
 });
 
 async function* streamHelper(
   ctx: ActionCtx,
-  args: {
-    chatInput: Doc<"chatInput">;
-  },
+  args: { chatInput: Doc<"chatInputs"> }
 ) {
   const humanMessage = new HumanMessage({
     content: [
@@ -50,28 +80,23 @@ async function* streamHelper(
       },
       ...(args.chatInput.documents?.map(async (documentId) => {
         const document = await ctx.runQuery(api.documents.queries.get, {
-          documentId: documentId,
+          documentId,
         });
         return formatDocument(document, args.chatInput.model!, ctx);
       }) ?? []),
     ],
   });
 
-  await ctx.runMutation(api.chatInput.mutations.update, {
-    updates: {
-      text: "",
-      documents: [],
-    },
+  await ctx.runMutation(api.chatInputs.mutations.update, {
     chatId: args.chatInput.chatId,
+    updates: { text: "", documents: [] },
   });
 
   const checkpointer = new ConvexCheckpointSaver(ctx);
   const response = agentGraph
-    .compile({ checkpointer: checkpointer })
+    .compile({ checkpointer })
     .streamEvents(
-      {
-        messages: [humanMessage],
-      },
+      { messages: [humanMessage] },
       {
         version: "v2",
         configurable: {
@@ -79,7 +104,7 @@ async function* streamHelper(
           chatInput: args.chatInput,
           thread_id: args.chatInput.chatId,
         },
-      },
+      }
     );
 
   for await (const event of response) {
@@ -93,9 +118,9 @@ export const getState = internalAction({
   },
   handler: async (ctx, args) => {
     const checkpointer = new ConvexCheckpointSaver(ctx);
-    const agent = agentGraph.compile({ checkpointer: checkpointer });
+    const agent = agentGraph.compile({ checkpointer });
     return JSON.stringify(
-      await agent.getState({ configurable: { thread_id: args.chatId } }),
+      await agent.getState({ configurable: { thread_id: args.chatId } })
     );
   },
 });

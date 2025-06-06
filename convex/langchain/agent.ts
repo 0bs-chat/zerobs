@@ -35,7 +35,7 @@ import { internal } from "../_generated/api";
 
 type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;
-  chatInput: Doc<"chatInput">;
+  chatInput: Doc<"chatInputs">;
 };
 
 const plan = z

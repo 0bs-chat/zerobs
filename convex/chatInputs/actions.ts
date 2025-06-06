@@ -14,7 +14,7 @@ export const getModels = action({
     selectedModel: ModelConfig;
     models: ModelConfig[];
   }> => {
-    const chatInput = await ctx.runQuery(api.chatInput.queries.get, {
+    const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
       chatId: args.chatId,
     });
 

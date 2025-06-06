@@ -1,133 +1,63 @@
+// hooks/useStream.ts
 "use client";
 
-/// React helpers for persistent text streaming.
-import { useQuery } from "convex/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useConvex, useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { StreamEvent } from "@langchain/core/tracers/log_stream";
-import { api } from "../../convex/_generated/api";
 
-if (typeof window === "undefined") {
-  throw new Error("this is frontend code, but it's running somewhere else!");
-}
+type ChunkDoc = Doc<"streamChunks">;
 
-type StreamBody = {
-  chunks: StreamEvent[];
-  status: Doc<"streams">["status"];
-}
-
-export function useStream(
-  streamId?: Id<"streams">,
-) {
-  const [streamEnded, setStreamEnded] = useState(null as boolean | null);
-
-  const streamStarted = useRef(false);
-
-  const persistentData = useQuery(
-    api.streams.queries.getChunks,
-    streamId ? { streamId: streamId! } : "skip"
-  );
-  const [streamChunks, setStreamChunks] = useState<StreamEvent[]>([]);
-  let lastChunkTime = persistentData?.chunks && persistentData.chunks.length > 0
-    ? persistentData?.chunks[persistentData.chunks.length - 1]._creationTime : Date.now();
-  console.log(JSON.stringify({
-    lastChunkTime,
-    streamId: streamId || "skip",
-    streamStarted: streamStarted.current,
-    streamEnded,
-    persistentData: persistentData?.chunks.length,
-    streamChunks,
-  }, null, 2));
+export function useStream(chatId: Id<"chats"> | "new") {
+  const convex = useConvex();
+  const lastTimeRef = useRef<number | undefined>(undefined);
+  const [chunks, setChunks] = useState<StreamEvent[]>([]);
+  const chatInput = useQuery(api.chatInputs.queries.get, { chatId: chatId });
+  const stream = useQuery(api.streams.queries.get, chatInput?.streamId ? { streamId: chatInput.streamId! } : "skip");
 
   useEffect(() => {
-    if (streamId && !streamStarted.current) {
-      void (async () => {
-        const success = await startStreaming(streamId, lastChunkTime, (text) => {
-          setStreamChunks((prev) => [...prev, JSON.parse(text) as StreamEvent]);
-        });
-        setStreamEnded(success);
-      })();
-      // If we get remounted, we don't want to start a new stream.
-      return () => {
-        streamStarted.current = true;
-      };
-    }
-  }, [streamId, setStreamEnded, streamStarted]);
+    if (!chatInput?.streamId) return;
+    let cancelled = false;
 
-  const body = useMemo<StreamBody>(() => {
-    if (persistentData) {
-      // Parse the string chunks into StreamEvent objects
-      const parsedChunks = persistentData.chunks
-        .map(chunk => {
-          try {
-            return JSON.parse(chunk.chunk) as StreamEvent;
-          } catch (e) {
-            console.error("Error parsing chunk", e, chunk.chunk);
-            return null;
+    // reset whenever streamId changes
+    lastTimeRef.current = undefined;
+    setChunks([]);
+
+    async function pollChunks() {
+      try {
+        const newDocs = await convex.query(
+          api.streams.queries.getChunks,
+          {
+            streamId: chatInput?.streamId!,
+            lastChunkTime: lastTimeRef.current,
           }
-        })
-        .filter((chunk): chunk is StreamEvent => chunk !== null);
+        );
+        if (cancelled) return;
 
-      return {
-        chunks: parsedChunks,
-        status: persistentData.stream.status,
-      };
-    }
-    
-    let status: Doc<"streams">["status"];
-    if (streamEnded === null) {
-      status = streamChunks.length > 0 ? "streaming" : "pending";
-    } else {
-      status = streamEnded ? "done" : "error";
-    }
-    
-    return {
-      chunks: streamChunks,
-      status,
-    };
-  }, [persistentData, streamChunks, streamEnded]);
+        if (newDocs.length > 0) {
+          const events = newDocs.map((d: ChunkDoc) =>
+            JSON.parse(d.chunk) as StreamEvent
+          );
+          setChunks((prev) => [...prev, ...events]);
+          lastTimeRef.current =
+            newDocs[newDocs.length - 1]._creationTime;
+        }
 
-  return body;
-}
-
-async function startStreaming(
-  streamId: Id<"streams">,
-  lastChunkTime: number,
-  onUpdate: (text: string) => void
-) {
-  const response = await fetch(`${import.meta.env.VITE_CONVEX_URL}/stream`, {
-    method: "POST",
-    body: JSON.stringify({
-      streamId: streamId,
-      lastChunkTime: lastChunkTime,
-    }),
-    headers: { "Content-Type": "application/json" },
-  });
-  // Adapted from https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams
-  if (response.status === 205) {
-    console.error("Stream already finished", response);
-    return false;
-  }
-  if (!response.ok) {
-    console.error("Failed to reach streaming endpoint", response);
-    return false;
-  }
-  if (!response.body) {
-    console.error("No body in response", response);
-    return false;
-  }
-  const reader = response.body.getReader();
-  while (true) {
-    try {
-      const { done, value } = await reader.read();
-      if (done) {
-        onUpdate(new TextDecoder().decode(value));
-        return true;
+        if (stream?.status === "streaming") {
+          await new Promise((r) => setTimeout(r, 100));
+          if (!cancelled) await pollChunks();
+        }
+      } catch (err) {
+        console.error("Error polling stream chunks:", err);
       }
-      onUpdate(new TextDecoder().decode(value));
-    } catch (e) {
-      console.error("Error reading stream", e);
-      return false;
     }
-  }
+
+    pollChunks();
+    return () => {
+      cancelled = true;
+    };
+  }, [convex, chatInput?.streamId, stream]);
+
+  return { chunks, status: stream?.status };
 }

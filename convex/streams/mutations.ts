@@ -38,10 +38,10 @@ export const update = internalMutation({
   },
 });
 
-export const appendStream = internalMutation({
+export const appendChunks = internalMutation({
   args: {
     streamId: v.id("streams"),
-    chunk: v.string(),
+    chunks: v.array(v.string()),
   },
   handler: async (ctx, args) => {
     await ctx.runMutation(internal.streams.crud.update, {
@@ -50,10 +50,14 @@ export const appendStream = internalMutation({
         status: "streaming",
       },
     });
-    return await ctx.db.insert("streamChunks", {
-      streamId: args.streamId,
-      chunk: args.chunk,
-    });
+    return await Promise.all(
+      args.chunks.map((chunk) =>
+        ctx.db.insert("streamChunks", {
+          streamId: args.streamId,
+          chunk,
+        }),
+      ),
+    );
   },
 });
 

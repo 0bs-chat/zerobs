@@ -48,7 +48,7 @@ export const getFromName = query({
       .first();
 
     if (!apiKeyDoc) {
-      throw new Error("API key not found");
+      return null;
     }
 
     return await verifyApiKey(ctx, apiKeyDoc);

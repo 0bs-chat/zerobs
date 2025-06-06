@@ -22,7 +22,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, args) {
       // Create a new chat for the user
-      await ctx.db.insert("chatInput", {
+      await ctx.db.insert("chatInputs", {
         chatId: "new",
         userId: args.userId,
         agentMode: false,

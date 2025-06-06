@@ -78,20 +78,20 @@ export const ChatInputToolbar = () => {
   const { chatInputText, setChatInputText } = useChatPreferencesStore();
 
   const chatInputQuery = useQuery(
-    api.chatInput.queries.get,
-    chatId !== "new" ? { chatId } : "skip"
+    api.chatInputs.queries.get,
+    { chatId }
   );
 
-  const updateChatInputMutation = useMutation(api.chatInput.mutations.update);
+  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
   const generateUploadUrlMutation = useMutation(
     api.documents.mutations.generateUploadUrl
   );
   const createMultipleMutation = useMutation(
     api.documents.mutations.createMultiple
   );
-  const getModelAction = useAction(api.chatInput.actions.getModels);
+  const getModelAction = useAction(api.chatInputs.actions.getModels);
   const createChatMutation = useMutation(api.chats.mutations.create);
-  const createChatInputMutation = useMutation(api.chatInput.mutations.create);
+  const createChatInputMutation = useMutation(api.chatInputs.mutations.create);
   const sendAction = useAction(api.chats.actions.send);
   const [getModelResult, setGetModelResult] = useState<Awaited<
     ReturnType<typeof getModelAction>
@@ -222,8 +222,15 @@ export const ChatInputToolbar = () => {
         maxHeight={192}
         className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-3"
         value={chatInputText}
+        defaultValue={chatInputQuery?.text}
         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
           setChatInputText(e.target.value);
+          updateChatInputMutation({
+            chatId: chatId,
+            updates: {
+              text: e.target.value,
+            },
+          });
         }}
         onKeyDown={useCallback(
           async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

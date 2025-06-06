@@ -10,12 +10,12 @@ export const get = query({
     const { userId } = await requireAuth(ctx);
 
     const chatInput = await ctx.db
-      .query("chatInput")
+      .query("chatInputs")
       .withIndex("by_chat_user", (q) =>
         q.eq("chatId", args.chatId).eq("userId", userId),
       )
       .first();
-    if (!chatInput) {
+    if (!chatInput && args.chatId !== "new") {
       throw new Error("Chat input not found");
     }
 
@@ -39,7 +39,7 @@ export const get = query({
 
 export const getById = internalQuery({
   args: {
-    chatInputId: v.id("chatInput"),
+    chatInputId: v.id("chatInputs"),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);

@@ -22,7 +22,7 @@ export const create = mutation({
 
     // Check if chatInput already exists
     const existingChatInput = await ctx.db
-      .query("chatInput")
+      .query("chatInputs")
       .withIndex("by_chat_user", (q) =>
         q.eq("chatId", args.chatId).eq("userId", userId),
       )
@@ -43,7 +43,7 @@ export const create = mutation({
       throw new Error("Chat not found");
     }
 
-    const newChatInputId = await ctx.db.insert("chatInput", {
+    const newChatInputId = await ctx.db.insert("chatInputs", {
       userId,
       updatedAt: Date.now(),
       ...args,
@@ -79,7 +79,7 @@ export const update = mutation({
     const { userId } = await requireAuth(ctx);
 
     let existingChatInput = await ctx.db
-      .query("chatInput")
+      .query("chatInputs")
       .withIndex("by_chat_user", (q) =>
         q.eq("chatId", args.chatId).eq("userId", userId),
       )
@@ -117,7 +117,7 @@ export const remove = internalMutation({
     const { userId } = await requireAuth(ctx);
 
     const existingChatInput = await ctx.db
-      .query("chatInput")
+      .query("chatInputs")
       .withIndex("by_chat_user", (q) =>
         q.eq("chatId", args.chatId).eq("userId", userId),
       )

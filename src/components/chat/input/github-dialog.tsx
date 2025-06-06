@@ -26,7 +26,6 @@ import {
   type GitHubRepo,
 } from "@/lib/github";
 import { useAuthToken } from "@convex-dev/auth/react";
-import { useNavigate } from "@tanstack/react-router";
 
 interface GitHubDialogProps {
   open: boolean;
@@ -57,9 +56,6 @@ export const GitHubDialog = ({ open, onOpenChange }: GitHubDialogProps) => {
     name: "github_access_token",
   });
   const isAuthenticated = !!ghSecret?.key;
-
-  const navigate = useNavigate();
-  const currentIdPath = location.pathname;
 
   // Reset state when dialog closes
   const handleOpenChange = useCallback(

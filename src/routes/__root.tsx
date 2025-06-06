@@ -22,7 +22,7 @@ export const Route = createRootRoute({
 
     const urlPath = location.pathname;
 
-    const privateRoutes = ["/chat", "/", "/chat/$chatId"];
+    const privateRoutes = ["/chat", "/"];
 
     const publicRoutes = ["/landing", "/auth"];
 

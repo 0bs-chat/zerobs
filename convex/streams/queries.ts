@@ -26,63 +26,25 @@ export const get = query({
 export const getChunks = query({
   args: {
     streamId: v.id("streams"),
+    lastChunkTime: v.optional(v.number()),
   },
   handler: async (
     ctx,
     args,
-  ): Promise<{
-    stream: Doc<"streams">;
-    chunks: Doc<"streamChunks">[];
-  }> => {
+  ) => {
     const stream = await ctx.runQuery(api.streams.queries.get, {
       streamId: args.streamId,
     });
-
-    const chunks = await ctx.db
-      .query("streamChunks")
-      .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
-      .collect();
-
-    return {
-      stream,
-      chunks,
-    };
-  },
-});
-
-export const getNewChunks = query({
-  args: {
-    streamId: v.id("streams"),
-    lastChunkTime: v.number(),
-  },
-  handler: async (
-    ctx,
-    args,
-  ): Promise<{
-    stream: Doc<"streams">;
-    chunks: Doc<"streamChunks">[];
-  }> => {
-    const stream = await ctx.runQuery(api.streams.queries.get, {
-      streamId: args.streamId,
-    });
-
-    // if (!["streaming", "pending"].includes(stream.status)) {
-    //   return {
-    //     stream,
-    //     chunks: [],
-    //   }
-    // }
 
     const chunks = await ctx.db
       .query("streamChunks")
       .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
       .order("asc")
-      .filter((q) => q.gt(q.field("_creationTime"), args.lastChunkTime))
+      .filter((q) =>
+        args.lastChunkTime ? q.gt(q.field("_creationTime"), args.lastChunkTime) : true,
+      )
       .collect();
 
-    return {
-      stream,
-      chunks,
-    };
+    return chunks;
   },
 });

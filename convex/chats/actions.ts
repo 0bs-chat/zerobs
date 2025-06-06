@@ -16,7 +16,7 @@ export const send = action({
       chatId: args.chatId,
     });
 
-    const chatInput = await ctx.runQuery(api.chatInput.queries.get, {
+    const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
       chatId: args.chatId,
     });
 
@@ -32,7 +32,7 @@ export const send = action({
       userId: chatInput.userId!,
       status: "pending",
     });
-    await ctx.runMutation(api.chatInput.mutations.update, {
+    await ctx.runMutation(api.chatInputs.mutations.update, {
       chatId: args.chatId,
       updates: {
         streamId: stream._id,
@@ -40,7 +40,7 @@ export const send = action({
     });
 
     await ctx.runAction(internal.langchain.index.chat, {
-      chatInputId: chatInput._id as Id<"chatInput">,
+      chatInputId: chatInput._id as Id<"chatInputs">,
     });
 
     return null;

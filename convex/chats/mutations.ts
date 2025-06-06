@@ -69,14 +69,14 @@ export const remove = mutation({
 
     // Delete associated chat input
     const chatInput = await ctx.db
-      .query("chatInput")
+      .query("chatInputs")
       .withIndex("by_chat_user", (q) =>
         q.eq("chatId", args.chatId).eq("userId", userId),
       )
       .first();
 
     if (chatInput) {
-      await ctx.runMutation(internal.chatInput.mutations.remove, {
+      await ctx.runMutation(internal.chatInputs.mutations.remove, {
         chatId: args.chatId,
       });
     }
