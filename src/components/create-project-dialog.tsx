@@ -12,7 +12,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useChatStore } from "@/store/chatStore";
 
-export const ProjectDialog = () => {
+export const CreateProjectDialog = () => {
   const { projectDialogOpen, setProjectDialogOpen } = useChatStore();
   const createProject = useMutation(api.projects.mutations.create);
   const { setSelectedProjectId, setResizablePanelsOpen, setResizablePanelTab } =

@@ -20,8 +20,8 @@ export const send = action({
       chatId: args.chatId,
     });
 
-    if (!chatInput.text) {
-      throw new Error("Chat input not found");
+    if (!chatInput.text && !chatInput.documents?.length) {
+      throw new Error("Chat input text or documents not found");
     }
 
     if (!chatInput.model) {

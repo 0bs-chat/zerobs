@@ -7,7 +7,7 @@ import { Loader } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DocumentDialog } from "@/components/document-dialog";
-import { ProjectDialog } from "@/components/project-dialog";
+import { CreateProjectDialog } from "@/components/create-project-dialog";
 import { TopNav } from "@/components/topnav";
 import { ResizablePanelGroup } from "@/components/ui/resizable";
 import { ResizablePanel } from "@/components/ui/resizable";
@@ -64,8 +64,6 @@ export const Route = createRootRoute({
           <SidebarProvider className="flex h-svh font-sans">
             <AppSidebar />
             <TopNav />
-            <DocumentDialog />
-            <ProjectDialog />
             <div className="flex-1">
               <ResizablePanelGroup direction="horizontal">
                 <ResizablePanel className="flex flex-col h-full p-2 items-center justify-end gap-2">
@@ -81,6 +79,10 @@ export const Route = createRootRoute({
                 )}
               </ResizablePanelGroup>
             </div>
+
+            {/* Dialogs */}
+            <DocumentDialog />
+            <CreateProjectDialog />
           </SidebarProvider>
         )}
         <Toaster />

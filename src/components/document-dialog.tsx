@@ -7,9 +7,8 @@ import {
 import { useChatStore } from "@/store/chatStore";
 import { api } from "../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
-import type { Id } from "convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { FileIcon, GlobeIcon, YoutubeIcon, LinkIcon } from "lucide-react";
+import { getTagInfo } from "@/lib/react-utils";
 import { formatBytes } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
@@ -36,7 +35,7 @@ export const DocumentDialog = () => {
 
       if (document.type === "file") {
         const url = await generateDownloadUrl({
-          storageId: document.key as Id<"_storage">,
+          documentId: document._id!,
         });
         setPreviewUrl(url);
       } else if (document.type === "url" || document.type === "site") {
@@ -53,7 +52,7 @@ export const DocumentDialog = () => {
     if (!document || document.type !== "file") return;
 
     const url = await generateDownloadUrl({
-      storageId: document.key as Id<"_storage">,
+      documentId: document._id!,
     });
 
     if (url) {
@@ -75,20 +74,6 @@ export const DocumentDialog = () => {
     return null;
   }
 
-  const getIcon = () => {
-    switch (document?.type) {
-      case "file":
-        return <FileIcon className="w-8 h-8 text-blue-500" />;
-      case "url":
-      case "site":
-        return <GlobeIcon className="w-8 h-8 text-green-500" />;
-      case "youtube":
-        return <YoutubeIcon className="w-8 h-8 text-red-500" />;
-      default:
-        return <LinkIcon className="w-8 h-8 text-gray-500" />;
-    }
-  };
-
   const getFileType = () => {
     if (!document?.name) return null;
     const extension = document.name.toLowerCase().split(".").pop();
@@ -105,12 +90,14 @@ export const DocumentDialog = () => {
   const fileType = document?.type === "file" ? getFileType() : null;
   const documentName = document?.name ?? "";
 
+  const { icon: Icon, className: IconClassName } = getTagInfo(document?.type!, document?.status!);
+
   return (
     <Dialog open={documentDialogOpen} onOpenChange={setDocumentDialogOpen}>
       <DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {getIcon()}
+            <Icon className={`${IconClassName} h-8 w-8`} />
             <span>{documentName}</span>
           </DialogTitle>
         </DialogHeader>

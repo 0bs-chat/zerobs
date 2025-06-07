@@ -1,13 +1,13 @@
 import { useParams } from "@tanstack/react-router";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useStream } from "@/lib/stream_helper";
+import { useStream } from "@/lib/stream-helper";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 import { useAction } from "convex/react";
 import type { StateSnapshot } from "@langchain/langgraph";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
-export const ChatMessages = () => {
+export const ChatMessages = React.memo(() => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const stream = useStream(params.chatId as Id<"chats"> | "new");
 
@@ -45,4 +45,4 @@ export const ChatMessages = () => {
       </div>
     </ScrollArea>
   );
-};
+});

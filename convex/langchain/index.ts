@@ -79,9 +79,18 @@ async function* streamHelper(
         text: args.chatInput.text,
       },
       ...(args.chatInput.documents?.map(async (documentId) => {
-        const document = await ctx.runQuery(api.documents.queries.get, {
+        let document = await ctx.runQuery(api.documents.queries.get, {
           documentId,
         });
+
+        // If processing, wait for it to be done
+        while (document.status === "processing") {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          document = await ctx.runQuery(api.documents.queries.get, {
+            documentId,
+          });
+        }
+
         return formatDocument(document, args.chatInput.model!, ctx);
       }) ?? []),
     ],
