@@ -1,13 +1,35 @@
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { PlusIcon, BotIcon, BrainIcon, Globe2Icon, ArrowUp, PaperclipIcon, GithubIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  PlusIcon,
+  BotIcon,
+  BrainIcon,
+  Globe2Icon,
+  ArrowUp,
+  PaperclipIcon,
+  GithubIcon,
+} from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { Toggle } from "@/components/ui/toggle";
 import { useUploadDocuments } from "@/hooks/use-documents";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useHandleSubmit } from "@/hooks/use-chats";
 import { useParams } from "@tanstack/react-router";
@@ -18,7 +40,11 @@ import { useQuery } from "convex/react";
 import { GitHubDialog } from "../github";
 import { useGitHubStore, useIsDialogOpen } from "@/store/githubStore";
 
-export const ToolBar = ({ chatInput }: { chatInput: ReturnType<typeof useQuery<typeof api.chatInputs.queries.get>> }) => {
+export const ToolBar = ({
+  chatInput,
+}: {
+  chatInput: ReturnType<typeof useQuery<typeof api.chatInputs.queries.get>>;
+}) => {
   const params = useParams({ strict: false });
   const chatId: Id<"chats"> = params.chatId as Id<"chats">;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,11 +92,18 @@ export const ToolBar = ({ chatInput }: { chatInput: ReturnType<typeof useQuery<t
               <PaperclipIcon className="w-4 h-4" />
               Attach Documents
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
+            <DropdownMenuItem
+              onClick={() => {
+                setIsDropdownOpen(false); // unmounting dropdown
+                setIsDialogOpen(true); // dialog mount
+              }}
+            >
               <GithubIcon className="w-4 h-4" />
               Add GitHub Repo
             </DropdownMenuItem>
-            <ProjectsDropdown />
+            <ProjectsDropdown
+              onCloseDropdown={() => setIsDropdownOpen(false)}
+            />
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -164,7 +197,8 @@ export const ToolBar = ({ chatInput }: { chatInput: ReturnType<typeof useQuery<t
                   {model.tags && (
                     <div className="flex flex-row gap-1 ">
                       {model.tags?.map((tag) => {
-                        const { icon: Icon, className: IconClassName } = getTagInfo(tag);
+                        const { icon: Icon, className: IconClassName } =
+                          getTagInfo(tag);
                         return (
                           <Badge
                             key={tag}

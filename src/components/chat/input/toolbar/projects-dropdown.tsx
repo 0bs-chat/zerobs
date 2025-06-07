@@ -10,7 +10,13 @@ import { api } from "../../../../../convex/_generated/api";
 import { FoldersIcon, PlusIcon } from "lucide-react";
 import { useChatStore } from "@/store/chatStore";
 
-export const ProjectsDropdown = () => {
+interface ProjectsDropdownProps {
+  onCloseDropdown: () => void;
+}
+
+export const ProjectsDropdown = ({
+  onCloseDropdown,
+}: ProjectsDropdownProps) => {
   const projects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 3, cursor: null },
   });
@@ -35,6 +41,7 @@ export const ProjectsDropdown = () => {
               setSelectedProjectId(project._id);
               setResizablePanelTab("projects");
               setResizablePanelsOpen(true);
+              onCloseDropdown();
             }}
           >
             {project.name}
@@ -44,6 +51,7 @@ export const ProjectsDropdown = () => {
         <DropdownMenuItem
           onSelect={(e) => {
             e.preventDefault();
+            onCloseDropdown();
             setProjectDialogOpen(true);
           }}
         >

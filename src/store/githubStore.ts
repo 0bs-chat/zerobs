@@ -59,6 +59,11 @@ interface GitHubStore {
   updateItemChildren: (path: string, children: RepoItem[]) => void;
   setItemLoading: (path: string, loading: boolean) => void;
   getItemCounts: () => { totalFiles: number; totalFolders: number };
+
+  // New token management functions
+  calculateItemTokensRecursively: (item: RepoItem) => number;
+  selectItemWithTokens: (path: string) => number;
+  deselectItemWithTokens: (path: string) => number;
 }
 
 const initialState = {
@@ -254,6 +259,86 @@ export const useGitHubStore = create<GitHubStore>((set, get) => ({
     return { totalFiles: counts.files, totalFolders: counts.folders };
   },
 
+  // New token management functions
+  calculateItemTokensRecursively: (item: RepoItem): number => {
+    let totalTokens = 0;
+
+    if (item.type === "file" && item.tokens) {
+      totalTokens += item.tokens;
+    }
+
+    if (item.children) {
+      for (const child of item.children) {
+        totalTokens += get().calculateItemTokensRecursively(child);
+      }
+    }
+
+    return totalTokens;
+  },
+
+  selectItemWithTokens: (path: string): number => {
+    const { items, selectedItems } = get();
+    const item = findItemInTree(items, path);
+    if (!item) return 0;
+
+    const newSelectedItems = [...selectedItems];
+    let addedTokens = 0;
+
+    // Add the item itself if not already selected
+    if (!newSelectedItems.includes(path)) {
+      newSelectedItems.push(path);
+      if (item.type === "file" && item.tokens) {
+        addedTokens += item.tokens;
+      }
+    }
+
+    // Add all children recursively and calculate their tokens
+    const childPaths = getAllChildPaths(item);
+    for (const childPath of childPaths) {
+      if (!newSelectedItems.includes(childPath)) {
+        newSelectedItems.push(childPath);
+        const childItem = findItemInTree(items, childPath);
+        if (childItem && childItem.type === "file" && childItem.tokens) {
+          addedTokens += childItem.tokens;
+        }
+      }
+    }
+
+    set({ selectedItems: newSelectedItems });
+    return addedTokens;
+  },
+
+  deselectItemWithTokens: (path: string): number => {
+    const { items, selectedItems } = get();
+    const item = findItemInTree(items, path);
+    if (!item) return 0;
+
+    // Calculate tokens to remove
+    let removedTokens = 0;
+    if (item.type === "file" && item.tokens) {
+      removedTokens += item.tokens;
+    }
+
+    // Calculate tokens from children
+    const childPaths = getAllChildPaths(item);
+    for (const childPath of childPaths) {
+      const childItem = findItemInTree(items, childPath);
+      if (childItem && childItem.type === "file" && childItem.tokens) {
+        removedTokens += childItem.tokens;
+      }
+    }
+
+    // Get all paths to remove (item + all children)
+    const pathsToRemove = new Set([path, ...childPaths]);
+
+    const newSelectedItems = selectedItems.filter(
+      (selectedPath) => !pathsToRemove.has(selectedPath)
+    );
+
+    set({ selectedItems: newSelectedItems });
+    return removedTokens;
+  },
+
   resetState: () =>
     set({
       repoUrl: "",
@@ -313,4 +398,7 @@ export const useGitHubActions = () =>
     setItemLoading: state.setItemLoading,
     getItemCounts: state.getItemCounts,
     resetState: state.resetState,
+    calculateItemTokensRecursively: state.calculateItemTokensRecursively,
+    selectItemWithTokens: state.selectItemWithTokens,
+    deselectItemWithTokens: state.deselectItemWithTokens,
   }));
