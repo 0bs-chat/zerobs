@@ -39,10 +39,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { GitHubDialog } from "../github-dialog";
+import { GitHubDialog } from "../github/github-dialog";
 import { DocumentList } from "../document-list";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { useChatPreferencesStore } from "@/store/useChatPreferencesStore";
+import { useIsDialogOpen, useGitHubStore } from "@/store/githubStore";
 
 const getTagInfo = (tag: string) => {
   switch (tag) {
@@ -72,15 +73,13 @@ export const ChatInputToolbar = () => {
   const chatId: Id<"chats"> = params.chatId as Id<"chats">;
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isGitHubDialogOpen, setIsGitHubDialogOpen] = useState(false);
+  const isGitHubDialogOpen = useIsDialogOpen();
+  const setDialogOpen = useGitHubStore((state) => state.setDialogOpen);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { preferences, updatePreferences } = useChatPreferencesStore();
   const { chatInputText, setChatInputText } = useChatPreferencesStore();
 
-  const chatInputQuery = useQuery(
-    api.chatInputs.queries.get,
-    { chatId }
-  );
+  const chatInputQuery = useQuery(api.chatInputs.queries.get, { chatId });
 
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
   const generateUploadUrlMutation = useMutation(
@@ -265,10 +264,9 @@ export const ChatInputToolbar = () => {
                 Attach Documents
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
+                onSelect={() => {
                   setIsDropdownOpen(false);
-                  setIsGitHubDialogOpen(true);
+                  setDialogOpen(true);
                 }}
               >
                 <GithubIcon className="w-4 h-4" />
@@ -280,7 +278,7 @@ export const ChatInputToolbar = () => {
 
           <GitHubDialog
             open={isGitHubDialogOpen}
-            onOpenChange={setIsGitHubDialogOpen}
+            onOpenChange={setDialogOpen}
           />
 
           <Toggle
