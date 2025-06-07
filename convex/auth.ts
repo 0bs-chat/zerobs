@@ -5,7 +5,7 @@ import Google from "@auth/core/providers/google";
 import Slack from "@auth/core/providers/slack";
 import { query } from "./_generated/server";
 import { v } from "convex/values";
-import { models } from "./langchain/models";
+import { parsedConfig } from "./langchain/models";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
@@ -26,7 +26,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       await ctx.db.insert("chatInputs", {
         chatId: "new",
         userId: args.userId,
-        model: models[0].model,
+        model: parsedConfig.model_list[0].model_name,
         agentMode: false,
         plannerMode: false,
         webSearch: false,

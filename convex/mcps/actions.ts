@@ -32,13 +32,12 @@ export const create = internalAction({
 
     const machineConfig: CreateMachineRequest = {
       name: `${appName}-machine`,
-      region: "iad",
+      region: "sea",
       config: {
         image: "mantrakp04/mcprunner:latest",
         env: {
           ...(mcp.env || {}),
           MCP_COMMAND: mcp.command,
-          IDLE_TIMEOUT_MINS: "15",
         },
         guest: { cpus: 1, memory_mb: 1024, cpu_kind: "shared" },
         services: [
@@ -46,6 +45,9 @@ export const create = internalAction({
             ports: [{ port: 443, handlers: ["tls", "http"] }],
             protocol: "tcp",
             internal_port: 8000,
+            autostart: true,
+            autostop: "suspend",
+            min_machines_running: 0,
           },
         ],
       },
@@ -55,23 +57,9 @@ export const create = internalAction({
       app_name: appName,
       org_slug: "personal",
     });
-    if (!app || !app.id) {
-      throw new Error(`Failed to create app ${appName} or app ID is missing`);
-    }
 
-    try {
-      await fly.allocateIpAddress(appName, "v4");
-    } catch (error: any) {
-      console.error(
-        `Error allocating IP for ${appName}:`,
-        error.message ? error.message : error,
-      );
-    }
-
+    await fly.allocateIpAddress(app?.name!, "shared_v4");
     machine = await fly.createMachine(appName, machineConfig);
-    if (!machine) {
-      throw new Error(`Failed to create machine for app ${appName}`);
-    }
 
     await ctx.runMutation(internal.mcps.crud.update, {
       id: args.mcpId,

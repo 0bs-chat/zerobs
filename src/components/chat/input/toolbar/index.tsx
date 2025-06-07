@@ -64,8 +64,13 @@ export const ToolBar = ({
     const fetchModel = async () => {
       const result = await getModelAction({
         chatId: chatId,
+      })
+      // filter out embedding models
+      const filteredModels = result.models.filter((model) => !model.litellm_params.tags?.includes("embeddings"));
+      setGetModelResult({
+        ...result,
+        models: filteredModels,
       });
-      setGetModelResult(result);
     };
     fetchModel();
   }, [chatId, getModelAction]);
@@ -180,25 +185,24 @@ export const ToolBar = ({
             })
           }
         >
-          <SelectTrigger>{getModelResult?.selectedModel.label}</SelectTrigger>
+          <SelectTrigger>{getModelResult?.selectedModel.model_name}</SelectTrigger>
           <SelectContent>
             {getModelResult?.models.map((model) => (
               <SelectItem
-                key={model.model}
-                value={model.model}
+                key={model.model_name}
+                value={model.model_name}
                 className={`${
-                  model.model === getModelResult?.selectedModel.model
+                  model.model_name === getModelResult?.selectedModel.model_name
                     ? "bg-accent"
                     : ""
                 }`}
               >
                 <div className="flex flex-col w-full gap-2">
-                  <span className={`text-foreground`}>{model.label}</span>
-                  {model.tags && (
+                  <span className={`text-foreground`}>{model.model_name}</span>
+                  {model.litellm_params.tags && (
                     <div className="flex flex-row gap-1 ">
-                      {model.tags?.map((tag) => {
-                        const { icon: Icon, className: IconClassName } =
-                          getTagInfo(tag);
+                      {model.litellm_params.tags?.map((tag) => {
+                        const { icon: Icon, className: IconClassName } = getTagInfo(tag);
                         return (
                           <Badge
                             key={tag}

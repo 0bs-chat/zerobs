@@ -102,26 +102,24 @@ const flyGraphqlRequest = async (
 };
 
 export const fly = {
-  getApp: async (appName: string): Promise<FlyApp | null> => {
-    return flyRequest(`/apps/${appName}`, "GET") as Promise<FlyApp | null>;
+  getApp: async (appName: string) => {
+    return (await flyRequest(`/apps/${appName}`, "GET"));
   },
 
   createApp: async (params: CreateAppRequest): Promise<FlyApp | null> => {
     await flyRequest(`/apps`, "POST", params);
     if (params.app_name) {
-      return fly.getApp(params.app_name);
+      return (await fly.getApp(params.app_name));
     }
     return null;
   },
 
-  deleteApp: async (appName: string): Promise<void> => {
-    await flyRequest(`/apps/${appName}`, "DELETE");
+  deleteApp: async (appName: string) => {
+    return (await flyRequest(`/apps/${appName}`, "DELETE"));
   },
 
-  listMachines: async (appName: string): Promise<FlyMachine[]> => {
-    return (await flyRequest(`/apps/${appName}/machines`, "GET")) as Promise<
-      FlyMachine[]
-    >;
+  listMachines: async (appName: string) => {
+    return (await flyRequest(`/apps/${appName}/machines`, "GET")) as FlyMachine[] | null;
   },
 
   createMachine: async (
@@ -135,40 +133,40 @@ export const fly = {
       );
       return existingMachines[0];
     }
-    return flyRequest(
+    return (await flyRequest(
       `/apps/${appName}/machines`,
       "POST",
       params,
-    ) as Promise<FlyMachine | null>;
+    ));
   },
 
   getMachine: async (
     appName: string,
     machineId: string,
   ): Promise<FlyMachine | null> => {
-    return flyRequest(
+    return (await flyRequest(
       `/apps/${appName}/machines/${machineId}`,
       "GET",
-    ) as Promise<FlyMachine | null>;
+    ));
   },
 
   deleteMachine: async (appName: string, machineId: string) => {
-    await flyRequest(`/apps/${appName}/machines/${machineId}`, "DELETE");
+    return (await flyRequest(`/apps/${appName}/machines/${machineId}`, "DELETE"));
   },
 
   stopMachine: async (appName: string, machineId: string) => {
-    await flyRequest(`/apps/${appName}/machines/${machineId}/stop`, "POST", {});
+    return (await flyRequest(`/apps/${appName}/machines/${machineId}/stop`, "POST", {}));
   },
 
   startMachine: async (appName: string, machineId: string) => {
-    await flyRequest(
+    return (await flyRequest(
       `/apps/${appName}/machines/${machineId}/start`,
       "POST",
       {},
-    );
+    ));
   },
 
-  allocateIpAddress: async (appId: string, type: "v4" | "v6" = "v4") => {
+  allocateIpAddress: async (appId: string, type: "v4" | "v6" | "shared_v4" = "shared_v4") => {
     const mutation = `
       mutation AllocateIpAddress($appId: ID!, $type: IPAddressType!) {
         allocateIpAddress(input: {appId: $appId, type: $type, region: "global"}) {
@@ -182,6 +180,44 @@ export const fly = {
         }
       }
     `;
-    return flyGraphqlRequest(mutation, { appId, type });
+    return (await flyGraphqlRequest(mutation, { appId, type }));
+  },
+
+  scaleMachine: async (appName: string, region: string, count: number) => {
+    const mutation = `
+      mutation ScaleApp($input: ScaleAppInput!) {
+        scaleApp(input: $input) {
+          app {
+            id
+            name
+            taskGroupCounts {
+              name
+              count
+            }
+          }
+          delta {
+            region
+            fromCount
+            toCount
+          }
+          placement {
+            region
+            count
+          }
+        }
+      }
+    `;
+
+  // Construct the input object according to the GraphQL schema
+  const input = {
+    appId: appName,
+    regions: [
+      {
+        region: region,
+        count: count,
+      },
+    ],
+  };
+    return (await flyGraphqlRequest(mutation, { input }));
   },
 };

@@ -1,4 +1,4 @@
-import { models, type ModelConfig } from "../langchain/models";
+import { parsedConfig } from "../langchain/models";
 import { action } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
@@ -11,20 +11,20 @@ export const getModels = action({
     ctx,
     args,
   ): Promise<{
-    selectedModel: ModelConfig;
-    models: ModelConfig[];
+    selectedModel: typeof parsedConfig.model_list[number];
+    models: typeof parsedConfig.model_list;
   }> => {
     const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
       chatId: args.chatId,
     });
 
-    let selectedModel = models.find((model) => model.model === chatInput.model);
+    let selectedModel = parsedConfig.model_list.find((model) => model.model_name === chatInput.model);
     if (!selectedModel) {
-      selectedModel = models[0];
+      selectedModel = parsedConfig.model_list[0];
     }
     return {
       selectedModel,
-      models,
+      models: parsedConfig.model_list,
     };
   },
 });

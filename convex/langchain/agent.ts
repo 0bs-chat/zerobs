@@ -89,7 +89,7 @@ async function retrieve(
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
   const vectorStore = new ConvexVectorStore(
-    getEmbeddingModel("text-embedding-004"),
+    getEmbeddingModel("embeddings"),
     {
       ctx: formattedConfig.ctx,
       table: "documentVectors",

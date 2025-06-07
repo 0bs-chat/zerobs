@@ -80,7 +80,7 @@ export const addDocuments = internalAction({
     );
 
     const vectorStore = new ConvexVectorStore(
-      getEmbeddingModel("text-embedding-004"),
+      getEmbeddingModel("embeddings"),
       {
         ctx,
         table: "documentVectors",
@@ -102,6 +102,10 @@ export const addDocuments = internalAction({
     const chunks = await textSplitter.splitDocuments(processedDocs);
     await vectorStore.addDocuments(chunks);
 
+    console.log(JSON.stringify({
+      document: JSON.stringify(processedDocs, null, 2).length,
+      chunks: chunks.length,
+    }, null, 2));
     await ctx.runMutation(internal.documents.mutations.updateMultiple, {
       documents: results.map((result) => ({
         documentId: result.id,

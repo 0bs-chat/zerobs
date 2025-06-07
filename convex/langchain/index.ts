@@ -5,7 +5,6 @@ import { v } from "convex/values";
 import type { ActionCtx } from "../_generated/server";
 import type { Doc } from "../_generated/dataModel";
 import { HumanMessage } from "@langchain/core/messages";
-import { formatDocument } from "./models";
 import { api, internal } from "../_generated/api";
 import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
 import { agentGraph } from "./agent";
@@ -78,7 +77,7 @@ async function* streamHelper(
         source_type: "text",
         text: args.chatInput.text,
       },
-      ...(args.chatInput.documents?.map(async (documentId) => {
+      ...(await Promise.all(args.chatInput.documents?.map(async (documentId) => {
         let document = await ctx.runQuery(api.documents.queries.get, {
           documentId,
         });
@@ -91,8 +90,13 @@ async function* streamHelper(
           });
         }
 
-        return formatDocument(document, args.chatInput.model!, ctx);
-      }) ?? []),
+        const formattedDocument = await ctx.runAction(internal.langchain.models.formatDocument, {
+          document,
+          model: args.chatInput.model!,
+        });
+        console.log(formattedDocument);
+        return formattedDocument;
+      }) ?? [])),
     ],
   });
 

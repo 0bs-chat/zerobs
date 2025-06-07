@@ -3,10 +3,8 @@ import {
   type QueryCtx,
   type MutationCtx,
   type ActionCtx,
-  query,
 } from "../_generated/server.js";
 import { ConvexError } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
 
 export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
   const user = await ctx.auth.getUserIdentity();
