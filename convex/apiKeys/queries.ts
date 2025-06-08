@@ -43,11 +43,32 @@ export const getFromName = query({
 
     const apiKeyDoc = await ctx.db
       .query("apiKeys")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("name"), args.name))
+      .withIndex("by_user_name", (q) =>
+        q.eq("userId", userId).eq("name", args.name),
+      )
       .first();
 
     if (!apiKeyDoc) {
+      return null;
+    }
+
+    return await verifyApiKey(ctx, apiKeyDoc);
+  },
+});
+
+export const getPublicFromName = query({
+  args: {
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const apiKeyDoc = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_name", (q) =>
+        q.eq("name", args.name),
+      )
+      .first();
+
+    if (!apiKeyDoc || apiKeyDoc.userId) {
       return null;
     }
 
@@ -88,7 +109,7 @@ export const getAll = query({
 
     const userApiKeys = await ctx.db
       .query("apiKeys")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_user_name", (q) => q.eq("userId", userId))
       .collect();
 
     return await Promise.all(

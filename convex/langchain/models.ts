@@ -29,11 +29,16 @@ model_list:
       model: openrouter/anthropic/claude-sonnet-4
       api_key: os.environ/OPENAI_API_KEY
       tags: ["text", "image", "pdf"]
+  - model_name: worker
+    litellm_params:
+      model: openrouter/google/gemini-2.0-flash-001
+      api_key: os.environ/OPENAI_API_KEY
+      tags: ["text", "image", "pdf", "hidden"]
   - model_name: embeddings
     litellm_params:
       model: gemini/text-embedding-004
       api_key: os.environ/GOOGLE_API_KEY
-      tags: ["text", "embeddings"]
+      tags: ["text", "embeddings", "hidden"]
 
 litellm_settings:
   drop_params: true

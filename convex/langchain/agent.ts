@@ -22,7 +22,6 @@ import {
 } from "@langchain/core/prompts";
 import { z } from "zod";
 import type { Doc } from "../_generated/dataModel";
-import { api } from "../_generated/api";
 import { Document } from "langchain/document";
 import type { TavilySearchResponse } from "@langchain/tavily";
 import { formatDocumentsAsString } from "langchain/util/document";
@@ -32,24 +31,34 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { AIMessage } from "@langchain/core/messages";
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 import { internal } from "../_generated/api";
+import { OutputFixingParser } from "langchain/output_parsers";
+import { StructuredOutputParser } from "@langchain/core/output_parsers";
 
 type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;
   chatInput: Doc<"chatInputs">;
 };
 
-const plan = z
-  .array(
-    z.object({
-      step: z.string().describe("The step to be executed"),
-      additional_context: z
-        .string()
-        .describe("Additional context that may be needed to execute the step"),
-    }),
-  )
-  .describe("A step by step plan to achieve the objective")
-  .min(1)
-  .max(9);
+function getOutputFixingParser<T>(schema: z.ZodType<T>) {
+  return OutputFixingParser.fromLLM(getModel("worker"), new StructuredOutputParser(schema));
+}
+
+const planSchema = z.object({
+  plan: z
+    .array(
+      z.object({
+        step: z.string().describe("The step to be executed"),
+        additional_context: z
+          .string()
+          .describe("Additional context that may be needed to execute the step"),
+      }),
+    )
+    .describe("A step by step plan to achieve the objective")
+    .min(1)
+    .max(9),
+});
+
+type PlanType = z.infer<typeof planSchema>["plan"];
 
 const GraphState = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
@@ -62,7 +71,7 @@ const GraphState = Annotation.Root({
   lastNode: Annotation<Record<string, any>>({
     reducer: (x, y) => y ?? x ?? {},
   }),
-  plan: Annotation<z.infer<typeof plan>>({
+  plan: Annotation<PlanType>({
     reducer: (x, y) => y ?? x ?? [],
   }),
 });
@@ -116,15 +125,13 @@ async function retrieve(
     ]);
 
     const modelWithOutputParser = promptTemplate.pipe(
-      getModel(model).withStructuredOutput(
-        z.object({
-          queries: z
-            .array(z.string())
-            .describe("Queries for the " + type + ".")
-            .max(3)
-            .min(1),
-        }),
-      ),
+      getModel("worker").withStructuredOutput(z.object({
+        queries: z
+          .array(z.string())
+          .describe("Queries for the " + type + ".")
+          .max(3)
+          .min(1),
+      }))
     );
 
     const formattedMessages = await formatMessages(config.ctx, state.messages.slice(-5), model);
@@ -242,19 +249,17 @@ async function retrieve(
     ]);
 
     const modelWithOutputParser = promptTemplate.pipe(
-      getModel(model).withStructuredOutput(
-        z.object({
-          relevant: z
-            .boolean()
-            .describe("Whether the document is relevant to the user question"),
-        }),
-      ),
+      getModel("worker").withStructuredOutput(z.object({
+        relevant: z
+          .boolean()
+          .describe("Whether the document is relevant to the user question"),
+      }))
     );
 
     const formattedMessage = await formatMessages(config.ctx, [message], model);
     const gradedDocument = await modelWithOutputParser.invoke(
       {
-        document: document,
+        document: formatDocumentsAsString([document]),
         message: formattedMessage[0],
       },
       config,
@@ -406,10 +411,10 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   ]);
 
   const modelWithOutputParser = promptTemplate.pipe(
-    getModel(formattedConfig.chatInput.model!).withStructuredOutput(plan),
+    getModel(formattedConfig.chatInput.model!).withStructuredOutput(planSchema)
   );
 
-  const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages, formattedConfig.chatInput.model!);
+  const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model!);
   const response = await modelWithOutputParser.invoke(
     {
       messages: formattedMessages,
@@ -418,7 +423,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   );
 
   return {
-    plan: response,
+    plan: response.plan,
   };
 }
 
@@ -451,7 +456,7 @@ async function plannerAgent(
         `   - Ensure it is properly formatted using Prettier with a print width of 80 characters\n` +
         `   - Present it in Markdown code blocks with the correct language extension indicated\n`,
     ),
-    ...(state.documents.length > 0
+    ...(state.documents && state.documents.length > 0
       ? [
           new HumanMessage(
             "Here are the documents that are relevant to the question: " +
@@ -535,21 +540,30 @@ async function replanner(
       "\n\n" +
       `Your original plan was this:\n{plan}\n\n` +
       `You have currently done the following steps:\n${new MessagesPlaceholder("pastSteps")}\n\n` +
-      `Update your plan accordingly. If no more steps are needed and you can return to the user, then respond with that and use the 'response' function. ` +
-      `Otherwise, fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
+      `Update your plan accordingly. If no more steps are needed and you can return to the user, set action to "respond_to_user" and provide the response. ` +
+      `Otherwise, set action to "continue_planning" and fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
   );
 
-  const outputParser = z.union([
-    plan,
-    z.object({
-      response: z.string().describe("The response to the user"),
-    }),
-  ]);
+  const replannerSchema = z.object({
+    action: z.enum(["continue_planning", "respond_to_user"]).describe("Whether to continue planning or respond to the user"),
+    plan: z
+      .array(
+        z.object({
+          step: z.string().describe("The step to be executed"),
+          additional_context: z
+            .string()
+            .describe("Additional context that may be needed to execute the step"),
+        }),
+      )
+      .describe("A step by step plan to achieve the objective")
+      .min(0)
+      .max(9)
+      .optional(),
+    response: z.string().describe("The response to the user").optional(),
+  });
 
   const modelWithOutputParser = promptTemplate.pipe(
-    getModel(formattedConfig.chatInput.model!).withStructuredOutput(
-      outputParser,
-    ),
+    getModel(formattedConfig.chatInput.model!).withStructuredOutput(replannerSchema)
   );
 
   const inputMessage = state.messages[state.messages.length - 2];
@@ -575,10 +589,10 @@ async function replanner(
     config,
   );
 
-  if (typeof response === "object" && "response" in response) {
+  if (response.action === "respond_to_user") {
     return {
       messages: [
-        new AIMessage(response.response, {
+        new AIMessage(response.response || "Task completed.", {
           response_metadata: {
             planSteps: {
               step: "Response",
@@ -587,18 +601,27 @@ async function replanner(
         }),
       ],
     };
-  } else {
+  } else if (response.action === "continue_planning") {
     return {
-      plan: response,
+      plan: response.plan || [],
     };
+  } else {
+    throw new Error("Invalid response from replanner");
   }
 }
 
 async function shouldEndPlanner(state: typeof GraphState.State) {
+  // Check if we have a response message from the replanner
   const lastMessage = state.messages[state.messages.length - 1];
-  if (lastMessage.response_metadata["planSteps"]?.step === "Response") {
+  if (lastMessage?.response_metadata?.["planSteps"]?.step === "Response") {
     return "true";
   }
+  
+  // Check if the plan is empty (no more steps to execute)
+  if (!state.plan || state.plan.length === 0) {
+    return "true";
+  }
+  
   return "false";
 }
 

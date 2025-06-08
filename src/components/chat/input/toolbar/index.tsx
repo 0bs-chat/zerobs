@@ -65,11 +65,9 @@ export const ToolBar = ({
       const result = await getModelAction({
         chatId: chatId,
       })
-      // filter out embedding models
-      const filteredModels = result.models.filter((model) => !model.litellm_params.tags?.includes("embeddings"));
       setGetModelResult({
         ...result,
-        models: filteredModels,
+        models: result.models,
       });
     };
     fetchModel();

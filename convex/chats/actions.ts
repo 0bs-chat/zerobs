@@ -62,6 +62,6 @@ export const messages = action({
       chatId: args.chatId,
     });
 
-    return JSON.stringify(JSON.parse(messages) as StateSnapshot);
+    return JSON.stringify(JSON.parse(messages) as StateSnapshot, null, 2);
   },
 });

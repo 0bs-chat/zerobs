@@ -27,12 +27,25 @@ export const chat = internalAction({
     let lastFlush = Date.now();
     const buffer: string[] = [];
 
-    for await (const event of stream) {
-      // collect
-      buffer.push(JSON.stringify(event));
+    try {
+      for await (const event of stream) {
+        // collect
+        buffer.push(JSON.stringify(event));
 
-      // if it's been >100ms since last flush, send a batch
-      if (Date.now() - lastFlush >= BUFFER_FLUSH_DELAY) {
+        // if it's been >100ms since last flush, send a batch
+        if (Date.now() - lastFlush >= BUFFER_FLUSH_DELAY) {
+          await ctx.runMutation(
+            internal.streams.mutations.appendChunks,
+            {
+              streamId,
+              chunks: buffer.splice(0, buffer.length),
+            }
+          );
+          lastFlush = Date.now();
+        }
+      }
+
+      if (buffer.length > 0) {
         await ctx.runMutation(
           internal.streams.mutations.appendChunks,
           {
@@ -40,30 +53,25 @@ export const chat = internalAction({
             chunks: buffer.splice(0, buffer.length),
           }
         );
-        lastFlush = Date.now();
       }
-    }
-
-    // flush any remaining events
-    if (buffer.length > 0) {
+      
       await ctx.runMutation(
-        internal.streams.mutations.appendChunks,
+        internal.streams.mutations.update,
         {
           streamId,
-          chunks: buffer.splice(0, buffer.length),
+          updates: { status: "done" },
+        }
+      );
+    } catch (error) {
+      console.error(error);
+      await ctx.runMutation(
+        internal.streams.mutations.update,
+        {
+          streamId,
+          updates: { status: "error" },
         }
       );
     }
-    // ---- end batching logic ----
-
-    // finally mark the stream done
-    await ctx.runMutation(
-      internal.streams.mutations.update,
-      {
-        streamId,
-        updates: { status: "done" },
-      }
-    );
   },
 });
 
@@ -109,6 +117,7 @@ async function* streamHelper(
           chatInput: args.chatInput,
           thread_id: args.chatInput.chatId,
         },
+        recursionLimit: 100,
       }
     );
 

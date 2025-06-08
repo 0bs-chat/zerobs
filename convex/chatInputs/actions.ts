@@ -8,6 +8,7 @@ import { api } from "../_generated/api";
 export const getModels = action({
   args: {
     chatId: v.union(v.id("chats"), v.literal("new")),
+    showHidden: v.optional(v.boolean()),
   },
   handler: async (
     ctx,
@@ -26,7 +27,7 @@ export const getModels = action({
     }
     return {
       selectedModel,
-      models: parsedConfig.model_list,
+      models: args.showHidden ? parsedConfig.model_list : parsedConfig.model_list.filter((model) => !model.litellm_params.tags?.includes("hidden")),
     };
   },
 });
