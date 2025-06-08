@@ -104,6 +104,8 @@ export default defineSchema({
     url: v.optional(v.string()),
     env: v.optional(v.record(v.string(), v.string())),
     enabled: v.boolean(),
+    status: v.union(v.literal("creating"), v.literal("created"), v.literal("error")),
+    resetOnNewChat: v.boolean(),
     userId: v.id("users"),
     updatedAt: v.number(),
   })
@@ -166,5 +168,5 @@ export default defineSchema({
       "checkpoint_id",
       "task_id",
       "idx",
-    ]),
+    ])
 });

@@ -71,7 +71,7 @@ export const createMultiple = mutation({
   },
 });
 
-export const updateMultiple = internalMutation({
+export const updateStatus = internalMutation({
   args: {
     documents: v.array(v.object({
       documentId: v.id("documents"),

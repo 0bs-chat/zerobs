@@ -10,6 +10,7 @@ export const create = mutation({
     env: v.optional(v.record(v.string(), v.string())),
     url: v.optional(v.string()),
     enabled: v.boolean(),
+    resetOnNewChat: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -25,6 +26,8 @@ export const create = mutation({
       env: args.env,
       url: args.url,
       enabled: args.enabled,
+      status: "creating",
+      resetOnNewChat: args.resetOnNewChat ?? false,
       userId: userId,
       updatedAt: Date.now(),
     });
@@ -46,6 +49,8 @@ export const update = mutation({
       env: v.optional(v.record(v.string(), v.string())),
       url: v.optional(v.string()),
       enabled: v.optional(v.boolean()),
+      resetOnNewChat: v.optional(v.boolean()),
+      status: v.optional(v.union(v.literal("creating"), v.literal("created"), v.literal("error"))),
     }),
   },
   handler: async (ctx, args) => {

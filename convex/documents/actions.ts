@@ -21,101 +21,117 @@ export const addDocuments = internalAction({
     documents: v.array(v.id("documents")),
   },
   handler: async (ctx, args) => {
-    const documents = await ctx.runQuery(
-      internal.documents.queries.getMultipleInternal,
-      {
-        documentIds: args.documents,
-      },
-    );
+    try {
+      const documents = await ctx.runQuery(
+        internal.documents.queries.getMultipleInternal,
+        {
+          documentIds: args.documents,
+        },
+      );
 
-    // Sort documents by type
-    const documentsByType = documents.reduce(
-      (acc, document) => {
-        acc[document.type] = acc[document.type] || [];
-        acc[document.type].push(document);
-        return acc;
-      },
-      {} as Record<string, Doc<"documents">[]>,
-    );
+      // Sort documents by type
+      const documentsByType = documents.reduce(
+        (acc, document) => {
+          acc[document.type] = acc[document.type] || [];
+          acc[document.type].push(document);
+          return acc;
+        },
+        {} as Record<string, Doc<"documents">[]>,
+      );
 
-    // map document._id to results
-    const results = (
-      await Promise.all(
-        Object.keys(documentsByType).map(async (type) => {
-          let texts: string[] = [];
-          switch (type) {
-            case "file":
-              texts = await processFile(ctx, documentsByType[type]);
-              break;
-            case "text":
-              texts = await processText(ctx, documentsByType[type]);
-              break;
-            case "url":
-              texts = await processUrlOrSite(ctx, documentsByType[type], 0);
-              break;
-            case "site":
-              texts = await processUrlOrSite(ctx, documentsByType[type], 2);
-              break;
-            case "youtube":
-              texts = await processYoutube(ctx, documentsByType[type]);
-          }
+      // Process documents by type
+      const results = (
+        await Promise.all(
+          Object.keys(documentsByType).map(async (type) => {
+            let texts: string[] = [];
+            switch (type) {
+              case "file":
+                texts = await processFiles(ctx, documentsByType[type]);
+                break;
+              case "text":
+                texts = await processTexts(ctx, documentsByType[type]);
+                break;
+              case "url":
+                texts = await processUrlsOrSites(ctx, documentsByType[type], 0);
+                break;
+              case "site":
+                texts = await processUrlsOrSites(ctx, documentsByType[type], 2);
+                break;
+              case "youtube":
+                texts = await processYoutubeVideos(ctx, documentsByType[type]);
+                break;
+              default:
+                throw new Error(`Unknown document type: ${type}`);
+            }
 
-          return texts.map((text, index) => ({
-            id: documentsByType[type][index]._id,
-            text,
-          }));
-        }),
-      )
-    ).flat();
+            return texts.map((text, index) => ({
+              id: documentsByType[type][index]._id,
+              text,
+            }));
+          }),
+        )
+      ).flat();
 
-    // Construct langchain document
-    const processedDocs = results.map(
-      (result) =>
-        new Document({
-          pageContent: result.text,
-          metadata: {
-            source: result.id,
-          },
-        }),
-    );
+      // Create langchain documents
+      const processedDocs = results.map(
+        (result) =>
+          new Document({
+            pageContent: result.text,
+            metadata: {
+              source: result.id,
+            },
+          }),
+      );
 
-    const vectorStore = new ConvexVectorStore(
-      getEmbeddingModel("embeddings"),
-      {
-        ctx,
-        table: "documentVectors",
-        index: "byEmbedding",
-        textField: "text",
-        embeddingField: "embedding",
-        metadataField: "metadata",
-      },
-    );
+      // Create embeddings
+      const vectorStore = new ConvexVectorStore(
+        getEmbeddingModel("embeddings"),
+        {
+          ctx,
+          table: "documentVectors",
+          index: "byEmbedding",
+          textField: "text",
+          embeddingField: "embedding",
+          metadataField: "metadata",
+        },
+      );
 
-    const textSplitter = RecursiveCharacterTextSplitter.fromLanguage(
-      "markdown",
-      {
-        chunkSize: 1000,
-        chunkOverlap: 200,
-      },
-    );
+      const textSplitter = RecursiveCharacterTextSplitter.fromLanguage(
+        "markdown",
+        {
+          chunkSize: 1000,
+          chunkOverlap: 200,
+        },
+      );
 
-    const chunks = await textSplitter.splitDocuments(processedDocs);
-    await vectorStore.addDocuments(chunks);
+      const chunks = await textSplitter.splitDocuments(processedDocs);
+      await vectorStore.addDocuments(chunks);
 
-    console.log(JSON.stringify({
-      document: JSON.stringify(processedDocs, null, 2).length,
-      chunks: chunks.length,
-    }, null, 2));
-    await ctx.runMutation(internal.documents.mutations.updateMultiple, {
-      documents: results.map((result) => ({
-        documentId: result.id,
-        status: "done" as const,
-      })),
-    });
+      // Mark documents as successful
+      await ctx.runMutation(internal.documents.mutations.updateStatus, {
+        documents: args.documents.map((documentId) => ({
+          documentId,
+          status: "done" as const,
+        })),
+      });
+
+    } catch (error) {
+      console.error("Error processing documents:", error);
+      
+      // Mark all documents as failed
+      await ctx.runMutation(internal.documents.mutations.updateStatus, {
+        documents: args.documents.map((documentId) => ({
+          documentId,
+          status: "error" as const,
+        })),
+      });
+      
+      throw error;
+    }
   },
 });
 
-async function processFile(
+async function processFiles(
   ctx: ActionCtx,
   documents: Doc<"documents">[],
 ): Promise<string[]> {
@@ -132,7 +148,7 @@ async function processFile(
   )?.output.output as string[];
 }
 
-async function processText(
+async function processTexts(
   ctx: ActionCtx,
   documents: Doc<"documents">[],
 ): Promise<string[]> {
@@ -146,7 +162,7 @@ async function processText(
   );
 }
 
-async function processUrlOrSite(
+async function processUrlsOrSites(
   ctx: ActionCtx,
   documents: Doc<"documents">[],
   depth: number,
@@ -167,7 +183,7 @@ async function processUrlOrSite(
   );
 }
 
-async function processYoutube(
+async function processYoutubeVideos(
   ctx: ActionCtx,
   documents: Doc<"documents">[],
 ): Promise<string[]> {

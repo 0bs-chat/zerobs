@@ -36,7 +36,7 @@ export const ChatInput = () => {
         id="chatInputText"
         minHeight={56}
         maxHeight={192}
-        className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none px-2 py-1"
+        className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
         defaultValue={chatInput?.text}
         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
           debouncedUpdateChatInput(e.target.value);

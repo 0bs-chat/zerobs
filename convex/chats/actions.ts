@@ -1,6 +1,6 @@
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
-import { action, httpAction } from "../_generated/server";
+import { action } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
 import { StateSnapshot } from "@langchain/langgraph";

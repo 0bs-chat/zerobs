@@ -3,18 +3,11 @@
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Embeddings } from "@langchain/core/embeddings";
-import type { Doc } from "../_generated/dataModel";
-import mime from "mime";
-import type { ActionCtx } from "../_generated/server";
-import type {
-  MessageContentComplex,
-  DataContentBlock,
-} from "@langchain/core/messages";
-import { internal } from "../_generated/api";
-import { internalAction } from "../_generated/server";
+import { ActionCtx, internalAction } from "../_generated/server";
 import { fly, FlyApp } from "../utils/flyio";
 import * as yaml from "js-yaml";
-import { v } from "convex/values";
+import { BaseMessage, HumanMessage } from "@langchain/core/messages";
+import { getVectorText } from "./index";
 
 const LITELLM_APP_NAME = "zerobs-api"
 const LITELLM_CONFIG_YAML = `
@@ -51,21 +44,24 @@ export const parsedConfig = yaml.load(LITELLM_CONFIG_YAML) as {
   };
 };
 
-export const pingOrCreateLiteLLMApp = internalAction({
+export const reCreateLiteLLMApp = internalAction({
   args: {},
   handler: async (ctx, args) => {
     console.log("Checking for existing app...");
     let app: FlyApp | null = await fly.getApp(LITELLM_APP_NAME);
-    if (!app) {
-      console.log("App not found. Creating a new app...");
-      app = await fly.createApp({
-        app_name: LITELLM_APP_NAME,
-        org_slug: "personal",
-      });
-      await fly.allocateIpAddress(app?.name!, "shared_v4");
+
+    if (app) {
+      console.log("Deleting existing app...");
+      await fly.deleteApp(app.name!);
     }
 
-    console.log("Checking for existing machine...");
+    console.log("Creating new app...");
+    app = await fly.createApp({
+      app_name: LITELLM_APP_NAME,
+      org_slug: "personal",
+    });
+    await fly.allocateIpAddress(app?.name!, "shared_v4");
+
     const scaleCount = 2;
     const litellmMachines = await Promise.all(Array.from({ length: scaleCount }, async (_, i) => {
       return await fly.getMachine(LITELLM_APP_NAME, `litellm-machine-${i}`);
@@ -161,80 +157,101 @@ export function getEmbeddingModel(model: string): Embeddings {
   });
 }
 
-export const formatDocument = internalAction({
-  args: {
-    document: v.any(),
-    model: v.string(),
-  },
-  handler: async (ctx, args): Promise<MessageContentComplex | DataContentBlock> => {
-    const modelConfig = parsedConfig.model_list.find((m) => m.model_name === args.model);
-    if (!modelConfig) {
-      throw new Error(`Model ${args.model} not found in configuration`);
-    }
+export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], model: string): Promise<BaseMessage[]> {
+  const modelConfig = parsedConfig.model_list.find((m) => m.model_name === model);
+  
+  if (!modelConfig) {
+    throw new Error(`Model ${model} not found in configuration`);
+  }
 
-    let content: MessageContentComplex | DataContentBlock;
+  const supportedTags = modelConfig.litellm_params.tags;
+  const supportsImage = supportedTags.includes("image");
+  const supportsAudio = supportedTags.includes("audio"); 
+  const supportsVideo = supportedTags.includes("video");
+  const supportsPdf = supportedTags.includes("pdf");
 
-    if (args.document.type === "file") {
-      const url = await ctx.storage.getUrl(args.document.key);
-      const mimeType = mime.getType(args.document.name) ?? "application/octet-stream";
-      const fileType = mimeType.split("/")[0];
+  // Process all messages in parallel
+  const formattedMessages = await Promise.all(messages.map(async (message) => {
+    if (message instanceof HumanMessage) {
+      const content = message.content;
+      
+      // If content is a string, no processing needed
+      if (typeof content === "string") {
+        return message;
+      }
 
-      if (fileType === "image" && modelConfig.litellm_params.tags.includes("image")) {
-        content = {
-          type: "image_url",
-          image_url: {
-            url: url,
+      // If content is an array, check each item
+      if (Array.isArray(content)) {
+        // Process all content items in parallel
+        const processedContent = await Promise.all(content.map(async (contentItem) => {
+          if (typeof contentItem === "string") {
+            return contentItem;
           }
-        };
-      } else if (["audio", "video", "pdf"].includes(fileType) && modelConfig.litellm_params.tags.includes(fileType)) {
-        content = {
-          type: "file",
-          file: {
-            file_id: url,
-            format: mimeType,
+
+          if (typeof contentItem === "object" && contentItem !== null) {
+            // Handle image content
+            if (contentItem.type === "image_url" && !supportsImage) {
+              // Convert image to text description using getVectorText
+              try {
+                const extractedText = await getVectorText(ctx, contentItem.image_url?.url || "");
+                return {
+                  type: "text",
+                  text: extractedText || "[Image content could not be processed]"
+                };
+              } catch (error) {
+                return {
+                  type: "text",
+                  text: "[Image content not supported by this model - extraction failed]"
+                };
+              }
+            }
+            // Handle file content (audio, video, pdf)
+            else if (contentItem.type === "file" && "file" in contentItem) {
+              const fileFormat = contentItem.file?.format || "";
+              const fileType = fileFormat.split("/")[0];
+              
+              let shouldConvert = false;
+              if (fileType === "audio" && !supportsAudio) shouldConvert = true;
+              if (fileType === "video" && !supportsVideo) shouldConvert = true;
+              if (fileFormat === "application/pdf" && !supportsPdf) shouldConvert = true;
+              
+              if (shouldConvert) {
+                // Convert file to text using getVectorText
+                try {
+                  const extractedText = await getVectorText(ctx, contentItem.file?.url || "");
+                  return {
+                    type: "text",
+                    text: extractedText || `[${fileType || "File"} content could not be processed - format: ${fileFormat}]`
+                  };
+                } catch (error) {
+                  return {
+                    type: "text",
+                    text: `[${fileType || "File"} content not supported by this model - format: ${fileFormat}]`
+                  };
+                }
+              } else {
+                return contentItem;
+              }
+            }
+            // Handle text content and other supported types
+            else {
+              return contentItem;
+            }
+          } else {
+            return contentItem;
           }
-        };
-      } else if (fileType === "text" && modelConfig.litellm_params.tags.includes("text")) {
-        const text = await (await ctx.storage.get(args.document.key))?.text();
-        content = {
-          type: "text",
-          source_type: "text",
-          text: `# ${args.document.name}\n\n${text}\n\n`,
-        };
+        }));
+
+        // Create new message with processed content
+        return new HumanMessage({ content: processedContent });
       } else {
-        try {
-          const vectors = await ctx.runQuery(
-            internal.documents.queries.getAllVectors,
-            {
-              documentId: args.document._id,
-            },
-          );
-          const text = vectors.map((vector) => vector.text).join("\n");
-          content = {
-            type: "text",
-            source_type: "text",
-            text: `# ${args.document.name}\n${text}\n`,
-          };
-        } catch (e) {
-          throw new Error(`Failed to format document ${args.document.name}: ${e}`);
-        }
+        // Handle other content types
+        return message;
       }
     } else {
-      try {
-        const vectors = await ctx.runQuery(internal.documents.queries.getAllVectors, {
-          documentId: args.document._id,
-        });
-        const text = vectors.map((vector) => vector.text).join("\n");
-        content = {
-          type: "text",
-          source_type: "text",
-          text: `# ${args.document.name}\n\n${text}\n\n`,
-        };
-      } catch (e) {
-        throw new Error(`Failed to format document ${args.document.name}: ${e}`);
-      }
+      return message;
     }
+  }));
 
-    return content;
-  },
-});
+  return formattedMessages;
+}

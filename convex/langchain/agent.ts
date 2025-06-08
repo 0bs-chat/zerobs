@@ -1,6 +1,6 @@
 "use node";
 
-import { getEmbeddingModel, getModel } from "./models";
+import { getEmbeddingModel, getModel, formatMessages } from "./models";
 import {
   Annotation,
   END,
@@ -127,8 +127,9 @@ async function retrieve(
       ),
     );
 
+    const formattedMessages = await formatMessages(config.ctx, state.messages.slice(-5), model);
     const queries = await modelWithOutputParser.invoke({
-      messages: state.messages.slice(-5),
+      messages: formattedMessages,
       config,
     });
 
@@ -250,10 +251,11 @@ async function retrieve(
       ),
     );
 
+    const formattedMessage = await formatMessages(config.ctx, [message], model);
     const gradedDocument = await modelWithOutputParser.invoke(
       {
         document: document,
-        message: message,
+        message: formattedMessage[0],
       },
       config,
     );
@@ -372,9 +374,10 @@ async function agent(state: typeof GraphState.State, config: RunnableConfig) {
     }).compile();
   }
 
+  const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model);
   const response = await agent.invoke(
     {
-      messages: state.messages,
+      messages: formattedMessages,
     },
     config,
   );
@@ -406,9 +409,10 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
     getModel(formattedConfig.chatInput.model!).withStructuredOutput(plan),
   );
 
+  const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages, formattedConfig.chatInput.model!);
   const response = await modelWithOutputParser.invoke(
     {
-      messages: state.messages,
+      messages: formattedMessages,
     },
     config,
   );
@@ -497,9 +501,10 @@ async function plannerAgent(
     }).compile();
   }
 
+  const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages, formattedConfig.chatInput.model);
   const response = await agent.invoke(
     {
-      messages: state.messages,
+      messages: formattedMessages,
     },
     config,
   );
@@ -547,19 +552,25 @@ async function replanner(
     ),
   );
 
+  const inputMessage = state.messages[state.messages.length - 2];
+  const pastStepsMessages = state.messages
+    .filter((message) => message.response_metadata["planSteps"])
+    .map((message, index) => [
+      new AIMessage(
+        `${index}: ${JSON.stringify(message.response_metadata["planSteps"])}`,
+      ),
+      message,
+    ])
+    .flat();
+
+  const formattedInputMessage = await formatMessages(formattedConfig.ctx, [inputMessage], formattedConfig.chatInput.model!);
+  const formattedPastStepsMessages = await formatMessages(formattedConfig.ctx, pastStepsMessages, formattedConfig.chatInput.model!);
+
   const response = await modelWithOutputParser.invoke(
     {
-      input: state.messages[state.messages.length - 2],
+      input: formattedInputMessage[0],
       plan: state.plan,
-      pastSteps: state.messages
-        .filter((message) => message.response_metadata["planSteps"])
-        .map((message, index) => [
-          new AIMessage(
-            `${index}: ${JSON.stringify(message.response_metadata["planSteps"])}`,
-          ),
-          message,
-        ])
-        .flat(),
+      pastSteps: formattedPastStepsMessages,
     },
     config,
   );

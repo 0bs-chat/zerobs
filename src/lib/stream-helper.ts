@@ -7,8 +7,6 @@ import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { StreamEvent } from "@langchain/core/tracers/log_stream";
 
-type ChunkDoc = Doc<"streamChunks">;
-
 export function useStream(chatId: Id<"chats"> | "new") {
   const convex = useConvex();
   const lastTimeRef = useRef<number | undefined>(undefined);
@@ -36,7 +34,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
         if (cancelled) return;
 
         if (newDocs.length > 0) {
-          const events = newDocs.map((d: ChunkDoc) =>
+          const events = newDocs.map((d: Doc<"streamChunks">) =>
             JSON.parse(d.chunk) as StreamEvent
           );
           setChunks((prev) => [...prev, ...events]);
