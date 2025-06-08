@@ -14,69 +14,36 @@ import runpodSdk from "runpod-sdk";
 const runpod = runpodSdk(process.env.RUN_POD_KEY!);
 const runpodCrawler = runpod.endpoint(process.env.RUN_POD_CRAWLER_ID!);
 
-// Helper function to recursively remove format fields from JSON schema
-// Gemini API only supports 'enum' and 'date-time' formats for string types
-function removeFormatFields(obj: any): any {
-  if (Array.isArray(obj)) {
-    return obj.map(removeFormatFields);
-  } else if (obj && typeof obj === 'object') {
-    const result: any = {};
-    for (const [key, value] of Object.entries(obj)) {
-      // Skip format fields for string types, but keep enum and date-time formats that Gemini supports
-      if (key === 'format' && obj.type === 'string') {
-        const format = value as string;
-        if (format === 'enum' || format === 'date-time') {
-          result[key] = value;
-        }
-        // Skip other format fields like 'uri', 'url', 'email', etc.
-      } else {
-        result[key] = removeFormatFields(value);
-      }
-    }
-    return result;
-  } else {
-    return obj;
-  }
-}
-
 export const getSearchTools = () => {
-
-  const crawlWebTool = tool(
-    async ({ url }: { url: string }) => {
-      const res = await runpodCrawler?.runSync({
-        input: {
-          url,
-          max_depth: 0,
-        },
-      });
-      return res?.output.output
-        .map(
-          (d: { url: string; markdown: string }) =>
-            `# ${d.url}\n\n${d.markdown}`,
-        )
-        .join("\n\n");
-    },
-    {
-      name: "crawlWeb",
-      description: "Crawl the web and return the markdown",
-      schema: z.object({
-        url: z.string().describe("The url to crawl"),
-      }),
-    },
-  );
-
-  // Remove format fields from crawlWeb tool schema
-  if (crawlWebTool.schema && typeof crawlWebTool.schema === 'object') {
-    crawlWebTool.schema = removeFormatFields(crawlWebTool.schema);
-  }
-
   const tools: {
     tavily?: TavilySearch;
     duckduckgo: DuckDuckGoSearch;
     crawlWeb: StructuredToolInterface;
   } = {
     duckduckgo: new DuckDuckGoSearch({ maxResults: 5 }),
-    crawlWeb: crawlWebTool,
+    crawlWeb: tool(
+      async ({ url }: { url: string }) => {
+        const res = await runpodCrawler?.runSync({
+          input: {
+            url,
+            max_depth: 0,
+          },
+        });
+        return res?.output.output
+          .map(
+            (d: { url: string; markdown: string }) =>
+              `# ${d.url}\n\n${d.markdown}`,
+          )
+          .join("\n\n");
+      },
+      {
+        name: "crawlWeb",
+        description: "Crawl the web and return the markdown",
+        schema: z.object({
+          url: z.string().describe("The url to crawl"),
+        }),
+      },
+    ),
   };
 
   if (process.env.TAVILY_API_KEY) {
@@ -160,19 +127,6 @@ export const getMCPTools = async (ctx: ActionCtx) => {
   });
 
   const tools = await client.getTools();
-  const droppedStrFormatTools = tools.map((tool) => {
-    // Create a deep copy of the tool to avoid mutating the original
-    const toolCopy = { ...tool };
-    
-    // If the tool has a schema, process it to remove format fields
-    if (toolCopy.schema && typeof toolCopy.schema === 'object') {
-      toolCopy.schema = removeFormatFields(toolCopy.schema);
-    }
-    
-    return toolCopy;
-  });
-
-
 
   // Group tools by server name
   const groupedTools: Record<
@@ -180,7 +134,7 @@ export const getMCPTools = async (ctx: ActionCtx) => {
     StructuredToolInterface<ToolSchemaBase>[]
   > = {};
 
-  for (const tool of droppedStrFormatTools) {
+  for (const tool of tools) {
     const parts = tool.name.split("_");
     if (parts.length >= 2) {
       const serverName = parts[1];
@@ -192,7 +146,7 @@ export const getMCPTools = async (ctx: ActionCtx) => {
   }
 
   return {
-    tools: droppedStrFormatTools,
+    tools: tools,
     groupedTools,
   };
 };

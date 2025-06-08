@@ -6,8 +6,10 @@ import { Embeddings } from "@langchain/core/embeddings";
 import { ActionCtx, internalAction } from "../_generated/server";
 import { fly, FlyApp } from "../utils/flyio";
 import * as yaml from "js-yaml";
-import { BaseMessage, HumanMessage } from "@langchain/core/messages";
-import { getVectorText } from "./index";
+import { BaseMessage, HumanMessage, MessageContentComplex, DataContentBlock } from "@langchain/core/messages";
+import { Doc } from "../_generated/dataModel";
+import { api, internal } from "../_generated/api";
+import mime from "mime";
 
 const LITELLM_APP_NAME = "zerobs-api"
 const LITELLM_CONFIG_YAML = `
@@ -17,6 +19,16 @@ model_list:
       model: gemini/gemini-2.5-flash-preview-05-20
       api_key: os.environ/GOOGLE_API_KEY
       tags: ["text", "image", "audio", "video", "pdf"]
+  - model_name: gpt-4.1
+    litellm_params:
+      model: openrouter/openai/gpt-4.1
+      api_key: os.environ/OPENAI_API_KEY
+      tags: ["text", "image"]
+  - model_name: claude-4
+    litellm_params:
+      model: openrouter/anthropic/claude-sonnet-4
+      api_key: os.environ/OPENAI_API_KEY
+      tags: ["text", "image", "pdf"]
   - model_name: embeddings
     litellm_params:
       model: gemini/text-embedding-004
@@ -165,10 +177,6 @@ export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], mo
   }
 
   const supportedTags = modelConfig.litellm_params.tags;
-  const supportsImage = supportedTags.includes("image");
-  const supportsAudio = supportedTags.includes("audio"); 
-  const supportsVideo = supportedTags.includes("video");
-  const supportsPdf = supportedTags.includes("pdf");
 
   // Process all messages in parallel
   const formattedMessages = await Promise.all(messages.map(async (message) => {
@@ -189,48 +197,29 @@ export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], mo
           }
 
           if (typeof contentItem === "object" && contentItem !== null) {
-            // Handle image content
-            if (contentItem.type === "image_url" && !supportsImage) {
-              // Convert image to text description using getVectorText
-              try {
-                const extractedText = await getVectorText(ctx, contentItem.image_url?.url || "");
-                return {
-                  type: "text",
-                  text: extractedText || "[Image content could not be processed]"
-                };
-              } catch (error) {
-                return {
-                  type: "text",
-                  text: "[Image content not supported by this model - extraction failed]"
-                };
-              }
-            }
-            // Handle file content (audio, video, pdf)
-            else if (contentItem.type === "file" && "file" in contentItem) {
-              const fileFormat = contentItem.file?.format || "";
-              const fileType = fileFormat.split("/")[0];
-              
-              let shouldConvert = false;
-              if (fileType === "audio" && !supportsAudio) shouldConvert = true;
-              if (fileType === "video" && !supportsVideo) shouldConvert = true;
-              if (fileFormat === "application/pdf" && !supportsPdf) shouldConvert = true;
-              
-              if (shouldConvert) {
-                // Convert file to text using getVectorText
-                try {
-                  const extractedText = await getVectorText(ctx, contentItem.file?.url || "");
+            // Handle file content (image, audio, video, pdf)
+            if (contentItem.type === "file" && "file" in contentItem) {
+              const documentId = contentItem.file?.file_id;
+              const document = await ctx.runQuery(api.documents.queries.get, {
+                documentId,
+              });
+              if (document.type === "file") {
+                const mimeType = mime.getType(document.name) ?? "application/octet-stream";
+                const fileType = mimeType === "application/pdf" ? "pdf" : mimeType.split("/")[0];
+                if (supportedTags.includes(fileType)) {
                   return {
-                    type: "text",
-                    text: extractedText || `[${fileType || "File"} content could not be processed - format: ${fileFormat}]`
-                  };
-                } catch (error) {
-                  return {
-                    type: "text",
-                    text: `[${fileType || "File"} content not supported by this model - format: ${fileFormat}]`
-                  };
+                    type: "image_url",
+                    image_url: {
+                      url: await ctx.storage.getUrl(document.key),
+                      format: mimeType,
+                      detail: "high",
+                    }
+                  }
+                } else {
+                  return await getVectorText(ctx, document)
                 }
               } else {
-                return contentItem;
+                return await getVectorText(ctx, document)
               }
             }
             // Handle text content and other supported types
@@ -254,4 +243,25 @@ export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], mo
   }));
 
   return formattedMessages;
+}
+
+export async function getVectorText(ctx: ActionCtx, document: Doc<"documents">): Promise<MessageContentComplex | DataContentBlock> {
+  // Fall back to vector processing for unsupported file types
+  let doc = document;
+  let maxAttempts = 50;
+  while (doc.status === "processing" && maxAttempts > 0) {
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    doc = await ctx.runQuery(api.documents.queries.get, {
+      documentId: document._id,
+    });
+    maxAttempts--;
+  }
+  const vectors = await ctx.runQuery(internal.documents.queries.getAllVectors, {
+    documentId: doc._id,
+  });
+  const text = vectors.length > 0 ? vectors.map((vector) => vector.text).join("\n") : "No text found";
+  return {
+    type: "text",
+    text: `# ${doc.name}\n${text}\n`,
+  }
 }

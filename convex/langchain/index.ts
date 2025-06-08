@@ -5,7 +5,7 @@ import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import type { ActionCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
-import { DataContentBlock, HumanMessage, MessageContentComplex } from "@langchain/core/messages";
+import { HumanMessage } from "@langchain/core/messages";
 import { api, internal } from "../_generated/api";
 import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
 import { agentGraph } from "./agent";
@@ -81,42 +81,13 @@ async function* streamHelper(
         let document = await ctx.runQuery(api.documents.queries.get, {
           documentId,
         });
-
-        let docContent: MessageContentComplex | DataContentBlock;
-        if (document.type === "file") {
-          const url = await ctx.storage.getUrl(document.key);
-          const mimeType = mime.getType(document.name) ?? "application/octet-stream";
-          const fileType = mimeType.split("/")[0];
-
-          if (fileType === "image") {
-            docContent = {
-              type: "image_url",
-              image_url: {
-                url: url,
-                format: mimeType,
-                detail: "high",
-              },
-            };
-          } else if (["audio", "video"].includes(fileType) || mimeType === "application/pdf") {
-            docContent = {
-              type: "image_url",
-              image_url: {
-                url: url,
-                format: mimeType,
-              },
-            };
-          } else {
-            docContent = await getVectorText(ctx, document);
+        
+        return {
+          type: "file",
+          file: {
+            file_id: document._id
           }
-        } else if (document.type === "text") {
-          docContent = {
-            type: "text",
-            text: `# ${document.name}\n${await (await ctx.storage.get(document.key))?.text()}\n`,
-          };
-        } else {
-          docContent = await getVectorText(ctx, document);
         }
-        return docContent;
       }) ?? [])),
     ],
   });
@@ -143,27 +114,6 @@ async function* streamHelper(
 
   for await (const event of response) {
     yield event;
-  }
-}
-
-export async function getVectorText(ctx: ActionCtx, document: Doc<"documents">): Promise<MessageContentComplex | DataContentBlock> {
-  // Fall back to vector processing for unsupported file types
-  let doc = document;
-  let maxAttempts = 50;
-  while (doc.status === "processing" && maxAttempts > 0) {
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    doc = await ctx.runQuery(api.documents.queries.get, {
-      documentId: document._id,
-    });
-    maxAttempts--;
-  }
-  const vectors = await ctx.runQuery(internal.documents.queries.getAllVectors, {
-    documentId: doc._id,
-  });
-  const text = vectors.length > 0 ? vectors.map((vector) => vector.text).join("\n") : "No text found";
-  return {
-    type: "text",
-    text: `# ${doc.name}\n${text}\n`,
   }
 }
 
