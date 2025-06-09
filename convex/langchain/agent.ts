@@ -31,17 +31,11 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { AIMessage } from "@langchain/core/messages";
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 import { internal } from "../_generated/api";
-import { OutputFixingParser } from "langchain/output_parsers";
-import { StructuredOutputParser } from "@langchain/core/output_parsers";
 
 type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;
   chatInput: Doc<"chatInputs">;
 };
-
-function getOutputFixingParser<T>(schema: z.ZodType<T>) {
-  return OutputFixingParser.fromLLM(getModel("worker"), new StructuredOutputParser(schema));
-}
 
 const plan = z
   .array(

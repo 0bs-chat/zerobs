@@ -3,7 +3,6 @@ import type { Id } from "../_generated/dataModel";
 import { action } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
-import { StateSnapshot } from "@langchain/langgraph";
 
 export const send = action({
   args: {
@@ -44,24 +43,5 @@ export const send = action({
     });
 
     return null;
-  },
-});
-
-export const messages = action({
-  args: {
-    chatId: v.id("chats"),
-  },
-  handler: async (ctx, args): Promise<string> => {
-    await requireAuth(ctx);
-
-    await ctx.runQuery(api.chats.queries.get, {
-      chatId: args.chatId,
-    });
-
-    const messages = await ctx.runAction(internal.langchain.index.getState, {
-      chatId: args.chatId,
-    });
-
-    return JSON.stringify(JSON.parse(messages) as StateSnapshot, null, 2);
   },
 });
