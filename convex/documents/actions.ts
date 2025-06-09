@@ -139,13 +139,13 @@ async function processFiles(
     documents.map(async (document) => await ctx.storage.getUrl(document.key)),
   );
 
-  return (
-    await docProcessor?.runSync({
-      input: {
-        sources: fileUrls,
-      },
-    })
-  )?.output.output as string[];
+  const response = await docProcessor?.runSync({
+    input: {
+      sources: fileUrls,
+    },
+  });
+
+  return (response?.output.output as { content: string }[]).map((item) => item.content);
 }
 
 async function processTexts(
