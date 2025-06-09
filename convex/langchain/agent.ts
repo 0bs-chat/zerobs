@@ -43,22 +43,18 @@ function getOutputFixingParser<T>(schema: z.ZodType<T>) {
   return OutputFixingParser.fromLLM(getModel("worker"), new StructuredOutputParser(schema));
 }
 
-const planSchema = z.object({
-  plan: z
-    .array(
-      z.object({
-        step: z.string().describe("The step to be executed"),
-        additional_context: z
-          .string()
-          .describe("Additional context that may be needed to execute the step"),
-      }),
-    )
-    .describe("A step by step plan to achieve the objective")
-    .min(1)
-    .max(9),
-});
-
-type PlanType = z.infer<typeof planSchema>["plan"];
+const plan = z
+  .array(
+    z.object({
+      step: z.string().describe("The step to be executed"),
+      additional_context: z
+        .string()
+        .describe("Additional context that may be needed to execute the step"),
+    }),
+  )
+  .describe("A step by step plan to achieve the objective")
+  .min(1)
+  .max(9)
 
 const GraphState = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
@@ -71,7 +67,7 @@ const GraphState = Annotation.Root({
   lastNode: Annotation<Record<string, any>>({
     reducer: (x, y) => y ?? x ?? {},
   }),
-  plan: Annotation<PlanType>({
+  plan: Annotation<z.infer<typeof plan>>({
     reducer: (x, y) => y ?? x ?? [],
   }),
 });
@@ -411,7 +407,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   ]);
 
   const modelWithOutputParser = promptTemplate.pipe(
-    getModel(formattedConfig.chatInput.model!).withStructuredOutput(planSchema)
+    getModel(formattedConfig.chatInput.model!).withStructuredOutput(plan)
   );
 
   const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model!);
@@ -423,7 +419,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   );
 
   return {
-    plan: response.plan,
+      plan: response,
   };
 }
 
@@ -506,7 +502,7 @@ async function plannerAgent(
     }).compile();
   }
 
-  const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages, formattedConfig.chatInput.model);
+  const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model);
   const response = await agent.invoke(
     {
       messages: formattedMessages,
@@ -546,19 +542,7 @@ async function replanner(
 
   const replannerSchema = z.object({
     action: z.enum(["continue_planning", "respond_to_user"]).describe("Whether to continue planning or respond to the user"),
-    plan: z
-      .array(
-        z.object({
-          step: z.string().describe("The step to be executed"),
-          additional_context: z
-            .string()
-            .describe("Additional context that may be needed to execute the step"),
-        }),
-      )
-      .describe("A step by step plan to achieve the objective")
-      .min(0)
-      .max(9)
-      .optional(),
+    plan: plan.optional(),
     response: z.string().describe("The response to the user").optional(),
   });
 

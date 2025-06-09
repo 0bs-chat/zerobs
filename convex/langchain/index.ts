@@ -1,10 +1,9 @@
 "use node";
 
-import mime from "mime";
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import type { ActionCtx } from "../_generated/server";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import { HumanMessage } from "@langchain/core/messages";
 import { api, internal } from "../_generated/api";
 import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
