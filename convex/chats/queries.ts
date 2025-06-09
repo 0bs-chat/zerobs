@@ -107,7 +107,7 @@ export const getMessages = query({
     const checkpointer = new ConvexCheckpointSaver(ctx);
 
     const checkpoint = await checkpointer.get({ configurable: { thread_id: args.chatId } });
-    const messages = (checkpoint?.channel_values as { messages: BaseMessage[] }).messages || [];
+    const messages = (checkpoint?.channel_values as { messages: BaseMessage[] } | undefined)?.messages || [];
     
     // Pagination options with defaults
     const { numItems = 20, cursor = null } = args.paginationOpts || {};

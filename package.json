@@ -22,7 +22,6 @@
     "@langchain/mcp-adapters": "^0.4.2",
     "@langchain/tavily": "^0.1.1",
     "@langchain/textsplitters": "^0.1.0",
-    "@langchain/weaviate": "^0.1.1",
     "@radix-ui/react-accordion": "^1.2.10",
     "@radix-ui/react-alert-dialog": "^1.1.13",
     "@radix-ui/react-aspect-ratio": "^1.1.6",
@@ -87,7 +86,6 @@
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.4",
     "vaul": "^1.1.2",
-    "weaviate-ts-client": "^2.2.0",
     "youtubei.js": "^13.4.0",
     "zod": "^3.24.4",
     "zustand": "^5.0.4"

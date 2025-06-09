@@ -83,6 +83,10 @@ async function collectEnvironmentVariables() {
     { name: "RUN_POD_CRAWLER_ID", prompt: "Enter RUN_POD_CRAWLER_ID" },
     { name: "RUN_POD_DOC_PROCESSOR_ID", prompt: "Enter RUN_POD_DOC_PROCESSOR_ID" },
     { name: "FLY_API_TOKEN", prompt: "Enter FLY_API_TOKEN" },
+    { name: "AUTH_GITHUB_ID", prompt: "Enter AUTH_GITHUB_ID" },
+    { name: "AUTH_GITHUB_SECRET", prompt: "Enter AUTH_GITHUB_SECRET" },
+    { name: "AUTH_GITHUB_REPO_ID", prompt: "Enter AUTH_GITHUB_REPO_ID" },
+    { name: "AUTH_GITHUB_REPO_SECRET", prompt: "Enter AUTH_GITHUB_REPO_SECRET" },
   ];
 
   /** @type {OptionalEnvVar[]} */
@@ -90,6 +94,11 @@ async function collectEnvironmentVariables() {
     { name: "OPENAI_API_KEY", prompt: "Enter OPENAI_API_KEY" },
     { name: "GOOGLE_API_KEY", prompt: "Enter GOOGLE_API_KEY" },
     { name: "ANTHROPIC_API_KEY", prompt: "Enter ANTHROPIC_API_KEY" },
+    { name: "TAVILY_API_KEY", prompt: "Enter TAVILY_API_KEY" },
+    { name: "LANGSMITH_API_KEY", prompt: "Enter LANGSMITH_API_KEY" },
+    { name: "LANGSMITH_ENDPOINT", prompt: "Enter LANGSMITH_ENDPOINT" },
+    { name: "LANGSMITH_PROJECT", prompt: "Enter LANGSMITH_PROJECT" },
+    { name: "LANGSMITH_TRACING", prompt: "Enter LANGSMITH_TRACING" },
     {
       name: "SITE_URL",
       prompt: "Enter SITE_URL for your application",

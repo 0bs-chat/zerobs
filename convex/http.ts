@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
 import { corsRouter } from "convex-helpers/server/cors";
 import { auth } from "./auth";
-import { handleCallback } from "./utils/oauth/github_repo";
+import { handleCallback, handleRedirect } from "./utils/oauth/github_repo";
 import { addApiKey } from "./apiKeys/actions";
 import { httpAction } from "./_generated/server";
 
@@ -29,6 +29,18 @@ const cors = corsRouter(http, {
 auth.addHttpRoutes(http);
 
 // GitHub OAuth routes for repository access
+http.route({
+  path: "/github_repo/redirect",
+  method: "GET",
+  handler: handleRedirect,
+});
+
+http.route({
+  path: "/github_repo/redirect",
+  method: "OPTIONS",
+  handler: handleOptions,
+});
+
 http.route({
   path: "/github_repo/callback",
   method: "GET",

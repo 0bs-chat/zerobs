@@ -2,7 +2,6 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api } from "../_generated/api";
-import { Doc, Id } from "../_generated/dataModel";
 
 export const get = query({
   args: {

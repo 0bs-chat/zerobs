@@ -10,14 +10,15 @@ import { BaseMessage, HumanMessage, MessageContentComplex, DataContentBlock } fr
 import { Doc } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
 import mime from "mime";
+import { v } from "convex/values";
 
 const LITELLM_APP_NAME = "zerobs-api"
 const LITELLM_CONFIG_YAML = `
 model_list:
   - model_name: gemini-2.5-flash
     litellm_params:
-      model: gemini/gemini-2.5-flash-preview-05-20
-      api_key: os.environ/GOOGLE_API_KEY
+      model: openrouter/google/gemini-2.5-flash-preview-05-20
+      api_key: os.environ/OPENAI_API_KEY
       tags: ["text", "image", "audio", "video", "pdf"]
   - model_name: gpt-4.1
     litellm_params:
@@ -94,6 +95,7 @@ export const reCreateLiteLLMApp = internalAction({
               GOOGLE_API_KEY: process.env.GOOGLE_API_KEY || "",
               OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
               ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || "",
+              LITELLM_LOG: "ERROR",
             },
             files: [{
               guest_path: "/app/config.yaml",
@@ -212,12 +214,23 @@ export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], mo
                 const mimeType = mime.getType(document.name) ?? "application/octet-stream";
                 const fileType = mimeType === "application/pdf" ? "pdf" : mimeType.split("/")[0];
                 if (supportedTags.includes(fileType)) {
-                  return {
-                    type: "image_url",
-                    image_url: {
-                      url: await ctx.storage.getUrl(document.key),
-                      format: mimeType,
-                      detail: "high",
+                  const url = await ctx.storage.getUrl(document.key);
+                  if (fileType === "image") {
+                    return {
+                      type: "image_url",
+                      image_url: {
+                        url: url,
+                        format: mimeType,
+                        detail: "high",
+                      }
+                    }
+                  } else {
+                    return {
+                      type: "file",
+                      file: {
+                        file_id: url,
+                        format: mimeType
+                      }
                     }
                   }
                 } else {

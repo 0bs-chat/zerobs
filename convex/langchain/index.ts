@@ -22,7 +22,7 @@ export const chat = internalAction({
 
     // ---- new batching logic ----
     const streamId = chatInput.streamId!;
-    const BUFFER_FLUSH_DELAY = 100; // ms
+    const BUFFER_FLUSH_DELAY = 300; // ms
     let lastFlush = Date.now();
     const buffer: string[] = [];
 

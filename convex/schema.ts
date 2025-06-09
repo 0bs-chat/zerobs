@@ -75,6 +75,7 @@ export default defineSchema({
       v.literal("streaming"),
       v.literal("done"),
       v.literal("error"),
+      v.literal("cancelled"),
     ),
   })
     .index("by_user", ["userId"])

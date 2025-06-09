@@ -13,6 +13,7 @@ export const update = internalMutation({
           v.literal("streaming"),
           v.literal("done"),
           v.literal("error"),
+          v.literal("cancelled"),
         ),
       ),
     }),

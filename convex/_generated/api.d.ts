@@ -12,7 +12,6 @@ import type * as apiKeys_actions from "../apiKeys/actions.js";
 import type * as apiKeys_mutations from "../apiKeys/mutations.js";
 import type * as apiKeys_queries from "../apiKeys/queries.js";
 import type * as auth from "../auth.js";
-import type * as chatInputs_actions from "../chatInputs/actions.js";
 import type * as chatInputs_mutations from "../chatInputs/mutations.js";
 import type * as chatInputs_queries from "../chatInputs/queries.js";
 import type * as chats_actions from "../chats/actions.js";
@@ -66,7 +65,6 @@ declare const fullApi: ApiFromModules<{
   "apiKeys/mutations": typeof apiKeys_mutations;
   "apiKeys/queries": typeof apiKeys_queries;
   auth: typeof auth;
-  "chatInputs/actions": typeof chatInputs_actions;
   "chatInputs/mutations": typeof chatInputs_mutations;
   "chatInputs/queries": typeof chatInputs_queries;
   "chats/actions": typeof chats_actions;

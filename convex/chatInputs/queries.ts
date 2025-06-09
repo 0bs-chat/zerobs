@@ -1,6 +1,8 @@
 import { internalQuery, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
+import { parsedConfig } from "../langchain/models";
+import { api } from "../_generated/api";
 
 export const get = query({
   args: {
@@ -50,5 +52,32 @@ export const getById = internalQuery({
     }
 
     return chatInput;
+  },
+});
+
+export const getModels = query({
+  args: {
+    chatId: v.union(v.id("chats"), v.literal("new")),
+    showHidden: v.optional(v.boolean()),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    selectedModel: typeof parsedConfig.model_list[number];
+    models: typeof parsedConfig.model_list;
+  }> => {
+    const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
+      chatId: args.chatId,
+    });
+
+    let selectedModel = parsedConfig.model_list.find((model) => model.model_name === chatInput.model);
+    if (!selectedModel) {
+      selectedModel = parsedConfig.model_list[0];
+    }
+    return {
+      selectedModel,
+      models: args.showHidden ? parsedConfig.model_list : parsedConfig.model_list.filter((model) => !model.litellm_params.tags?.includes("hidden")),
+    };
   },
 });

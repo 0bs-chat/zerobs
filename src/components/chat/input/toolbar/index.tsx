@@ -34,7 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { useHandleSubmit } from "@/hooks/use-chats";
 import { useParams } from "@tanstack/react-router";
 import type { Id } from "convex/_generated/dataModel";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { getTagInfo } from "@/lib/react-utils";
 import { useQuery } from "convex/react";
 import { GitHubDialog } from "../github";
@@ -50,28 +50,14 @@ export const ToolBar = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-  const getModelAction = useAction(api.chatInputs.actions.getModels);
+  const models = useQuery(api.chatInputs.queries.getModels, {
+    chatId,
+  });
   const handleFileUpload = useUploadDocuments();
   const handleSubmit = useHandleSubmit();
-  const [getModelResult, setGetModelResult] = useState<Awaited<
-    ReturnType<typeof getModelAction>
-  > | null>(null);
-
+  
   const isDialogOpen = useIsDialogOpen();
   const setIsDialogOpen = useGitHubStore((state) => state.setDialogOpen);
-
-  useEffect(() => {
-    const fetchModel = async () => {
-      const result = await getModelAction({
-        chatId: chatId,
-      })
-      setGetModelResult({
-        ...result,
-        models: result.models,
-      });
-    };
-    fetchModel();
-  }, [chatId, getModelAction]);
 
   return (
     <div className="flex flex-row justify-between items-center w-full p-1">
@@ -174,6 +160,7 @@ export const ToolBar = ({
 
       <div className="flex flex-row items-center gap-1">
         <Select
+          value={models?.selectedModel.model_name}
           onValueChange={(value) =>
             updateChatInputMutation({
               chatId: chatInput?.chatId!,
@@ -183,17 +170,17 @@ export const ToolBar = ({
             })
           }
         >
-          <SelectTrigger>{getModelResult?.selectedModel.model_name}</SelectTrigger>
+          <SelectTrigger>{models?.selectedModel.model_name}</SelectTrigger>
           <SelectContent>
-            {getModelResult?.models.map((model) => (
+            {models?.models.map((model, index) => (
               <SelectItem
                 key={model.model_name}
                 value={model.model_name}
                 className={`${
-                  model.model_name === getModelResult?.selectedModel.model_name
+                  model.model_name === models?.selectedModel.model_name
                     ? "bg-accent"
                     : ""
-                }`}
+                } ${index > 0 ? "mt-1" : ""}`}
               >
                 <div className="flex flex-col w-full gap-2">
                   <span className={`text-foreground`}>{model.model_name}</span>
