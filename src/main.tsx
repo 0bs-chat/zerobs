@@ -1,3 +1,9 @@
+// Polyfill Buffer for isomorphic-git in browser environment
+import { Buffer } from "buffer";
+if (typeof globalThis.Buffer === "undefined") {
+  globalThis.Buffer = Buffer;
+}
+
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
@@ -31,7 +37,7 @@ declare module "@tanstack/react-router" {
 // Create a new Convex client instance
 const convex = new ConvexReactClient(
   import.meta.env.VITE_CONVEX_URL as string,
-  { verbose: true },
+  { verbose: true }
 );
 
 // Render the app
@@ -45,7 +51,7 @@ if (rootElement && !rootElement.innerHTML) {
           <RouterProvider router={router} />
         </ConvexQueryCacheProvider>
       </ConvexAuthProvider>
-    </StrictMode>,
+    </StrictMode>
   );
 }
 

@@ -17,7 +17,9 @@ export const ChatMessages = React.memo(() => {
   return (
     <ScrollArea className="flex-1 overflow-hidden">
       <div className="flex-1 flex-col max-w-4xl mx-auto">
-        {messages?.page && messages?.page.length > 0 && JSON.stringify(messages?.page, null, 2)}
+        {messages?.page &&
+          messages?.page.length > 0 &&
+          JSON.stringify(messages?.page, null, 2)}
         {stream.status === "streaming" && (
           <div className="flex flex-col gap-2">
             {stream.chunks.map((chunk, index) => (
@@ -26,7 +28,9 @@ export const ChatMessages = React.memo(() => {
           </div>
         )}
         <div className="flex flex-col gap-2">
-          {stream.status === "pending" && stream.chunks && stream.chunks.length != 0 ? (
+          {stream.status === "pending" &&
+          stream.chunks &&
+          stream.chunks.length != 0 ? (
             <div>Loading...</div>
           ) : null}
         </div>

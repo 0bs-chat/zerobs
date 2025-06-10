@@ -19,10 +19,15 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),
+      buffer: "buffer",
     },
+  },
+  define: {
+    global: "globalThis",
   },
   optimizeDeps: {
     exclude: ["ssh2", "cpu-features"],
+    include: ["buffer"],
   },
   build: {
     rollupOptions: {

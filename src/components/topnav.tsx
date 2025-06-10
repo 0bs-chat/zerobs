@@ -1,14 +1,16 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/theme-switcher";
-import { useChatStore } from "@/store/chatStore";
+import { resizablePanelsOpenAtom } from "@/store/chatStore";
 import { LogOutIcon, PanelRightCloseIcon } from "lucide-react";
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { toast } from "sonner";
+import { useAtomValue, useSetAtom } from "jotai";
 
 export function TopNav() {
-  const { resizablePanelsOpen, setResizablePanelsOpen } = useChatStore();
+  const resizablePanelsOpen = useAtomValue(resizablePanelsOpenAtom);
+  const setResizablePanelsOpen = useSetAtom(resizablePanelsOpenAtom);
   const { signOut } = useAuthActions();
 
   return (

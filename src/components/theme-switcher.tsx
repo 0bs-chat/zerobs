@@ -4,7 +4,7 @@ import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 
 export function ModeToggle() {
-  const { setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   return (
     <Button
@@ -12,9 +12,7 @@ export function ModeToggle() {
       size="icon"
       className="h-9 w-9"
       onClick={() => {
-        setTheme(
-          document.documentElement.classList.contains("dark") ? "light" : "dark"
-        );
+        setTheme(theme === "dark" ? "light" : "dark");
       }}
     >
       <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />

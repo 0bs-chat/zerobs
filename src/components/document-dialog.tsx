@@ -4,20 +4,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useChatStore } from "@/store/chatStore";
+import {
+  documentDialogOpenAtom,
+  documentDialogDocumentIdAtom,
+} from "@/store/chatStore";
 import { api } from "../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { Button } from "@/components/ui/button";
 import { getTagInfo } from "@/lib/react-utils";
 import { formatBytes } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
 
 export const DocumentDialog = () => {
-  const {
-    documentDialogOpen,
-    documentDialogDocumentId,
-    setDocumentDialogOpen,
-  } = useChatStore();
+  const documentDialogOpen = useAtomValue(documentDialogOpenAtom);
+  const documentDialogDocumentId = useAtomValue(documentDialogDocumentIdAtom);
+  const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const document = useQuery(
@@ -90,7 +92,10 @@ export const DocumentDialog = () => {
   const fileType = document?.type === "file" ? getFileType() : null;
   const documentName = document?.name ?? "";
 
-  const { icon: Icon, className: IconClassName } = getTagInfo(document?.type!, document?.status!);
+  const { icon: Icon, className: IconClassName } = getTagInfo(
+    document?.type!,
+    document?.status!
+  );
 
   return (
     <Dialog open={documentDialogOpen} onOpenChange={setDocumentDialogOpen}>

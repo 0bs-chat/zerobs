@@ -1,183 +1,253 @@
-import { memo, useCallback, useMemo } from "react";
+import { useSetAtom, useAtomValue } from "jotai";
+import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Folder, File, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatTokenCount } from "./token-counter";
-import type { RepoItem } from "@/store/githubStore";
+import { Badge } from "@/components/ui/badge";
+import {
+  File,
+  Folder,
+  FolderOpen,
+  ChevronRight,
+  ChevronDown,
+  AlertTriangle,
+} from "lucide-react";
+import type { RepoItem } from "@/hooks/github/types";
+import {
+  toggleFileSelectionAtom,
+  toggleFolderSelectionAtom,
+  selectedFilesAtom,
+  selectedFoldersAtom,
+  setSelectedFilesAtom,
+  githubCombinedItemsAtom,
+  tokenUsageAtom,
+  maxTokensAtom,
+} from "@/store/github";
+import { toast } from "sonner";
 
 interface TreeItemProps {
   item: RepoItem;
-  isSelected: boolean;
-  isExpanded: boolean;
-  depth: number;
-  selectedItems: string[]; // Add this to calculate folder selection state
-  onToggleSelection: (path: string) => void;
-  onToggleExpansion: (path: string, depth: number) => void;
+  children?: RepoItem[];
+  allItems?: RepoItem[];
+  getChildren?: (path: string) => RepoItem[];
 }
 
-export const TreeItem = memo(
-  ({
-    item,
-    isSelected,
-    depth,
-    selectedItems,
-    onToggleSelection,
-    onToggleExpansion,
-  }: TreeItemProps) => {
-    // Calculate folder selection state and total tokens
-    const folderState = useMemo(() => {
-      if (item.type === "file") {
-        return {
-          selectionState: "none" as const,
-          totalTokens: item.tokens || 0,
-          totalFiles: 0,
-          selectedFiles: 0,
-        };
-      }
+export function TreeItem({
+  item,
+  children = [],
+  allItems = [],
+  getChildren,
+}: TreeItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const toggleFile = useSetAtom(toggleFileSelectionAtom);
+  const toggleFolder = useSetAtom(toggleFolderSelectionAtom);
+  const setSelectedFiles = useSetAtom(setSelectedFilesAtom);
+  const selectedFiles = useAtomValue(selectedFilesAtom);
+  const selectedFolders = useAtomValue(selectedFoldersAtom);
+  const combinedItems = useAtomValue(githubCombinedItemsAtom);
+  const currentTokenUsage = useAtomValue(tokenUsageAtom);
+  const maxTokens = useAtomValue(maxTokensAtom);
 
-      const getAllFilesInFolder = (folderItem: RepoItem): RepoItem[] => {
-        let files: RepoItem[] = [];
-        if (folderItem.children) {
-          for (const child of folderItem.children) {
-            if (child.type === "file") {
-              files.push(child);
-            } else {
-              files = files.concat(getAllFilesInFolder(child));
+  // Check if all files in folder are selected
+  const areAllFilesInFolderSelected = (folderPath: string): boolean => {
+    const filesInFolder = getFilesInFolder(folderPath);
+    if (filesInFolder.length === 0) return false;
+    return filesInFolder.every((filePath) => selectedFiles.has(filePath));
+  };
+  const isSelected =
+    item.type === "file"
+      ? selectedFiles.has(item.path)
+      : selectedFolders.has(item.path);
+
+  const depth = item.depth ?? 2;
+  const indentationStyle = { paddingLeft: `${depth * 16 + 8}px` };
+
+  // Check if this item would be blocked by token limit
+  const wouldBeBlocked =
+    !isSelected &&
+    item.type === "file" &&
+    typeof item.tokenCount === "number" &&
+    item.tokenCount > 0 &&
+    currentTokenUsage + item.tokenCount > maxTokens;
+
+  // Format file size
+  const formatSize = (size?: number) => {
+    if (!size || item.type === "dir") return "";
+    if (size < 1024) return `${size}B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)}KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)}MB`;
+  };
+
+  // Get all files recursively under this folder
+  const getFilesInFolder = (folderPath: string): string[] => {
+    const files: string[] = [];
+    for (const item of allItems) {
+      if (item.type === "file" && item.path.startsWith(folderPath + "/")) {
+        files.push(item.path);
+      }
+    }
+    return files;
+  };
+
+  const handleFolderSelection = (folderPath: string) => {
+    if (item.type === "dir") {
+      const filesInFolder = getFilesInFolder(folderPath);
+      if (filesInFolder.length > 0) {
+        const currentSelected = Array.from(selectedFiles);
+
+        if (isSelected) {
+          // Always allow deselection
+          const newSelected = currentSelected.filter(
+            (filePath) => !filesInFolder.includes(filePath)
+          );
+          setSelectedFiles(newSelected);
+          toggleFolder(item.path);
+        } else {
+          // Check if selecting all files in folder would exceed token limit
+          let totalTokensForFolder = 0;
+          for (const filePath of filesInFolder) {
+            const fileItem = combinedItems.items.find(
+              (item) => item.path === filePath && item.type === "file"
+            );
+            if (fileItem?.tokenCount) {
+              totalTokensForFolder += fileItem.tokenCount;
             }
           }
+
+          if (currentTokenUsage + totalTokensForFolder > maxTokens) {
+            toast.error(
+              "Token limit would be exceeded. Deselect some files first."
+            );
+            return;
+          }
+
+          const newSelected = [
+            ...new Set([...currentSelected, ...filesInFolder]),
+          ];
+          setSelectedFiles(newSelected);
+          toggleFolder(item.path);
         }
-        return files;
-      };
-
-      const allFiles = getAllFilesInFolder(item);
-      const selectedFiles = allFiles.filter((file) =>
-        selectedItems.includes(file.path)
-      );
-      const totalTokens = allFiles.reduce(
-        (sum, file) => sum + (file.tokens || 0),
-        0
-      );
-
-      let selectionState: "none" | "partial" | "all" = "none";
-      if (selectedFiles.length === 0) {
-        selectionState = "none";
-      } else if (
-        selectedFiles.length === allFiles.length &&
-        allFiles.length > 0
-      ) {
-        selectionState = "all";
       } else {
-        selectionState = "partial";
+        const success = toggleFolder(item.path);
+        if (!success) {
+          toast.error("Token limit reached. Deselect some files first.");
+        }
       }
+    }
+  };
 
-      return {
-        selectionState,
-        totalTokens,
-        totalFiles: allFiles.length,
-        selectedFiles: selectedFiles.length,
-      };
-    }, [item, selectedItems]);
+  const handleItemClick = () => {
+    if (item.type === "file") {
+      const success = toggleFile(item.path);
 
-    const handleSelectionChange = useCallback(() => {
-      if (item.type === "file") {
-        onToggleSelection(item.path);
+      if (!success) {
+        toast.error("Token limit reached. Deselect some files first.");
       }
-      // For folders, do nothing - they can't be selected directly
-    }, [item.path, item.type, onToggleSelection]);
+    } else {
+      handleFolderSelection(item.path);
+    }
+  };
 
-    const handleExpansionClick = useCallback(() => {
-      if (item.type === "dir") {
-        onToggleExpansion(item.path, depth);
-      }
-    }, [item.path, item.type, depth, onToggleExpansion]);
+  const handleExpandClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
+  };
 
-    return (
+  const hasChildren = item.type === "dir" && children.length > 0;
+
+  return (
+    <div>
       <div
-        className={cn(
-          "flex items-center space-x-2 rounded-md border p-2 transition-colors",
-          item.type === "file" && isSelected && "bg-accent/50",
-          item.type === "dir" &&
-            folderState.selectionState === "partial" &&
-            "bg-accent/20",
-          item.type === "dir" &&
-            folderState.selectionState === "all" &&
-            "bg-accent/40"
-        )}
-        style={{ marginLeft: `${depth * 12}px` }}
+        className={`flex items-center gap-2 px-2 py-1 rounded transition-colors ${
+          wouldBeBlocked
+            ? "cursor-not-allowed opacity-60"
+            : "cursor-pointer hover:bg-accent/30"
+        } ${isSelected ? "bg-accent/50" : ""} ${
+          wouldBeBlocked ? "cursor-not-allowed" : ""
+        }`}
+        style={indentationStyle}
+        onClick={handleItemClick}
+        title={wouldBeBlocked ? "Token limit would be exceeded" : undefined}
       >
+        <div className="w-4 flex justify-center gap-1.5 items-center">
+          {hasChildren ? (
+            <button
+              onClick={handleExpandClick}
+              aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </button>
+          ) : (
+            <div className="w-4" />
+          )}
+        </div>
+
         <Checkbox
-          id={item.path}
           checked={
-            item.type === "file"
-              ? isSelected
-              : folderState.selectionState === "all"
+            isSelected ||
+            (item.type === "dir" && areAllFilesInFolderSelected(item.path))
           }
-          ref={
-            item.type === "dir" && folderState.selectionState === "partial"
-              ? (el) => {
-                  if (el) {
-                    const checkbox = el.querySelector(
-                      'input[type="checkbox"]'
-                    ) as HTMLInputElement;
-                    if (checkbox) checkbox.indeterminate = true;
-                  }
-                }
-              : undefined
-          }
-          onCheckedChange={handleSelectionChange}
-          disabled={item.type === "dir"}
+          onCheckedChange={() => handleItemClick()}
+          onClick={(e) => e.stopPropagation()}
           aria-label={`Select ${item.type} ${item.name}`}
+          disabled={wouldBeBlocked}
         />
 
-        <div className="flex-1 flex items-center justify-between">
-          <div
-            className="flex items-center gap-1 cursor-pointer hover:bg-accent/30 rounded px-1 py-0.5 transition-colors"
-            onClick={handleExpansionClick}
-          >
-            {/* Expansion toggle for directories */}
-            {item.type === "dir" && (
-              <div className="p-1">
-                {item.isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-              </div>
-            )}
-            {item.type === "file" && (
-              <div className="w-5" /> /* Spacer for alignment */
-            )}
-
-            {item.type === "dir" ? (
-              <Folder className="w-4 h-4 text-blue-500" />
+        {item.type === "file" ? (
+          <File className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <>
+            {isExpanded ? (
+              <FolderOpen className="h-4 w-4 text-blue-500" />
             ) : (
-              <File className="w-4 h-4 text-gray-500" />
+              <Folder className="h-4 w-4 text-blue-500" />
             )}
+          </>
+        )}
 
-            <span className="text-sm font-medium truncate">{item.name}</span>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {item.type === "file" && !item.tokens && (
-              <div className="flex items-center gap-1">
-                <Loader2 className="w-3 h-3 animate-spin" />
-              </div>
+        <div className="flex-1 flex gap-2 items-center justify-between min-w-0">
+          <span className="truncate text-sm" title={item.name}>
+            {item.name}
+          </span>
+          <div className="flex items-center gap-2">
+            {wouldBeBlocked && (
+              <AlertTriangle className="h-3 w-3 text-destructive" />
             )}
-            {item.type === "file" && item.tokens && (
-              <span>{formatTokenCount(item.tokens)} tokens</span>
+            {item.tokenCount && (
+              <Badge
+                variant="outline"
+                className="text-xs text-muted-foreground"
+              >
+                {item.tokenCount} tokens
+              </Badge>
             )}
-            {item.type === "dir" && folderState.totalTokens > 0 && (
-              <span>{formatTokenCount(folderState.totalTokens)} tokens</span>
-            )}
-            {item.type === "dir" && folderState.totalFiles > 0 && (
-              <span>
-                ({folderState.selectedFiles}/{folderState.totalFiles} files)
-              </span>
-            )}
-            {item.type === "file" && item.size && (
-              <span>{(item.size / 1024).toFixed(1)}KB</span>
+            {item.size && (
+              <Badge
+                variant="outline"
+                className="text-xs text-muted-foreground"
+              >
+                {formatSize(item.size)}
+              </Badge>
             )}
           </div>
         </div>
       </div>
-    );
-  }
-);
 
-TreeItem.displayName = "TreeItem";
+      {hasChildren && isExpanded && (
+        <div className="flex flex-col gap-1">
+          {children.map((child) => (
+            <TreeItem
+              key={child.path}
+              item={child}
+              children={getChildren ? getChildren(child.path) : []}
+              allItems={allItems}
+              getChildren={getChildren}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

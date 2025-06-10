@@ -3,7 +3,7 @@ import { Navigate, Outlet, createRootRoute } from "@tanstack/react-router";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { useConvexAuth } from "convex/react";
-import { Loader } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DocumentDialog } from "@/components/document-dialog";
@@ -13,12 +13,13 @@ import { ResizablePanelGroup } from "@/components/ui/resizable";
 import { ResizablePanel } from "@/components/ui/resizable";
 import { ResizableHandle } from "@/components/ui/resizable";
 import { Panel } from "@/components/chat/panel";
-import { useChatStore } from "@/store/chatStore";
+import { resizablePanelsOpenAtom } from "@/store/chatStore";
+import { useAtomValue } from "jotai";
 
 export const Route = createRootRoute({
   component: () => {
     const { isLoading, isAuthenticated } = useConvexAuth();
-    const { resizablePanelsOpen } = useChatStore();
+    const resizablePanelsOpen = useAtomValue(resizablePanelsOpenAtom);
 
     const urlPath = location.pathname;
 
@@ -30,7 +31,7 @@ export const Route = createRootRoute({
       return (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <div className="flex justify-center items-center h-screen font-sans bg-background">
-            <Loader className="w-10 h-10 animate-spin" />
+            <Loader2 className="w-10 h-10 animate-spin" />
           </div>
         </ThemeProvider>
       );

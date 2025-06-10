@@ -7,6 +7,7 @@ import type { Id } from "convex/_generated/dataModel";
 import { useDebouncedCallback } from "use-debounce";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/use-chats";
+import { toast } from "sonner";
 
 export const ChatInput = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
@@ -27,9 +28,7 @@ export const ChatInput = () => {
   return (
     <div className="flex flex-col max-w-4xl w-full mx-auto items-center bg-muted rounded-lg">
       {/* Document List */}
-      <DocumentList
-        documentIds={chatInput?.documents}
-      />
+      <DocumentList documentIds={chatInput?.documents} />
 
       {/* Input */}
       <AutosizeTextarea
@@ -44,6 +43,10 @@ export const ChatInput = () => {
         onKeyDown={async (e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
+            if (chatInput?.text?.trim() === "") {
+              toast.error("type something...");
+              return;
+            }
             await handleSubmit();
           }
         }}
@@ -52,5 +55,5 @@ export const ChatInput = () => {
 
       <ToolBar chatInput={chatInput} />
     </div>
-  )
-}
+  );
+};

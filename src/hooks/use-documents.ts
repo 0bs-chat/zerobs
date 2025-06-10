@@ -90,3 +90,74 @@ export const useUploadDocuments = () => {
     }
   };
 };
+
+// #########################################################
+//                gotta write this again.
+// #########################################################
+
+// export function useAddDocumentToProject() {
+//   const addDocuments = useMutation(
+//     api.projectDocuments.mutations.createMultiple
+//   );
+
+//   return async (
+//     projectId: Id<"projects">,
+//     documentId: Id<"documents"> | Id<"documents">[]
+//   ) => {
+//     if (!projectId || !documentId) return;
+//     const documentIds = Array.isArray(documentId) ? documentId : [documentId];
+//     await addDocuments({
+//       projectId,
+//       documentIds,
+//     });
+//   };
+// }
+
+// type CreateDocumentArgs = {
+//   name: string;
+//   type: "file" | "text" | "url" | "site" | "youtube";
+//   size: number;
+//   key: string | Id<"_storage">;
+// };
+
+// export const useCreateDocument = () => {
+//   const createDocument = useMutation(api.documents.mutations.createMultiple);
+
+//   return async (documents: CreateDocumentArgs[] | CreateDocumentArgs) => {
+//     const docsArray = Array.isArray(documents) ? documents : [documents];
+//     return await createDocument({
+//       documents: docsArray.map((document) => ({
+//         name: document.name,
+//         type: document.type,
+//         size: document.size,
+//         key: document.key,
+//       })),
+//     });
+//   };
+// };
+
+export const mergeAndCreateDocument = () => {
+  async (filePaths: string[]) => {
+    const fileContents = await Promise.all(
+      filePaths.map(async (path) => {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error(`Failed to fetch ${path}`);
+        return await response.text();
+      })
+    );
+
+    const mergedContent = fileContents.join("\n\n");
+
+    const mergedFile = new File([mergedContent], "merged-document.txt", {
+      type: "text/plain",
+    });
+
+    const uploadDocuments = useUploadDocuments();
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(mergedFile);
+    const mergedFileList = dataTransfer.files;
+
+    await uploadDocuments(mergedFileList);
+  };
+};

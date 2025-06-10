@@ -10,13 +10,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useChatStore } from "@/store/chatStore";
+import {
+  projectDialogOpenAtom,
+  resizablePanelsOpenAtom,
+  resizablePanelTabAtom,
+  selectedProjectIdAtom,
+} from "@/store/chatStore";
+import { useAtomValue, useSetAtom } from "jotai";
 
 export const CreateProjectDialog = () => {
-  const { projectDialogOpen, setProjectDialogOpen } = useChatStore();
+  const projectDialogOpen = useAtomValue(projectDialogOpenAtom);
+  const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
   const createProject = useMutation(api.projects.mutations.create);
-  const { setSelectedProjectId, setResizablePanelsOpen, setResizablePanelTab } =
-    useChatStore();
+  const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
+  const setResizablePanelsOpen = useSetAtom(resizablePanelsOpenAtom);
+  const setResizablePanelTab = useSetAtom(resizablePanelTabAtom);
 
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

@@ -1,12 +1,14 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useChatStore } from "@/store/chatStore";
+import { resizablePanelTabAtom } from "@/store/chatStore";
 import { ProjectsPanel } from "./projects";
 import { MCPPanel } from "./mcp/index";
+import { useAtomValue, useSetAtom } from "jotai";
 
 type TabValue = "artifacts" | "projects" | "settings" | "mcp";
 
 export const Panel = () => {
-  const { resizablePanelTab, setResizablePanelTab } = useChatStore();
+  const resizablePanelTab = useAtomValue(resizablePanelTabAtom);
+  const setResizablePanelTab = useSetAtom(resizablePanelTabAtom);
 
   return (
     <Tabs

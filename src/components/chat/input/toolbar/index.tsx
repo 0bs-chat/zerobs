@@ -17,7 +17,7 @@ import {
 import { ProjectsDropdown } from "./projects-dropdown";
 import { Toggle } from "@/components/ui/toggle";
 import { useUploadDocuments } from "@/hooks/use-documents";
-import { useAction, useMutation } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import {
   Tooltip,
@@ -36,9 +36,101 @@ import { useParams } from "@tanstack/react-router";
 import type { Id } from "convex/_generated/dataModel";
 import { useRef, useState } from "react";
 import { getTagInfo } from "@/lib/react-utils";
-import { useQuery } from "convex/react";
 import { GitHubDialog } from "../github";
-import { useGitHubStore, useIsDialogOpen } from "@/store/githubStore";
+
+const AgentToggle = ({
+  chatId,
+  agentMode,
+}: {
+  chatId: Id<"chats">;
+  agentMode?: boolean;
+}) => {
+  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+
+  return (
+    <Toggle
+      variant="outline"
+      className="hover:transition hover:duration-500"
+      pressed={agentMode ?? false}
+      onPressedChange={() => {
+        updateChatInputMutation({
+          chatId,
+          updates: {
+            agentMode: !agentMode,
+          },
+        });
+      }}
+    >
+      <BotIcon className="h-4 w-4" />
+      Agent
+    </Toggle>
+  );
+};
+
+const PlannerToggle = ({
+  chatId,
+  plannerMode,
+}: {
+  chatId: Id<"chats">;
+  plannerMode?: boolean;
+}) => {
+  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+
+  return (
+    <Toggle
+      variant="outline"
+      className="hover:transition hover:duration-500"
+      pressed={plannerMode ?? false}
+      onPressedChange={() => {
+        updateChatInputMutation({
+          chatId,
+          updates: {
+            plannerMode: !plannerMode,
+          },
+        });
+      }}
+    >
+      <BrainIcon className="h-4 w-4" />
+      Smort
+    </Toggle>
+  );
+};
+
+const WebSearchToggle = ({
+  chatId,
+  webSearch,
+}: {
+  chatId: Id<"chats">;
+  webSearch?: boolean;
+}) => {
+  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+
+  return (
+    <Tooltip delayDuration={300}>
+      <TooltipTrigger asChild>
+        <Toggle
+          variant="outline"
+          className={`hover:transition hover:duration-500 ${webSearch ? "bg-accent text-accent-foreground" : ""}`}
+          aria-pressed={webSearch ?? false}
+          pressed={webSearch ?? false}
+          onPressedChange={() => {
+            updateChatInputMutation({
+              chatId,
+              updates: {
+                webSearch: !webSearch,
+              },
+            });
+          }}
+        >
+          <Globe2Icon className="h-4 w-4" />
+        </Toggle>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Search the web</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+};
 
 export const ToolBar = ({
   chatInput,
@@ -55,9 +147,8 @@ export const ToolBar = ({
   });
   const handleFileUpload = useUploadDocuments();
   const handleSubmit = useHandleSubmit();
-  
-  const isDialogOpen = useIsDialogOpen();
-  const setIsDialogOpen = useGitHubStore((state) => state.setDialogOpen);
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
     <div className="flex flex-row justify-between items-center w-full p-1">
@@ -96,66 +187,9 @@ export const ToolBar = ({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Toggle
-          variant="outline"
-          className="hover:transition hover:duration-500"
-          pressed={chatInput?.agentMode ?? false}
-          onPressedChange={() => {
-            if (!chatInput?.chatId) return;
-            updateChatInputMutation({
-              chatId: chatInput.chatId,
-              updates: {
-                agentMode: !chatInput?.agentMode,
-              },
-            });
-          }}
-        >
-          <BotIcon className="h-4 w-4" />
-          Agent
-        </Toggle>
-
-        <Toggle
-          variant="outline"
-          className="hover:transition hover:duration-500"
-          pressed={chatInput?.plannerMode ?? false}
-          onPressedChange={() => {
-            if (!chatInput?.chatId) return;
-            updateChatInputMutation({
-              chatId: chatInput.chatId,
-              updates: {
-                plannerMode: !chatInput?.plannerMode,
-              },
-            });
-          }}
-        >
-          <BrainIcon className="h-4 w-4" />
-          Smort
-        </Toggle>
-
-        <Tooltip delayDuration={300}>
-          <TooltipTrigger asChild>
-            <Toggle
-              variant="outline"
-              className={`hover:transition hover:duration-500 ${chatInput?.webSearch ? "bg-accent text-accent-foreground" : ""}`}
-              aria-pressed={chatInput?.webSearch ?? false}
-              pressed={chatInput?.webSearch ?? false}
-              onPressedChange={() => {
-                if (!chatInput?.chatId) return;
-                updateChatInputMutation({
-                  chatId: chatInput.chatId,
-                  updates: {
-                    webSearch: !chatInput?.webSearch,
-                  },
-                });
-              }}
-            >
-              <Globe2Icon className="h-4 w-4" />
-            </Toggle>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Search the web</p>
-          </TooltipContent>
-        </Tooltip>
+        <AgentToggle chatId={chatId} agentMode={chatInput?.agentMode} />
+        <PlannerToggle chatId={chatId} plannerMode={chatInput?.plannerMode} />
+        <WebSearchToggle chatId={chatId} webSearch={chatInput?.webSearch} />
       </div>
 
       <div className="flex flex-row items-center gap-1">
@@ -187,7 +221,8 @@ export const ToolBar = ({
                   {model.litellm_params.tags && (
                     <div className="flex flex-row gap-1 ">
                       {model.litellm_params.tags?.map((tag) => {
-                        const { icon: Icon, className: IconClassName } = getTagInfo(tag);
+                        const { icon: Icon, className: IconClassName } =
+                          getTagInfo(tag);
                         return (
                           <Badge
                             key={tag}
