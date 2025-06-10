@@ -1,7 +1,5 @@
 import { useAtomValue } from "jotai";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
 import {
   selectedFilesAtom,
   tokenUsageAtom,

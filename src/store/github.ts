@@ -11,6 +11,7 @@ export const githubErrorMessageAtom = atom<string | null>(null);
 // Current repository info
 export const githubCurrentRepoAtom = atom<string>("");
 export const githubCurrentBranchAtom = atom<string>("main");
+export const githubAvailableBranchesAtom = atom<string[]>([]);
 
 // File selection state
 export const selectedFilesAtom = atom<Set<string>>(new Set<string>());

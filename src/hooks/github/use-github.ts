@@ -16,6 +16,7 @@ import {
   githubErrorMessageAtom,
   githubCurrentRepoAtom,
   githubCurrentBranchAtom,
+  githubAvailableBranchesAtom,
   clearAllSelectionsAtom,
 } from "@/store/github";
 
@@ -28,6 +29,9 @@ const useGithub = () => {
   const [hasError, setHasError] = useAtom(githubHasErrorAtom);
   const [currentRepo, setCurrentRepo] = useAtom(githubCurrentRepoAtom);
   const [currentBranch, setCurrentBranch] = useAtom(githubCurrentBranchAtom);
+  const [availableBranches, setAvailableBranches] = useAtom(
+    githubAvailableBranchesAtom
+  );
   const setErrorMessage = useSetAtom(githubErrorMessageAtom);
   const clearSelections = useSetAtom(clearAllSelectionsAtom);
 
@@ -35,13 +39,18 @@ const useGithub = () => {
   const parseGitHubUrl = useCallback((url: string): ParsedRepoUrl | null => {
     try {
       const patterns = [
+        // Full GitHub URLs with optional branch
         /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+?)(?:\.git)?(?:\/tree\/([^\/]+))?(?:\/.*)?$/,
+        // Simple GitHub URLs
         /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)$/,
+        // SSH format
         /^git@github\.com:([^\/]+)\/([^\/]+?)(?:\.git)?$/,
+        // Shorthand format: owner/repo
+        /^([^\/\s]+)\/([^\/\s]+)$/,
       ];
 
       for (const pattern of patterns) {
-        const match = url.match(pattern);
+        const match = url.trim().match(pattern);
         if (match) {
           const [, owner, repo, branch] = match;
           return {
@@ -77,13 +86,36 @@ const useGithub = () => {
     [getRepoPath]
   );
 
+  // Helper to recursively delete a directory and its contents
+  const deleteDirectoryRecursive = async (dirPath: string) => {
+    try {
+      const entries = await fs.promises.readdir(dirPath);
+      for (const entry of entries) {
+        const fullPath = `${dirPath}/${entry}`;
+        try {
+          const stat = await fs.promises.stat(fullPath);
+          if (stat.isDirectory()) {
+            await deleteDirectoryRecursive(fullPath);
+          } else {
+            await fs.promises.unlink(fullPath);
+          }
+        } catch (err) {
+          // Ignore errors for missing files
+        }
+      }
+      await fs.promises.rmdir(dirPath);
+    } catch (err) {
+      // Ignore errors for missing directories
+    }
+  };
+
   // Clone repository
   const cloneRepository = useCallback(
     async (
       url: string,
       owner: string,
       repo: string,
-      branch: string = "main"
+      branch: string = currentBranch
     ): Promise<void> => {
       const repoPath = getRepoPath(owner, repo);
 
@@ -291,7 +323,7 @@ const useGithub = () => {
 
   // Main function to load repository
   const loadRepository = useCallback(
-    async (url: string, branch: string = "main"): Promise<void> => {
+    async (url: string): Promise<void> => {
       setIsLoading(true);
       setHasError(false);
       setErrorMessage(null);
@@ -304,7 +336,16 @@ const useGithub = () => {
         }
 
         const { owner, repo } = parsed;
-        const targetBranch = parsed.branch || branch;
+        const targetBranch = parsed.branch || "main";
+
+        // If we currently have a repo and are fetching another one, delete all contents of the previous one
+        if (currentRepo && currentRepo !== url) {
+          const prevParsed = parseGitHubUrl(currentRepo);
+          if (prevParsed) {
+            const prevRepoPath = getRepoPath(prevParsed.owner, prevParsed.repo);
+            await deleteDirectoryRecursive(prevRepoPath);
+          }
+        }
 
         setCurrentRepo(url);
         setCurrentBranch(targetBranch);
@@ -366,15 +407,16 @@ const useGithub = () => {
       setCurrentBranch,
       setCombinedItems,
       clearSelections,
+      currentRepo, // add currentRepo as dependency
     ]
   );
 
-  // Get available branches (placeholder for now)
   const getBranches = useCallback(
     async (owner: string, repo: string): Promise<string[]> => {
       try {
         const repoPath = getRepoPath(owner, repo);
         const branches = await git.listBranches({ fs, dir: repoPath });
+        console.log("branches", branches);
         return branches;
       } catch (error) {
         console.error("Error getting branches:", error);
@@ -382,6 +424,46 @@ const useGithub = () => {
       }
     },
     [getRepoPath]
+  );
+
+  // Fetch remote branches for a repository using isomorphic-git
+  const getRepoBranches = useCallback(
+    async (url?: string): Promise<string[]> => {
+      const repoUrl = url || currentRepo;
+      if (!repoUrl) {
+        return availableBranches;
+      }
+
+      const parsed = parseGitHubUrl(repoUrl);
+      if (!parsed) {
+        return availableBranches;
+      }
+
+      const { owner, repo } = parsed;
+
+      try {
+        // Use isomorphic-git to fetch remote branches
+        const remoteRefs = await git.listServerRefs({
+          http,
+          corsProxy: "https://cors.isomorphic-git.org",
+          url: `https://github.com/${owner}/${repo}.git`,
+        });
+
+        // Filter to get only branch refs and extract branch names
+        const branches = remoteRefs
+          .filter((ref) => ref.ref.startsWith("refs/heads/"))
+          .map((ref) => ref.ref.replace("refs/heads/", ""))
+          .sort(); // Sort alphabetically
+
+        const finalBranches = branches.length > 0 ? branches : ["main"];
+        setAvailableBranches(finalBranches);
+        return finalBranches;
+      } catch (error) {
+        console.error("Error fetching branches with isomorphic-git:", error);
+        return availableBranches;
+      }
+    },
+    [parseGitHubUrl, currentRepo, availableBranches, setAvailableBranches]
   );
 
   // Clear repository data
@@ -476,11 +558,13 @@ const useGithub = () => {
     hasError,
     currentRepo,
     currentBranch,
+    availableBranches,
 
     // Actions
     loadRepository,
     getFileContent,
     getBranches,
+    getRepoBranches,
     clearRepository,
     parseGitHubUrl,
     combineSelectedFilesForChat,
