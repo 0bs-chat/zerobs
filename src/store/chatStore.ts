@@ -1,8 +1,14 @@
 import { atom } from "jotai";
 import type { Id } from "../../convex/_generated/dataModel";
+import { atomWithStorage } from "jotai/utils";
 
-export const resizablePanelsOpenAtom = atom(false);
-export const sidebarAtom = atom(false);
+export const resizablePanelsOpenAtom = atomWithStorage(
+  "resizablePanelsOpen",
+  false
+);
+
+export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
+
 export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
   undefined
 );

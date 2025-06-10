@@ -13,14 +13,15 @@ import { ResizablePanelGroup } from "@/components/ui/resizable";
 import { ResizablePanel } from "@/components/ui/resizable";
 import { ResizableHandle } from "@/components/ui/resizable";
 import { Panel } from "@/components/chat/panel";
-import { resizablePanelsOpenAtom } from "@/store/chatStore";
-import { useAtomValue } from "jotai";
+import { resizablePanelsOpenAtom, sidebarOpenAtom } from "@/store/chatStore";
+import { useAtomValue, useSetAtom } from "jotai";
 
 export const Route = createRootRoute({
   component: () => {
     const { isLoading, isAuthenticated } = useConvexAuth();
     const resizablePanelsOpen = useAtomValue(resizablePanelsOpenAtom);
-
+    const sidebarOpen = useAtomValue(sidebarOpenAtom);
+    const setSidebarOpen = useSetAtom(sidebarOpenAtom);
     const urlPath = location.pathname;
 
     const privateRoutes = ["/chat", "/"];
@@ -62,7 +63,11 @@ export const Route = createRootRoute({
 
         {/* chat route */}
         {isAuthenticated && (
-          <SidebarProvider className="flex h-svh font-sans">
+          <SidebarProvider
+            className="flex h-svh font-sans"
+            open={sidebarOpen}
+            onOpenChange={setSidebarOpen}
+          >
             <AppSidebar />
             <TopNav />
             <div className="flex-1">

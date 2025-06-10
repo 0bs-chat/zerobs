@@ -36,7 +36,9 @@ export function TopNav() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setResizablePanelsOpen(!resizablePanelsOpen)}
+          onClick={() => {
+            setResizablePanelsOpen(!resizablePanelsOpen);
+          }}
         >
           {resizablePanelsOpen ? (
             <PanelRightCloseIcon className="h-4 w-4" />
