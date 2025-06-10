@@ -6,8 +6,8 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 export const MCPCard = ({ mcp, onStartStop, onDelete }: MCPCardProps) => {
   return (
     <Card className="px-4 py-3">
-      <div className="flex justify-between items-center">
-        <div className="flex flex-col">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col justify-center">
           <CardTitle className="text-lg font-semibold">{mcp.name}</CardTitle>
           <CardDescription className="text-sm text-muted-foreground">
             {mcp.command}
@@ -15,14 +15,16 @@ export const MCPCard = ({ mcp, onStartStop, onDelete }: MCPCardProps) => {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant="outline"
+            variant="secondary"
             size="icon"
+            className="cursor-pointer"
             onClick={() => onStartStop(mcp._id, mcp.enabled)}
+            aria-label={mcp.enabled ? "Stop" : "Start"}
           >
             {mcp.enabled ? (
-              <Square className="h-4 w-4" />
+              <Square className="h-4 w-4" aria-label="Stop MCP" />
             ) : (
-              <Play className="h-4 w-4" />
+              <Play className="h-4 w-4" aria-label="Start MCP" />
             )}
           </Button>
           <Button
@@ -30,8 +32,9 @@ export const MCPCard = ({ mcp, onStartStop, onDelete }: MCPCardProps) => {
             size="icon"
             className="cursor-pointer"
             onClick={() => onDelete(mcp._id)}
+            aria-label="Delete"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" aria-label="Delete MCP" />
           </Button>
         </div>
       </div>

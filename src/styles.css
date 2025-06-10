@@ -1,21 +1,23 @@
 @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap");
 
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --font-sans: "Roboto", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
 body {
   @apply m-0;
-  font-family:
-    -apple-system, "JetBrains Mono", "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
-    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--font-sans), var(--font-mono);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 code {
-  font-family:
-    source-code-pro, Menlo, Monaco, Consolas, "JetBrains Mono", "Courier New",
-    monospace;
+  font-family: var(--font-mono);
 }
 :root {
   --background: oklch(0.9777 0.0041 301.4256);
@@ -50,9 +52,9 @@ code {
   --sidebar-accent-foreground: oklch(0.3394 0.0441 1.7583);
   --sidebar-border: oklch(0.8719 0.0198 302.169);
   --sidebar-ring: oklch(0.6104 0.0767 299.7335);
-  --font-sans: Geist, sans-serif;
-  --font-serif: "Lora", Georgia, serif;
-  --font-mono: "Fira Code", "Courier New", monospace;
+  --font-sans: "Roboto", sans-serif;
+  --font-serif: "Roboto", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
   --radius: 0.5rem;
   --shadow-2xs: 1px 2px 5px 1px hsl(0 0% 0% / 0.03);
   --shadow-xs: 1px 2px 5px 1px hsl(0 0% 0% / 0.03);
@@ -111,9 +113,9 @@ code {
   --sidebar-accent-foreground: oklch(0.8391 0.0692 2.6681);
   --sidebar-border: oklch(0.2847 0.0346 291.2726);
   --sidebar-ring: oklch(0.7058 0.0777 302.0489);
-  --font-sans: Geist, sans-serif;
-  --font-serif: "Lora", Georgia, serif;
-  --font-mono: "Fira Code", "Courier New", monospace;
+  --font-sans: "Roboto", sans-serif;
+  --font-serif: "Roboto", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
   --radius: 0.5rem;
   --shadow-2xs: 1px 2px 5px 1px hsl(0 0% 0% / 0.03);
   --shadow-xs: 1px 2px 5px 1px hsl(0 0% 0% / 0.03);
@@ -172,9 +174,9 @@ code {
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --font-sans: Geist, sans-serif;
-  --font-mono: "Fira Code", "Courier New", monospace;
-  --font-serif: "Lora", Georgia, serif;
+  --font-sans: "Roboto", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-serif: "Roboto", sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

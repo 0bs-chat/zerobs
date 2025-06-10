@@ -7,12 +7,14 @@ export type EnvVar = {
 
 export type MCPType = "sse" | "stdio";
 
-export type NewMCPData = {
+export type MCPData = {
   name: string;
   type: MCPType;
   command: string;
-  url: string;
   envVars: EnvVar[];
+  enabled: boolean;
+  resetOnNewChat: boolean;
+  url: string;
 };
 
 export type MCPCardProps = {

@@ -1,72 +1,23 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
-import type { NewMCPData } from "./types";
-import { CreateDialog } from "./create-dialog";
+import { MCPDialog } from "./mcp-dialog";
 import { MCPCard } from "./mcp-card";
-import { toast } from "sonner";
+import { mcpEditDialogOpenAtom } from "@/store/chatStore";
+import { useAtomValue, useSetAtom } from "jotai";
+import { useMCPs } from "@/hooks/use-mcp";
 
 export const MCPPanel = () => {
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const mcps = useQuery(api.mcps.queries.getAll, {
-    paginationOpts: { numItems: 100, cursor: null },
-  });
+  const mcpEditDialogOpen = useAtomValue(mcpEditDialogOpenAtom);
+  const setMcpEditDialogOpen = useSetAtom(mcpEditDialogOpenAtom);
+  const { getAllMCPs, toggleMCP, handleDelete } = useMCPs();
 
-  const createMCP = useMutation(api.mcps.mutations.create);
-  const updateMCP = useMutation(api.mcps.mutations.update);
-  const removeMCP = useMutation(api.mcps.mutations.remove);
-
-  const handleCreate = async (newMCPData: NewMCPData) => {
-    try {
-      const env =
-        newMCPData.type === "stdio"
-          ? Object.fromEntries(
-              newMCPData.envVars
-                .filter((env) => env.key && env.value)
-                .map((env) => [env.key, env.value])
-            )
-          : {};
-
-      await createMCP({
-        name: newMCPData.name,
-        command:
-          newMCPData.type === "stdio" ? newMCPData.command : newMCPData.url,
-        env,
-        enabled: true,
-      });
-
-      setIsCreateOpen(false);
-    } catch (error) {
-      console.error("Failed to create MCP:", error);
-    }
-  };
-
-  const handleDelete = async (mcpId: Id<"mcps">) => {
-    try {
-      await removeMCP({ mcpId });
-    } catch (error) {
-      console.error("Failed to delete MCP:", error);
-    }
-  };
-
-  const toggleMCP = async (mcpId: Id<"mcps">, enabled: boolean) => {
-    try {
-      await updateMCP({ mcpId, updates: { enabled: !enabled } });
-      toast.success(enabled ? "MCP started" : "MCP stopped");
-    } catch (error) {
-      console.error("Failed to start/stop MCP:", error);
-    }
-  };
+  const mcps = getAllMCPs();
 
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">MCPs</h2>
-        <CreateDialog
-          isOpen={isCreateOpen}
-          onOpenChange={setIsCreateOpen}
-          onCreate={handleCreate}
+        <MCPDialog
+          isOpen={mcpEditDialogOpen}
+          onOpenChange={setMcpEditDialogOpen}
         />
       </div>
 
