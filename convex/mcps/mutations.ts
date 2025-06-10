@@ -89,3 +89,22 @@ export const remove = mutation({
     return null;
   },
 });
+
+export const recreate = mutation({
+  args: {
+    mcpId: v.id("mcps"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    await ctx.runQuery(api.mcps.queries.get, {
+      mcpId: args.mcpId,
+    });
+
+    await ctx.scheduler.runAfter(0, internal.mcps.actions.reset, {
+      mcpId: args.mcpId,
+    });
+
+    return null;
+  },
+});
