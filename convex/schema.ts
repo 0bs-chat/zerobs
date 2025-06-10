@@ -16,10 +16,10 @@ export default defineSchema({
     name: v.string(),
     type: v.union(
       v.literal("file"),
-      v.literal("text"),
       v.literal("url"),
       v.literal("site"),
       v.literal("youtube"),
+      v.literal("json")
     ),
     size: v.number(),
     key: v.union(v.id("_storage"), v.string()),

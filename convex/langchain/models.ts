@@ -10,7 +10,6 @@ import { BaseMessage, HumanMessage, MessageContentComplex, DataContentBlock } fr
 import { Doc } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
 import mime from "mime";
-import { v } from "convex/values";
 
 const LITELLM_APP_NAME = "zerobs-api"
 const LITELLM_CONFIG_YAML = `
@@ -234,6 +233,12 @@ export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], mo
                   }
                 } else {
                   return await getVectorText(ctx, document)
+                }
+              } else if (document.type === "json") {
+                const blob = await ctx.storage.get(document.key);
+                return {
+                  type: "text",
+                  text: `# ${document.name}\n${blob?.text()}\n`,
                 }
               } else {
                 return await getVectorText(ctx, document)

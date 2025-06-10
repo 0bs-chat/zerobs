@@ -38,10 +38,10 @@ export const createMultiple = mutation({
         name: v.string(),
         type: v.union(
           v.literal("file"),
-          v.literal("text"),
           v.literal("url"),
           v.literal("site"),
           v.literal("youtube"),
+          v.literal("json")
         ),
         size: v.number(),
         key: v.union(v.id("_storage"), v.string()),
@@ -68,6 +68,28 @@ export const createMultiple = mutation({
     });
 
     return documentIds;
+  },
+});
+
+export const updateJsonDoc = mutation({
+  args: {
+    documentId: v.id("documents"),
+    update: v.object({
+      key: v.id("_storage"),
+    }),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const document = await ctx.runQuery(api.documents.queries.get, {
+      documentId: args.documentId,
+    })
+
+    await ctx.storage.delete(document.key as Id<"_storage">);
+
+    return await ctx.db.patch(args.documentId, {
+      key: args.update.key,
+    });
   },
 });
 

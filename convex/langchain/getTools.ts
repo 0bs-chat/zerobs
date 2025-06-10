@@ -8,8 +8,9 @@ import { z } from "zod";
 import { api, internal } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
 import { ToolSchemaBase } from "@langchain/core/tools";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import runpodSdk from "runpod-sdk";
+import { fly } from "../utils/flyio";
 
 const runpod = runpodSdk(process.env.RUN_POD_KEY!);
 const runpodCrawler = runpod.endpoint(process.env.RUN_POD_CRAWLER_ID!);
@@ -57,7 +58,7 @@ export const getSearchTools = () => {
   return tools;
 };
 
-export const getMCPTools = async (ctx: ActionCtx) => {
+export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
     paginationOpts: {
       numItems: 100,
@@ -143,6 +144,36 @@ export const getMCPTools = async (ctx: ActionCtx) => {
       }
       groupedTools[serverName].push(tool);
     }
+  }
+
+  if (chatId) {
+    const chatInput = await ctx.runQuery(
+      api.chatInputs.queries.get,
+      { chatId }
+    );
+
+    const files: { name: string, url: string }[] = (await Promise.all(chatInput.documents?.map(async (documentId, index) => {
+      const document = await ctx.runQuery(api.documents.queries.get, {
+        documentId,
+      });
+      if (["file"].includes(document.type)) {
+        const url = await ctx.storage.getUrl(document.key as Id<"_storage">);
+        if (url) {
+          return {
+            name: `${index + 1}_${document.name}`,
+            url
+          };
+        }
+      }
+      return null;
+    }) ?? [])).filter((file) => file !== null);
+
+    await Promise.all(mcps.page.map(async (mcp) => {
+      if (mcp.type === "stdio" && files.length > 0) {
+        await fly.uploadFileToAllMachines(mcp._id, files);
+      }
+    }));
+
   }
 
   return {

@@ -220,4 +220,64 @@ export const fly = {
   };
     return (await flyGraphqlRequest(mutation, { input }));
   },
+
+  uploadFileToAllMachines: async (appName: string, files: { name: string, url: string }[]) => {
+    const machines = await fly.listMachines(appName);
+    if (!machines || machines.length === 0) {
+      throw new Error(`No machines found for app ${appName}`);
+    }
+
+    const results = [];
+    
+    for (const machine of machines) {
+      if (!machine.id) {
+        console.warn(`Skipping machine without ID`);
+        continue;
+      }
+
+      const machineResults = [];
+
+      for (const file of files) {
+        try {
+          // Create the /mnt/data directory if it doesn't exist and download the file
+          const command = [
+            "sh",
+            "-c",
+            `mkdir -p /mnt/data && curl -L "${file.url}" -o "/mnt/data/${file.name}" && echo "File uploaded successfully to /mnt/data/${file.name}"`
+          ];
+
+          const execResult = await flyRequest(
+            `/apps/${appName}/machines/${machine.id}/exec`,
+            "POST",
+            {
+              command: command,
+              timeout: 60
+            }
+          );
+
+          machineResults.push({
+            fileName: file.name,
+            success: true,
+            result: execResult
+          });
+
+          console.log(`Successfully uploaded ${file.name} to machine ${machine.id}`);
+        } catch (error) {
+          console.error(`Failed to upload ${file.name} to machine ${machine.id}:`, error);
+          machineResults.push({
+            fileName: file.name,
+            success: false,
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+
+      results.push({
+        machineId: machine.id,
+        files: machineResults
+      });
+    }
+
+    return results;
+  },
 };

@@ -21,7 +21,7 @@ export const useRemoveDocument = () => {
   };
 };
 
-export const useUploadDocuments = ({ type }: { type: "file" | "text" | "url" | "site" | "youtube" } = { type: "file" }) => {
+export const useUploadDocuments = ({ type }: { type: "file" | "url" | "site" | "youtube" | "json" } = { type: "file" }) => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const chatId = params.chatId as Id<"chats"> | "new";
   const chatInputQuery = useQuery(api.chatInputs.queries.get, { chatId });

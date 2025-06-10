@@ -11,6 +11,7 @@ import { Document } from "langchain/document";
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 import { getEmbeddingModel } from "../langchain/models";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import mime from "mime";
 
 const runpod = runpodSdk(process.env.RUN_POD_KEY!);
 const crawler = runpod.endpoint(process.env.RUN_POD_CRAWLER_ID!);
@@ -48,9 +49,6 @@ export const addDocuments = internalAction({
               case "file":
                 texts = await processFiles(ctx, documentsByType[type]);
                 break;
-              case "text":
-                texts = await processTexts(ctx, documentsByType[type]);
-                break;
               case "url":
                 texts = await processUrlsOrSites(ctx, documentsByType[type], 0);
                 break;
@@ -59,6 +57,8 @@ export const addDocuments = internalAction({
                 break;
               case "youtube":
                 texts = await processYoutubeVideos(ctx, documentsByType[type]);
+                break;
+              case "json":
                 break;
               default:
                 throw new Error(`Unknown document type: ${type}`);
@@ -71,6 +71,16 @@ export const addDocuments = internalAction({
           }),
         )
       ).flat();
+
+      if (results.length === 0) {
+        await ctx.runMutation(internal.documents.mutations.updateStatus, {
+          documents: args.documents.map((documentId) => ({
+            documentId,
+            status: "done" as const,
+          })),
+        });
+        return;
+      }
 
       // Create langchain documents
       const processedDocs = results.map(
@@ -136,32 +146,45 @@ async function processFiles(
   ctx: ActionCtx,
   documents: Doc<"documents">[],
 ): Promise<string[]> {
-  const fileUrls = await Promise.all(
-    documents.map(async (document) => await ctx.storage.getUrl(document.key)),
-  );
-
-  const response = await docProcessor?.runSync({
-    input: {
-      sources: fileUrls,
-    },
-  });
-
-  return (response?.output.output as { content: string }[]).map((item) => item.content);
-}
-
-async function processTexts(
-  ctx: ActionCtx,
-  documents: Doc<"documents">[],
-): Promise<string[]> {
-  const blobs = await Promise.all(
-    documents.map(async (document) => await ctx.storage.get(document.key)),
-  );
-  return await Promise.all(
-    blobs.map(async (blob) => {
-      const text = await blob!.text();
-      return text;
-    }),
-  );
+  const results: string[] = [];
+  const nonTextDocuments: { document: Doc<"documents">; originalIndex: number }[] = [];
+  
+  for (let i = 0; i < documents.length; i++) {
+    const document = documents[i];
+    
+    const mimeType = mime.getType(document.name) ?? "application/octet-stream";
+    if (mimeType.startsWith("text")) {
+      const blob = await ctx.storage.get(document.key);
+      if (blob) {
+        const text = await blob.text();
+        results[i] = text;
+      } else {
+        results[i] = "";
+      }
+    } else {
+      nonTextDocuments.push({ document, originalIndex: i });
+    }
+  }
+  
+  if (nonTextDocuments.length > 0) {
+    const fileUrls = await Promise.all(
+      nonTextDocuments.map(async ({ document }) => await ctx.storage.getUrl(document.key)),
+    );
+    
+    const response = await docProcessor?.runSync({
+      input: {
+        sources: fileUrls,
+      },
+    });
+    
+    const runpodResults = response?.output.output as { content: string }[];
+    
+    nonTextDocuments.forEach(({ originalIndex }, runpodIndex) => {
+      results[originalIndex] = runpodResults[runpodIndex]?.content || "";
+    });
+  }
+  
+  return results;
 }
 
 async function processUrlsOrSites(

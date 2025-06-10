@@ -160,7 +160,7 @@ const RepoLoader = () => {
 };
 
 function RepoActions() {
-  const uploadDocuments = useUploadDocuments({ type: "text" });
+  const uploadDocuments = useUploadDocuments({ type: "json" });
   const { combineSelectedFilesForChat } = useGithub();
   const selectedFiles = useAtomValue(selectedFilesAtom);
 
