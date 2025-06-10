@@ -204,7 +204,6 @@ export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], mo
           }
 
           if (typeof contentItem === "object" && contentItem !== null) {
-            // Handle file content (image, audio, video, pdf)
             if (contentItem.type === "file" && "file" in contentItem) {
               const documentId = contentItem.file?.file_id;
               const document = await ctx.runQuery(api.documents.queries.get, {
@@ -239,9 +238,7 @@ export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], mo
               } else {
                 return await getVectorText(ctx, document)
               }
-            }
-            // Handle text content and other supported types
-            else {
+            } else {
               return contentItem;
             }
           } else {

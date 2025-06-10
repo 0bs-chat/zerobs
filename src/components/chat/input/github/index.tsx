@@ -85,7 +85,7 @@ const RepoLoader = ({ branch }: { branch: string }) => {
 };
 
 function RepoActions() {
-  const uploadDocuments = useUploadDocuments();
+  const uploadDocuments = useUploadDocuments({ type: "text" });
   const { combineSelectedFilesForChat } = useGithub();
   const selectedFiles = useAtomValue(selectedFilesAtom);
 

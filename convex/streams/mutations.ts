@@ -2,6 +2,7 @@ import { internalMutation, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
+import { Doc } from "../_generated/dataModel";
 
 export const update = internalMutation({
   args: {
@@ -25,7 +26,7 @@ export const update = internalMutation({
       streamId: args.streamId,
     });
 
-    if (args.updates.status === "done") {
+    if (args.updates.status === "done" || args.updates.status === "cancelled") {
       const chunks = await ctx.db
         .query("streamChunks")
         .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
@@ -44,14 +45,14 @@ export const appendChunks = internalMutation({
     streamId: v.id("streams"),
     chunks: v.array(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<Doc<"streams">> => {
     await ctx.runMutation(internal.streams.crud.update, {
       id: args.streamId,
       patch: {
         status: "streaming",
       },
     });
-    return await Promise.all(
+    await Promise.all(
       args.chunks.map((chunk) =>
         ctx.db.insert("streamChunks", {
           streamId: args.streamId,
@@ -59,6 +60,35 @@ export const appendChunks = internalMutation({
         }),
       ),
     );
+
+    return await ctx.runQuery(api.streams.queries.get, {
+      streamId: args.streamId,
+    });
+  },
+});
+
+export const cancel = mutation({
+  args: {
+    chatId: v.id("chats"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+    
+    const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
+      chatId: args.chatId,
+    });
+    const stream = await ctx.runQuery(api.streams.queries.get, {
+      streamId: chatInput.streamId!,
+    });
+
+    if (stream.status === "done" || stream.status === "error") {
+      throw new Error("Cannot cancel a stream that is already done or errored");
+    }
+
+    await ctx.runMutation(internal.streams.mutations.update, {
+      streamId: stream._id,
+      updates: { status: "cancelled" },
+    });
   },
 });
 
@@ -99,6 +129,22 @@ export const cleanUp = internalMutation({
       }),
     );
 
+    // Get and delete all "cancelled" streams immediately
+    const cancelledStreams = await ctx.db
+      .query("streams")
+      .withIndex("by_status_user", (q) => q.eq("status", "cancelled"))
+      .collect();
+    const cancelledChunks = await Promise.all(
+      cancelledStreams.map(async (stream) => {
+        const chunks = await ctx.db
+          .query("streamChunks")
+          .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
+          .collect();
+        await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
+        return chunks;
+      }),
+    );
+
     // Get and delete "error" streams that are more than 15 minutes old
     const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
     const errorStreams = await ctx.db
@@ -117,6 +163,6 @@ export const cleanUp = internalMutation({
       }),
     );
 
-    return [...doneChunks, ...errorChunks].flat().length;
+    return [...doneChunks, ...cancelledChunks, ...errorChunks].flat().length;
   },
 });

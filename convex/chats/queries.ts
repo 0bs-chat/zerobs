@@ -84,7 +84,7 @@ export const search = query({
   },
 });
 
-export const getMessages = query({
+export const getCheckpoint = query({
   args: {
     chatId: v.union(v.id("chats"), v.literal("new")),
     paginationOpts: v.optional(paginationOptsValidator),
@@ -99,7 +99,9 @@ export const getMessages = query({
 
     if (args.chatId === "new") {
       return {
-        page: [],
+        page: JSON.stringify({
+          messages: [],
+        }, null, 2),
         isDone: true,
         continueCursor: null,
       };

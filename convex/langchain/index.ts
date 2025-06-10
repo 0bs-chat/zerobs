@@ -18,51 +18,100 @@ export const chat = internalAction({
       internal.chatInputs.queries.getById,
       { chatInputId: args.chatInputId }
     );
-    const stream = await streamHelper(ctx, { chatInput });
+    let streamDoc: Doc<"streams"> | null = null;
+    
+    // Create AbortController for cancellation
+    const abortController = new AbortController();
+    const stream = await streamHelper(ctx, { chatInput, signal: abortController.signal });
 
     // ---- new batching logic ----
     const streamId = chatInput.streamId!;
     const BUFFER_FLUSH_DELAY = 300; // ms
+    const CANCELLATION_CHECK_DELAY = 1000; // ms - check for cancellation every 1s
     let lastFlush = Date.now();
+    let lastCancellationCheck = Date.now();
     const buffer: string[] = [];
+    let wasCancelled = false;
 
     try {
       for await (const event of stream) {
+        // Check for cancellation periodically, not on every event
+        const now = Date.now();
+        if (now - lastCancellationCheck >= CANCELLATION_CHECK_DELAY) {
+          const currentStream = await ctx.runQuery(api.streams.queries.get, {
+            streamId,
+          });
+          if (currentStream.status === "cancelled") {
+            wasCancelled = true;
+            abortController.abort();
+            break;
+          }
+          lastCancellationCheck = now;
+        }
+
         // collect
         buffer.push(JSON.stringify(event));
 
-        // if it's been >100ms since last flush, send a batch
-        if (Date.now() - lastFlush >= BUFFER_FLUSH_DELAY) {
-          await ctx.runMutation(
+        // if it's been >300ms since last flush, send a batch
+        if (now - lastFlush >= BUFFER_FLUSH_DELAY) {
+          streamDoc = await ctx.runMutation(
             internal.streams.mutations.appendChunks,
             {
               streamId,
               chunks: buffer.splice(0, buffer.length),
             }
           );
-          lastFlush = Date.now();
+          lastFlush = now;
+          
+          // Also check cancellation status from the returned streamDoc
+          if (streamDoc.status === "cancelled") {
+            wasCancelled = true;
+            abortController.abort();
+            break;
+          }
         }
       }
 
-      if (buffer.length > 0) {
-        await ctx.runMutation(
+      if (buffer.length > 0 && !wasCancelled) {
+        streamDoc = await ctx.runMutation(
           internal.streams.mutations.appendChunks,
           {
             streamId,
             chunks: buffer.splice(0, buffer.length),
           }
         );
+        
+        // Final check after flushing remaining buffer
+        if (streamDoc.status === "cancelled") {
+          wasCancelled = true;
+        }
       }
       
-      await ctx.runMutation(
-        internal.streams.mutations.update,
-        {
-          streamId,
-          updates: { status: "done" },
-        }
-      );
+      // Only mark as done if not cancelled
+      if (!wasCancelled) {
+        await ctx.runMutation(
+          internal.streams.mutations.update,
+          {
+            streamId,
+            updates: { status: "done" },
+          }
+        );
+      }
     } catch (error) {
       console.error(error);
+      
+      // If we already know it was cancelled, don't override the status
+      if (wasCancelled) {
+        return;
+      }
+      
+      // Check if the error was due to cancellation
+      const errorStatus = streamDoc?.status || (await ctx.runQuery(api.streams.queries.get, { streamId })).status;
+      
+      if (errorStatus === "cancelled") {
+        return;
+      }
+      
       await ctx.runMutation(
         internal.streams.mutations.update,
         {
@@ -76,7 +125,7 @@ export const chat = internalAction({
 
 async function* streamHelper(
   ctx: ActionCtx,
-  args: { chatInput: Doc<"chatInputs"> }
+  args: { chatInput: Doc<"chatInputs">; signal?: AbortSignal }
 ) {
   const humanMessage = new HumanMessage({
     content: [
@@ -105,35 +154,27 @@ async function* streamHelper(
   });
 
   const checkpointer = new ConvexCheckpointSaver(ctx);
+  const streamConfig = {
+    version: "v2" as const,
+    configurable: {
+      ctx,
+      chatInput: args.chatInput,
+      thread_id: args.chatInput.chatId,
+    },
+    recursionLimit: 100,
+    ...(args.signal && { signal: args.signal }),
+  };
+  
   const response = agentGraph
     .compile({ checkpointer })
     .streamEvents(
       { messages: [humanMessage] },
-      {
-        version: "v2",
-        configurable: {
-          ctx,
-          chatInput: args.chatInput,
-          thread_id: args.chatInput.chatId,
-        },
-        recursionLimit: 100,
-      }
+      streamConfig
     );
 
   for await (const event of response) {
-    yield event;
+    if (["on_chat_model_stream", "on_tool_start", "on_tool_end"].includes(event.event)) {
+      yield event;
+    }
   }
 }
-
-export const getState = internalAction({
-  args: {
-    chatId: v.id("chats"),
-  },
-  handler: async (ctx, args) => {
-    const checkpointer = new ConvexCheckpointSaver(ctx);
-    const agent = agentGraph.compile({ checkpointer });
-    return JSON.stringify(
-      await agent.getState({ configurable: { thread_id: args.chatId } })
-    );
-  },
-});

@@ -23,7 +23,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
     setChunks([]);
 
     async function pollChunks() {
-      try {
+      if (stream?.status === "streaming") {
         const newDocs = await convex.query(
           api.streams.queries.getChunks,
           {
@@ -46,8 +46,6 @@ export function useStream(chatId: Id<"chats"> | "new") {
           await new Promise((r) => setTimeout(r, 100));
           if (!cancelled) await pollChunks();
         }
-      } catch (err) {
-        console.error("Error polling stream chunks:", err);
       }
     }
 

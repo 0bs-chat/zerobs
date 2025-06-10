@@ -107,6 +107,7 @@ export const addDocuments = internalAction({
       const chunks = await textSplitter.splitDocuments(processedDocs);
       await vectorStore.addDocuments(chunks);
 
+      console.log(chunks.length);
       // Mark documents as successful
       await ctx.runMutation(internal.documents.mutations.updateStatus, {
         documents: args.documents.map((documentId) => ({
@@ -156,9 +157,10 @@ async function processTexts(
     documents.map(async (document) => await ctx.storage.get(document.key)),
   );
   return await Promise.all(
-    blobs.map(async (blob) =>
-      blob ? await blob.text() : "Failed to load text",
-    ),
+    blobs.map(async (blob) => {
+      const text = await blob!.text();
+      return text;
+    }),
   );
 }
 
