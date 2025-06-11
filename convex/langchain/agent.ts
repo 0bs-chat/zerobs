@@ -119,7 +119,7 @@ async function createAgentWithTools(
   promptTemplate: ChatPromptTemplate,
 ) {
   const tools = await getMCPTools(formattedConfig.ctx);
-  const searchTools = await getSearchTools();
+  const searchTools = await getSearchTools(formattedConfig.ctx);
 
   if (!formattedConfig.chatInput.model) {
     throw new Error("Model is required");
@@ -261,7 +261,7 @@ async function retrieve(
     );
   }
   if (formattedConfig.chatInput.webSearch) {
-    const searchTools = await getSearchTools();
+    const searchTools = await getSearchTools(formattedConfig.ctx);
 
     const queries = await generateQueries(
       "webSearch",

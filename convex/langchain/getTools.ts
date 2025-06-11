@@ -9,13 +9,9 @@ import { api, internal } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
 import { ToolSchemaBase } from "@langchain/core/tools";
 import type { Doc, Id } from "../_generated/dataModel";
-import runpodSdk from "runpod-sdk";
 import { fly } from "../utils/flyio";
 
-const runpod = runpodSdk(process.env.RUN_POD_KEY!);
-const runpodCrawler = runpod.endpoint(process.env.RUN_POD_CRAWLER_ID!);
-
-export const getSearchTools = () => {
+export const getSearchTools = (ctx: ActionCtx) => {
   const tools: {
     tavily?: TavilySearch;
     duckduckgo: DuckDuckGoSearch;
@@ -24,18 +20,11 @@ export const getSearchTools = () => {
     duckduckgo: new DuckDuckGoSearch({ maxResults: 5 }),
     crawlWeb: tool(
       async ({ url }: { url: string }) => {
-        const res = await runpodCrawler?.runSync({
-          input: {
-            url,
-            max_depth: 0,
-          },
+        const res = await ctx.runAction(internal.utils.services.index.processUrlOrSite, {
+          url,
+          maxDepth: 0,
         });
-        return res?.output.output
-          .map(
-            (d: { url: string; markdown: string }) =>
-              `# ${d.url}\n\n${d.markdown}`,
-          )
-          .join("\n\n");
+        return res;
       },
       {
         name: "crawlWeb",

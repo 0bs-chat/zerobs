@@ -63,9 +63,13 @@ export const createMultiple = mutation({
       }),
     );
 
-    await ctx.scheduler.runAfter(0, internal.documents.actions.addDocuments, {
-      documents: documentIds,
-    });
+    await Promise.all(
+      documentIds.map(async (documentId) => {
+        await ctx.scheduler.runAfter(0, internal.documents.actions.addDocument, {
+          documentId,
+        });
+      }),
+    );
 
     return documentIds;
   },
@@ -95,23 +99,19 @@ export const updateJsonDoc = mutation({
 
 export const updateStatus = internalMutation({
   args: {
-    documents: v.array(v.object({
-      documentId: v.id("documents"),
+    documentId: v.id("documents"),
+    update: v.object({
       status: v.union(
         v.literal("processing"),
         v.literal("done"),
         v.literal("error"),
       ),
-    })),
+    }),
   },
   handler: async (ctx, args) => {
-    await Promise.all(
-      args.documents.map(async (document) => {
-        await ctx.db.patch(document.documentId, {
-          status: document.status,
-        });
-      }),
-    );
+    await ctx.db.patch(args.documentId, {
+      status: args.update.status,
+    });
   },
 });
 

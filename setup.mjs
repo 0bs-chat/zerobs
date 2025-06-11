@@ -2,12 +2,6 @@ import { exportJWK, exportPKCS8, generateKeyPair } from "jose";
 import { execSync } from "child_process";
 import readline from "readline";
 
-/**
- * Executes a shell command and logs its output.
- * @param {string} command - The shell command to execute.
- * @param {string} message - A message to display before executing the command.
- * @param {boolean} [ignoreError=false] - If true, continues execution even if the command fails.
- */
 function runCommand(command, message, ignoreError = false) {
   console.log(message);
   try {
@@ -25,13 +19,6 @@ function runCommand(command, message, ignoreError = false) {
   }
 }
 
-/**
- * Prompts the user for input.
- * @param {string} query - The question to ask the user.
- * @param {boolean} [optional=false] - If true, marks the input as optional.
- * @param {string} [defaultValue=""] - The default value to use if the user provides no input.
- * @returns {Promise<string>} The user's input.
- */
 async function askQuestion(query, optional = false, defaultValue = "") {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -55,42 +42,20 @@ async function askQuestion(query, optional = false, defaultValue = "") {
   });
 }
 
-/**
- * Defines a required environment variable.
- * @typedef {Object} RequiredEnvVar
- * @property {string} name - The name of the environment variable (e.g., "RUN_POD_KEY").
- * @property {string} prompt - The prompt to display to the user.
- */
-
-/**
- * Defines an optional environment variable.
- * @typedef {Object} OptionalEnvVar
- * @property {string} name - The name of the environment variable (e.g., "OPENAI_API_KEY").
- * @property {string} prompt - The prompt to display to the user.
- * @property {string} [defaultValue=""] - The default value for the variable.
- */
-
-/**
- * Collects environment variables from the user.
- * @returns {Promise<Object.<string, string>>} An object containing the collected environment variables.
- */
 async function collectEnvironmentVariables() {
   console.log("\n--- Please provide the following environment variables ---");
 
   /** @type {RequiredEnvVar[]} */
   const requiredVars = [
-    { name: "RUN_POD_KEY", prompt: "Enter RUN_POD_KEY" },
-    { name: "RUN_POD_CRAWLER_ID", prompt: "Enter RUN_POD_CRAWLER_ID" },
-    { name: "RUN_POD_DOC_PROCESSOR_ID", prompt: "Enter RUN_POD_DOC_PROCESSOR_ID" },
     { name: "FLY_API_TOKEN", prompt: "Enter FLY_API_TOKEN" },
-    { name: "AUTH_GITHUB_ID", prompt: "Enter AUTH_GITHUB_ID" },
-    { name: "AUTH_GITHUB_SECRET", prompt: "Enter AUTH_GITHUB_SECRET" },
     { name: "AUTH_GITHUB_REPO_ID", prompt: "Enter AUTH_GITHUB_REPO_ID" },
     { name: "AUTH_GITHUB_REPO_SECRET", prompt: "Enter AUTH_GITHUB_REPO_SECRET" },
   ];
 
   /** @type {OptionalEnvVar[]} */
   const optionalVars = [
+    { name: "AUTH_GITHUB_ID", prompt: "Enter AUTH_GITHUB_ID" },
+    { name: "AUTH_GITHUB_SECRET", prompt: "Enter AUTH_GITHUB_SECRET" },
     { name: "OPENAI_API_KEY", prompt: "Enter OPENAI_API_KEY" },
     { name: "GOOGLE_API_KEY", prompt: "Enter GOOGLE_API_KEY" },
     { name: "ANTHROPIC_API_KEY", prompt: "Enter ANTHROPIC_API_KEY" },
@@ -104,6 +69,9 @@ async function collectEnvironmentVariables() {
       prompt: "Enter SITE_URL for your application",
       defaultValue: "http://localhost:3000",
     },
+    { name: "SERVICE_PASSWORD", prompt: "Enter SERVICE_PASSWORD" },
+    { name: "CRAWLER_URL", prompt: "Enter CRAWLER_URL", defaultValue: "http://127.0.0.1:7860" },
+    { name: "DOC_PROCESSOR_URL", prompt: "Enter DOC_PROCESSOR_URL", defaultValue: "http://127.0.0.1:7861" },
   ];
 
   const envVars = {};
@@ -127,12 +95,6 @@ async function collectEnvironmentVariables() {
   return envVars;
 }
 
-/**
- * Sets Convex environment variables.
- * @param {Object.<string, string>} envVars - An object containing the environment variables to set.
- * @param {string} jwtPrivateKey - The JWT private key.
- * @param {string} jwks - The JWKS.
- */
 function setConvexEnvironmentVariables(envVars, jwtPrivateKey, jwks) {
   console.log("\n--- Setting Convex environment variables ---");
 

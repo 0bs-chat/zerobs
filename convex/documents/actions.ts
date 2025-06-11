@@ -4,94 +4,47 @@ import { internal } from "../_generated/api";
 import { ActionCtx, internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
-import runpodSdk from "runpod-sdk";
 import type { Doc } from "../_generated/dataModel";
 import { formatDocumentsAsString } from "langchain/util/document";
 import { Document } from "langchain/document";
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 import { getEmbeddingModel } from "../langchain/models";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import mime from "mime";
 
-const runpod = runpodSdk(process.env.RUN_POD_KEY!);
-const crawler = runpod.endpoint(process.env.RUN_POD_CRAWLER_ID!);
-const docProcessor = runpod.endpoint(process.env.RUN_POD_DOC_PROCESSOR_ID!);
-
-export const addDocuments = internalAction({
+export const addDocument = internalAction({
   args: {
-    documents: v.array(v.id("documents")),
+    documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
+    const document = await ctx.runQuery(
+      internal.documents.crud.read,
+      {
+        id: args.documentId,
+      },
+    );
+    if (!document) { throw new Error("Document not found") }
+
     try {
-      const documents = await ctx.runQuery(
-        internal.documents.queries.getMultipleInternal,
-        {
-          documentIds: args.documents,
-        },
-      );
-
-      // Sort documents by type
-      const documentsByType = documents.reduce(
-        (acc, document) => {
-          acc[document.type] = acc[document.type] || [];
-          acc[document.type].push(document);
-          return acc;
-        },
-        {} as Record<string, Doc<"documents">[]>,
-      );
-
       // Process documents by type
-      const results = (
-        await Promise.all(
-          Object.keys(documentsByType).map(async (type) => {
-            let texts: string[] = [];
-            switch (type) {
-              case "file":
-                texts = await processFiles(ctx, documentsByType[type]);
-                break;
-              case "url":
-                texts = await processUrlsOrSites(ctx, documentsByType[type], 0);
-                break;
-              case "site":
-                texts = await processUrlsOrSites(ctx, documentsByType[type], 2);
-                break;
-              case "youtube":
-                texts = await processYoutubeVideos(ctx, documentsByType[type]);
-                break;
-              case "json":
-                break;
-              default:
-                throw new Error(`Unknown document type: ${type}`);
-            }
-
-            return texts.map((text, index) => ({
-              id: documentsByType[type][index]._id,
-              text,
-            }));
-          }),
-        )
-      ).flat();
-
-      if (results.length === 0) {
-        await ctx.runMutation(internal.documents.mutations.updateStatus, {
-          documents: args.documents.map((documentId) => ({
-            documentId,
-            status: "done" as const,
-          })),
-        });
-        return;
+      let result: string;
+      if (document.type === "file") {
+        result = await processFiles(ctx, document);
+      } else if (document.type === "url") {
+        result = await processUrlsOrSites(ctx, document, 0);
+      } else if (document.type === "site") {
+        result = await processUrlsOrSites(ctx, document, 2);
+      } else if (document.type === "youtube") {
+        result = await processYoutubeVideo(ctx, document);
+      } else {
+        throw new Error(`Unknown document type: ${document.type}`);
       }
 
-      // Create langchain documents
-      const processedDocs = results.map(
-        (result) =>
-          new Document({
-            pageContent: result.text,
-            metadata: {
-              source: result.id,
-            },
-          }),
-      );
+      const processedDoc = new Document({
+        pageContent: result,
+        metadata: {
+          source: document._id,
+        },
+      });
 
       // Create embeddings
       const vectorStore = new ConvexVectorStore(
@@ -114,27 +67,22 @@ export const addDocuments = internalAction({
         },
       );
 
-      const chunks = await textSplitter.splitDocuments(processedDocs);
+      const chunks = await textSplitter.splitDocuments([processedDoc]);
       await vectorStore.addDocuments(chunks);
 
-      console.log(chunks.length);
-      // Mark documents as successful
       await ctx.runMutation(internal.documents.mutations.updateStatus, {
-        documents: args.documents.map((documentId) => ({
-          documentId,
+        documentId: args.documentId,
+        update: {
           status: "done" as const,
-        })),
+        },
       });
 
     } catch (error) {
-      console.error("Error processing documents:", error);
-      
-      // Mark all documents as failed
       await ctx.runMutation(internal.documents.mutations.updateStatus, {
-        documents: args.documents.map((documentId) => ({
-          documentId,
+        documentId: args.documentId,
+        update: {
           status: "error" as const,
-        })),
+        },
       });
       
       throw error;
@@ -144,82 +92,32 @@ export const addDocuments = internalAction({
 
 async function processFiles(
   ctx: ActionCtx,
-  documents: Doc<"documents">[],
-): Promise<string[]> {
-  const results: string[] = [];
-  const nonTextDocuments: { document: Doc<"documents">; originalIndex: number }[] = [];
-  
-  for (let i = 0; i < documents.length; i++) {
-    const document = documents[i];
-    
-    const mimeType = mime.getType(document.name) ?? "application/octet-stream";
-    if (mimeType.startsWith("text")) {
-      const blob = await ctx.storage.get(document.key);
-      if (blob) {
-        const text = await blob.text();
-        results[i] = text;
-      } else {
-        results[i] = "";
-      }
-    } else {
-      nonTextDocuments.push({ document, originalIndex: i });
-    }
-  }
-  
-  if (nonTextDocuments.length > 0) {
-    const fileUrls = await Promise.all(
-      nonTextDocuments.map(async ({ document }) => await ctx.storage.getUrl(document.key)),
-    );
-    
-    const response = await docProcessor?.runSync({
-      input: {
-        sources: fileUrls,
-      },
-    });
-    
-    const runpodResults = response?.output.output as { content: string }[];
-    
-    nonTextDocuments.forEach(({ originalIndex }, runpodIndex) => {
-      results[originalIndex] = runpodResults[runpodIndex]?.content || "";
-    });
-  }
-  
-  return results;
+  document: Doc<"documents">,
+): Promise<string> {
+  return await ctx.runAction(internal.utils.services.index.processFile, {
+    document,
+  });
 }
 
 async function processUrlsOrSites(
   ctx: ActionCtx,
-  documents: Doc<"documents">[],
+  document: Doc<"documents">,
   depth: number,
-): Promise<string[]> {
-  return (
-    (
-      await crawler?.runSync({
-        input: {
-          sources: documents.map((document) => ({
-            url: document.key,
-            max_depth: depth,
-          })),
-        },
-      })
-    )?.output.output as { url: string; markdown: string }[][]
-  ).map((urls) =>
-    urls.map((url) => `### ${url.url}\n${url.markdown}\n`).join("\n"),
-  );
+): Promise<string> {
+  return await ctx.runAction(internal.utils.services.index.processUrlOrSite, {
+    url: document.key,
+    maxDepth: depth,
+  });
 }
 
-async function processYoutubeVideos(
-  ctx: ActionCtx,
-  documents: Doc<"documents">[],
-): Promise<string[]> {
-  return await Promise.all(
-    documents.map(async (document) => {
-      const loader = YoutubeLoader.createFromUrl(document.key, {
-        addVideoInfo: true,
-        language: "en",
-      });
-      const docs = await loader.load();
-      return formatDocumentsAsString(docs);
-    }),
-  );
+async function processYoutubeVideo(
+  _ctx: ActionCtx,
+  document: Doc<"documents">,
+): Promise<string> {
+  const loader = YoutubeLoader.createFromUrl(document.key, {
+    addVideoInfo: true,
+    language: "en",
+  });
+  const docs = await loader.load();
+  return formatDocumentsAsString(docs);
 }

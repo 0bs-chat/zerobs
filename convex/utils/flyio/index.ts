@@ -261,7 +261,6 @@ export const fly = {
             result: execResult
           });
 
-          console.log(`Successfully uploaded ${file.name} to machine ${machine.id}`);
         } catch (error) {
           console.error(`Failed to upload ${file.name} to machine ${machine.id}:`, error);
           machineResults.push({

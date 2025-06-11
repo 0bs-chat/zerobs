@@ -55,17 +55,6 @@ export const getMultiple = query({
   },
 });
 
-export const getMultipleInternal = internalQuery({
-  args: {
-    documentIds: v.array(v.id("documents")),
-  },
-  handler: async (ctx, args) => {
-    return (
-      await Promise.all(args.documentIds.map((id) => ctx.db.get(id)))
-    ).filter((doc) => doc !== null);
-  },
-});
-
 export const getByKey = query({
   args: {
     key: v.union(v.id("_storage"), v.string()),

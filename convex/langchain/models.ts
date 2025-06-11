@@ -118,7 +118,7 @@ export const models: {
     isThinking: true,
     toolSupport: true,
     provider: "openai",
-    modalities: ["text", "image"],
+    modalities: ["text"],
     image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description: "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     usageRateMultiplier: 1.0,

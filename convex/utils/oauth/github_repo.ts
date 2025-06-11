@@ -18,9 +18,6 @@ export const handleCallback = httpAction(async (_ctx, request) => {
       return new Response("Missing code or state parameter", { status: 400 });
     }
 
-    console.log("code", code);
-    console.log("state", state);
-
     // Fetch the user's github token
     const tokenResponse = await fetch(
       "https://github.com/login/oauth/access_token",
@@ -41,7 +38,6 @@ export const handleCallback = httpAction(async (_ctx, request) => {
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
-    console.log("accessToken", accessToken);
 
     if (!accessToken) {
       throw new Error("No access token received from GitHub");

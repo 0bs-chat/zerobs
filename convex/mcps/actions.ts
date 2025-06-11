@@ -98,10 +98,6 @@ export const reset = internalAction({
       const app: FlyApp | null = await fly.getApp(appName);
       if (app && app.name) {
         await fly.deleteApp(app.name);
-      } else {
-        console.log(
-          `App ${appName} not found or name missing, nothing to remove.`,
-        );
       }
 
       await ctx.runMutation(internal.mcps.crud.update, {
@@ -130,10 +126,6 @@ export const remove = internalAction({
     const app: FlyApp | null = await fly.getApp(appName);
     if (app && app.name) {
       await fly.deleteApp(app.name);
-    } else {
-      console.log(
-        `App ${appName} not found or name missing, nothing to remove.`,
-      );
     }
   },
 });

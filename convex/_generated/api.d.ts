@@ -22,6 +22,7 @@ import type * as checkpointer_mutations from "../checkpointer/mutations.js";
 import type * as checkpointer_queries from "../checkpointer/queries.js";
 import type * as crons from "../crons.js";
 import type * as documents_actions from "../documents/actions.js";
+import type * as documents_crud from "../documents/crud.js";
 import type * as documents_mutations from "../documents/mutations.js";
 import type * as documents_queries from "../documents/queries.js";
 import type * as http from "../http.js";
@@ -45,6 +46,7 @@ import type * as utils_flyio_index from "../utils/flyio/index.js";
 import type * as utils_flyio_types from "../utils/flyio/types.js";
 import type * as utils_helpers from "../utils/helpers.js";
 import type * as utils_oauth_github_repo from "../utils/oauth/github_repo.js";
+import type * as utils_services_index from "../utils/services/index.js";
 
 import type {
   ApiFromModules,
@@ -75,6 +77,7 @@ declare const fullApi: ApiFromModules<{
   "checkpointer/queries": typeof checkpointer_queries;
   crons: typeof crons;
   "documents/actions": typeof documents_actions;
+  "documents/crud": typeof documents_crud;
   "documents/mutations": typeof documents_mutations;
   "documents/queries": typeof documents_queries;
   http: typeof http;
@@ -98,6 +101,7 @@ declare const fullApi: ApiFromModules<{
   "utils/flyio/types": typeof utils_flyio_types;
   "utils/helpers": typeof utils_helpers;
   "utils/oauth/github_repo": typeof utils_oauth_github_repo;
+  "utils/services/index": typeof utils_services_index;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
