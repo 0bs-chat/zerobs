@@ -169,5 +169,9 @@ export default defineSchema({
       "checkpoint_id",
       "task_id",
       "idx",
-    ])
+    ]),
+  streamChunkRefs: defineTable({
+    streamId: v.id("streams"),
+    chunkId: v.id("streamChunks"),
+  }).index("by_stream", ["streamId"]),
 });

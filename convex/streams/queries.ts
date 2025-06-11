@@ -2,6 +2,7 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api } from "../_generated/api";
+import { paginationOptsValidator } from "convex/server";
 
 export const get = query({
   args: {
@@ -25,13 +26,14 @@ export const get = query({
 export const getChunks = query({
   args: {
     streamId: v.id("streams"),
+    paginationOpts: paginationOptsValidator,
     lastChunkTime: v.optional(v.number()),
   },
   handler: async (
     ctx,
     args,
   ) => {
-    const stream = await ctx.runQuery(api.streams.queries.get, {
+    await ctx.runQuery(api.streams.queries.get, {
       streamId: args.streamId,
     });
 
@@ -42,14 +44,20 @@ export const getChunks = query({
       .filter((q) =>
         args.lastChunkTime ? q.gt(q.field("_creationTime"), args.lastChunkTime) : true,
       )
-      .collect();
+      .paginate({
+        cursor: args.paginationOpts.cursor,
+        numItems: args.paginationOpts.numItems,
+      });
 
-    return chunks.flatMap((doc) =>
-      doc.chunks.map((chunk) => ({
-        ...doc,
-        chunk,
-        chunks: undefined,
-      })),
-    );
+    return {
+      ...chunks,
+      page: chunks.page.flatMap((doc) =>
+        doc.chunks.map((chunk) => ({
+          ...doc,
+          chunk,
+          chunks: undefined,
+        })),
+      )
+    }
   },
 });

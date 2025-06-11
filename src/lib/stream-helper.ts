@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useConvex, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import type { Doc, Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
 import type { StreamEvent } from "@langchain/core/tracers/log_stream";
 
 export function useStream(chatId: Id<"chats"> | "new") {
@@ -24,22 +24,38 @@ export function useStream(chatId: Id<"chats"> | "new") {
 
     async function pollChunks() {
       if (stream?.status === "streaming") {
-        const newDocs = await convex.query(
-          api.streams.queries.getChunks,
-          {
-            streamId: chatInput?.streamId!,
-            lastChunkTime: lastTimeRef.current,
-          }
-        );
-        if (cancelled) return;
+        // Collect all new chunk pages until there are none left.
+        let cursor: string | null = null;
+        let hasMore = true;
 
-        if (newDocs.length > 0) {
-          const events = newDocs.map((d: Doc<"streamChunks">) =>
-            JSON.parse(d.chunk) as StreamEvent
+        while (hasMore && !cancelled) {
+          const result: any = await convex.query(
+            api.streams.queries.getChunks,
+            {
+              streamId: chatInput?.streamId!,
+              lastChunkTime: lastTimeRef.current,
+              paginationOpts: {
+                numItems: 50,
+                cursor,
+              },
+            },
           );
-          setChunks((prev) => [...prev, ...events]);
-          lastTimeRef.current =
-            newDocs[newDocs.length - 1]._creationTime;
+
+          if (cancelled) return;
+
+          const { page, isDone, continueCursor } = result as any;
+
+          if (page.length > 0) {
+            const events = page.map((d: any) =>
+              JSON.parse(d.chunk) as StreamEvent,
+            );
+            setChunks((prev) => [...prev, ...events]);
+            lastTimeRef.current = page[page.length - 1]._creationTime;
+          }
+
+          // Determine if we should continue fetching.
+          hasMore = !isDone;
+          cursor = (continueCursor as string | null | undefined) ?? null;
         }
 
         if (stream?.status === "streaming") {

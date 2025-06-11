@@ -22,16 +22,18 @@ export const update = internalMutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const stream = await ctx.runQuery(api.streams.queries.get, {
+    await ctx.runQuery(api.streams.queries.get, {
       streamId: args.streamId,
     });
 
     if (args.updates.status === "done" || args.updates.status === "cancelled") {
-      const chunks = await ctx.db
-        .query("streamChunks")
+      const refs = await ctx.db
+        .query("streamChunkRefs")
         .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
         .collect();
-      await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
+
+      await Promise.all(refs.map((ref) => ctx.db.delete(ref.chunkId)));
+      await Promise.all(refs.map((ref) => ctx.db.delete(ref._id)));
     }
 
     await ctx.db.patch(args.streamId, {
@@ -52,9 +54,14 @@ export const appendChunks = internalMutation({
         status: "streaming",
       },
     });
-    await ctx.db.insert("streamChunks", {
+    const chunkDocId = await ctx.db.insert("streamChunks", {
       streamId: args.streamId,
       chunks: args.chunks,
+    });
+
+    await ctx.db.insert("streamChunkRefs", {
+      streamId: args.streamId,
+      chunkId: chunkDocId,
     });
 
     return await ctx.runQuery(api.streams.queries.get, {
@@ -98,11 +105,14 @@ export const remove = internalMutation({
       streamId: args.streamId,
     });
     await ctx.db.delete(args.streamId);
-    const chunks = await ctx.db
-      .query("streamChunks")
+
+    const refs = await ctx.db
+      .query("streamChunkRefs")
       .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
       .collect();
-    await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
+
+    await Promise.all(refs.map((ref) => ctx.db.delete(ref.chunkId)));
+    await Promise.all(refs.map((ref) => ctx.db.delete(ref._id)));
   },
 });
 
@@ -116,12 +126,13 @@ export const cleanUp = internalMutation({
       .collect();
     const doneChunks = await Promise.all(
       doneStreams.map(async (stream) => {
-        const chunks = await ctx.db
-          .query("streamChunks")
+        const refs = await ctx.db
+          .query("streamChunkRefs")
           .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
           .collect();
-        await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
-        return chunks.flatMap((c) => c.chunks);
+        await Promise.all(refs.map((ref) => ctx.db.delete(ref.chunkId)));
+        await Promise.all(refs.map((ref) => ctx.db.delete(ref._id)));
+        return refs.length;
       }),
     );
 
@@ -132,12 +143,13 @@ export const cleanUp = internalMutation({
       .collect();
     const cancelledChunks = await Promise.all(
       cancelledStreams.map(async (stream) => {
-        const chunks = await ctx.db
-          .query("streamChunks")
+        const refs = await ctx.db
+          .query("streamChunkRefs")
           .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
           .collect();
-        await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
-        return chunks.flatMap((c) => c.chunks);
+        await Promise.all(refs.map((ref) => ctx.db.delete(ref.chunkId)));
+        await Promise.all(refs.map((ref) => ctx.db.delete(ref._id)));
+        return refs.length;
       }),
     );
 
@@ -150,15 +162,20 @@ export const cleanUp = internalMutation({
       .collect();
     const errorChunks = await Promise.all(
       errorStreams.map(async (stream) => {
-        const chunks = await ctx.db
-          .query("streamChunks")
+        const refs = await ctx.db
+          .query("streamChunkRefs")
           .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
           .collect();
-        await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
-        return chunks.flatMap((c) => c.chunks);
+        await Promise.all(refs.map((ref) => ctx.db.delete(ref.chunkId)));
+        await Promise.all(refs.map((ref) => ctx.db.delete(ref._id)));
+        return refs.length;
       }),
     );
 
-    return [...doneChunks, ...cancelledChunks, ...errorChunks].flat().length;
+    // We no longer aggregate actual chunk contents; return count of chunks removed based on ref docs deleted.
+    const totalRemovedRefs = doneChunks.reduce((a, b) => a + b, 0) +
+      cancelledChunks.reduce((a, b) => a + b, 0) +
+      errorChunks.reduce((a, b) => a + b, 0);
+    return totalRemovedRefs;
   },
 });
