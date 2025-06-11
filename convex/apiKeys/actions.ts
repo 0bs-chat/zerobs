@@ -5,12 +5,12 @@ import { httpAction } from "../_generated/server";
 export const addApiKey = httpAction(async (ctx, request) => {
   await requireAuth(ctx);
   const res = await request.json();
-  const name = res.name;
   const key = res.key;
+  const value = res.value;
 
   await ctx.runMutation(internal.apiKeys.mutations.create, {
-    name,
     key,
+    value,
   });
 
   return new Response(null, {

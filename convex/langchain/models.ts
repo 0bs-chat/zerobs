@@ -218,7 +218,7 @@ export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], mo
                 } else {
                   return await getVectorText(ctx, document)
                 }
-              } else if (document.type === "json") {
+              } else if (["text", "github"].includes(document.type)) {
                 const blob = await ctx.storage.get(document.key);
                 return {
                   type: "text",

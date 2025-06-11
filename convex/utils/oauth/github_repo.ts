@@ -61,8 +61,8 @@ export const handleCallback = httpAction(async (_ctx, request) => {
         Authorization: `Bearer ${state}`,
       },
       body: JSON.stringify({
-        name: "github_access_token",
-        key: accessToken,
+        key: "github_access_token",
+        value: accessToken,
       }),
     });
 

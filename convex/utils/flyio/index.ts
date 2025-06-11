@@ -5,10 +5,6 @@ import { components } from "./types";
 const FLY_API_TOKEN = process.env.FLY_API_TOKEN;
 const FLY_API_BASE_URL = "https://api.machines.dev/v1";
 
-if (!FLY_API_TOKEN) {
-  throw new Error("FLY_API_TOKEN environment variable is not set.");
-}
-
 type FlyApp = components["schemas"]["App"];
 type CreateAppRequest = components["schemas"]["CreateAppRequest"];
 type FlyMachine = components["schemas"]["Machine"];

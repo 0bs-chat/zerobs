@@ -4,6 +4,7 @@ import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { fly, FlyApp, CreateMachineRequest } from "../utils/flyio";
+import { verifyEnv } from "./utils";
 
 export const create = internalAction({
   args: {
@@ -36,7 +37,7 @@ export const create = internalAction({
         config: {
           image: "mantrakp04/mcprunner:latest",
           env: {
-            ...(mcp.env || {}),
+            ...(await verifyEnv(mcp.env!)),
             MCP_COMMAND: mcp.command,
           },
           guest: { cpus: 1, memory_mb: 1024, cpu_kind: "shared" },

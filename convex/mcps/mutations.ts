@@ -1,7 +1,8 @@
 import { api, internal } from "../_generated/api";
-import { internalMutation, mutation } from "../_generated/server";
+import { mutation } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
+import { createJwt } from "../utils/encryption";
 
 export const create = mutation({
   args: {
@@ -19,11 +20,13 @@ export const create = mutation({
       throw new Error("Command or URL is required");
     }
 
+    const envJwts = await Promise.all(Object.entries(args.env ?? {}).map(([key, value]) => createJwt(userId, key, value)));
+
     const newMCPId = await ctx.db.insert("mcps", {
       name: args.name,
       type: args.command ? "stdio" : "sse",
       command: args.command,
-      env: args.env,
+      env: envJwts,
       url: args.url,
       enabled: args.enabled,
       status: "creating",
@@ -60,8 +63,11 @@ export const update = mutation({
       mcpId: args.mcpId,
     });
 
+    const envJwts = await Promise.all(Object.entries(args.updates.env ?? {}).map(([key, value]) => createJwt(userId, key, value)));
+
     await ctx.db.patch(args.mcpId, {
       ...args.updates,
+      env: envJwts,
       updatedAt: Date.now(),
     });
 

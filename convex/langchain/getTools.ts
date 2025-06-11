@@ -8,7 +8,7 @@ import { z } from "zod";
 import { api, internal } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
 import { ToolSchemaBase } from "@langchain/core/tools";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import { fly } from "../utils/flyio";
 
 export const getSearchTools = (ctx: ActionCtx) => {
@@ -75,7 +75,7 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
   );
 
   // Wait for all mcps to be created
-  let currentMcps: Doc<"mcps">[] = mcps.page;
+  let currentMcps = mcps.page;
   let maxAttempts = 10;
   while (currentMcps.some((mcp) => mcp.status === "creating") && maxAttempts > 0) {
     await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -93,12 +93,12 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
   }
 
   const mcpServers: Record<string, Connection> = Object.fromEntries(
-    currentMcps.map((mcp: Doc<"mcps">) => [
+    currentMcps.map((mcp) => [
       mcp.name,
       {
         transport: "sse",
         url: mcp.url!,
-        headers: mcp.env,
+        headers: mcp.env!,
         useNodeEventSource: true,
         reconnect: {
           enabled: true,

@@ -5,8 +5,8 @@ import { Table } from "convex-helpers/server";
 
 export const ApiKeys = Table("apiKeys", {
   userId: v.optional(v.id("users")),
-  name: v.string(),
   key: v.string(),
+  value: v.string(),
 });
 
 export const Documents = Table("documents", {
@@ -16,7 +16,8 @@ export const Documents = Table("documents", {
     v.literal("url"),
     v.literal("site"),
     v.literal("youtube"),
-    v.literal("json"),
+    v.literal("text"),
+    v.literal("github")
   ),
   size: v.number(),
   key: v.union(v.id("_storage"), v.string()),
@@ -90,7 +91,7 @@ export const Mcps = Table("mcps", {
   type: v.union(v.literal("sse"), v.literal("stdio")),
   command: v.optional(v.string()),
   url: v.optional(v.string()),
-  env: v.optional(v.record(v.string(), v.string())),
+  env: v.optional(v.array(v.string())),
   enabled: v.boolean(),
   status: v.union(
     v.literal("creating"),
@@ -147,9 +148,9 @@ export const StreamChunkRefs = Table("streamChunkRefs", {
 export default defineSchema({
   ...authTables,
   apiKeys: ApiKeys.table
-    .index("by_name", ["name"])
-    .index("by_user_name", ["userId", "name"])
-    .index("by_key_user", ["key", "userId"]),
+    .index("by_key", ["key"])
+    .index("by_user_key", ["userId", "key"])
+    .index("by_value_user", ["value", "userId"]),
   documents: Documents.table
     .index("by_key_user", ["key", "userId"])
     .index("by_user", ["userId"]),

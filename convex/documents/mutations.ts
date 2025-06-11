@@ -41,7 +41,8 @@ export const createMultiple = mutation({
           v.literal("url"),
           v.literal("site"),
           v.literal("youtube"),
-          v.literal("json")
+          v.literal("text"),
+          v.literal("github")
         ),
         size: v.number(),
         key: v.union(v.id("_storage"), v.string()),
