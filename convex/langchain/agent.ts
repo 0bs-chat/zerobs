@@ -1,6 +1,6 @@
 "use node";
 
-import { getEmbeddingModel, getModel, formatMessages } from "./models";
+import { getEmbeddingModel, getModel, formatMessages, modelSupportsTools } from "./models";
 import {
   Annotation,
   END,
@@ -371,24 +371,51 @@ async function retrieve(
   };
 }
 
-async function passToShouldPlan(
+async function pass(
   _state: typeof GraphState.State,
   _config: RunnableConfig,
 ) {
   return {};
 }
 
-async function shouldPlan(
+async function shouldPlanOrAgentOrSimple(
   _state: typeof GraphState.State,
   config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
-
-  if (formattedConfig.chatInput.plannerMode) {
-    return "true";
+  if (!modelSupportsTools(formattedConfig.chatInput.model!)) {
+    return "simple";
   }
 
-  return "false";
+  if (formattedConfig.chatInput.plannerMode) {
+    return "planner";
+  }
+
+  return "agent";
+}
+
+async function simple(state: typeof GraphState.State, config: RunnableConfig) {
+  const formattedConfig = config.configurable as ExtendedRunnableConfig;
+
+  const promptTemplate = ChatPromptTemplate.fromMessages([
+    createAgentSystemMessage(formattedConfig.chatInput.model!),
+    new MessagesPlaceholder("messages"),
+  ]);
+
+  const model = getModel(formattedConfig.chatInput.model!);
+  const chain = promptTemplate.pipe(model);
+
+  const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model!);
+  const response = await chain.invoke(
+    {
+      messages: formattedMessages,
+    },
+    config,
+  );
+
+  return {
+    messages: [response],
+  };
 }
 
 async function agent(state: typeof GraphState.State, config: RunnableConfig) {
@@ -671,19 +698,21 @@ async function shouldEndPlanner(state: typeof GraphState.State) {
 
 export const agentGraph = new StateGraph(GraphState)
   .addNode("retrieve", retrieve)
-  .addNode("passToShouldPlan", passToShouldPlan)
+  .addNode("pass", pass)
+  .addNode("simple", simple)
   .addNode("agent", agent)
   .addNode("planner", planner)
   .addNode("plannerAgent", plannerAgent)
   .addNode("replanner", replanner)
   .addConditionalEdges(START, shouldRetrieve, {
     true: "retrieve",
-    false: "passToShouldPlan",
+    false: "pass",
   })
-  .addEdge("retrieve", "passToShouldPlan")
-  .addConditionalEdges("passToShouldPlan", shouldPlan, {
-    true: "planner",
-    false: "agent",
+  .addEdge("retrieve", "pass")
+  .addConditionalEdges("pass", shouldPlanOrAgentOrSimple, {
+    planner: "planner",
+    agent: "agent",
+    simple: "simple",
   })
   .addEdge("agent", END)
   .addEdge("planner", "plannerAgent")

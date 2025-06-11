@@ -17,7 +17,7 @@ import {
 import { ProjectsDropdown } from "./projects-dropdown";
 import { Toggle } from "@/components/ui/toggle";
 import { useUploadDocuments } from "@/hooks/use-documents";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import {
   Tooltip,
@@ -204,11 +204,11 @@ export const ToolBar = ({
             })
           }
         >
-          <SelectTrigger>{models?.selectedModel.model_name}</SelectTrigger>
+          <SelectTrigger>{models?.selectedModel.label}</SelectTrigger>
           <SelectContent>
             {models?.models.map((model, index) => (
               <SelectItem
-                key={model.model_name}
+                key={model.model}
                 value={model.model_name}
                 className={`${
                   model.model_name === models?.selectedModel.model_name
@@ -217,19 +217,19 @@ export const ToolBar = ({
                 } ${index > 0 ? "mt-1" : ""}`}
               >
                 <div className="flex flex-col w-full gap-2">
-                  <span className={`text-foreground`}>{model.model_name}</span>
-                  {model.litellm_params.tags && (
+                  <span className={`text-foreground`}>{model.label}</span>
+                  {model.modalities && (
                     <div className="flex flex-row gap-1 ">
-                      {model.litellm_params.tags?.map((tag) => {
+                      {model.modalities?.map((modality) => {
                         const { icon: Icon, className: IconClassName } =
-                          getTagInfo(tag);
+                          getTagInfo(modality);
                         return (
                           <Badge
-                            key={tag}
+                            key={modality}
                             className={`flex items-center gap-1 text-foreground bg-input/80`}
                           >
                             <Icon className={`h-3 w-3 ${IconClassName}`} />
-                            {tag}
+                            {modality}
                           </Badge>
                         );
                       })}

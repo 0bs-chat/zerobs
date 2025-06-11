@@ -1,7 +1,6 @@
 import { requireAuth } from "../utils/helpers";
 import { mutation, internalMutation, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
-import { parsedConfig } from "../langchain/models";
 
 // TODO: Optimization
 // - Instead of fetching the chat and checking if its new, check if before fetching

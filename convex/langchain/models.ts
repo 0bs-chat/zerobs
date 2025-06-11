@@ -1,146 +1,132 @@
 "use node";
 
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Embeddings } from "@langchain/core/embeddings";
-import { ActionCtx, internalAction } from "../_generated/server";
-import { fly, FlyApp } from "../utils/flyio";
-import * as yaml from "js-yaml";
+import { ActionCtx } from "../_generated/server";
 import { BaseMessage, HumanMessage, MessageContentComplex, DataContentBlock } from "@langchain/core/messages";
 import { Doc } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
 import mime from "mime";
 
-const LITELLM_APP_NAME = "zerobs-api"
-const LITELLM_CONFIG_YAML = `
-model_list:
-  - model_name: gemini-2.5-flash
-    litellm_params:
-      model: openrouter/google/gemini-2.5-flash-preview-05-20
-      api_key: os.environ/OPENAI_API_KEY
-      tags: ["text", "image", "audio", "video", "pdf"]
-  - model_name: gpt-4.1
-    litellm_params:
-      model: openrouter/openai/gpt-4.1
-      api_key: os.environ/OPENAI_API_KEY
-      tags: ["text", "image"]
-  - model_name: claude-4
-    litellm_params:
-      model: openrouter/anthropic/claude-sonnet-4
-      api_key: os.environ/OPENAI_API_KEY
-      tags: ["text", "image", "pdf"]
-  - model_name: worker
-    litellm_params:
-      model: openrouter/google/gemini-2.0-flash-001
-      api_key: os.environ/OPENAI_API_KEY
-      tags: ["text", "image", "pdf", "hidden"]
-  - model_name: embeddings
-    litellm_params:
-      model: gemini/text-embedding-004
-      api_key: os.environ/GOOGLE_API_KEY
-      tags: ["text", "embeddings", "hidden"]
-
-litellm_settings:
-  drop_params: true
-
-general_settings:
-  master_key: os.environ/OPENAI_API_KEY
-`
-
-export const parsedConfig = yaml.load(LITELLM_CONFIG_YAML) as {
-  model_list: {
-    model_name: string;
-    litellm_params: {
-      model: string;
-      api_key: string;
-      tags: string[];
-    };
-  }[];
-  litellm_settings: {
-    drop_params: boolean;
-  };
-};
-
-export const reCreateLiteLLMApp = internalAction({
-  args: {},
-  handler: async (ctx, args) => {
-    console.log("Checking for existing app...");
-    let app: FlyApp | null = await fly.getApp(LITELLM_APP_NAME);
-
-    if (app) {
-      console.log("Deleting existing app...");
-      await fly.deleteApp(app.name!);
-    }
-
-    console.log("Creating new app...");
-    app = await fly.createApp({
-      app_name: LITELLM_APP_NAME,
-      org_slug: "personal",
-    });
-    await fly.allocateIpAddress(app?.name!, "shared_v4");
-
-    const scaleCount = 2;
-    const litellmMachines = await Promise.all(Array.from({ length: scaleCount }, async (_, i) => {
-      return await fly.getMachine(LITELLM_APP_NAME, `litellm-machine-${i}`);
-    }));
-    if (litellmMachines.some((machine) => !machine)) {
-      console.log("Machine not found. Creating a new machine...");
-      // create machine
-      await Promise.all(Array.from({ length: scaleCount }, async (_, i) => {
-        return await fly.createMachine(LITELLM_APP_NAME, {
-          config: {
-            image: "ghcr.io/berriai/litellm:main-latest",
-            env: {
-              GOOGLE_API_KEY: process.env.GOOGLE_API_KEY || "",
-              OPENAI_API_KEY: process.env.OPENAI_API_KEY || "",
-              ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || "",
-              LITELLM_LOG: "ERROR",
-            },
-            files: [{
-              guest_path: "/app/config.yaml",
-              raw_value: Buffer.from(LITELLM_CONFIG_YAML).toString("base64"),
-            }],
-            init: {
-              cmd: ["--port", "4000", "--config", "/app/config.yaml"],
-            },
-            services: [
-              {
-                internal_port: 4000,
-                protocol: "tcp",
-                autostart: true,
-                autostop: "suspend",
-                min_machines_running: 0,
-                ports: [{
-                    port: 443,
-                    handlers: ["tls", "http"],
-                }]
-              }
-            ],
-            guest: {
-              cpus: 2,
-              memory_mb: 4096,
-              cpu_kind: "shared"
-            },
-            restart: {
-              policy: "on-failure",
-              max_retries: 2
-            },
-            
-          },
-          region: "sea",
-          name: `litellm-machine-${i}`,
-        });
-      }));
-    } else {
-      console.log("Machine already exists.");
-    }
-
-    return app;
+export const models: {
+  label: string;
+  model_name: string;
+  model: string;
+  isThinking: boolean;
+  toolSupport: boolean;
+  provider: "openai" | "google"
+  modalities: ("text" | "image" | "pdf")[];
+  image: string;
+  description: string;
+  usageRateMultiplier: number;
+  hidden?: boolean;
+  type?: "chat" | "embeddings";
+}[] = [
+  {
+    label: "Gemini 2.5 Flash",
+    model_name: "gemini-2.5-flash",
+    model: "google/gemini-2.5-flash-preview-05-20",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image", "pdf"],
+    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description: "Gemini 2.5 Flash is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    usageRateMultiplier: 1.0,
   },
-});
+  {
+    label: "Gemini 2.5 Pro",
+    model_name: "gemini-2.5-pro",
+    model: "google/gemini-2.5-pro-preview",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image", "pdf"],
+    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description: "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "GPT-4.1",
+    model_name: "gpt-4.1",
+    model: "openai/gpt-4.1",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image"],
+    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
+    description: "GPT-4.1 is a state-of-the-art language model capable of understanding and generating human-like text.",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "Claude 4",
+    model_name: "claude-4",
+    model: "anthropic/claude-sonnet-4",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image", "pdf"],
+    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSCRxLvQkYbi8sZjauXl0P9cm7wv6oqd4TkgLy",
+    description: "Claude 4 is a versatile model that excels in various text and image processing tasks.",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "Worker",
+    model_name: "worker",
+    model: "google/gemini-2.0-flash-001",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image", "pdf"],
+    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description: "The Worker model is designed for specialized tasks requiring high efficiency.",
+    usageRateMultiplier: 1.0,
+    hidden: true,
+  },
+  {
+    label: "Deepseek R1",
+    model_name: "deepseek-r1-0528",
+    model: "deepseek/deepseek-r1-0528:free",
+    isThinking: true,
+    toolSupport: false,
+    provider: "openai",
+    modalities: ["text"],
+    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSc6tHQtOkQ3diauvF12HnrWNtOmhI0eYwBKzf",
+    description: "Deepseek R1 is a model focused on deep learning tasks with a strong emphasis on text processing.",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "Embeddings",
+    model_name: "embeddings",
+    model: "text-embedding-004",
+    isThinking: false,
+    toolSupport: false,
+    provider: "google",
+    modalities: ["text"],
+    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description: "The Embeddings model is designed for generating high-quality text embeddings.",
+    usageRateMultiplier: 1.0,
+    hidden: true,
+    type: "embeddings",
+  },
+  {
+    label: "Grok 3 Mini",
+    model_name: "grok-3-mini",
+    model: "x-ai/grok-3-mini-beta",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image"],
+    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description: "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    usageRateMultiplier: 1.0,
+  }
+]
 
 export function getModel(model: string): BaseChatModel {
-  const modelConfig = parsedConfig.model_list.find((m) => m.model_name === model);
+  const modelConfig = models.find((m) => m.model_name === model);
 
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);
@@ -149,40 +135,37 @@ export function getModel(model: string): BaseChatModel {
   const API_KEY = process.env.OPENAI_API_KEY;
 
   return new ChatOpenAI({
-    model: modelConfig.model_name,
+    model: modelConfig.model,
     apiKey: API_KEY,
     configuration: {
-      baseURL: `https://${LITELLM_APP_NAME}.fly.dev`,
+      baseURL: `https://openrouter.ai/api/v1`,
     }
   });
 }
 
 export function getEmbeddingModel(model: string): Embeddings {
-  const modelConfig = parsedConfig.model_list.find((m) => m.model_name === model);
+  const modelConfig = models.find((m) => m.model_name === model);
 
-  if (!modelConfig || !modelConfig.litellm_params.tags.includes("embeddings")) {
+  if (!modelConfig || !modelConfig.modalities.includes("text")) {
     throw new Error(`Model ${model} not found in configuration`);
   }
 
-  const API_KEY = process.env.OPENAI_API_KEY;
+  const API_KEY = process.env.GOOGLE_API_KEY;
 
-  return new OpenAIEmbeddings({
-    model: modelConfig.model_name,
+  return new GoogleGenerativeAIEmbeddings({
+    model: modelConfig.model,
     apiKey: API_KEY,
-    configuration: {
-      baseURL: `https://${LITELLM_APP_NAME}.fly.dev`,
-    }
   });
 }
 
 export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], model: string): Promise<BaseMessage[]> {
-  const modelConfig = parsedConfig.model_list.find((m) => m.model_name === model);
+  const modelConfig = models.find((m) => m.model_name === model);
   
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);
   }
 
-  const supportedTags = modelConfig.litellm_params.tags;
+  const supportedTags = modelConfig.modalities;
 
   // Process all messages in parallel
   const formattedMessages = await Promise.all(messages.map(async (message) => {
@@ -211,7 +194,7 @@ export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], mo
               if (document.type === "file") {
                 const mimeType = mime.getType(document.name) ?? "application/octet-stream";
                 const fileType = mimeType === "application/pdf" ? "pdf" : mimeType.split("/")[0];
-                if (supportedTags.includes(fileType)) {
+                if (supportedTags.includes(fileType as ("text" | "image" | "pdf"))) {
                   const url = await ctx.storage.getUrl(document.key);
                   if (fileType === "image") {
                     return {
@@ -225,9 +208,10 @@ export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], mo
                   } else {
                     return {
                       type: "file",
-                      file: {
-                        file_id: url,
-                        format: mimeType
+                      source_type: "id",
+                      id: url,
+                      metadata: {
+                        format: mimeType,
                       }
                     }
                   }
@@ -284,4 +268,14 @@ export async function getVectorText(ctx: ActionCtx, document: Doc<"documents">):
     type: "text",
     text: `# ${doc.name}\n${text}\n`,
   }
+}
+
+export function modelSupportsTools(model: string): boolean {
+  const modelConfig = models.find((m) => m.model_name === model);
+  
+  if (!modelConfig) {
+    throw new Error(`Model ${model} not found in configuration`);
+  }
+
+  return modelConfig.toolSupport;
 }

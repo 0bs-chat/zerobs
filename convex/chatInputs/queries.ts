@@ -1,7 +1,7 @@
 import { internalQuery, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
-import { parsedConfig } from "../langchain/models";
+import { models } from "../langchain/models";
 import { api } from "../_generated/api";
 
 export const get = query({
@@ -64,20 +64,20 @@ export const getModels = query({
     ctx,
     args,
   ): Promise<{
-    selectedModel: typeof parsedConfig.model_list[number];
-    models: typeof parsedConfig.model_list;
+    selectedModel: typeof models[number];
+    models: typeof models;
   }> => {
     const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
       chatId: args.chatId,
     });
 
-    let selectedModel = parsedConfig.model_list.find((model) => model.model_name === chatInput.model);
+    let selectedModel = models.find((model) => model.model_name === chatInput.model);
     if (!selectedModel) {
-      selectedModel = parsedConfig.model_list[0];
+      selectedModel = models[0];
     }
     return {
       selectedModel,
-      models: args.showHidden ? parsedConfig.model_list : parsedConfig.model_list.filter((model) => !model.litellm_params.tags?.includes("hidden")),
+      models: args.showHidden ? models : models.filter((model) => !model.hidden),
     };
   },
 });

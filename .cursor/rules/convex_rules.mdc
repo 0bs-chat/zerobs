@@ -676,3 +676,4 @@ export default function App() {
 ```
 
 use bun to install packages, never use npm/npx
+DO NOT RUN `bun dev`

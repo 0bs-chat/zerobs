@@ -52,14 +52,10 @@ export const appendChunks = internalMutation({
         status: "streaming",
       },
     });
-    await Promise.all(
-      args.chunks.map((chunk) =>
-        ctx.db.insert("streamChunks", {
-          streamId: args.streamId,
-          chunk,
-        }),
-      ),
-    );
+    await ctx.db.insert("streamChunks", {
+      streamId: args.streamId,
+      chunks: args.chunks,
+    });
 
     return await ctx.runQuery(api.streams.queries.get, {
       streamId: args.streamId,
@@ -125,7 +121,7 @@ export const cleanUp = internalMutation({
           .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
           .collect();
         await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
-        return chunks;
+        return chunks.flatMap((c) => c.chunks);
       }),
     );
 
@@ -141,7 +137,7 @@ export const cleanUp = internalMutation({
           .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
           .collect();
         await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
-        return chunks;
+        return chunks.flatMap((c) => c.chunks);
       }),
     );
 
@@ -159,7 +155,7 @@ export const cleanUp = internalMutation({
           .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
           .collect();
         await Promise.all(chunks.map((chunk) => ctx.db.delete(chunk._id)));
-        return chunks;
+        return chunks.flatMap((c) => c.chunks);
       }),
     );
 

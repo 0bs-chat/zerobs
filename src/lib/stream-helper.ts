@@ -43,7 +43,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
         }
 
         if (stream?.status === "streaming") {
-          await new Promise((r) => setTimeout(r, 100));
+          await new Promise((r) => setTimeout(r, 300));
           if (!cancelled) await pollChunks();
         }
       }

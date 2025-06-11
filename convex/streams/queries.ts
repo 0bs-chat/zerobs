@@ -44,6 +44,12 @@ export const getChunks = query({
       )
       .collect();
 
-    return chunks;
+    return chunks.flatMap((doc) =>
+      doc.chunks.map((chunk) => ({
+        ...doc,
+        chunk,
+        chunks: undefined,
+      })),
+    );
   },
 });

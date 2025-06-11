@@ -82,7 +82,7 @@ export default defineSchema({
     .index("by_status_user", ["status", "userId"]),
   streamChunks: defineTable({
     streamId: v.id("streams"),
-    chunk: v.string(),
+    chunks: v.array(v.string()),
   }).index("by_stream", ["streamId"]),
   projects: defineTable({
     name: v.string(),
