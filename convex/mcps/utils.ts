@@ -1,9 +1,10 @@
 import { verifyJwt } from "../utils/encryption";
 
-export async function verifyEnv(env: string[]): Promise<Record<string, string>> {
-  const envJwts = await Promise.all(env.map(async (env) => verifyJwt(env)));
-  return envJwts.reduce((acc, curr) => {
-    acc[curr.key] = curr.value;
-    return acc;
-  }, {} as Record<string, string>);
+export async function verifyEnv(env: Record<string, string>): Promise<Record<string, string>> {
+  const envJwts: Record<string, string> = {};
+  await Promise.all(Object.entries(env).map(async ([key, value]) => {
+    const { value: decryptedValue } = await verifyJwt(value);
+    envJwts[key] = decryptedValue;
+  }));
+  return envJwts;
 }

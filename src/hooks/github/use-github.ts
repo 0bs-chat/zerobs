@@ -112,7 +112,7 @@ const useGithub = () => {
   // Clone repository
   const cloneRepository = useCallback(
     async (
-      url: string,
+      _url: string,
       owner: string,
       repo: string,
       branch: string = currentBranch

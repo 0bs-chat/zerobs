@@ -2,9 +2,7 @@
 
 import { getEmbeddingModel, getModel, formatMessages, modelSupportsTools } from "./models";
 import {
-  Annotation,
   END,
-  messagesStateReducer,
   START,
   StateGraph,
 } from "@langchain/langgraph";
@@ -33,6 +31,7 @@ import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 import { internal } from "../_generated/api";
 import { StructuredOutputParser } from "@langchain/core/output_parsers";
 import { OutputFixingParser } from "langchain/output_parsers";
+import { GraphState, planSchema, planStep, planArray } from "./state";
 
 type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;
@@ -47,56 +46,12 @@ function createStructuredOutputWithFallback<T extends z.ZodType>(schema: T): Out
   );
 }
 
-const planStep = z.object({
-  step: z.string().describe("The step to be executed"),
-  additional_context: z
-    .string()
-    .describe("Additional context that may be needed to execute the step"),
-});
-
-const planItem = z.union([
-  planStep,
-  z.object({
-    parallel_steps: z
-      .array(planStep)
-      .describe("Steps that can be executed in parallel")
-      .min(2)
-      .max(5),
-  }),
-]);
-
-const planArray = z
-  .array(planItem)
-  .describe("A step by step plan to achieve the objective. Use parallel_steps for steps that can run simultaneously.")
-  .min(1)
-  .max(9)
-
-const planSchema = z.object({
-  plan: planArray
-})
-
-const GraphState = Annotation.Root({
-  messages: Annotation<BaseMessage[]>({
-    reducer: messagesStateReducer,
-    default: () => [],
-  }),
-  documents: Annotation<DocumentInterface[]>({
-    reducer: (x, y) => y ?? x ?? [],
-  }),
-  lastNode: Annotation<Record<string, any>>({
-    reducer: (x, y) => y ?? x ?? {},
-  }),
-  plan: Annotation<z.infer<typeof planArray>>({
-    reducer: (x, y) => y ?? x ?? [],
-  }),
-});
-
 // Helper function to create system message for agents
 function createAgentSystemMessage(model: string, taskDescription?: string): SystemMessage {
   const baseIdentity = `You are 0bs Chat, an AI assistant powered by the ${model} model.`;
   
   const roleDescription = taskDescription 
-    ? `Your role is to complete the following specific task:\n${taskDescription}\n\n`
+    ? `Your role is to complete the following specific task, you will be given the user input as well for context but focus on the given task:\n${taskDescription}\n\n`
     : `Your role is to assist and engage in conversation while being helpful, respectful, and engaging.\n`;
   
   const guidelines = 
@@ -559,7 +514,7 @@ async function plannerAgent(
     };
   } else {
     // Handle sequential step
-    const currentTask = currentPlanItem as z.infer<typeof planStep>;
+    const currentTask = currentPlanItem;
     const taskDescription = 
       `${currentTask.step}\n\n` +
       `Additional Context: ${currentTask.additional_context}`;

@@ -4,8 +4,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useConvex, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { StreamEvent } from "@langchain/core/tracers/log_stream";
+import type { PaginationResult } from "convex/server";
 
 export function useStream(chatId: Id<"chats"> | "new") {
   const convex = useConvex();
@@ -29,7 +30,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
         let hasMore = true;
 
         while (hasMore && !cancelled) {
-          const result: any = await convex.query(
+          const result: PaginationResult<Doc<"streamChunks">> = await convex.query(
             api.streams.queries.getChunks,
             {
               streamId: chatInput?.streamId!,
@@ -40,22 +41,24 @@ export function useStream(chatId: Id<"chats"> | "new") {
               },
             },
           );
-
+          
           if (cancelled) return;
 
-          const { page, isDone, continueCursor } = result as any;
-
-          if (page.length > 0) {
-            const events = page.map((d: any) =>
-              JSON.parse(d.chunk) as StreamEvent,
-            );
+          if (result.page.length > 0) {
+            const events: StreamEvent[] = [];
+            result.page.forEach((d) => {
+              d.chunks.forEach((chunkStr: string) => {
+                const event = JSON.parse(chunkStr) as StreamEvent;
+                events.push(event);
+              });
+            });
             setChunks((prev) => [...prev, ...events]);
-            lastTimeRef.current = page[page.length - 1]._creationTime;
+            lastTimeRef.current = result.page[result.page.length - 1]._creationTime;
           }
 
           // Determine if we should continue fetching.
-          hasMore = !isDone;
-          cursor = (continueCursor as string | null | undefined) ?? null;
+          hasMore = !result.isDone;
+          cursor = result.continueCursor;
         }
 
         if (stream?.status === "streaming") {

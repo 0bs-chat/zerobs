@@ -91,7 +91,7 @@ export const Mcps = Table("mcps", {
   type: v.union(v.literal("sse"), v.literal("stdio")),
   command: v.optional(v.string()),
   url: v.optional(v.string()),
-  env: v.optional(v.array(v.string())),
+  env: v.optional(v.record(v.string(), v.string())),
   enabled: v.boolean(),
   status: v.union(
     v.literal("creating"),

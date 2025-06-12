@@ -68,7 +68,6 @@ export const AIMessageComponent = React.memo(({
           type="single"
           collapsible
           className="mt-4"
-          defaultValue={isStreaming ? "reasoning" : undefined}
         >
           <AccordionItem value="reasoning" className="border-none">
             <AccordionTrigger className="py-2 text-sm text-muted-foreground hover:text-foreground">

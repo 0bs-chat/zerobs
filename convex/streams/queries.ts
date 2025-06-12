@@ -37,7 +37,7 @@ export const getChunks = query({
       streamId: args.streamId,
     });
 
-    const chunks = await ctx.db
+    return await ctx.db
       .query("streamChunks")
       .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
       .order("asc")
@@ -48,16 +48,5 @@ export const getChunks = query({
         cursor: args.paginationOpts.cursor,
         numItems: args.paginationOpts.numItems,
       });
-
-    return {
-      ...chunks,
-      page: chunks.page.flatMap((doc) =>
-        doc.chunks.map((chunk) => ({
-          ...doc,
-          chunk,
-          chunks: undefined,
-        })),
-      )
-    }
   },
 });

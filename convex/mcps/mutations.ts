@@ -20,7 +20,10 @@ export const create = mutation({
       throw new Error("Command or URL is required");
     }
 
-    const envJwts = await Promise.all(Object.entries(args.env ?? {}).map(([key, value]) => createJwt(userId, key, value)));
+    const envJwts: Record<string, string> = {};
+    await Promise.all(Object.entries(args.env ?? {}).map(async ([key, value]) => {
+      envJwts[key] = await createJwt(userId, key, value);
+    }));
 
     const newMCPId = await ctx.db.insert("mcps", {
       name: args.name,
@@ -63,7 +66,10 @@ export const update = mutation({
       mcpId: args.mcpId,
     });
 
-    const envJwts = await Promise.all(Object.entries(args.updates.env ?? {}).map(([key, value]) => createJwt(userId, key, value)));
+    const envJwts: Record<string, string> = {};
+    await Promise.all(Object.entries(args.updates.env ?? {}).map(async ([key, value]) => {
+      envJwts[key] = await createJwt(userId, key, value);
+    }));
 
     await ctx.db.patch(args.mcpId, {
       ...args.updates,
@@ -101,7 +107,7 @@ export const recreate = mutation({
     mcpId: v.id("mcps"),
   },
   handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
+    await requireAuth(ctx);
 
     await ctx.runQuery(api.mcps.queries.get, {
       mcpId: args.mcpId,

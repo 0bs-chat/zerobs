@@ -1,7 +1,7 @@
 import React from "react";
 import { useParams } from "@tanstack/react-router";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useStream } from "@/lib/stream-helper";
+import { useStream } from "@/hooks/use-stream";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 import { useQuery } from "convex/react";
@@ -11,18 +11,12 @@ import {
   ToolMessage,
 } from "@langchain/core/messages";
 import { 
-  UserMessage, 
+  UserMessageComponent,
   AIMessageComponent, 
-  ToolMessage as ToolMessageComponent,
+  ToolMessageComponent,
   useCheckpointParser,
   useStreamProcessor 
 } from "./components";
-
-
-
-
-
-
 
 export const ChatMessages = React.memo(() => {
   const params = useParams({
@@ -40,11 +34,8 @@ export const ChatMessages = React.memo(() => {
   );
   
   const parsedCheckpoint = useCheckpointParser({ checkpoint });
-
-  const { streamingElements, toolStreamEvents } = useStreamProcessor({
-    streamChunks: stream?.chunks,
-    parsedCheckpoint,
-  });
+  console.log(parsedCheckpoint)
+  const { chunkGroups } = useStreamProcessor({ streamChunks: stream?.chunks });
 
   return (
     <ScrollArea className="overflow-hidden w-full h-full">
@@ -55,7 +46,7 @@ export const ChatMessages = React.memo(() => {
               message instanceof HumanMessage
             ) {
               return (
-                <UserMessage
+                <UserMessageComponent
                   key={index}
                   message={message}
                 />
@@ -68,7 +59,6 @@ export const ChatMessages = React.memo(() => {
                 <AIMessageComponent
                   key={index}
                   message={message}
-                  isStreaming={index === streamingElements.length - 1}
                 />
               );
             } else if (
@@ -78,39 +68,42 @@ export const ChatMessages = React.memo(() => {
                 <ToolMessageComponent
                   key={index}
                   message={message}
-                  streamEvents={toolStreamEvents}
                 />
               );
             }
             return null;
           }
         )}
-        {streamingElements.map((element, index) => {
-          if (element.type === "tool" && element.toolCall) {
+        {chunkGroups.map((chunkGroup, index) => {
+          if (chunkGroup.type === "ai") {
+            // Create a mock AIMessage for streaming content
+            const streamingMessage = new AIMessage({
+              content: chunkGroup.content,
+              additional_kwargs: chunkGroup.reasoning ? {
+                reasoning_content: chunkGroup.reasoning
+              } : {}
+            });
+            
+            return (
+              <AIMessageComponent
+                key={`stream-ai-${index}`}
+                message={streamingMessage}
+                isStreaming={true}
+              />
+            );
+          } else if (chunkGroup.type === "tool") {
+            // Create a mock ToolMessage for streaming tool calls
+            const streamingToolMessage = new ToolMessage({
+              content: chunkGroup.output ? JSON.stringify(chunkGroup.output) : "",
+              tool_call_id: `stream-tool-${index}`,
+              name: chunkGroup.toolName
+            });
+            
             return (
               <ToolMessageComponent
                 key={`stream-tool-${index}`}
-                message={element.toolCall}
-                streamEvents={toolStreamEvents}
-              />
-            );
-          }
-          if (
-            element.type === "text" &&
-            (element.content || element.reasoning)
-          ) {
-            const message = new AIMessage({
-              content: element.content || "",
-              additional_kwargs: {
-                reasoning_content:
-                  element.reasoning,
-              },
-            });
-            return (
-              <AIMessageComponent
-                key={`stream-text-${index}`}
-                message={message}
-                isStreaming={index === streamingElements.length - 1}
+                message={streamingToolMessage}
+                isStreaming={true}
               />
             );
           }

@@ -1,117 +1,95 @@
 import React from "react";
-import { type BaseMessage, ToolMessage } from "@langchain/core/messages";
-import type { ToolStreamEvent } from "../ToolMessage";
+import type { StreamEvent } from "@langchain/core/tracers/log_stream";
 
-interface StreamElement {
-  type: "text" | "tool";
-  content?: string;
+export interface AIChunkGroup {
+  type: "ai";
+  content: string;
   reasoning?: string;
-  toolCall?: { name: string; content: string };
 }
+
+export interface ToolChunkGroup {
+  type: "tool";
+  toolName: string;
+  input?: unknown;
+  output?: unknown;
+  isComplete: boolean;
+}
+
+export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 
 interface UseStreamProcessorProps {
-  streamChunks?: any[];
-  parsedCheckpoint?: { messages: BaseMessage[] } | null;
+  streamChunks?: StreamEvent[];
 }
 
-export const useStreamProcessor = ({ streamChunks, parsedCheckpoint }: UseStreamProcessorProps) => {
+export const useStreamProcessor = ({ streamChunks }: UseStreamProcessorProps) => {
   return React.useMemo(() => {
     if (!streamChunks) {
-      return { streamingElements: [], toolStreamEvents: [] };
+      return { chunkGroups: [] };
     }
 
-    const checkpointToolKeys = new Set(
-      parsedCheckpoint?.messages
-        ?.filter((msg): msg is ToolMessage => msg instanceof ToolMessage)
-        .map((msg) => (msg.name || "Tool") + msg.content) ?? []
-    );
+    const chunkGroups: ChunkGroup[] = [];
+    let aiBuffer: AIChunkGroup | null = null;
+    const toolMap = new Map<string, ToolChunkGroup>();
 
-    const seenStreamToolKeys = new Set<string>();
-    const elements: StreamElement[] = [];
-    const toolEvents: ToolStreamEvent[] = [];
-    let textBuffer = "";
-    let reasoningBuffer = "";
-    let lastTextContent = "";
-    let lastReasoningContent = "";
-
-    streamChunks.forEach((chunk, index) => {
-      if (chunk.event === "on_chat_model_stream") {
-        const kwargs = chunk.data.chunk.kwargs;
-        
-        if (kwargs.content) {
-          textBuffer += kwargs.content;
-        }
-        
-        if (kwargs.additional_kwargs?.reasoning_content) {
-          const reasoningChunk = kwargs.additional_kwargs.reasoning_content;
-          reasoningBuffer += reasoningChunk;
-        }
-        
-        if (kwargs.tool_call_chunks) {
-          for (const toolChunk of kwargs.tool_call_chunks) {
-            if (toolChunk.args) {
-              reasoningBuffer += toolChunk.args;
-            }
-          }
-        }
-        
-        if (textBuffer !== lastTextContent || reasoningBuffer !== lastReasoningContent) {
-          if (elements.length > 0 && elements[elements.length - 1].type === "text") {
-            elements.pop();
-          }
-          elements.push({
-            type: "text",
-            content: textBuffer,
-            reasoning: reasoningBuffer,
-          });
-          lastTextContent = textBuffer;
-          lastReasoningContent = reasoningBuffer;
-        }
-      } else if (chunk.event === "on_tool_start") {
-        toolEvents.push({
-          type: "tool_start",
-          toolName: chunk.name || "Tool",
-          input: chunk.data?.input,
-          id: `stream-${index}`,
-        });
-        
-        if (textBuffer) {
-          elements.push({
-            type: "text",
-            content: textBuffer,
-            reasoning: reasoningBuffer,
-          });
-          textBuffer = "";
-          reasoningBuffer = "";
-        }
-        
-        const toolName = chunk.name || "Tool";
-        const content = JSON.stringify(chunk.data?.input);
-        const key = toolName + content;
-        
-        if (!checkpointToolKeys.has(key) && !seenStreamToolKeys.has(key)) {
-          seenStreamToolKeys.add(key);
-          elements.push({
-            type: "tool",
-            toolCall: {
-              name: toolName,
-              content: content,
-            },
-          });
-        }
-      } else if (chunk.event === "on_tool_end") {
-        toolEvents.push({
-          type: "tool_end",
-          toolName: chunk.name || "Tool",
-          output: chunk.data?.output,
-          id: `stream-${index}`,
-        });
+    const flushAI = () => {
+      if (aiBuffer) {
+        chunkGroups.push(aiBuffer);
+        aiBuffer = null;
       }
-    });
-
-    return {
-      streamingElements: elements,
-      toolStreamEvents: toolEvents,
     };
-  }, [streamChunks, parsedCheckpoint?.messages]);
-}; 
+
+    for (const chunk of streamChunks) {
+      const id = chunk.run_id ?? String(chunk.name);
+
+      switch (chunk.event) {
+        case "on_chat_model_stream": {
+          const { content = "", additional_kwargs = {} } = chunk.data.chunk.kwargs;
+          const reasoningPart: string | undefined = additional_kwargs.reasoning_content;
+
+          aiBuffer ??= { type: "ai", content: "" };
+          aiBuffer.content += content;
+          if (reasoningPart) {
+            aiBuffer.reasoning = (aiBuffer.reasoning ?? "") + reasoningPart;
+          }
+          break;
+        }
+
+        case "on_tool_start": {
+          flushAI();
+          const tool: ToolChunkGroup = {
+            type: "tool",
+            toolName: chunk.name || "Tool",
+            input: chunk.data?.input,
+            isComplete: false,
+          };
+          chunkGroups.push(tool); // optimistic push; we'll update later when complete
+          toolMap.set(id, tool);
+          break;
+        }
+
+        case "on_tool_end": {
+          flushAI();
+          const tool = toolMap.get(id);
+          if (tool) {
+            tool.output = chunk.data?.output;
+            tool.isComplete = true;
+            toolMap.delete(id);
+          } else {
+            // orphaned end; treat as complete tool without start data
+            chunkGroups.push({
+              type: "tool",
+              toolName: chunk.name || "Tool",
+              output: chunk.data?.output,
+              isComplete: true,
+            });
+          }
+          break;
+        }
+      }
+    }
+
+    flushAI();
+
+    return { chunkGroups };
+  }, [streamChunks]);
+};

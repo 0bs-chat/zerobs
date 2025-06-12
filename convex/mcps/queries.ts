@@ -3,13 +3,13 @@ import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { paginationOptsValidator } from "convex/server";
 import { verifyEnv } from "./utils";
-
+import { Doc } from "../_generated/dataModel";
 
 export const get = query({
   args: {
     mcpId: v.id("mcps"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<Doc<"mcps">> => {
     const { userId } = await requireAuth(ctx);
 
     const mcp = await ctx.db.get(args.mcpId);

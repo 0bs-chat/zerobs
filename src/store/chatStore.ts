@@ -8,9 +8,6 @@ export const resizablePanelsOpenAtom = atomWithStorage(
   false
 );
 
-// ================================
-// genreal chat ui state
-// ================================
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
 
 export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(

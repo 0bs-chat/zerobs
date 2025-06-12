@@ -30,7 +30,7 @@ interface UserMessageProps {
   message: HumanMessage;
 }
 
-export const UserMessage = React.memo(({ message }: UserMessageProps) => {
+export const UserMessageComponent = React.memo(({ message }: UserMessageProps) => {
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
@@ -119,4 +119,4 @@ export const UserMessage = React.memo(({ message }: UserMessageProps) => {
   );
 });
 
-UserMessage.displayName = "UserMessage"; 
+UserMessageComponent.displayName = "UserMessageComponent";

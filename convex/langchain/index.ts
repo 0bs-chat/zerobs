@@ -174,7 +174,9 @@ async function* streamHelper(
 
   for await (const event of response) {
     if (["on_chat_model_stream", "on_tool_start", "on_tool_end"].includes(event.event)) {
-      yield event;
+      if (!["retrieve", "planner"].includes(event.metadata.langgraph_node)) {
+        yield event; 
+      }
     }
   }
 }

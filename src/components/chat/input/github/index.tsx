@@ -159,11 +159,11 @@ const RepoLoader = () => {
   );
 };
 
-function RepoActions() {
-  const uploadDocuments = useUploadDocuments({ type: "json" });
+function RepoActions({ onCloseDialog }: { onCloseDialog: (open: boolean) => void }) {
+  const uploadDocuments = useUploadDocuments({ type: "github" });
   const { combineSelectedFilesForChat } = useGithub();
   const selectedFiles = useAtomValue(selectedFilesAtom);
-
+  
   const handleAddToChat = async () => {
     try {
       // Generate combined file
@@ -182,6 +182,7 @@ function RepoActions() {
       toast.success(
         `Added ${selectedFiles.size} files to chat as combined document`
       );
+      onCloseDialog(false);
     } catch (error) {
       console.error("Error adding files to chat:", error);
       toast.error("Failed to add files to chat");
@@ -203,12 +204,8 @@ export const GitHubDialog = ({
   onOpenChange,
   children,
 }: GitHubDialogProps) => {
-  const handleOpenChange = (newOpen: boolean) => {
-    onOpenChange(newOpen);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
         className={`sm:max-w-[800px]`}
@@ -222,7 +219,7 @@ export const GitHubDialog = ({
         <div className="py-4 w-full flex flex-col gap-4">
           <RepoLoader />
           <FileTree />
-          <RepoActions />
+          <RepoActions onCloseDialog={onOpenChange} />
         </div>
       </DialogContent>
     </Dialog>

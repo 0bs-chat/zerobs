@@ -71,7 +71,7 @@ export function useMCPs() {
   const toggleMCP = async (mcpId: Id<"mcps">, enabled: boolean) => {
     try {
       await updateMCP({ mcpId, updates: { enabled: !enabled } });
-      toast.success(enabled ? "MCP started" : "MCP stopped");
+      toast.success(enabled ? "MCP stopped" : "MCP started");
     } catch (error) {
       console.error("Failed to start/stop MCP:", error);
     }

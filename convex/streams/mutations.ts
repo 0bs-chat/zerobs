@@ -4,6 +4,23 @@ import { requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
 import { Doc } from "../_generated/dataModel";
 
+export const removeStreamChunks = internalMutation({
+  args: { streamId: v.id("streams") },
+  handler: async (ctx, { streamId }) => {
+    const refs = await ctx.db
+      .query("streamChunkRefs")
+      .withIndex("by_stream", (q) => q.eq("streamId", streamId))
+      .collect();
+
+    await Promise.all([
+      ...refs.map((ref) => ctx.db.delete(ref.chunkId)),
+      ...refs.map((ref) => ctx.db.delete(ref._id)),
+    ]);
+
+    return refs.length;
+  },
+});
+
 export const update = internalMutation({
   args: {
     streamId: v.id("streams"),
@@ -27,13 +44,9 @@ export const update = internalMutation({
     });
 
     if (args.updates.status === "done" || args.updates.status === "cancelled") {
-      const refs = await ctx.db
-        .query("streamChunkRefs")
-        .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
-        .collect();
-
-      await Promise.all(refs.map((ref) => ctx.db.delete(ref.chunkId)));
-      await Promise.all(refs.map((ref) => ctx.db.delete(ref._id)));
+      await ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
+        streamId: args.streamId,
+      });
     }
 
     await ctx.db.patch(args.streamId, {
@@ -76,7 +89,7 @@ export const cancel = mutation({
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
-    
+
     const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
       chatId: args.chatId,
     });
@@ -104,78 +117,55 @@ export const remove = internalMutation({
     await ctx.runQuery(api.streams.queries.get, {
       streamId: args.streamId,
     });
+
+    // Remove the stream document and its associated chunks.
     await ctx.db.delete(args.streamId);
-
-    const refs = await ctx.db
-      .query("streamChunkRefs")
-      .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
-      .collect();
-
-    await Promise.all(refs.map((ref) => ctx.db.delete(ref.chunkId)));
-    await Promise.all(refs.map((ref) => ctx.db.delete(ref._id)));
+    await ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
+      streamId: args.streamId,
+    });
   },
 });
 
 export const cleanUp = internalMutation({
   args: {},
-  handler: async (ctx, _args) => {
-    // Get and delete all "done" streams immediately
+  handler: async (ctx, _args): Promise<number> => {
+    // Get "done" streams
     const doneStreams = await ctx.db
       .query("streams")
       .withIndex("by_status_user", (q) => q.eq("status", "done"))
       .collect();
-    const doneChunks = await Promise.all(
-      doneStreams.map(async (stream) => {
-        const refs = await ctx.db
-          .query("streamChunkRefs")
-          .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
-          .collect();
-        await Promise.all(refs.map((ref) => ctx.db.delete(ref.chunkId)));
-        await Promise.all(refs.map((ref) => ctx.db.delete(ref._id)));
-        return refs.length;
-      }),
-    );
 
-    // Get and delete all "cancelled" streams immediately
+    // Get "cancelled" streams
     const cancelledStreams = await ctx.db
       .query("streams")
       .withIndex("by_status_user", (q) => q.eq("status", "cancelled"))
       .collect();
-    const cancelledChunks = await Promise.all(
-      cancelledStreams.map(async (stream) => {
-        const refs = await ctx.db
-          .query("streamChunkRefs")
-          .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
-          .collect();
-        await Promise.all(refs.map((ref) => ctx.db.delete(ref.chunkId)));
-        await Promise.all(refs.map((ref) => ctx.db.delete(ref._id)));
-        return refs.length;
-      }),
-    );
 
-    // Get and delete "error" streams that are more than 15 minutes old
+    // Get "error" streams that are more than 15 minutes old
     const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
     const errorStreams = await ctx.db
       .query("streams")
       .withIndex("by_status_user", (q) => q.eq("status", "error"))
       .filter((q) => q.lt(q.field("_creationTime"), fifteenMinutesAgo))
       .collect();
-    const errorChunks = await Promise.all(
-      errorStreams.map(async (stream) => {
-        const refs = await ctx.db
-          .query("streamChunkRefs")
-          .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
-          .collect();
-        await Promise.all(refs.map((ref) => ctx.db.delete(ref.chunkId)));
-        await Promise.all(refs.map((ref) => ctx.db.delete(ref._id)));
-        return refs.length;
-      }),
+
+    const allStreamsToClean = [
+      ...doneStreams,
+      ...cancelledStreams,
+      ...errorStreams,
+    ];
+
+    // Remove chunks for all collected streams in parallel by calling the new mutation.
+    const chunkCounts = await Promise.all(
+      allStreamsToClean.map((stream) =>
+        ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
+          streamId: stream._id,
+        }),
+      ),
     );
 
-    // We no longer aggregate actual chunk contents; return count of chunks removed based on ref docs deleted.
-    const totalRemovedRefs = doneChunks.reduce((a, b) => a + b, 0) +
-      cancelledChunks.reduce((a, b) => a + b, 0) +
-      errorChunks.reduce((a, b) => a + b, 0);
+    // Sum up the total number of removed chunk references.
+    const totalRemovedRefs = chunkCounts.reduce((a, b) => a + b, 0);
     return totalRemovedRefs;
   },
 });
