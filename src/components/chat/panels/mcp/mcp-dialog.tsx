@@ -29,7 +29,7 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange} modal>
       <DialogTrigger asChild>
-        <Button variant="default" className="cursor-pointer">
+        <Button variant="default" size="sm" className="cursor-pointer">
           <PlusIcon className="size-4" />
           <span>Create MCP</span>
         </Button>

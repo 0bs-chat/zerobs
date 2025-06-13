@@ -1,3 +1,5 @@
+"use node";
+
 import { v } from "convex/values";
 import { internalAction } from "../../_generated/server";
 import mime from "mime";
@@ -33,7 +35,7 @@ export const processFile = internalAction({
         body: JSON.stringify({ document_url: fileUrl }),
       });
       const data = await response.json();
-      result = await data.result.content;
+      result = data.result.content;
     }
     
     return result;
@@ -54,7 +56,7 @@ export const processUrlOrSite = internalAction({
       },
       body: JSON.stringify({ url: args.url, max_depth: args.maxDepth }),
     });
-    const data = await response.json() as { url: string; markdown: string }[][];
-    return data.map((urls) => urls.map((url) => `### ${url.url}\n${url.markdown}\n`).join("\n")).join("\n");
+    const data = await response.json() as { url: string; markdown: string }[];
+    return data.map((url) => `### ${url.url}\n${url.markdown}\n`).join("\n");
   },
 });

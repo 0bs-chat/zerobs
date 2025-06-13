@@ -218,11 +218,6 @@ const useGithub = () => {
 
       try {
         const entries = await fs.promises.readdir(fullDirPath);
-        console.log(
-          `Found ${entries.length} entries in ${fullDirPath}:`,
-          entries.slice(0, 10)
-        );
-
         for (const entry of entries) {
           // Skip .git directory and other common ignore patterns
           if (
@@ -230,7 +225,6 @@ const useGithub = () => {
             entry === "node_modules" ||
             entry.startsWith(".")
           ) {
-            console.log(`Skipping ${entry}`);
             continue;
           }
 
@@ -247,9 +241,6 @@ const useGithub = () => {
           // Calculate token count for files
           if (isFile) {
             item.tokenCount = await calculateTokenCount(repoPath, entryPath);
-            console.log(`Added file: ${item.path} (${item.tokenCount} tokens)`);
-          } else {
-            console.log(`Added directory: ${item.path}`);
           }
 
           items.push(item);
@@ -416,7 +407,6 @@ const useGithub = () => {
       try {
         const repoPath = getRepoPath(owner, repo);
         const branches = await git.listBranches({ fs, dir: repoPath });
-        console.log("branches", branches);
         return branches;
       } catch (error) {
         console.error("Error getting branches:", error);

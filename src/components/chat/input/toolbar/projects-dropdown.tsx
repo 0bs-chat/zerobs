@@ -8,13 +8,9 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { FoldersIcon, PlusIcon } from "lucide-react";
-import {
-  projectDialogOpenAtom,
-  resizablePanelsOpenAtom,
-  resizablePanelTabAtom,
-  selectedProjectIdAtom,
-} from "@/store/chatStore";
+import { projectDialogOpenAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
+import { useSelectProject } from "@/hooks/use-projects";
 
 interface ProjectsDropdownProps {
   onCloseDropdown: () => void;
@@ -26,9 +22,7 @@ export const ProjectsDropdown = ({
   const projects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 3, cursor: null },
   });
-  const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
-  const setResizablePanelsOpen = useSetAtom(resizablePanelsOpenAtom);
-  const setResizablePanelTab = useSetAtom(resizablePanelTabAtom);
+  const { selectProject } = useSelectProject();
   const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
 
   return (
@@ -42,9 +36,7 @@ export const ProjectsDropdown = ({
           <DropdownMenuItem
             key={project._id}
             onSelect={() => {
-              setSelectedProjectId(project._id);
-              setResizablePanelTab("projects");
-              setResizablePanelsOpen(true);
+              selectProject(project._id);
               onCloseDropdown();
             }}
           >

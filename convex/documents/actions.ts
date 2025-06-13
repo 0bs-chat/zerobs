@@ -68,6 +68,12 @@ export const addDocument = internalAction({
       );
 
       const chunks = await textSplitter.splitDocuments([processedDoc]);
+      // cleanup metadata and set source to documentId
+      chunks.forEach(chunk => {
+        chunk.metadata = {
+          source: document._id,
+        };
+      });
       await vectorStore.addDocuments(chunks);
 
       await ctx.runMutation(internal.documents.mutations.updateStatus, {

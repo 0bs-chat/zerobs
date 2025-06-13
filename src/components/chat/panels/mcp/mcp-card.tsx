@@ -5,7 +5,7 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 
 export const MCPCard = ({ mcp, onStartStop, onDelete }: MCPCardProps) => {
   return (
-    <Card className="px-4 py-3">
+    <Card className="px-4 py-3 rounded-md">
       <div className="flex items-center justify-between">
         <div className="flex flex-col justify-center">
           <CardTitle className="text-lg font-semibold">{mcp.name}</CardTitle>

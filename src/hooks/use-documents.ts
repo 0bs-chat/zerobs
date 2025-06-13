@@ -21,7 +21,7 @@ export const useRemoveDocument = () => {
   };
 };
 
-export const useUploadDocuments = ({ type }: { type: "file" | "url" | "site" | "youtube" | "text" | "github" } = { type: "file" }) => {
+export const useUploadDocuments = ({ type, addToChatInput }: { type: "file" | "url" | "site" | "youtube" | "text" | "github", addToChatInput?: boolean } = { type: "file", addToChatInput: true }) => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const chatId = params.chatId as Id<"chats"> | "new";
   const chatInputQuery = useQuery(api.chatInputs.queries.get, { chatId });
@@ -71,17 +71,21 @@ export const useUploadDocuments = ({ type }: { type: "file" | "url" | "site" | "
       });
 
       // Update chat input with new documents
-      const existingDocuments = chatInputQuery?.documents || [];
-      await updateChatInputMutation({
-        chatId,
-        updates: {
-          documents: [...existingDocuments, ...documentIds],
-        },
-      });
+      if (addToChatInput) {
+        const existingDocuments = chatInputQuery?.documents || [];
+        await updateChatInputMutation({
+          chatId,
+          updates: {
+            documents: [...existingDocuments, ...documentIds],
+          },
+        });
+      }
 
       toast(
         `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`
       );
+
+      return documentIds;
     } catch (error) {
       console.error("Upload error:", error);
       toast("Error uploading files", {
@@ -90,51 +94,6 @@ export const useUploadDocuments = ({ type }: { type: "file" | "url" | "site" | "
     }
   };
 };
-
-// #########################################################
-//                gotta write this again.
-// #########################################################
-
-// export function useAddDocumentToProject() {
-//   const addDocuments = useMutation(
-//     api.projectDocuments.mutations.createMultiple
-//   );
-
-//   return async (
-//     projectId: Id<"projects">,
-//     documentId: Id<"documents"> | Id<"documents">[]
-//   ) => {
-//     if (!projectId || !documentId) return;
-//     const documentIds = Array.isArray(documentId) ? documentId : [documentId];
-//     await addDocuments({
-//       projectId,
-//       documentIds,
-//     });
-//   };
-// }
-
-// type CreateDocumentArgs = {
-//   name: string;
-//   type: "file" | "text" | "url" | "site" | "youtube";
-//   size: number;
-//   key: string | Id<"_storage">;
-// };
-
-// export const useCreateDocument = () => {
-//   const createDocument = useMutation(api.documents.mutations.createMultiple);
-
-//   return async (documents: CreateDocumentArgs[] | CreateDocumentArgs) => {
-//     const docsArray = Array.isArray(documents) ? documents : [documents];
-//     return await createDocument({
-//       documents: docsArray.map((document) => ({
-//         name: document.name,
-//         type: document.type,
-//         size: document.size,
-//         key: document.key,
-//       })),
-//     });
-//   };
-// };
 
 export const mergeAndCreateDocument = () => {
   async (filePaths: string[]) => {

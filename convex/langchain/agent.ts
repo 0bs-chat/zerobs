@@ -185,6 +185,7 @@ async function retrieve(
   // Retrive documents
   let documents: DocumentInterface[] = [];
   if (formattedConfig.chatInput.projectId) {
+    console.log("retrieving documents for project", formattedConfig.chatInput.projectId);
     const includedProjectDocuments = await formattedConfig.ctx.runQuery(
       internal.projectDocuments.queries.getSelected,
       {
@@ -192,25 +193,23 @@ async function retrieve(
         selected: true,
       },
     );
-
+    console.log("includedProjectDocuments", includedProjectDocuments);
     const queries = await generateQueries(
       "vectorStore",
       formattedConfig.chatInput.model,
       state,
       formattedConfig,
     );
+
     await Promise.all(
       queries.map(async (query) => {
         const results = await vectorStore.similaritySearch(query, 4, {
-          filter: (q) =>
-            q.or(
-              ...includedProjectDocuments.map((doc) =>
-                q.eq("metadata", {
-                  source: doc.documentId,
-                }),
-              ),
-            ),
+          filter: q =>
+            q.or(...includedProjectDocuments.map(document => q.eq("metadata", {
+              source: document.documentId,
+            }))),
         });
+        console.log("results", results);
         documents.push(...results);
       }),
     );

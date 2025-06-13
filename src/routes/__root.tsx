@@ -12,7 +12,7 @@ import { TopNav } from "@/components/topnav";
 import { ResizablePanelGroup } from "@/components/ui/resizable";
 import { ResizablePanel } from "@/components/ui/resizable";
 import { ResizableHandle } from "@/components/ui/resizable";
-import { Panel } from "@/components/chat/panel";
+import { Panel } from "@/components/chat/panels";
 import { resizablePanelsOpenAtom, sidebarOpenAtom } from "@/store/chatStore";
 import { useAtomValue, useSetAtom } from "jotai";
 

@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 import type { Id } from "../../convex/_generated/dataModel";
 import { atomWithStorage } from "jotai/utils";
-import type { MCPData } from "@/components/chat/panel/mcp/types";
+import type { MCPData } from "@/components/chat/panels/mcp/types";
 
 export const resizablePanelsOpenAtom = atomWithStorage(
   "resizablePanelsOpen",

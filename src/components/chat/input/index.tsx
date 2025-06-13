@@ -28,7 +28,7 @@ export const ChatInput = () => {
   return (
     <div className="flex flex-col max-w-4xl w-full mx-auto items-center bg-muted rounded-lg">
       {/* Document List */}
-      <DocumentList documentIds={chatInput?.documents} />
+      <DocumentList documentIds={chatInput?.documents} model={chatInput?.model ?? ""} />
 
       {/* Input */}
       <AutosizeTextarea

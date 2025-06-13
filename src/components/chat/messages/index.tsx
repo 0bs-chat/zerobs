@@ -34,7 +34,7 @@ export const ChatMessages = React.memo(() => {
   );
   
   const parsedCheckpoint = useCheckpointParser({ checkpoint });
-  console.log(parsedCheckpoint)
+  console.log(parsedCheckpoint);
   const { chunkGroups } = useStreamProcessor({ streamChunks: stream?.chunks });
 
   return (

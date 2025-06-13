@@ -11,24 +11,9 @@ export const create = internalMutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    await ctx.runQuery(api.projects.queries.get, {
-      projectId: args.projectId,
-    });
-
     await ctx.runQuery(api.documents.queries.get, {
       documentId: args.documentId,
     });
-
-    const projectDocument = await ctx.runQuery(
-      internal.projectDocuments.queries.getByDocumentId,
-      {
-        documentId: args.documentId,
-      },
-    );
-
-    if (projectDocument) {
-      throw new Error("Document already in project");
-    }
 
     const projectDocumentId = await ctx.db.insert("projectDocuments", {
       projectId: args.projectId,

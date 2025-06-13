@@ -38,7 +38,6 @@ function RouteComponent() {
               className="px-4 text-lg py-6 cursor-pointer w-56"
               key={provider}
               onClick={() => {
-                console.log("Signing in with", provider);
                 signIn(provider);
                 toast.success(`Signing in with ${provider}`);
               }}

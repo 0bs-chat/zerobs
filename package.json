@@ -105,7 +105,8 @@
     "vaul": "^1.1.2",
     "youtubei.js": "^13.4.0",
     "zod": "^3.25.56",
-    "zustand": "^5.0.4"
+    "zustand": "^5.0.4",
+    "highlight.js": "^11.9.0"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "^5.78.0",

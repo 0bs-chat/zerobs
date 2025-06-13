@@ -14,7 +14,7 @@ export const Panel = () => {
     <Tabs
       value={resizablePanelTab}
       onValueChange={(value) => setResizablePanelTab(value as TabValue)}
-      className="py-2 px-4 "
+      className="py-2 px-4"
     >
       <div className="flex items-center justify-between gap-2 pr-10">
         <TabsList className="w-full flex justify-center ">

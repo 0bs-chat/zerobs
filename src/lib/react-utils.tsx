@@ -1,8 +1,8 @@
 import { FileTextIcon, ImageIcon, AudioLinesIcon, VideoIcon, FileIcon, Loader2Icon, LinkIcon, GlobeIcon, YoutubeIcon } from "lucide-react";
 import type { Doc } from "convex/_generated/dataModel";
 
-export const getTagInfo = (tag: string, status?: Doc<"documents">["status"]) => {
-  if (status && status === "processing") {
+export const getTagInfo = (tag: string, status?: Doc<"documents">["status"], supportedModalities: string[] = []) => {
+  if (status && status === "processing" && !supportedModalities.includes(tag)) {
     return {
       icon: Loader2Icon,
       className: "text-gray-500 animate-spin",
