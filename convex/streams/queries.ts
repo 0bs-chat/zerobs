@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api } from "../_generated/api";
 import { paginationOptsValidator } from "convex/server";
+import { Doc } from "../_generated/dataModel";
 
 export const get = query({
   args: {
@@ -20,6 +21,29 @@ export const get = query({
       throw new Error("Stream not found");
     }
     return stream;
+  },
+});
+
+export const getFromChatId = query({
+  args: {
+    chatId: v.union(v.id("chats"), v.literal("new")),
+  },
+  handler: async (ctx, args): Promise<Doc<"streams"> | null> => {
+    await requireAuth(ctx);
+
+    const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
+      chatId: args.chatId,
+    });
+
+    const streamId = chatInput?.streamId;
+
+    if (!streamId) {
+      return null;
+    }
+
+    return await ctx.runQuery(api.streams.queries.get, {
+      streamId: streamId,
+    });
   },
 });
 

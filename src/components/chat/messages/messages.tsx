@@ -14,9 +14,9 @@ import {
   UserMessageComponent,
   AIMessageComponent, 
   ToolMessageComponent,
-  useCheckpointParser,
-  useStreamProcessor 
-} from "./components";
+} from ".";
+import { useCheckpointParser } from "@/hooks/use-chats";
+import { useStreamProcessor } from "@/hooks/use-stream";
 
 export const ChatMessages = React.memo(() => {
   const params = useParams({

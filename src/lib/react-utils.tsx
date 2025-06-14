@@ -1,4 +1,4 @@
-import { FileTextIcon, ImageIcon, AudioLinesIcon, VideoIcon, FileIcon, Loader2Icon, LinkIcon, GlobeIcon, YoutubeIcon } from "lucide-react";
+import { FileTextIcon, ImageIcon, AudioLinesIcon, VideoIcon, FileIcon, Loader2Icon, LinkIcon, GlobeIcon, YoutubeIcon, AlertCircleIcon } from "lucide-react";
 import type { Doc } from "convex/_generated/dataModel";
 
 export const getTagInfo = (tag: string, status?: Doc<"documents">["status"], supportedModalities: string[] = []) => {
@@ -6,6 +6,13 @@ export const getTagInfo = (tag: string, status?: Doc<"documents">["status"], sup
     return {
       icon: Loader2Icon,
       className: "text-gray-500 animate-spin",
+    };
+  }
+
+  if (status && status === "error") {
+    return {
+      icon: AlertCircleIcon,
+      className: "text-red-500",
     };
   }
 

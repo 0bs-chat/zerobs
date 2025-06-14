@@ -7,16 +7,109 @@ import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { StreamEvent } from "@langchain/core/tracers/log_stream";
 import type { PaginationResult } from "convex/server";
+import React from "react";
+
+export interface AIChunkGroup {
+  type: "ai";
+  content: string;
+  reasoning?: string;
+}
+
+export interface ToolChunkGroup {
+  type: "tool";
+  toolName: string;
+  input?: unknown;
+  output?: unknown;
+  isComplete: boolean;
+}
+
+export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
+
+interface UseStreamProcessorProps {
+  streamChunks?: StreamEvent[];
+}
+
+export const useStreamProcessor = ({ streamChunks }: UseStreamProcessorProps) => {
+  return React.useMemo(() => {
+    if (!streamChunks) {
+      return { chunkGroups: [] };
+    }
+
+    const chunkGroups: ChunkGroup[] = [];
+    let aiBuffer: AIChunkGroup | null = null;
+    const toolMap = new Map<string, ToolChunkGroup>();
+
+    const flushAI = () => {
+      if (aiBuffer) {
+        chunkGroups.push(aiBuffer);
+        aiBuffer = null;
+      }
+    };
+
+    for (const chunk of streamChunks) {
+      const id = chunk.run_id ?? String(chunk.name);
+
+      switch (chunk.event) {
+        case "on_chat_model_stream": {
+          const { content = "", additional_kwargs = {} } = chunk.data.chunk.kwargs;
+          const reasoningPart: string | undefined = additional_kwargs.reasoning_content;
+
+          aiBuffer ??= { type: "ai", content: "" };
+          aiBuffer.content += content;
+          if (reasoningPart) {
+            aiBuffer.reasoning = (aiBuffer.reasoning ?? "") + reasoningPart;
+          }
+          break;
+        }
+
+        case "on_tool_start": {
+          flushAI();
+          const tool: ToolChunkGroup = {
+            type: "tool",
+            toolName: chunk.name || "Tool",
+            input: chunk.data?.input,
+            isComplete: false,
+          };
+          chunkGroups.push(tool); // optimistic push; we'll update later when complete
+          toolMap.set(id, tool);
+          break;
+        }
+
+        case "on_tool_end": {
+          flushAI();
+          const tool = toolMap.get(id);
+          if (tool) {
+            tool.output = chunk.data?.output;
+            tool.isComplete = true;
+            toolMap.delete(id);
+          } else {
+            // orphaned end; treat as complete tool without start data
+            chunkGroups.push({
+              type: "tool",
+              toolName: chunk.name || "Tool",
+              output: chunk.data?.output,
+              isComplete: true,
+            });
+          }
+          break;
+        }
+      }
+    }
+
+    flushAI();
+
+    return { chunkGroups };
+  }, [streamChunks]);
+};
 
 export function useStream(chatId: Id<"chats"> | "new") {
   const convex = useConvex();
   const lastTimeRef = useRef<number | undefined>(undefined);
   const [chunks, setChunks] = useState<StreamEvent[]>([]);
-  const chatInput = useQuery(api.chatInputs.queries.get, { chatId: chatId });
-  const stream = useQuery(api.streams.queries.get, chatInput?.streamId ? { streamId: chatInput.streamId! } : "skip");
+  const stream = useQuery(api.streams.queries.getFromChatId, { chatId: chatId });
 
   useEffect(() => {
-    if (!chatInput?.streamId) return;
+    if (!stream) return;
     let cancelled = false;
 
     // reset whenever streamId changes
@@ -33,7 +126,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
           const result: PaginationResult<Doc<"streamChunks">> = await convex.query(
             api.streams.queries.getChunks,
             {
-              streamId: chatInput?.streamId!,
+              streamId: stream._id,
               lastChunkTime: lastTimeRef.current,
               paginationOpts: {
                 numItems: 50,
@@ -72,7 +165,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
     return () => {
       cancelled = true;
     };
-  }, [convex, chatInput?.streamId, stream]);
+  }, [convex, stream]);
 
   return { chunks, status: stream?.status };
 }

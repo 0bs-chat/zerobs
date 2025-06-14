@@ -12,13 +12,10 @@ export const planStep = z.object({
 
 export const planItem = z.union([
   planStep,
-  z.object({
-    parallel_steps: z
-      .array(planStep)
-      .describe("Steps that can be executed in parallel")
-      .min(2)
-      .max(5),
-  }),
+  z.array(planStep)
+    .describe("Steps that can be executed in parallel")
+    .min(2)
+    .max(5),
 ]);
 
 export const planArray = z
@@ -31,18 +28,23 @@ export const planSchema = z.object({
   plan: planArray
 })
 
+export type CompletedStep = [z.infer<typeof planStep>, BaseMessage];
+
 export const GraphState = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
     reducer: messagesStateReducer,
     default: () => [],
   }),
-  documents: Annotation<DocumentInterface[]>({
-    reducer: (x, y) => y ?? x ?? [],
-  }),
-  lastNode: Annotation<Record<string, any>>({
-    reducer: (x, y) => y ?? x ?? {},
+  documents: Annotation<DocumentInterface[][]>({
+    reducer: (x, y) => x.concat(y),
+    default: () => [],
   }),
   plan: Annotation<z.infer<typeof planArray>>({
     reducer: (x, y) => y ?? x ?? [],
+  }),
+  pastSteps: Annotation<(CompletedStep | CompletedStep[])[][]>({
+    // [[step, message], [[step, message], [step, message]], [step, message]]
+    reducer: (x, y) => y ?? x ?? [],
+    default: () => [],
   }),
 });

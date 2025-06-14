@@ -31,7 +31,7 @@ import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 import { internal } from "../_generated/api";
 import { StructuredOutputParser } from "@langchain/core/output_parsers";
 import { OutputFixingParser } from "langchain/output_parsers";
-import { GraphState, planSchema, planStep, planArray } from "./state";
+import { GraphState, planSchema, planArray, planItem, type CompletedStep } from "./state";
 
 type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;
@@ -72,6 +72,7 @@ function createAgentSystemMessage(model: string, taskDescription?: string): Syst
 async function createAgentWithTools(
   formattedConfig: ExtendedRunnableConfig,
   promptTemplate: ChatPromptTemplate,
+  name: string = "agent",
 ) {
   const tools = await getMCPTools(formattedConfig.ctx);
   const searchTools = await getSearchTools(formattedConfig.ctx);
@@ -90,6 +91,7 @@ async function createAgentWithTools(
           : [searchTools.duckduckgo, searchTools.crawlWeb]),
       ],
       prompt: promptTemplate,
+      name: name,
     });
   } else {
     if (Object.keys(tools.groupedTools).length === 0) {
@@ -101,6 +103,7 @@ async function createAgentWithTools(
           llm: getModel(formattedConfig.chatInput.model!),
           tools,
           prompt: `You are a ${groupName} assistant`,
+          name: `${name}-worker`,
         }),
     );
 
@@ -111,6 +114,7 @@ async function createAgentWithTools(
       prompt:
         `You are 0bs Chat, an AI assistant powered by the ${formattedConfig.chatInput.model} model. ` +
         `Your role is to analyze the user's request and determine a plan of action to take. Assign each plan step to the appropriate agent, one at a time.\n`,
+      supervisorName: name,
     }).compile();
   }
 }
@@ -377,11 +381,11 @@ async function agent(state: typeof GraphState.State, config: RunnableConfig) {
 
   const promptTemplate = ChatPromptTemplate.fromMessages([
     createAgentSystemMessage(formattedConfig.chatInput.model!),
-    ...(state.documents && state.documents.length > 0
+    ...(state.documents && state.documents.length > 0 && state.documents[state.documents.length - 1].length > 0
       ? [
           new HumanMessage(
             "Here are the documents that are relevant to the question: " +
-              formatDocumentsAsString(state.documents),
+              formatDocumentsAsString(state.documents[state.documents.length - 1]),
           ),
         ]
       : []),
@@ -460,10 +464,13 @@ async function plannerAgent(
 
   const currentPlanItem = state.plan[0];
   const remainingPlan = state.plan.slice(1);
+  const pastSteps = state.pastSteps;
+  const lastPastSteps = pastSteps[pastSteps.length - 2];
+  const currentPastSteps = pastSteps[pastSteps.length - 1];
 
   // Handle parallel steps
-  if ('parallel_steps' in currentPlanItem) {
-    const parallelSteps = currentPlanItem.parallel_steps;
+  if (Array.isArray(currentPlanItem)) {
+    const parallelSteps = currentPlanItem;
     
     // Execute all parallel steps simultaneously
     const parallelResults = await Promise.all(
@@ -474,18 +481,18 @@ async function plannerAgent(
 
         const promptTemplate = ChatPromptTemplate.fromMessages([
           createAgentSystemMessage(formattedConfig.chatInput.model!, taskDescription),
-          ...(state.documents && state.documents.length > 0
+          ...(state.documents && state.documents.length > 0 && state.documents[state.documents.length - 1].length > 0
             ? [
                 new HumanMessage(
                   "Here are the documents that are relevant to the question: " +
-                    formatDocumentsAsString(state.documents),
+                    formatDocumentsAsString(state.documents[state.documents.length - 1]),
                 ),
               ]
             : []),
           new MessagesPlaceholder("messages"),
         ]);
 
-        const agent = await createAgentWithTools(formattedConfig, promptTemplate);
+        const agent = await createAgentWithTools(formattedConfig, promptTemplate, "plannerAgent");
         const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model!);
         
         const response = await agent.invoke(
@@ -495,21 +502,18 @@ async function plannerAgent(
           config,
         );
 
-        return response.messages.slice(-1)[0];
+        const lastMessage = response.messages[response.messages.length - 1];
+        return {
+          step,
+          message: lastMessage
+        };
       })
     );
 
-    // Combine all parallel results into new messages
-    const newMessages = parallelResults.map((message, index) => {
-      message.response_metadata["planSteps"] = parallelSteps[index];
-      message.response_metadata["parallelExecution"] = true;
-      message.response_metadata["parallelIndex"] = index;
-      return message;
-    });
-
+    const parallelPastSteps = parallelResults.map((result, index) => [currentPlanItem[index], result.message]);
     return {
-      messages: newMessages,
       plan: remainingPlan,
+      pastSteps: [...lastPastSteps, [...currentPastSteps, parallelPastSteps]],
     };
   } else {
     // Handle sequential step
@@ -520,18 +524,18 @@ async function plannerAgent(
 
     const promptTemplate = ChatPromptTemplate.fromMessages([
       createAgentSystemMessage(formattedConfig.chatInput.model!, taskDescription),
-      ...(state.documents && state.documents.length > 0
+      ...(state.documents && state.documents.length > 0 && state.documents[state.documents.length - 1].length > 0
         ? [
             new HumanMessage(
               "Here are the documents that are relevant to the question: " +
-                formatDocumentsAsString(state.documents),
+                formatDocumentsAsString(state.documents[state.documents.length - 1]),
             ),
           ]
         : []),
       new MessagesPlaceholder("messages"),
     ]);
 
-    const agent = await createAgentWithTools(formattedConfig, promptTemplate);
+    const agent = await createAgentWithTools(formattedConfig, promptTemplate, "plannerAgent");
 
     const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model!);
     const response = await agent.invoke(
@@ -541,14 +545,11 @@ async function plannerAgent(
       config,
     );
 
-    const newMessages = response.messages.slice(-1).map((message) => {
-      message.response_metadata["planSteps"] = currentTask;
-      return message;
-    });
+    const lastMessage = response.messages.slice(-1)[0];
 
     return {
-      messages: newMessages,
       plan: remainingPlan,
+      pastSteps: [...lastPastSteps, [...currentPastSteps, [currentTask, lastMessage]]],
     };
   }
 }
@@ -583,27 +584,32 @@ async function replanner(
     getModel(formattedConfig.chatInput.model!)
   ).pipe(structuredOutputParser);
 
-  const inputMessage = state.messages[state.messages.length - 2];
-  const pastStepsMessages = state.messages
-    .filter((message) => message.response_metadata["planSteps"])
-    .map((message, index) => {
-      const stepInfo = message.response_metadata["planSteps"];
-      const isParallel = message.response_metadata["parallelExecution"];
-      const parallelIndex = message.response_metadata["parallelIndex"];
-      
-      const stepDescription = isParallel 
-        ? `${index} (Parallel ${parallelIndex}): ${JSON.stringify(stepInfo)}`
-        : `${index}: ${JSON.stringify(stepInfo)}`;
-      
-      return [
+  const inputMessage = state.messages.slice().reverse().find(msg => msg._getType() === "human") || state.messages[state.messages.length - 1];
+  const currentPastStepsMessages = state.pastSteps[state.pastSteps.length - 1].map((stepEntry) => {
+    if (Array.isArray(stepEntry[0]) && stepEntry.length > 0) {
+      return stepEntry.map((step, parallelIndex) => {
+        const currentStep = step as CompletedStep;
+        const stepDescription = ` ${parallelIndex + 1} (Parallel): ${currentStep[0].step}\n${currentStep[0].additional_context}\n`;
+        const ret = [
+          new AIMessage(stepDescription),
+          currentStep[1],
+        ];
+        return ret;
+      }).flat();
+    } else {
+      // Handle single step
+      const currentStep = stepEntry as CompletedStep;
+      const stepDescription = `${currentStep[0].step}\n${currentStep[0].additional_context}\n`;
+      const ret = [
         new AIMessage(stepDescription),
-        message,
+        currentStep[1],
       ];
-    })
-    .flat();
+      return ret;
+    }
+  }).flat();
 
   const formattedInputMessage = await formatMessages(formattedConfig.ctx, [inputMessage], formattedConfig.chatInput.model!);
-  const formattedPastStepsMessages = await formatMessages(formattedConfig.ctx, pastStepsMessages, formattedConfig.chatInput.model!);
+  const formattedPastStepsMessages = await formatMessages(formattedConfig.ctx, currentPastStepsMessages, formattedConfig.chatInput.model!);
 
   const response = await modelWithOutputParser.invoke(
     {
@@ -616,15 +622,8 @@ async function replanner(
 
   if (response.action === "respond_to_user") {
     return {
-      messages: [
-        new AIMessage(response.response || "Task completed.", {
-          response_metadata: {
-            planSteps: {
-              step: "Response",
-            },
-          },
-        }),
-      ],
+      messages: [new AIMessage(response.response || "Task completed.")],
+      plan: [], // Clear the plan to signal completion
     };
   } else if (response.action === "continue_planning") {
     return {
@@ -636,13 +635,6 @@ async function replanner(
 }
 
 async function shouldEndPlanner(state: typeof GraphState.State) {
-  // Check if we have a response message from the replanner
-  const lastMessage = state.messages[state.messages.length - 1];
-  if (lastMessage?.response_metadata?.["planSteps"]?.step === "Response") {
-    return "true";
-  }
-  
-  // Check if the plan is empty (no more steps to execute)
   if (!state.plan || state.plan.length === 0) {
     return "true";
   }

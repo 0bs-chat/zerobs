@@ -8,6 +8,7 @@ import { useDebouncedCallback } from "use-debounce";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/use-chats";
 import { toast } from "sonner";
+import React from "react";
 
 export const ChatInput = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
@@ -23,7 +24,7 @@ export const ChatInput = () => {
         text: text,
       },
     });
-  }, 100);
+  }, 300);
 
   return (
     <div className="flex flex-col max-w-4xl w-full mx-auto items-center bg-muted rounded-lg">

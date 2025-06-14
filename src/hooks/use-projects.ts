@@ -10,7 +10,7 @@ import {
 } from "@/store/chatStore";
 
 export const useSelectProject = () => {
-  const params = useParams({ from: "/chat_/$chatId/" });
+  const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats"> | "new";
   const selectedProjectId = useAtomValue(selectedProjectIdAtom);
   const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);

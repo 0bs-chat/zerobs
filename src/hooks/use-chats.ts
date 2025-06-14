@@ -5,6 +5,9 @@ import type { Id } from "convex/_generated/dataModel";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { useConvex } from "convex/react";
+import React from "react";
+import { coerceMessageLikeToMessage } from "@langchain/core/messages";
+import { GraphState } from "../../convex/langchain/state";
 
 export const useHandleSubmit = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
@@ -37,10 +40,26 @@ export const useHandleSubmit = () => {
       sendAction({ chatId: chatId });
     }
 
-    // Clear values where chatInputText, chatInputDocumentList
-    (document.getElementById("chatInputText") as HTMLTextAreaElement).value = "";
-    (document.getElementById("chatInputDocumentList") as HTMLDivElement).innerHTML = "";
   }, [chatId, createChatMutation, createChatInputMutation, sendAction, navigate]);
 
   return handleSubmit;
+};
+
+interface UseCheckpointParserProps {
+  checkpoint?: { page?: string } | null;
+}
+
+type GraphStateType = typeof GraphState.State;
+
+export const useCheckpointParser = ({ checkpoint }: UseCheckpointParserProps) => {
+  return React.useMemo(() => {
+    if (!checkpoint?.page) return null;
+    
+    const parsedState = JSON.parse(checkpoint.page) as GraphStateType;
+
+    return {
+      ...parsedState,
+      messages: parsedState.messages.map((msg) => coerceMessageLikeToMessage(msg)),
+    };
+  }, [checkpoint?.page]);
 };
