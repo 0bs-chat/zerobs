@@ -6,6 +6,7 @@ import {
   query,
   mutation,
   action,
+  internalAction,
 } from "../_generated/server.js";
 import { ConvexError } from "convex/values";
 import { zCustomAction, zCustomMutation, zCustomQuery } from "convex-helpers/server/zod";
@@ -23,3 +24,4 @@ export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
 export const zodQuery = zCustomQuery(query, NoOp);
 export const zodMutation = zCustomMutation(mutation, NoOp);
 export const zodAction = zCustomAction(action, NoOp);
+export const zodInternalAction = zCustomAction(internalAction, NoOp);

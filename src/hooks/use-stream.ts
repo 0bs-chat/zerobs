@@ -142,6 +142,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
             result.page.forEach((d) => {
               d.chunks.forEach((chunkStr: string) => {
                 const event = JSON.parse(chunkStr) as StreamEvent;
+                console.log("event", event.event, event.name, event.metadata, event.tags, event.run_id)
                 events.push(event);
               });
             });

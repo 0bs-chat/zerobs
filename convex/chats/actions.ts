@@ -45,3 +45,51 @@ export const send = action({
     return null;
   },
 });
+
+export const removeMessage = action({
+  args: {
+    chatId: v.id("chats"),
+    messageIndex: v.number(),
+    cascade: v.boolean(),
+  },
+  handler: async (ctx, args): Promise<Record<string, any>> => {
+    await requireAuth(ctx);
+
+    await ctx.runQuery(api.chats.queries.get, {
+      chatId: args.chatId,
+    });
+
+    const result = await ctx.runAction(internal.langchain.index.removeMessages, {
+      chatId: args.chatId,
+      messageIndex: args.messageIndex,
+      cascade: args.cascade,
+    });
+
+    return result;
+  },
+});
+
+export const editMessage = action({
+  args: {
+    chatId: v.id("chats"),
+    messageIndex: v.number(),
+    newContent: v.string(),
+    cascade: v.boolean(),
+  },
+  handler: async (ctx, args): Promise<Record<string, any>> => {
+    await requireAuth(ctx);
+
+    await ctx.runQuery(api.chats.queries.get, {
+      chatId: args.chatId,
+    });
+
+    const result = await ctx.runAction(internal.langchain.index.editMessage, {
+      chatId: args.chatId,
+      messageIndex: args.messageIndex,
+      newContent: args.newContent,
+      cascade: args.cascade,
+    });
+
+    return result;
+  },
+});

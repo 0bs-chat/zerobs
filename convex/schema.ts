@@ -141,10 +141,6 @@ export const StreamChunkRefs = Table("streamChunkRefs", {
   chunkId: v.id("streamChunks"),
 });
 
-// ---------------------------------------------------------------------------
-// Schema definition
-// ---------------------------------------------------------------------------
-
 export default defineSchema({
   ...authTables,
   apiKeys: ApiKeys.table

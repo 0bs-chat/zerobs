@@ -4,10 +4,11 @@ import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import type { ActionCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
-import { HumanMessage } from "@langchain/core/messages";
+import { HumanMessage, RemoveMessage, BaseMessage, AIMessage } from "@langchain/core/messages";
 import { api, internal } from "../_generated/api";
 import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
 import { agentGraph } from "./agent";
+import { ChatInputs, Chats } from "../schema";
 
 export const chat = internalAction({
   args: {
@@ -174,9 +175,214 @@ async function* streamHelper(
 
   for await (const event of response) {
     if (["on_chat_model_stream", "on_tool_start", "on_tool_end"].includes(event.event)) {
-      if (!["retrieve", "planner", "plannerAgent"].includes(event.metadata.langgraph_node)) {
-        yield event; 
+      const allowedNodes = ["baseAgent"];
+      if (allowedNodes.some(node => event.metadata.checkpoint_ns.startsWith(node))) {
+        yield event;
       }
     }
   }
 }
+
+export const removeMessages = internalAction({
+  args: {
+    chatId: v.id("chats"),
+    messageIndex: v.number(),
+    cascade: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const checkpointer = new ConvexCheckpointSaver(ctx);
+    const checkpoint = await checkpointer.get({ 
+      configurable: { thread_id: args.chatId } 
+    });
+    const messages = checkpoint?.channel_values.messages as BaseMessage[]
+
+    if (!messages) {
+      throw new Error("No messages found in chat");
+    }
+
+    if (args.messageIndex < 0 || args.messageIndex >= messages.length) {
+      throw new Error("Invalid message index");
+    }
+    let updatedMessages: RemoveMessage[] = [];
+    if (args.cascade) {
+      updatedMessages = messages.slice(0, args.messageIndex).map(message => new RemoveMessage({ id: message.id! }));
+    } else {
+      updatedMessages = [new RemoveMessage({ id: messages[args.messageIndex].id! })];
+    }
+
+    return await agentGraph.compile({ checkpointer }).updateState({ configurable: { thread_id: args.chatId } }, { messages: updatedMessages });
+  }
+})
+
+export const editMessage = internalAction({
+  args: {
+    chatId: v.id("chats"),
+    messageIndex: v.number(),
+    newContent: v.string(),
+    cascade: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const checkpointer = new ConvexCheckpointSaver(ctx);
+    const checkpoint = await checkpointer.get({ 
+      configurable: { thread_id: args.chatId } 
+    });
+    const messages = checkpoint?.channel_values.messages as BaseMessage[];
+
+    if (!messages) {
+      throw new Error("No messages found in chat");
+    }
+
+    if (args.messageIndex < 0 || args.messageIndex >= messages.length) {
+      throw new Error("Invalid message index");
+    }
+
+    const messageToEdit = messages[args.messageIndex];
+    let updatedMessages: BaseMessage[] = [];
+
+    // Create the edited message with the same ID to overwrite the original
+    if (messageToEdit instanceof HumanMessage) {
+      const editedMessage = new HumanMessage({
+        content: args.newContent,
+        id: messageToEdit.id,
+      });
+      updatedMessages.push(editedMessage);
+    } else if (messageToEdit instanceof AIMessage) {
+      const editedMessage = new AIMessage({
+        content: args.newContent,
+        id: messageToEdit.id,
+      });
+      updatedMessages.push(editedMessage);
+    } else {
+      throw new Error("Cannot edit this type of message");
+    }
+
+    // If cascade is true, remove all subsequent messages
+    if (args.cascade) {
+      const messagesToRemove = messages.slice(args.messageIndex + 1);
+      const removeMessages = messagesToRemove.map(message => new RemoveMessage({ id: message.id! }));
+      updatedMessages.push(...removeMessages);
+    }
+
+    return await agentGraph.compile({ checkpointer }).updateState(
+      { configurable: { thread_id: args.chatId } }, 
+      { messages: updatedMessages }
+    );
+  }
+})
+
+export const addMessage = internalAction({
+  args: {
+    chatInputDoc: ChatInputs.doc
+  },
+  handler: async (ctx, args): Promise<Record<string, any>> => {
+    const checkpointer = new ConvexCheckpointSaver(ctx);
+    const checkpoint = await checkpointer.get({ 
+      configurable: { thread_id: args.chatInputDoc.chatId } 
+    });
+    const messages = checkpoint?.channel_values.messages as BaseMessage[];
+
+    if (!messages) {
+      throw new Error("No messages found in chat");
+    }
+
+    const humanMessage = new HumanMessage({
+      content: [
+        {
+          type: "text",
+          text: args.chatInputDoc.text,
+        },
+        ...(await Promise.all(args.chatInputDoc.documents?.map(async (documentId) => {
+          let document = await ctx.runQuery(api.documents.queries.get, {
+            documentId,
+          });
+          
+          return {
+            type: "file",
+            file: {
+              file_id: document._id
+            }
+          }
+        }) ?? [])),
+      ],
+    });
+
+    await ctx.runMutation(api.chatInputs.mutations.update, {
+      chatId: args.chatInputDoc.chatId,
+      updates: { text: "", documents: [] },
+    });
+
+    const response = await agentGraph.compile({ checkpointer }).updateState(
+      { configurable: { thread_id: args.chatInputDoc.chatId } },
+      { messages: [...messages, humanMessage] }
+    );
+
+    return response;
+  }
+})
+
+export const branchChat = internalAction({
+  args: {
+    chatInputDoc: ChatInputs.doc,
+    chatDoc: Chats.doc,
+    messageIndex: v.number(),
+  },
+  handler: async (ctx, args): Promise<Id<"chats">> => {
+    const checkpointer = new ConvexCheckpointSaver(ctx);
+    const sourceChatId = args.chatDoc._id;
+    const checkpoint = await checkpointer.get({
+      configurable: { thread_id: sourceChatId },
+    });
+    const messages = checkpoint?.channel_values.messages as BaseMessage[];
+
+    if (!messages) {
+      throw new Error("No messages found in chat");
+    }
+
+    if (args.messageIndex < 0 || args.messageIndex >= messages.length) {
+      throw new Error("Invalid message index");
+    }
+
+    const newChatId = await ctx.runMutation(api.chats.mutations.create, {
+      name: `${args.chatDoc.name} (branch)`,
+    });
+
+    const branchedMessages = messages.slice(0, args.messageIndex + 1);
+
+    const humanMessage = new HumanMessage({
+      content: [
+        {
+          type: "text",
+          text: args.chatInputDoc.text ?? "",
+        },
+        ...(await Promise.all(
+          args.chatInputDoc.documents?.map(async (documentId) => {
+            let document = await ctx.runQuery(api.documents.queries.get, {
+              documentId,
+            });
+
+            return {
+              type: "file",
+              file: {
+                file_id: document._id,
+              },
+            };
+          }) ?? []
+        )),
+      ],
+    });
+
+    const newChatMessages = [...branchedMessages, humanMessage];
+
+    await agentGraph.compile({ checkpointer }).updateState(
+      { configurable: { thread_id: newChatId } },
+      { messages: newChatMessages }
+    );
+
+    await ctx.runMutation(api.chatInputs.mutations.update, {
+      chatId: args.chatInputDoc.chatId,
+      updates: { text: "", documents: [] },
+    });
+
+    return newChatId;
+  },
+});

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Annotation, messagesStateReducer } from "@langchain/langgraph/web";
-import { BaseMessage } from "@langchain/core/messages";
+import { BaseMessage, StoredMessage } from "@langchain/core/messages";
 import { DocumentInterface } from "@langchain/core/documents";
 
 export const planStep = z.object({
@@ -28,22 +28,21 @@ export const planSchema = z.object({
   plan: planArray
 })
 
-export type CompletedStep = [z.infer<typeof planStep>, BaseMessage];
+export type CompletedStep = [z.infer<typeof planStep>, StoredMessage];
 
 export const GraphState = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
     reducer: messagesStateReducer,
     default: () => [],
   }),
-  documents: Annotation<DocumentInterface[][]>({
-    reducer: (x, y) => x.concat(y),
+  documents: Annotation<DocumentInterface[]>({
+    reducer: (x, y) => y ?? x ?? [],
     default: () => [],
   }),
   plan: Annotation<z.infer<typeof planArray>>({
     reducer: (x, y) => y ?? x ?? [],
   }),
-  pastSteps: Annotation<(CompletedStep | CompletedStep[])[][]>({
-    // [[step, message], [[step, message], [step, message]], [step, message]]
+  pastSteps: Annotation<(CompletedStep | CompletedStep[])[]>({
     reducer: (x, y) => y ?? x ?? [],
     default: () => [],
   }),
