@@ -86,8 +86,8 @@ export const search = query({
 
 export const getCheckpoint = query({
   args: {
+    paginationOpts: paginationOptsValidator,
     chatId: v.union(v.id("chats"), v.literal("new")),
-    paginationOpts: v.optional(paginationOptsValidator),
   },
   returns: v.object({
     page: v.any(),

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStream } from "@/hooks/use-stream";
@@ -11,177 +11,125 @@ import {
   ToolMessage,
   BaseMessage,
 } from "@langchain/core/messages";
-import { 
+import {
   UserMessageComponent,
   AIMessageComponent, 
   ToolMessageComponent,
 } from ".";
 import { useCheckpointParser } from "@/hooks/use-chats";
 import { useStreamProcessor } from "@/hooks/use-stream";
-import { Button } from "@/components/ui/button";
-import {
-  MoreHorizontalIcon,
-  TrashIcon,
-  GitBranchIcon,
-  CopyIcon,
-  RefreshCcwIcon,
-  PencilIcon,
-  CheckIcon,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { AIToolUtilsBar, UserUtilsBar } from "./UtilsBar";
 
-// Group messages into conversation groups
-const groupMessages = (messages: BaseMessage[]) => {
-  const groups: BaseMessage[][] = [];
+const groupMessages = (messages: BaseMessage[]): BaseMessage[][] => {
+  if (messages.length === 0) return [];
+
+  const grouped: BaseMessage[][] = [];
   let currentGroup: BaseMessage[] = [];
 
-  for (const message of messages) {
-    if (message instanceof HumanMessage) {
-      // If we have a current group, push it to groups
-      if (currentGroup.length > 0) {
-        groups.push(currentGroup);
-        currentGroup = [];
-      }
-      // Start a new group with the human message
-      currentGroup = [message];
-    } else if (message instanceof AIMessage || message instanceof ToolMessage) {
-      // Add AI/Tool messages to the current group
+  const getGroupType = (message: BaseMessage) => {
+    if (message instanceof HumanMessage) return "user";
+    if (message instanceof AIMessage || message instanceof ToolMessage)
+      return "ai/tool";
+    return "other";
+  };
+
+  const validMessages = messages.filter(
+    (message) => getGroupType(message) !== "other"
+  );
+
+  for (const message of validMessages) {
+    const messageType = getGroupType(message);
+
+    if (currentGroup.length === 0) {
       currentGroup.push(message);
+    } else {
+      const currentGroupType = getGroupType(currentGroup[0]);
+      if (messageType === currentGroupType) {
+        currentGroup.push(message);
+      } else {
+        grouped.push(currentGroup);
+        currentGroup = [message];
+      }
     }
   }
 
-  // Don't forget the last group
   if (currentGroup.length > 0) {
-    groups.push(currentGroup);
+    grouped.push(currentGroup);
   }
 
-  return groups;
+  return grouped;
 };
 
-// Component for rendering a group of messages with actions at the end
-const MessageGroup = React.memo(({ messages, groupIndex }: { messages: BaseMessage[]; groupIndex: number }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
-  const [copied, setCopied] = React.useState(false);
+const MessageGroup = ({ messages }: { messages: BaseMessage[] }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  // Get all AI message content for copying
-  const getAllAIContent = () => {
-    return messages
-      .filter(msg => msg instanceof AIMessage)
-      .map(msg => {
-        const content = typeof msg.content === "string"
-          ? msg.content
-          : Array.isArray(msg.content)
-          ? msg.content
-              .map((item: any) => (item.type === "text" ? item.text : ""))
-              .join("")
-          : String(msg.content);
+  if (messages.length === 0) return null;
+
+  const firstMessage = messages[0];
+  const isUserGroup = firstMessage instanceof HumanMessage;
+
+  const handleCopyText = () => {
+    const textToCopy = messages
+      .map((m) => m.content)
+      .map((content) => {
+        if (typeof content !== "string") {
+          try {
+            return JSON.stringify(content, null, 2);
+          } catch {
+            return String(content);
+          }
+        }
         return content;
       })
       .join("\n\n");
+    navigator.clipboard.writeText(textToCopy);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleCopyText = async () => {
-    try {
-      const content = getAllAIContent();
-      await navigator.clipboard.writeText(content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy text:", err);
+  const renderMessage = (message: BaseMessage, index: number) => {
+    const messageId = message.id ?? `msg-${index}`;
+
+    if (message instanceof HumanMessage) {
+      return <UserMessageComponent key={messageId} message={message} />;
+    } else if (message instanceof AIMessage) {
+      return (
+        <AIMessageComponent
+          key={messageId}
+          message={message}
+          messageId={messageId as string}
+        />
+      );
+    } else if (message instanceof ToolMessage) {
+      return <ToolMessageComponent key={messageId} message={message} />;
     }
+    return null;
   };
-
-  // Check if this group has AI/Tool messages (not just human message)
-  const hasAIOrToolMessages = messages.some(msg => 
-    msg instanceof AIMessage || msg instanceof ToolMessage
-  );
 
   return (
-    <div className="flex flex-col w-full gap-1 group">
-      {messages.map((message, index) => {
-        const messageId = `group-${groupIndex}-message-${index}`;
-        
-        if (message instanceof HumanMessage) {
-          return (
-            <UserMessageComponent
-              key={messageId}
-              message={message}
-              messageId={messageId}
-            />
-          );
-        } else if (message instanceof AIMessage && message.content.length > 0) {
-          return (
-            <AIMessageComponent
-              key={messageId}
-              message={message}
-              messageId={messageId}
-            />
-          );
-        } else if (message instanceof ToolMessage) {
-          return (
-            <ToolMessageComponent
-              key={messageId}
-              message={message}
-            />
-          );
-        }
-        return null;
-      })}
-      
-      {/* Show actions only at the end of AI/Tool message groups */}
-      {hasAIOrToolMessages && (
-        <div
-          className={`flex flex-row items-center justify-start ${
-            isDropdownOpen
-              ? "opacity-100"
-              : "opacity-0 group-hover:opacity-100"
-          } transition-opacity duration-100 gap-1`}
-        >
-          <Button variant="ghost" size="icon">
-            <RefreshCcwIcon className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleCopyText}
-            className={copied ? "text-green-500" : ""}
-          >
-            {copied ? (
-              <CheckIcon className="w-4 h-4" />
-            ) : (
-              <CopyIcon className="w-4 h-4" />
-            )}
-          </Button>
-          <Button variant="ghost" size="icon">
-            <GitBranchIcon className="w-4 h-4" />
-          </Button>
-          <DropdownMenu onOpenChange={setIsDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontalIcon className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem>
-                <PencilIcon className="w-4 h-4 mr-2" />
-                Edit message
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
-                <TrashIcon className="w-4 h-4 mr-2" />
-                Delete message
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
+    <div className={`flex flex-col w-full gap-1 group ${isUserGroup ? "items-end" : ""}`}>
+      {messages.map(renderMessage)}
+      <div className="flex flex-row items-center justify-start">
+        {isUserGroup ? (
+          <UserUtilsBar
+            isDropdownOpen={isDropdownOpen}
+            setIsDropdownOpen={setIsDropdownOpen}
+            handleCopyText={handleCopyText}
+            copied={copied}
+          />
+        ) : (
+          <AIToolUtilsBar
+            isDropdownOpen={isDropdownOpen}
+            setIsDropdownOpen={setIsDropdownOpen}
+            handleCopyText={handleCopyText}
+            copied={copied}
+          />
+        )}
+      </div>
     </div>
   );
-});
+};
 
 MessageGroup.displayName = "MessageGroup";
 
@@ -196,20 +144,23 @@ export const ChatMessages = React.memo(() => {
     api.chats.queries.getCheckpoint,
     {
       chatId: params.chatId as Id<"chats"> | "new",
+      paginationOpts: {
+        numItems: 20,
+        cursor: null,
+      },
     }
   );
   
   const parsedCheckpoint = useCheckpointParser({ checkpoint });
   const { chunkGroups } = useStreamProcessor({ streamChunks: stream?.chunks });
 
-  // Group the messages
   const messageGroups = parsedCheckpoint?.messages ? groupMessages(parsedCheckpoint.messages) : [];
 
   return (
     <ScrollArea className="overflow-hidden w-full h-full">
-      <div className="flex flex-col max-w-4xl mx-auto p-1 gap-4">
+      <div className="flex flex-col max-w-4xl mx-auto p-1 gap-1">
         {messageGroups.map((group, groupIndex) => (
-          <MessageGroup key={groupIndex} messages={group} groupIndex={groupIndex} />
+          <MessageGroup key={groupIndex} messages={group} />
         ))}
         
         {/* Handle streaming messages */}
@@ -229,7 +180,6 @@ export const ChatMessages = React.memo(() => {
                   <AIMessageComponent
                     key={`stream-ai-${index}`}
                     message={streamingMessage}
-                    isStreaming={true}
                     messageId={`stream-ai-${index}`}
                   />
                 );

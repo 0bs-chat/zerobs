@@ -41,28 +41,25 @@ export const UserMessageComponent = React.memo(
       documentIds: fileIds as Id<"documents">[],
     });
 
-    return (
-      <div className="flex flex-col gap-1 max-w-[70%] items-end self-end">
-        <div className="flex flex-col bg-card text-card-foreground rounded-xl border shadow-sm p-3 gap-2 max-w-full">
-          <div className="text-md">
-            <Markdown content={text} id={messageId} />
-          </div>
-          {documents?.map((document) => (
-            <Badge
-              className="text-xs font-bold p-4 w-full cursor-pointer shadow-sm"
-              key={document._id}
-              onClick={() => {
-                setDocumentDialogOpen(true);
-                setDocumentDialogDocumentId(document._id);
-              }}
-            >
-              {document.name}
-            </Badge>
-          ))}
-        </div>
+  return (
+    <div className="flex flex-col gap-2 max-w-[70%] self-end bg-card text-card-foreground rounded-xl border shadow-sm p-3">
+      <div className="text-md">
+        <Markdown content={text} id={messageId} />
       </div>
-    );
-  }
-);
+      {documents?.map((document) => (
+        <Badge
+          className="text-xs font-bold p-4 w-full cursor-pointer shadow-sm"
+          key={document._id}
+          onClick={() => {
+            setDocumentDialogOpen(true);
+            setDocumentDialogDocumentId(document._id);
+          }}
+        >
+          {document.name}
+        </Badge>
+      ))}
+    </div>
+  );
+});
 
 UserMessageComponent.displayName = "UserMessageComponent";

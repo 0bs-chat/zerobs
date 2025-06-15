@@ -34,11 +34,9 @@ function RouteComponent() {
       <TopNav />
       <div className="flex-1">
         <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel className="flex flex-col h-full p-2 items-center justify-end gap-2">
-            <div className="flex flex-col items-center h-full w-full gap-1 pt-4">
-              <ChatMessages />
-              <ChatInput />
-            </div>
+          <ResizablePanel className="flex flex-col gap-1 p-2 pt-4">
+            <ChatMessages />
+            <ChatInput />
           </ResizablePanel>
           {resizablePanelsOpen && (
             <>

@@ -20,7 +20,6 @@ export const Panel = () => {
         <TabsList className="w-full flex justify-center ">
           <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="mcp">MCP</TabsTrigger>
         </TabsList>
       </div>
@@ -30,8 +29,6 @@ export const Panel = () => {
         <TabsContent value="projects">
           <ProjectsPanel />
         </TabsContent>
-
-        <TabsContent value="settings"></TabsContent>
 
         <TabsContent value="mcp">
           <MCPPanel />
