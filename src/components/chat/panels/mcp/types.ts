@@ -11,6 +11,7 @@ export type MCPData = {
   name: string;
   type: MCPType;
   command: string;
+  status: "creating" | "created" | "error";
   envVars: EnvVar[];
   enabled: boolean;
   resetOnNewChat: boolean;
@@ -19,6 +20,7 @@ export type MCPData = {
 
 export type MCPCardProps = {
   mcp: Doc<"mcps">;
+  status: "creating" | "created" | "error";
   onStartStop: (mcpId: Id<"mcps">, enabled: boolean) => Promise<void>;
   onDelete: (mcpId: Id<"mcps">) => Promise<void>;
 };

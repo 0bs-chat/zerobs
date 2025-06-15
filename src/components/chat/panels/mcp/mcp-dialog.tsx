@@ -15,6 +15,7 @@ import { mcpAtom } from "@/store/chatStore";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useMCPs } from "@/hooks/use-mcp";
 import { PlusIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface CreateDialogProps {
   isOpen: boolean;
@@ -38,7 +39,7 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
         <DialogHeader>
           <DialogTitle className=" text-lg ">Create MCP</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <Input
               placeholder="MCP name here (eg. my-mcp)"
@@ -78,6 +79,15 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
               envVars={mcp.envVars}
               onUpdate={(envVars) => setMcp((prev) => ({ ...prev, envVars }))}
             />
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={mcp.resetOnNewChat}
+              onCheckedChange={(checked) =>
+                setMcp((prev) => ({ ...prev, resetOnNewChat: checked }))
+              }
+            />
+            <Label>Reset on new chat</Label>
           </div>
         </div>
         <DialogFooter>

@@ -26,6 +26,7 @@ export const MCPPanel = () => {
           <MCPCard
             key={mcp._id}
             mcp={mcp}
+            status={mcp.status}
             onStartStop={toggleMCP}
             onDelete={handleDelete}
           />

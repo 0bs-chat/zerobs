@@ -1,9 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { Play, Square, Trash2 } from "lucide-react";
+import { Loader2, Play, Square, Trash2 } from "lucide-react";
 import type { MCPCardProps } from "./types";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 
-export const MCPCard = ({ mcp, onStartStop, onDelete }: MCPCardProps) => {
+export const MCPCard = ({
+  mcp,
+  status,
+  onStartStop,
+  onDelete,
+}: MCPCardProps) => {
   return (
     <Card className="px-4 py-3 rounded-md">
       <div className="flex items-center justify-between">
@@ -21,7 +26,12 @@ export const MCPCard = ({ mcp, onStartStop, onDelete }: MCPCardProps) => {
             onClick={() => onStartStop(mcp._id, mcp.enabled)}
             aria-label={mcp.enabled ? "Stop" : "Start"}
           >
-            {mcp.enabled ? (
+            {status === "creating" ? (
+              <Loader2
+                className="h-4 w-4 animate-spin"
+                aria-label="Creating MCP"
+              />
+            ) : mcp.enabled ? (
               <Square className="h-4 w-4" aria-label="Stop MCP" />
             ) : (
               <Play className="h-4 w-4" aria-label="Start MCP" />

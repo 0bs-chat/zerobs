@@ -34,6 +34,7 @@ export const mcpAtom = atom<MCPData>({
   name: "",
   type: "sse",
   command: "",
+  status: "creating",
   envVars: [{ key: "", value: "" }],
   url: "",
   enabled: false,

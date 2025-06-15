@@ -43,6 +43,7 @@ export function useMCPs() {
           newMCPData.type === "stdio" ? newMCPData.command : newMCPData.url,
         env,
         enabled: true,
+        resetOnNewChat: newMCPData.resetOnNewChat,
       });
 
       setMcpAtom((prev) => ({
@@ -52,6 +53,7 @@ export function useMCPs() {
         url: "",
         type: "stdio",
         envVars: [{ key: "", value: "" }],
+        resetOnNewChat: false,
       }));
       setMcpEditDialogOpen(false);
       toast.success("MCP created");
