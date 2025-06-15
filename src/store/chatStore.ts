@@ -23,6 +23,8 @@ export const documentDialogDocumentIdAtom = atom<Id<"documents"> | undefined>(
 );
 export const projectDialogOpenAtom = atom(false);
 
+export const chatInputTextAtom = atom("");
+
 // ================================
 // mcp panel state
 // ================================

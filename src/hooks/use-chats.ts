@@ -8,6 +8,8 @@ import { useConvex } from "convex/react";
 import React from "react";
 import { coerceMessageLikeToMessage } from "@langchain/core/messages";
 import { GraphState } from "../../convex/langchain/state";
+import { chatInputTextAtom } from "@/store/chatStore";
+import { useSetAtom } from "jotai";
 
 export const useHandleSubmit = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
@@ -17,12 +19,15 @@ export const useHandleSubmit = () => {
   const createChatInputMutation = useMutation(api.chatInputs.mutations.create);
   const sendAction = useAction(api.chats.actions.send);
   const convex = useConvex();
+  const setChatInputText = useSetAtom(chatInputTextAtom);
 
   const handleSubmit = useCallback(async () => {
     if (chatId === "new") {
       const newChatId = await createChatMutation({ name: "New Chat" });
 
-      const newChatInputDoc = await convex.query(api.chatInputs.queries.get, { chatId: "new" });
+      const newChatInputDoc = await convex.query(api.chatInputs.queries.get, {
+        chatId: "new",
+      });
 
       await createChatInputMutation({
         chatId: newChatId,
@@ -36,11 +41,19 @@ export const useHandleSubmit = () => {
       });
       navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
       sendAction({ chatId: newChatId });
+      setChatInputText("");
     } else {
       sendAction({ chatId: chatId });
+      setChatInputText("");
     }
-
-  }, [chatId, createChatMutation, createChatInputMutation, sendAction, navigate]);
+  }, [
+    chatId,
+    createChatMutation,
+    createChatInputMutation,
+    sendAction,
+    navigate,
+    setChatInputText,
+  ]);
 
   return handleSubmit;
 };
@@ -51,15 +64,19 @@ interface UseCheckpointParserProps {
 
 type GraphStateType = typeof GraphState.State;
 
-export const useCheckpointParser = ({ checkpoint }: UseCheckpointParserProps) => {
+export const useCheckpointParser = ({
+  checkpoint,
+}: UseCheckpointParserProps) => {
   return React.useMemo(() => {
     if (!checkpoint?.page) return null;
-    
+
     const parsedState = JSON.parse(checkpoint.page) as GraphStateType;
 
     return {
       ...parsedState,
-      messages: parsedState.messages.map((msg) => coerceMessageLikeToMessage(msg)),
+      messages: parsedState.messages.map((msg) =>
+        coerceMessageLikeToMessage(msg)
+      ),
     };
   }, [checkpoint?.page]);
 };

@@ -3,7 +3,11 @@ import { ChatMessages } from "@/components/chat/messages";
 import { ChatInput } from "@/components/chat/input/index";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { TopNav } from "@/components/topnav";
 import { Panel } from "@/components/chat/panels";
 import { DocumentDialog } from "@/components/document-dialog";
@@ -31,7 +35,7 @@ function RouteComponent() {
       <div className="flex-1">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel className="flex flex-col h-full p-2 items-center justify-end gap-2">
-            <div className="flex flex-col items-center h-full w-full gap-1">
+            <div className="flex flex-col items-center h-full w-full gap-1 pt-4">
               <ChatMessages />
               <ChatInput />
             </div>
