@@ -10,12 +10,15 @@ import { AddDocumentControls } from "./add-document-controls";
 import { ProjectDocumentList } from "./document-list";
 import type { ProjectDetailsProps } from "./types";
 
-export const ProjectDetails = ({ projectId, onBack }: ProjectDetailsProps) => {
+export const ProjectDetails = ({
+  openedProjectId,
+  onBack,
+}: ProjectDetailsProps) => {
   const project = useQuery(
     api.projects.queries.get,
-    projectId
+    openedProjectId
       ? {
-          projectId: projectId as Id<"projects">,
+          projectId: openedProjectId as Id<"projects">,
         }
       : "skip"
   );
@@ -23,7 +26,7 @@ export const ProjectDetails = ({ projectId, onBack }: ProjectDetailsProps) => {
 
   const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
     updateProject({
-      projectId,
+      projectId: openedProjectId,
       updates: {
         systemPrompt: value,
       },
@@ -67,12 +70,12 @@ export const ProjectDetails = ({ projectId, onBack }: ProjectDetailsProps) => {
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold">Documents</h3>
           </div>
-          <AddDocumentControls projectId={projectId} />
+          <AddDocumentControls projectId={openedProjectId} />
         </div>
         <ScrollArea className="h-[400px]">
-          <ProjectDocumentList projectId={projectId} />
+          <ProjectDocumentList projectId={openedProjectId} />
         </ScrollArea>
       </div>
     </div>
   );
-}
+};

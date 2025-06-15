@@ -10,9 +10,12 @@ export const resizablePanelsOpenAtom = atomWithStorage(
 
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
 
-export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
-  undefined
-);
+export const selectedProjectIdAtom = atomWithStorage<
+  Id<"projects"> | undefined
+>("selectedProjectId", undefined);
+
+export const openedProjectIdAtom = atom<Id<"projects"> | undefined>(undefined);
+
 export const resizablePanelTabAtom = atomWithStorage<
   "mcp" | "artifacts" | "projects" | "settings"
 >("resizablePanelTab", "mcp");
@@ -26,7 +29,7 @@ export const projectDialogOpenAtom = atom(false);
 export const chatInputTextAtom = atom("");
 
 // ================================
-// mcp panel state
+//        mcp panel state
 // ================================
 export const mcpEditDialogOpenAtom = atom(false);
 export const mcpEditDialogMcpIdAtom = atom<Id<"mcps"> | undefined>(undefined);
@@ -44,3 +47,7 @@ export const mcpAtom = atom<MCPData>({
 });
 
 // ================================
+//         chat state
+// ================================
+
+export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", true);

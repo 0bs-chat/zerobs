@@ -22,7 +22,7 @@ export const ProjectsDropdown = ({
   const projects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 3, cursor: null },
   });
-  const { selectProject } = useSelectProject();
+  const { handleProjectSelection } = useSelectProject();
   const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
 
   return (
@@ -36,7 +36,7 @@ export const ProjectsDropdown = ({
           <DropdownMenuItem
             key={project._id}
             onSelect={() => {
-              selectProject(project._id);
+              handleProjectSelection(project._id);
               onCloseDropdown();
             }}
           >

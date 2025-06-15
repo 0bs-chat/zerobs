@@ -7,22 +7,22 @@ import {
   selectedProjectIdAtom,
   resizablePanelsOpenAtom,
   resizablePanelTabAtom,
+  openedProjectIdAtom,
 } from "@/store/chatStore";
 
 export const useSelectProject = () => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats"> | "new";
   const selectedProjectId = useAtomValue(selectedProjectIdAtom);
-  const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
   const setResizablePanelsOpen = useSetAtom(resizablePanelsOpenAtom);
   const setResizablePanelTab = useSetAtom(resizablePanelTabAtom);
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-
-  const selectProject = async (projectId: Id<"projects"> | undefined) => {
-    // Update the store atom
+  const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
+  const setOpenedProjectId = useSetAtom(openedProjectIdAtom);
+  const handleProjectSelection = async (
+    projectId: Id<"projects"> | undefined
+  ) => {
     setSelectedProjectId(projectId);
-    
-    // Update the chat input with the project ID
     await updateChatInputMutation({
       chatId,
       updates: {
@@ -30,7 +30,6 @@ export const useSelectProject = () => {
       },
     });
 
-    // If selecting a project (not clearing), open the projects panel
     if (projectId) {
       setResizablePanelTab("projects");
       setResizablePanelsOpen(true);
@@ -38,12 +37,25 @@ export const useSelectProject = () => {
   };
 
   const clearProject = () => {
-    selectProject(undefined);
+    setOpenedProjectId(undefined);
+    setResizablePanelsOpen(false);
+  };
+
+  const openProject = (projectId: Id<"projects">) => {
+    setResizablePanelTab("projects");
+    setResizablePanelsOpen(true);
+    setOpenedProjectId(projectId);
+  };
+
+  const closeProject = () => {
+    setOpenedProjectId(undefined);
   };
 
   return {
     selectedProjectId,
-    selectProject,
+    handleProjectSelection,
+    openProject,
+    closeProject,
     clearProject,
   };
 };

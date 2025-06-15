@@ -16,49 +16,53 @@ interface UserMessageProps {
   messageId?: string;
 }
 
-export const UserMessageComponent = React.memo(({ message, messageId }: UserMessageProps) => {
-  const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
-  const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
-  
-  const text = Array.isArray(message.content)
-    ? message.content
-        .map((item) => (item.type === "text" ? item.text : null))
-        .join("")
-    : message.content;
-    
-  const fileIds = Array.isArray(message.content)
-    ? message.content
-        .map((item) =>
-          item.type === "file" && "file" in item ? item.file.file_id : null
-        )
-        .filter(Boolean)
-    : [];
-    
-  const documents = useQuery(api.documents.queries.getMultiple, {
-    documentIds: fileIds as Id<"documents">[],
-  });
+export const UserMessageComponent = React.memo(
+  ({ message, messageId }: UserMessageProps) => {
+    const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
+    const setDocumentDialogDocumentId = useSetAtom(
+      documentDialogDocumentIdAtom
+    );
 
-  return (
-    <div className="flex flex-col gap-1 max-w-[70%] items-end self-end">
-      <div className="flex flex-col bg-card text-card-foreground rounded-xl border shadow-sm p-3 gap-2 max-w-full">
-        <div className="text-md">
-          <Markdown content={text} id={messageId} />
+    const text = Array.isArray(message.content)
+      ? message.content
+          .map((item) => (item.type === "text" ? item.text : null))
+          .join("")
+      : message.content;
+
+    const fileIds = Array.isArray(message.content)
+      ? message.content
+          .map((item) =>
+            item.type === "file" && "file" in item ? item.file.file_id : null
+          )
+          .filter(Boolean)
+      : [];
+
+    const documents = useQuery(api.documents.queries.getMultiple, {
+      documentIds: fileIds as Id<"documents">[],
+    });
+
+    return (
+      <div className="flex flex-col gap-1 max-w-[70%] items-end self-end">
+        <div className="flex flex-col bg-card text-card-foreground rounded-xl border shadow-sm p-3 gap-2 max-w-full">
+          <div className="text-md">
+            <Markdown content={text} id={messageId} />
+          </div>
+          {documents?.map((document) => (
+            <Badge
+              className="text-xs font-bold p-4 w-full cursor-pointer shadow-sm"
+              key={document._id}
+              onClick={() => {
+                setDocumentDialogOpen(true);
+                setDocumentDialogDocumentId(document._id);
+              }}
+            >
+              {document.name}
+            </Badge>
+          ))}
         </div>
-        {documents?.map((document) => (
-          <Badge
-            className="text-xs font-bold p-4 w-full cursor-pointer shadow-sm"
-            key={document._id}
-            onClick={() => {
-              setDocumentDialogOpen(true);
-              setDocumentDialogDocumentId(document._id);
-            }}
-          >
-            {document.name}
-          </Badge>
-        ))}
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 UserMessageComponent.displayName = "UserMessageComponent";

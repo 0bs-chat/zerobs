@@ -1,34 +1,39 @@
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
-import { projectDialogOpenAtom } from "@/store/chatStore";
-import { useSetAtom } from "jotai";
+import { openedProjectIdAtom, projectDialogOpenAtom } from "@/store/chatStore";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useSelectProject } from "@/hooks/use-projects";
 import { ProjectsList } from "./list";
 import { ProjectDetails } from "./details";
 
 export const ProjectsPanel = () => {
-  const { selectedProjectId, selectProject } = useSelectProject();
+  const { handleProjectSelection, closeProject, openProject } =
+    useSelectProject();
   const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
-
+  const openedProjectId = useAtomValue(openedProjectIdAtom);
   const removeProject = useMutation(api.projects.mutations.remove);
 
-  const showProjectList = !selectedProjectId;
+  const showProjectList = !openedProjectId;
 
   if (showProjectList) {
     return (
       <ProjectsList
-        onSelect={(id) => selectProject(id)}
+        onOpen={(id) => openProject(id)}
+        onSelect={(id) => handleProjectSelection(id)}
         onNewProject={() => setProjectDialogOpen(true)}
-        onRemove={(id) => removeProject({ projectId: id })}
+        onRemove={(id) => {
+          removeProject({ projectId: id });
+          closeProject();
+        }}
       />
     );
   }
 
   return (
     <ProjectDetails
-      projectId={selectedProjectId as Id<"projects">}
-      onBack={() => selectProject(undefined)}
+      openedProjectId={openedProjectId as Id<"projects">}
+      onBack={() => closeProject()}
     />
   );
 };
