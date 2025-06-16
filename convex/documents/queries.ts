@@ -64,7 +64,9 @@ export const getByKey = query({
 
     const source = await ctx.db
       .query("documents")
-      .withIndex("by_key_user", (q) => q.eq("key", args.key).eq("userId", userId))
+      .withIndex("by_key_user", (q) =>
+        q.eq("key", args.key).eq("userId", userId),
+      )
       .first();
     if (!source) {
       throw new Error("Source not found");

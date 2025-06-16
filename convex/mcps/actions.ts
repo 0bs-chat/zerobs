@@ -1,6 +1,6 @@
 "use node";
 
-import { internal } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { fly, FlyApp, CreateMachineRequest } from "../utils/flyio";
@@ -95,18 +95,32 @@ export const reset = internalAction({
         throw new Error("MCP URL is not defined");
       }
 
+      await ctx.runMutation(api.mcps.mutations.update, {
+        mcpId: args.mcpId,
+        updates: { status: "creating" },
+      });
       const appName = String(mcp._id);
       const app: FlyApp | null = await fly.getApp(appName);
       if (app && app.name) {
-        await fly.deleteApp(app.name);
+        const machines = await fly.listMachines(app.name);
+        if (machines && machines.length > 0) {
+          await Promise.all(machines.map((machine) => {
+            if (machine.id) {
+              return fly.stopMachine(app.name!, machine.id);
+            }
+          }));
+          
+          await Promise.all(machines.map((machine) => {
+            if (machine.id) {
+              return fly.startMachine(app.name!, machine.id);
+            }
+          }));
+        }
       }
 
       await ctx.runMutation(internal.mcps.crud.update, {
         id: args.mcpId,
-        patch: { status: "creating" },
-      });
-      await ctx.runAction(internal.mcps.actions.create, {
-        mcpId: args.mcpId,
+        patch: { status: "created" },
       });
     } catch (error) {
       console.error(error);

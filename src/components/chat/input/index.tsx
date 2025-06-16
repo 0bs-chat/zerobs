@@ -16,7 +16,6 @@ export const ChatInput = () => {
   const handleSubmit = useHandleSubmit();
 
   const debouncedUpdateChatInput = useDebouncedCallback((text: string) => {
-    if (text.trim() === "" || text === undefined) return;
     updateChatInputMutation({
       chatId: chatId,
       updates: {
@@ -36,8 +35,9 @@ export const ChatInput = () => {
       {/* Input */}
       <AutosizeTextarea
         id="chatInputText"
-        minHeight={56}
         maxHeight={192}
+        minHeight={56}
+        defaultValue={chatInput?.text}
         className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
           debouncedUpdateChatInput(e.target.value);

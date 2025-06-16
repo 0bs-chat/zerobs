@@ -21,7 +21,7 @@ export const generateDownloadUrl = mutation({
 
     const document = await ctx.runQuery(api.documents.queries.get, {
       documentId: args.documentId,
-    })
+    });
     const url = await ctx.storage.getUrl(document.key as Id<"_storage">);
     if (!url) {
       throw new Error("Failed to generate download url");
@@ -42,7 +42,7 @@ export const createMultiple = mutation({
           v.literal("site"),
           v.literal("youtube"),
           v.literal("text"),
-          v.literal("github")
+          v.literal("github"),
         ),
         size: v.number(),
         key: v.union(v.id("_storage"), v.string()),
@@ -66,9 +66,13 @@ export const createMultiple = mutation({
 
     await Promise.all(
       documentIds.map(async (documentId) => {
-        await ctx.scheduler.runAfter(0, internal.documents.actions.addDocument, {
-          documentId,
-        });
+        await ctx.scheduler.runAfter(
+          0,
+          internal.documents.actions.addDocument,
+          {
+            documentId,
+          },
+        );
       }),
     );
 
@@ -88,7 +92,7 @@ export const updateJsonDoc = mutation({
 
     const document = await ctx.runQuery(api.documents.queries.get, {
       documentId: args.documentId,
-    })
+    });
 
     await ctx.storage.delete(document.key as Id<"_storage">);
 

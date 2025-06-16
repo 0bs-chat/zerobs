@@ -13,7 +13,7 @@ import {
 } from "@langchain/core/messages";
 import {
   UserMessageComponent,
-  AIMessageComponent, 
+  AIMessageComponent,
   ToolMessageComponent,
 } from ".";
 import { useCheckpointParser } from "@/hooks/use-chats";
@@ -34,7 +34,7 @@ const groupMessages = (messages: BaseMessage[]): BaseMessage[][] => {
   };
 
   const validMessages = messages.filter(
-    (message) => getGroupType(message) !== "other"
+    (message) => getGroupType(message) !== "other",
   );
 
   for (const message of validMessages) {
@@ -108,7 +108,9 @@ const MessageGroup = ({ messages }: { messages: BaseMessage[] }) => {
   };
 
   return (
-    <div className={`flex flex-col w-full gap-1 group ${isUserGroup ? "items-end" : ""}`}>
+    <div
+      className={`flex flex-col w-full gap-1 group ${isUserGroup ? "items-end" : ""}`}
+    >
       {messages.map(renderMessage)}
       <div className="flex flex-row items-center justify-start">
         {isUserGroup ? (
@@ -137,24 +139,21 @@ export const ChatMessages = React.memo(() => {
   const params = useParams({
     from: "/chat_/$chatId/",
   });
-  const stream = useStream(
-    params.chatId as Id<"chats"> | "new"
-  );
-  const checkpoint = useQuery(
-    api.chats.queries.getCheckpoint,
-    {
-      chatId: params.chatId as Id<"chats"> | "new",
-      paginationOpts: {
-        numItems: 20,
-        cursor: null,
-      },
-    }
-  );
-  
+  const stream = useStream(params.chatId as Id<"chats"> | "new");
+  const checkpoint = useQuery(api.chats.queries.getCheckpoint, {
+    chatId: params.chatId as Id<"chats"> | "new",
+    paginationOpts: {
+      numItems: 20,
+      cursor: null,
+    },
+  });
+
   const parsedCheckpoint = useCheckpointParser({ checkpoint });
   const { chunkGroups } = useStreamProcessor({ streamChunks: stream?.chunks });
 
-  const messageGroups = parsedCheckpoint?.messages ? groupMessages(parsedCheckpoint.messages) : [];
+  const messageGroups = parsedCheckpoint?.messages
+    ? groupMessages(parsedCheckpoint.messages)
+    : [];
 
   return (
     <ScrollArea className="overflow-hidden w-full h-full">
@@ -162,7 +161,7 @@ export const ChatMessages = React.memo(() => {
         {messageGroups.map((group, groupIndex) => (
           <MessageGroup key={groupIndex} messages={group} />
         ))}
-        
+
         {/* Handle streaming messages */}
         {chunkGroups.length > 0 && (
           <div className="flex flex-col w-full gap-1">
@@ -171,11 +170,13 @@ export const ChatMessages = React.memo(() => {
                 // Create a mock AIMessage for streaming content
                 const streamingMessage = new AIMessage({
                   content: chunkGroup.content,
-                  additional_kwargs: chunkGroup.reasoning ? {
-                    reasoning_content: chunkGroup.reasoning
-                  } : {}
+                  additional_kwargs: chunkGroup.reasoning
+                    ? {
+                        reasoning_content: chunkGroup.reasoning,
+                      }
+                    : {},
                 });
-                
+
                 return (
                   <AIMessageComponent
                     key={`stream-ai-${index}`}
@@ -186,11 +187,13 @@ export const ChatMessages = React.memo(() => {
               } else if (chunkGroup.type === "tool") {
                 // Create a mock ToolMessage for streaming tool calls
                 const streamingToolMessage = new ToolMessage({
-                  content: chunkGroup.output ? JSON.stringify(chunkGroup.output) : "",
+                  content: chunkGroup.output
+                    ? JSON.stringify(chunkGroup.output)
+                    : "",
                   tool_call_id: `stream-tool-${index}`,
-                  name: chunkGroup.toolName
+                  name: chunkGroup.toolName,
                 });
-                
+
                 return (
                   <ToolMessageComponent
                     key={`stream-tool-${index}`}

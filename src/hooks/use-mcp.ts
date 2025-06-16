@@ -25,7 +25,7 @@ export function useMCPs() {
 
   const handleCreate = async (
     newMCPData: MCPData,
-    setMcpEditDialogOpen: (open: boolean) => void
+    setMcpEditDialogOpen: (open: boolean) => void,
   ) => {
     try {
       const env =
@@ -33,7 +33,7 @@ export function useMCPs() {
           ? Object.fromEntries(
               newMCPData.envVars
                 .filter((env) => env.key && env.value)
-                .map((env) => [env.key, env.value])
+                .map((env) => [env.key, env.value]),
             )
           : {};
 

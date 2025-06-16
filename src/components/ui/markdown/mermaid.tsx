@@ -1,20 +1,27 @@
-import React from 'react';
-import mermaid from 'mermaid';
-import { Button } from '@/components/ui/button';
-import { Maximize2, Minimize2, Download, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import React from "react";
+import mermaid from "mermaid";
+import { Button } from "@/components/ui/button";
+import {
+  Maximize2,
+  Minimize2,
+  Download,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 
 // Initialize mermaid
 mermaid.initialize({
   startOnLoad: true,
-  theme: 'dark',
-  securityLevel: 'loose',
+  theme: "dark",
+  securityLevel: "loose",
   suppressErrorRendering: true,
   flowchart: {
     useMaxWidth: false,
@@ -38,20 +45,23 @@ export const MermaidChart: React.FC<{
   chart: string;
   id: string;
 }> = ({ chart, id }) => {
-  const [svg, setSvg] = React.useState<string>('');
-  const [error, setError] = React.useState<string>('');
+  const [svg, setSvg] = React.useState<string>("");
+  const [error, setError] = React.useState<string>("");
   const [isMaximized, setIsMaximized] = React.useState<boolean>(false);
   const [isErrorExpanded, setIsErrorExpanded] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     const renderChart = async () => {
       try {
-        const { svg: renderedSvg } = await mermaid.render(`mermaid-${id}`, chart);
+        const { svg: renderedSvg } = await mermaid.render(
+          `mermaid-${id}`,
+          chart,
+        );
         setSvg(renderedSvg);
-        setError('');
+        setError("");
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to render chart');
-        setSvg('');
+        setError(err instanceof Error ? err.message : "Failed to render chart");
+        setSvg("");
       }
     };
 
@@ -60,10 +70,10 @@ export const MermaidChart: React.FC<{
 
   const handleDownload = () => {
     if (!svg) return;
-    
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
+
+    const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `mermaid-diagram-${id}.svg`;
     document.body.appendChild(link);
@@ -74,7 +84,7 @@ export const MermaidChart: React.FC<{
 
   const handleOpenInNewTab = () => {
     if (!svg) return;
-    
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -88,10 +98,10 @@ export const MermaidChart: React.FC<{
         </body>
       </html>
     `;
-    
-    const blob = new Blob([htmlContent], { type: 'text/html' });
+
+    const blob = new Blob([htmlContent], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    window.open(url, "_blank");
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
@@ -111,17 +121,25 @@ export const MermaidChart: React.FC<{
               variant="ghost"
               title={isErrorExpanded ? "Collapse details" : "Expand details"}
             >
-              {isErrorExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {isErrorExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </Button>
           </CardTitle>
           <CardDescription>
-            <p className="text-red-600 dark:text-red-400 text-sm w-fit whitespace-pre-wrap">Error: {error}</p>
+            <p className="text-red-600 dark:text-red-400 text-sm w-fit whitespace-pre-wrap">
+              Error: {error}
+            </p>
           </CardDescription>
         </CardHeader>
         {isErrorExpanded && (
           <CardContent>
             <p className="text-sm font-medium mb-2">Chart definition:</p>
-            <pre className="text-xs text-red-500 dark:text-red-300 overflow-auto bg-muted p-2 rounded">{chart}</pre>
+            <pre className="text-xs text-red-500 dark:text-red-300 overflow-auto bg-muted p-2 rounded">
+              {chart}
+            </pre>
           </CardContent>
         )}
       </Card>
@@ -138,7 +156,11 @@ export const MermaidChart: React.FC<{
           variant="secondary"
           title={isMaximized ? "Fit to width" : "Fit to height"}
         >
-          {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          {isMaximized ? (
+            <Minimize2 className="h-4 w-4" />
+          ) : (
+            <Maximize2 className="h-4 w-4" />
+          )}
         </Button>
         <Button
           onClick={handleDownload}
@@ -157,10 +179,10 @@ export const MermaidChart: React.FC<{
           <ExternalLink className="h-4 w-4" />
         </Button>
       </div>
-      
+
       {/* Diagram container */}
-      <div 
-        className={`mermaid-chart ${isMaximized ? 'mermaid-height-mode' : 'mermaid-width-mode overflow-x-auto'}`}
+      <div
+        className={`mermaid-chart ${isMaximized ? "mermaid-height-mode" : "mermaid-width-mode overflow-x-auto"}`}
         dangerouslySetInnerHTML={{ __html: svg }}
       />
     </div>

@@ -16,11 +16,24 @@ import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useUploadDocuments } from "@/hooks/use-documents";
+import { useParams } from "@tanstack/react-router";
 
-export const AddDocumentControls = ({ projectId }: { projectId: Id<"projects"> }) => {
-  const uploadDocuments = useUploadDocuments({ type: "file", addToChatInput: false });
+export const AddDocumentControls = ({
+  projectId,
+}: {
+  projectId: Id<"projects">;
+}) => {
+  const uploadDocuments = useUploadDocuments({
+    type: "file",
+    addToChatInput: false,
+  });
   const createDocuments = useMutation(api.documents.mutations.createMultiple);
-  const createProjectDocuments = useMutation(api.projectDocuments.mutations.createMultiple);
+  const createProjectDocuments = useMutation(
+    api.projectDocuments.mutations.createMultiple,
+  );
+  const updateChatInput = useMutation(api.chatInputs.mutations.update);
+  const params = useParams({ strict: false });
+  const chatId = params.chatId as Id<"chats"> | "new";
 
   const handleFileUpload = async (files: FileList) => {
     const documentIds = await uploadDocuments(files);
@@ -29,6 +42,13 @@ export const AddDocumentControls = ({ projectId }: { projectId: Id<"projects"> }
       projectId,
       documentIds: documentIds || [],
     });
+
+    await updateChatInput({
+      chatId,
+      updates: {
+        projectId,
+      },
+    });
   };
 
   const handleUrlUpload = async () => {
@@ -36,12 +56,14 @@ export const AddDocumentControls = ({ projectId }: { projectId: Id<"projects"> }
     if (!url) return;
 
     const documentIds = await createDocuments({
-      documents: [{
-        name: url,
-        type: "url",
-        size: 0,
-        key: url,
-      }],
+      documents: [
+        {
+          name: url,
+          type: "url",
+          size: 0,
+          key: url,
+        },
+      ],
     });
 
     await createProjectDocuments({
@@ -55,12 +77,14 @@ export const AddDocumentControls = ({ projectId }: { projectId: Id<"projects"> }
     if (!url) return;
 
     const documentIds = await createDocuments({
-      documents: [{
-        name: url,
-        type: "site",
-        size: 0,
-        key: url,
-      }],
+      documents: [
+        {
+          name: url,
+          type: "site",
+          size: 0,
+          key: url,
+        },
+      ],
     });
 
     await createProjectDocuments({
@@ -74,12 +98,14 @@ export const AddDocumentControls = ({ projectId }: { projectId: Id<"projects"> }
     if (!url) return;
 
     const documentIds = await createDocuments({
-      documents: [{
-        name: url,
-        type: "youtube",
-        size: 0,
-        key: url,
-      }],
+      documents: [
+        {
+          name: url,
+          type: "youtube",
+          size: 0,
+          key: url,
+        },
+      ],
     });
 
     await createProjectDocuments({
@@ -133,4 +159,4 @@ export const AddDocumentControls = ({ projectId }: { projectId: Id<"projects"> }
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}; 
+};

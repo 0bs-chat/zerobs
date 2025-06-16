@@ -37,7 +37,7 @@ declare module "@tanstack/react-router" {
 // Create a new Convex client instance
 const convex = new ConvexReactClient(
   import.meta.env.VITE_CONVEX_URL as string,
-  { verbose: true }
+  { verbose: true },
 );
 
 // Render the app
@@ -51,7 +51,7 @@ if (rootElement && !rootElement.innerHTML) {
           <RouterProvider router={router} />
         </ConvexQueryCacheProvider>
       </ConvexAuthProvider>
-    </StrictMode>
+    </StrictMode>,
   );
 }
 

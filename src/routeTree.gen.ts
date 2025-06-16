@@ -10,111 +10,111 @@
 
 // Import Routes
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as AuthImport } from './routes/auth'
-import { Route as IndexImport } from './routes/index'
-import { Route as LandingIndexImport } from './routes/landing/index'
-import { Route as ChatChatIdIndexImport } from './routes/chat_/$chatId/index'
+import { Route as rootRoute } from "./routes/__root";
+import { Route as AuthImport } from "./routes/auth";
+import { Route as IndexImport } from "./routes/index";
+import { Route as LandingIndexImport } from "./routes/landing/index";
+import { Route as ChatChatIdIndexImport } from "./routes/chat_/$chatId/index";
 
 // Create/Update Routes
 
 const AuthRoute = AuthImport.update({
-  id: '/auth',
-  path: '/auth',
+  id: "/auth",
+  path: "/auth",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 const IndexRoute = IndexImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 const LandingIndexRoute = LandingIndexImport.update({
-  id: '/landing/',
-  path: '/landing/',
+  id: "/landing/",
+  path: "/landing/",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 const ChatChatIdIndexRoute = ChatChatIdIndexImport.update({
-  id: '/chat_/$chatId/',
-  path: '/chat/$chatId/',
+  id: "/chat_/$chatId/",
+  path: "/chat/$chatId/",
   getParentRoute: () => rootRoute,
-} as any)
+} as any);
 
 // Populate the FileRoutesByPath interface
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthImport
-      parentRoute: typeof rootRoute
-    }
-    '/landing/': {
-      id: '/landing/'
-      path: '/landing'
-      fullPath: '/landing'
-      preLoaderRoute: typeof LandingIndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/chat_/$chatId/': {
-      id: '/chat_/$chatId/'
-      path: '/chat/$chatId'
-      fullPath: '/chat/$chatId'
-      preLoaderRoute: typeof ChatChatIdIndexImport
-      parentRoute: typeof rootRoute
-    }
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/auth": {
+      id: "/auth";
+      path: "/auth";
+      fullPath: "/auth";
+      preLoaderRoute: typeof AuthImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/landing/": {
+      id: "/landing/";
+      path: "/landing";
+      fullPath: "/landing";
+      preLoaderRoute: typeof LandingIndexImport;
+      parentRoute: typeof rootRoute;
+    };
+    "/chat_/$chatId/": {
+      id: "/chat_/$chatId/";
+      path: "/chat/$chatId";
+      fullPath: "/chat/$chatId";
+      preLoaderRoute: typeof ChatChatIdIndexImport;
+      parentRoute: typeof rootRoute;
+    };
   }
 }
 
 // Create and export the route tree
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/landing': typeof LandingIndexRoute
-  '/chat/$chatId': typeof ChatChatIdIndexRoute
+  "/": typeof IndexRoute;
+  "/auth": typeof AuthRoute;
+  "/landing": typeof LandingIndexRoute;
+  "/chat/$chatId": typeof ChatChatIdIndexRoute;
 }
 
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/landing': typeof LandingIndexRoute
-  '/chat/$chatId': typeof ChatChatIdIndexRoute
+  "/": typeof IndexRoute;
+  "/auth": typeof AuthRoute;
+  "/landing": typeof LandingIndexRoute;
+  "/chat/$chatId": typeof ChatChatIdIndexRoute;
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute
-  '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/landing/': typeof LandingIndexRoute
-  '/chat_/$chatId/': typeof ChatChatIdIndexRoute
+  __root__: typeof rootRoute;
+  "/": typeof IndexRoute;
+  "/auth": typeof AuthRoute;
+  "/landing/": typeof LandingIndexRoute;
+  "/chat_/$chatId/": typeof ChatChatIdIndexRoute;
 }
 
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/landing' | '/chat/$chatId'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/landing' | '/chat/$chatId'
-  id: '__root__' | '/' | '/auth' | '/landing/' | '/chat_/$chatId/'
-  fileRoutesById: FileRoutesById
+  fileRoutesByFullPath: FileRoutesByFullPath;
+  fullPaths: "/" | "/auth" | "/landing" | "/chat/$chatId";
+  fileRoutesByTo: FileRoutesByTo;
+  to: "/" | "/auth" | "/landing" | "/chat/$chatId";
+  id: "__root__" | "/" | "/auth" | "/landing/" | "/chat_/$chatId/";
+  fileRoutesById: FileRoutesById;
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
-  LandingIndexRoute: typeof LandingIndexRoute
-  ChatChatIdIndexRoute: typeof ChatChatIdIndexRoute
+  IndexRoute: typeof IndexRoute;
+  AuthRoute: typeof AuthRoute;
+  LandingIndexRoute: typeof LandingIndexRoute;
+  ChatChatIdIndexRoute: typeof ChatChatIdIndexRoute;
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -122,11 +122,11 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   LandingIndexRoute: LandingIndexRoute,
   ChatChatIdIndexRoute: ChatChatIdIndexRoute,
-}
+};
 
 export const routeTree = rootRoute
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
 
 /* ROUTE_MANIFEST_START
 {

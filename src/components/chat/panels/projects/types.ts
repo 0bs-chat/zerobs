@@ -9,8 +9,7 @@ export type ProjectDocument = Doc<"projectDocuments"> & {
 };
 
 export interface ProjectDetailsProps {
-  openedProjectId: Id<"projects">;
-  onBack: () => void;
+  projectId?: Id<"projects">;
 }
 
 export interface ProjectsListProps {

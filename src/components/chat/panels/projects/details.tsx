@@ -1,7 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
 import { XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
@@ -9,24 +8,22 @@ import { useDebouncedCallback } from "use-debounce";
 import { AddDocumentControls } from "./add-document-controls";
 import { ProjectDocumentList } from "./document-list";
 import type { ProjectDetailsProps } from "./types";
+import { useParams } from "@tanstack/react-router";
+import type { Id } from "convex/_generated/dataModel";
 
-export const ProjectDetails = ({
-  openedProjectId,
-  onBack,
-}: ProjectDetailsProps) => {
+export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
+  const params = useParams({ strict: false });
+  const chatId = params.chatId as Id<"chats"> | "new";
   const project = useQuery(
     api.projects.queries.get,
-    openedProjectId
-      ? {
-          projectId: openedProjectId as Id<"projects">,
-        }
-      : "skip"
+    projectId ? { projectId } : "skip"
   );
   const updateProject = useMutation(api.projects.mutations.update);
+  const updateChatInput = useMutation(api.chatInputs.mutations.update);
 
   const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
     updateProject({
-      projectId: openedProjectId,
+      projectId: projectId!,
       updates: {
         systemPrompt: value,
       },
@@ -44,7 +41,14 @@ export const ProjectDetails = ({
             variant="outline"
             size="icon"
             className="cursor-pointer"
-            onClick={onBack}
+            onClick={() => {
+              updateChatInput({
+                chatId,
+                updates: {
+                  projectId: null,
+                },
+              });
+            }}
           >
             <XIcon className="size-5" />
           </Button>
@@ -70,10 +74,10 @@ export const ProjectDetails = ({
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold">Documents</h3>
           </div>
-          <AddDocumentControls projectId={openedProjectId} />
+          <AddDocumentControls projectId={project._id} />
         </div>
         <ScrollArea className="h-[400px]">
-          <ProjectDocumentList projectId={openedProjectId} />
+          <ProjectDocumentList projectId={project._id} />
         </ScrollArea>
       </div>
     </div>

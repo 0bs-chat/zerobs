@@ -2,25 +2,23 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlusIcon, TrashIcon } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
+import type { Id } from "convex/_generated/dataModel";
+import { useParams } from "@tanstack/react-router";
+import { useSetAtom } from "jotai";
+import { projectDialogOpenAtom } from "@/store/chatStore";
 
-import type { ProjectsListProps } from "./types";
-import { Checkbox } from "@/components/ui/checkbox";
-import { selectedProjectIdAtom } from "@/store/chatStore";
-import { useAtomValue } from "jotai";
-
-export const ProjectsList = ({
-  onNewProject,
-  onRemove,
-  onOpen,
-  onSelect,
-}: ProjectsListProps) => {
+export const ProjectsList = () => {
+  const params = useParams({ strict: false });
+  const chatId = params.chatId as Id<"chats"> | "new";
   const allProjects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 20, cursor: null },
   });
 
-  const selectedProjectId = useAtomValue(selectedProjectIdAtom);
+  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const removeProjectMutation = useMutation(api.projects.mutations.remove);
+  const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
 
   return (
     <div className="flex flex-col gap-3 h-full ">
@@ -30,7 +28,9 @@ export const ProjectsList = ({
           variant="default"
           size="sm"
           className="bg-primary text-primary-foreground"
-          onClick={onNewProject}
+          onClick={() => {
+            setProjectDialogOpen(true);
+          }}
         >
           <PlusIcon className="size-4" />
           New Project
@@ -42,22 +42,17 @@ export const ProjectsList = ({
             <Card
               key={project._id}
               className="group rounded-md flex-row relative group/card px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-accent/30 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={() => onOpen(project._id)}
+              onClick={() => {
+                updateChatInputMutation({
+                  chatId,
+                  updates: {
+                    projectId: project._id,
+                  },
+                });
+              }}
             >
               <div className="flex items-center justify-between flex-1 ">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    className="size-4 border-muted-foreground"
-                    checked={selectedProjectId === project._id}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onSelect(project._id);
-                    }}
-                  />
-                  <h3 className="font-medium">{project.name}</h3>
-                </div>
-
+                <h3 className="font-medium">{project.name}</h3>
                 {project.description && (
                   <p className="text-sm text-muted-foreground">
                     {project.description}
@@ -67,11 +62,13 @@ export const ProjectsList = ({
               <Button
                 variant="default"
                 size="icon"
-                className="absolute top-2 right-2 z-20 opacity-0 group-hover/card:opacity-100 transition-[opacity] duration-0 group-hover/card:duration-300"
+                className="cursor-pointer opacity-0 group-hover/card:opacity-100 transition-[opacity] duration-0 group-hover/card:duration-300 hover:text-red-500/80"
                 onClick={(e) => {
-                  e.preventDefault();
                   e.stopPropagation();
-                  onRemove(project._id);
+                  e.preventDefault();
+                  removeProjectMutation({
+                    projectId: project._id,
+                  });
                 }}
               >
                 <TrashIcon className="size-5" />

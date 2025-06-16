@@ -20,10 +20,13 @@ export const getSearchTools = (ctx: ActionCtx) => {
     duckduckgo: new DuckDuckGoSearch({ maxResults: 5 }),
     crawlWeb: tool(
       async ({ url }: { url: string }) => {
-        const res = await ctx.runAction(internal.utils.services.index.processUrlOrSite, {
-          url,
-          maxDepth: 0,
-        });
+        const res = await ctx.runAction(
+          internal.utils.services.index.processUrlOrSite,
+          {
+            url,
+            maxDepth: 0,
+          },
+        );
         return res;
       },
       {
@@ -77,7 +80,10 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
   // Wait for all mcps to be created
   let currentMcps = mcps.page;
   let maxAttempts = 10;
-  while (currentMcps.some((mcp) => mcp.status === "creating") && maxAttempts > 0) {
+  while (
+    currentMcps.some((mcp) => mcp.status === "creating") &&
+    maxAttempts > 0
+  ) {
     await new Promise((resolve) => setTimeout(resolve, 5000));
     const result = await ctx.runQuery(api.mcps.queries.getAll, {
       paginationOpts: {
@@ -136,33 +142,39 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
   }
 
   if (chatId) {
-    const chatInput = await ctx.runQuery(
-      api.chatInputs.queries.get,
-      { chatId }
-    );
+    const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
+      chatId,
+    });
 
-    const files: { name: string, url: string }[] = (await Promise.all(chatInput.documents?.map(async (documentId, index) => {
-      const document = await ctx.runQuery(api.documents.queries.get, {
-        documentId,
-      });
-      if (["file"].includes(document.type)) {
-        const url = await ctx.storage.getUrl(document.key as Id<"_storage">);
-        if (url) {
-          return {
-            name: `${index + 1}_${document.name}`,
-            url
-          };
+    const files: { name: string; url: string }[] = (
+      await Promise.all(
+        chatInput.documents?.map(async (documentId, index) => {
+          const document = await ctx.runQuery(api.documents.queries.get, {
+            documentId,
+          });
+          if (["file"].includes(document.type)) {
+            const url = await ctx.storage.getUrl(
+              document.key as Id<"_storage">,
+            );
+            if (url) {
+              return {
+                name: `${index + 1}_${document.name}`,
+                url,
+              };
+            }
+          }
+          return null;
+        }) ?? [],
+      )
+    ).filter((file) => file !== null);
+
+    await Promise.all(
+      mcps.page.map(async (mcp) => {
+        if (mcp.type === "stdio" && files.length > 0) {
+          await fly.uploadFileToAllMachines(mcp._id, files);
         }
-      }
-      return null;
-    }) ?? [])).filter((file) => file !== null);
-
-    await Promise.all(mcps.page.map(async (mcp) => {
-      if (mcp.type === "stdio" && files.length > 0) {
-        await fly.uploadFileToAllMachines(mcp._id, files);
-      }
-    }));
-
+      }),
+    );
   }
 
   return {

@@ -8,8 +8,6 @@ import { useConvex } from "convex/react";
 import React from "react";
 import { coerceMessageLikeToMessage } from "@langchain/core/messages";
 import { GraphState } from "../../convex/langchain/state";
-import { chatInputTextAtom } from "@/store/chatStore";
-import { useSetAtom } from "jotai";
 
 export const useHandleSubmit = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
@@ -19,7 +17,6 @@ export const useHandleSubmit = () => {
   const createChatInputMutation = useMutation(api.chatInputs.mutations.create);
   const sendAction = useAction(api.chats.actions.send);
   const convex = useConvex();
-  const setChatInputText = useSetAtom(chatInputTextAtom);
 
   const handleSubmit = useCallback(async () => {
     if (chatId === "new") {
@@ -41,10 +38,14 @@ export const useHandleSubmit = () => {
       });
       navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
       sendAction({ chatId: newChatId });
-      setChatInputText("");
     } else {
       sendAction({ chatId: chatId });
-      setChatInputText("");
+    }
+
+    // set the value of react id chatInputText to ""
+    const chatInputText = document.getElementById("chatInputText");
+    if (chatInputText && chatInputText instanceof HTMLTextAreaElement) {
+      chatInputText.value = "";
     }
   }, [
     chatId,
@@ -52,7 +53,6 @@ export const useHandleSubmit = () => {
     createChatInputMutation,
     sendAction,
     navigate,
-    setChatInputText,
   ]);
 
   return handleSubmit;
@@ -75,7 +75,7 @@ export const useCheckpointParser = ({
     return {
       ...parsedState,
       messages: parsedState.messages.map((msg) =>
-        coerceMessageLikeToMessage(msg)
+        coerceMessageLikeToMessage(msg),
       ),
     };
   }, [checkpoint?.page]);

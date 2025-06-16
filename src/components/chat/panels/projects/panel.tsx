@@ -1,39 +1,26 @@
-import { useMutation } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
-import { openedProjectIdAtom, projectDialogOpenAtom } from "@/store/chatStore";
-import { useAtomValue, useSetAtom } from "jotai";
-import { useSelectProject } from "@/hooks/use-projects";
 import { ProjectsList } from "./list";
 import { ProjectDetails } from "./details";
+import { useParams } from "@tanstack/react-router";
 
 export const ProjectsPanel = () => {
-  const { handleProjectSelection, closeProject, openProject } =
-    useSelectProject();
-  const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
-  const openedProjectId = useAtomValue(openedProjectIdAtom);
-  const removeProject = useMutation(api.projects.mutations.remove);
+  const params = useParams({ strict: false });
+  const chatId = params.chatId as Id<"chats"> | "new";
+  const chatInput = useQuery(api.chatInputs.queries.get, { chatId });
 
-  const showProjectList = !openedProjectId;
+  const showProjectList = !chatInput?.projectId;
 
   if (showProjectList) {
     return (
-      <ProjectsList
-        onOpen={(id) => openProject(id)}
-        onSelect={(id) => handleProjectSelection(id)}
-        onNewProject={() => setProjectDialogOpen(true)}
-        onRemove={(id) => {
-          removeProject({ projectId: id });
-          closeProject();
-        }}
-      />
+      <ProjectsList />
     );
   }
 
   return (
     <ProjectDetails
-      openedProjectId={openedProjectId as Id<"projects">}
-      onBack={() => closeProject()}
+      projectId={chatInput?.projectId!}
     />
   );
 };

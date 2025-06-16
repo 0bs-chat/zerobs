@@ -81,6 +81,21 @@ export const remove = mutation({
       ),
     );
 
+    // Remove project from wherever it was selected
+    const selectProjectChatInputs = await ctx.db
+      .query("chatInputs")
+      .withIndex("by_user_project", (q) => q.eq("userId", userId).eq("projectId", args.projectId))
+      .collect();
+    
+    await Promise.all(
+      selectProjectChatInputs.map((chatInput) =>
+        ctx.runMutation(api.chatInputs.mutations.update, {
+          chatId: chatInput.chatId,
+          updates: { projectId: null },
+        }),
+      ),
+    );
+
     // Finally delete the project
     await ctx.db.delete(args.projectId);
 

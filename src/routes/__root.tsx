@@ -47,9 +47,7 @@ export const Route = createRootRoute({
         )}
 
         {/* authenticated route */}
-        {isAuthenticated && (
-          <Outlet />
-        )}
+        {isAuthenticated && <Outlet />}
         <Toaster />
       </ThemeProvider>
     );

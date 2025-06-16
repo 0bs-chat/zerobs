@@ -40,7 +40,7 @@ const RepoLoader = () => {
   const [currentRepo, setCurrentRepo] = useAtom(githubCurrentRepoAtom);
   const [currentBranch, setCurrentBranch] = useAtom(githubCurrentBranchAtom);
   const [availableBranches, setAvailableBranches] = useAtom(
-    githubAvailableBranchesAtom
+    githubAvailableBranchesAtom,
   );
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
 
@@ -89,7 +89,7 @@ const RepoLoader = () => {
         setCurrentBranch("main");
       }
     },
-    500
+    500,
   );
 
   const handleBranchChange = (value: string) => {
@@ -159,16 +159,20 @@ const RepoLoader = () => {
   );
 };
 
-function RepoActions({ onCloseDialog }: { onCloseDialog: (open: boolean) => void }) {
+function RepoActions({
+  onCloseDialog,
+}: {
+  onCloseDialog: (open: boolean) => void;
+}) {
   const uploadDocuments = useUploadDocuments({ type: "github" });
   const { combineSelectedFilesForChat } = useGithub();
   const selectedFiles = useAtomValue(selectedFilesAtom);
-  
+
   const handleAddToChat = async () => {
     try {
       // Generate combined file
       const combinedFile = await combineSelectedFilesForChat(
-        Array.from(selectedFiles)
+        Array.from(selectedFiles),
       );
 
       // Create FileList
@@ -180,7 +184,7 @@ function RepoActions({ onCloseDialog }: { onCloseDialog: (open: boolean) => void
       await uploadDocuments(fileList);
 
       toast.success(
-        `Added ${selectedFiles.size} files to chat as combined document`
+        `Added ${selectedFiles.size} files to chat as combined document`,
       );
       onCloseDialog(false);
     } catch (error) {

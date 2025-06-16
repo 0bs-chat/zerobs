@@ -13,7 +13,6 @@ export const get = query({
     const { userId } = await requireAuth(ctx);
 
     const mcp = await ctx.db.get(args.mcpId);
-    
 
     if (!mcp || mcp.userId !== userId) {
       throw new Error("MCP not found");
@@ -48,16 +47,18 @@ export const getAll = query({
       )
       .paginate(args.paginationOpts);
 
-    const page = await Promise.all(mcps.page.map(async (mcp) => {
-      return {
-        ...mcp,
-        env: await verifyEnv(mcp.env!),
-      }
-    }));
+    const page = await Promise.all(
+      mcps.page.map(async (mcp) => {
+        return {
+          ...mcp,
+          env: await verifyEnv(mcp.env!),
+        };
+      }),
+    );
 
     return {
       ...mcps,
-      page
+      page,
     };
   },
 });

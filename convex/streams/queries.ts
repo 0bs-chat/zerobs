@@ -53,10 +53,7 @@ export const getChunks = query({
     paginationOpts: paginationOptsValidator,
     lastChunkTime: v.optional(v.number()),
   },
-  handler: async (
-    ctx,
-    args,
-  ) => {
+  handler: async (ctx, args) => {
     await ctx.runQuery(api.streams.queries.get, {
       streamId: args.streamId,
     });
@@ -66,7 +63,9 @@ export const getChunks = query({
       .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
       .order("asc")
       .filter((q) =>
-        args.lastChunkTime ? q.gt(q.field("_creationTime"), args.lastChunkTime) : true,
+        args.lastChunkTime
+          ? q.gt(q.field("_creationTime"), args.lastChunkTime)
+          : true,
       )
       .paginate({
         cursor: args.paginationOpts.cursor,

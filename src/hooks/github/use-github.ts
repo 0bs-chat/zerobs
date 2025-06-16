@@ -30,7 +30,7 @@ const useGithub = () => {
   const [currentRepo, setCurrentRepo] = useAtom(githubCurrentRepoAtom);
   const [currentBranch, setCurrentBranch] = useAtom(githubCurrentBranchAtom);
   const [availableBranches, setAvailableBranches] = useAtom(
-    githubAvailableBranchesAtom
+    githubAvailableBranchesAtom,
   );
   const setErrorMessage = useSetAtom(githubErrorMessageAtom);
   const clearSelections = useSetAtom(clearAllSelectionsAtom);
@@ -83,7 +83,7 @@ const useGithub = () => {
         return false;
       }
     },
-    [getRepoPath]
+    [getRepoPath],
   );
 
   // Helper to recursively delete a directory and its contents
@@ -115,7 +115,7 @@ const useGithub = () => {
       _url: string,
       owner: string,
       repo: string,
-      branch: string = currentBranch
+      branch: string = currentBranch,
     ): Promise<void> => {
       const repoPath = getRepoPath(owner, repo);
 
@@ -123,7 +123,7 @@ const useGithub = () => {
         // Check if Buffer is available
         if (typeof globalThis.Buffer === "undefined") {
           throw new Error(
-            "Buffer is not available. Please ensure the Buffer polyfill is loaded."
+            "Buffer is not available. Please ensure the Buffer polyfill is loaded.",
           );
         }
 
@@ -151,15 +151,15 @@ const useGithub = () => {
         if (error instanceof Error) {
           if (error.message.includes("Buffer")) {
             throw new Error(
-              "Missing Buffer dependency. Please ensure the application is properly configured with Buffer polyfill."
+              "Missing Buffer dependency. Please ensure the application is properly configured with Buffer polyfill.",
             );
           } else if (error.message.includes("CORS")) {
             throw new Error(
-              "CORS error when cloning repository. Please check the repository URL and your internet connection."
+              "CORS error when cloning repository. Please check the repository URL and your internet connection.",
             );
           } else if (error.message.includes("404")) {
             throw new Error(
-              "Repository not found. Please check if the repository exists and is public."
+              "Repository not found. Please check if the repository exists and is public.",
             );
           }
         }
@@ -167,14 +167,14 @@ const useGithub = () => {
         throw error;
       }
     },
-    [getRepoPath]
+    [getRepoPath],
   );
 
   // Get file/directory stats
   const getFileStats = useCallback(
     async (
       repoPath: string,
-      filePath: string
+      filePath: string,
     ): Promise<{ isFile: boolean; size?: number }> => {
       try {
         const fullPath = `${repoPath}/${filePath}`;
@@ -187,7 +187,7 @@ const useGithub = () => {
         return { isFile: false };
       }
     },
-    []
+    [],
   );
 
   // Calculate token count for a file
@@ -203,7 +203,7 @@ const useGithub = () => {
         return 0;
       }
     },
-    []
+    [],
   );
 
   // Walk directory tree and build file list
@@ -211,7 +211,7 @@ const useGithub = () => {
     async (
       repoPath: string,
       dirPath: string = "",
-      depth: number = 0
+      depth: number = 0,
     ): Promise<RepoItem[]> => {
       const items: RepoItem[] = [];
       const fullDirPath = dirPath ? `${repoPath}/${dirPath}` : repoPath;
@@ -250,7 +250,7 @@ const useGithub = () => {
             const subItems = await walkDirectory(
               repoPath,
               entryPath,
-              depth + 1
+              depth + 1,
             );
             items.push(...subItems);
           }
@@ -261,7 +261,7 @@ const useGithub = () => {
 
       return items;
     },
-    [getFileStats, calculateTokenCount]
+    [getFileStats, calculateTokenCount],
   );
 
   // Enhance items with depth information
@@ -309,7 +309,7 @@ const useGithub = () => {
         throw error;
       }
     },
-    [getRepoPath]
+    [getRepoPath],
   );
 
   // Main function to load repository
@@ -377,7 +377,7 @@ const useGithub = () => {
       } catch (error) {
         setHasError(true);
         setErrorMessage(
-          error instanceof Error ? error.message : "Unknown error occurred"
+          error instanceof Error ? error.message : "Unknown error occurred",
         );
       } finally {
         setIsLoading(false);
@@ -399,7 +399,7 @@ const useGithub = () => {
       setCombinedItems,
       clearSelections,
       currentRepo, // add currentRepo as dependency
-    ]
+    ],
   );
 
   const getBranches = useCallback(
@@ -413,7 +413,7 @@ const useGithub = () => {
         return ["main"];
       }
     },
-    [getRepoPath]
+    [getRepoPath],
   );
 
   // Fetch remote branches for a repository using isomorphic-git
@@ -453,7 +453,7 @@ const useGithub = () => {
         return availableBranches;
       }
     },
-    [parseGitHubUrl, currentRepo, availableBranches, setAvailableBranches]
+    [parseGitHubUrl, currentRepo, availableBranches, setAvailableBranches],
   );
 
   // Clear repository data
@@ -538,7 +538,7 @@ const useGithub = () => {
 
       return file;
     },
-    [currentRepo, parseGitHubUrl, getRepoPath]
+    [currentRepo, parseGitHubUrl, getRepoPath],
   );
 
   return {

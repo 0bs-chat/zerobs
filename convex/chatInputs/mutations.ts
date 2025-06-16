@@ -1,6 +1,10 @@
 import { requireAuth } from "../utils/helpers";
-import { mutation, internalMutation, internalQuery } from "../_generated/server";
+import {
+  mutation,
+  internalMutation,
+} from "../_generated/server";
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 
 // TODO: Optimization
 // - Instead of fetching the chat and checking if its new, check if before fetching
@@ -54,6 +58,10 @@ export const create = mutation({
       throw new Error("Chat input not found");
     }
 
+    await ctx.scheduler.runAfter(0, internal.langchain.index.generateTitle, {
+      chatInputDoc: newChatInput,
+    });
+
     return {
       ...newChatInput,
       chat,
@@ -67,7 +75,7 @@ export const update = mutation({
     updates: v.object({
       documents: v.optional(v.array(v.id("documents"))),
       text: v.optional(v.string()),
-      projectId: v.optional(v.id("projects")),
+      projectId: v.optional(v.union(v.id("projects"), v.null())),
       model: v.optional(v.string()),
       agentMode: v.optional(v.boolean()),
       plannerMode: v.optional(v.boolean()),
@@ -100,8 +108,15 @@ export const update = mutation({
       throw new Error("Chat not found");
     }
 
+    // Handle projectId separately to convert null to undefined
+    const { projectId, ...otherUpdates } = args.updates;
+    const updates = {
+      ...otherUpdates,
+      ...(projectId !== undefined && { projectId: projectId === null ? undefined : projectId }),
+    };
+    
     await ctx.db.patch(existingChatInput._id, {
-      ...args.updates,
+      ...updates,
       updatedAt: Date.now(),
     });
 

@@ -6,7 +6,8 @@ import mime from "mime";
 import { Documents } from "../../schema";
 
 const CRAWLER_URL = process.env.CRAWLER_URL ?? "http://127.0.0.1:7860";
-const DOC_PROCESSOR_URL = process.env.DOC_PROCESSOR_URL ?? "http://127.0.0.1:7861";
+const DOC_PROCESSOR_URL =
+  process.env.DOC_PROCESSOR_URL ?? "http://127.0.0.1:7861";
 const SERVICE_PASSWORD = process.env.SERVICE_PASSWORD ?? "";
 
 export const processFile = internalAction({
@@ -23,7 +24,9 @@ export const processFile = internalAction({
       if (blob) {
         const text = await blob.text();
         result = text;
-      } else { result = "" }
+      } else {
+        result = "";
+      }
     } else {
       const fileUrl = await ctx.storage.getUrl(document.key);
       const response = await fetch(`${DOC_PROCESSOR_URL}/process`, {
@@ -37,7 +40,7 @@ export const processFile = internalAction({
       const data = await response.json();
       result = data.result.content;
     }
-    
+
     return result;
   },
 });
@@ -56,7 +59,7 @@ export const processUrlOrSite = internalAction({
       },
       body: JSON.stringify({ url: args.url, max_depth: args.maxDepth }),
     });
-    const data = await response.json() as { url: string; markdown: string }[];
+    const data = (await response.json()) as { url: string; markdown: string }[];
     return data.map((url) => `### ${url.url}\n${url.markdown}\n`).join("\n");
   },
 });

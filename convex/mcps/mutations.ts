@@ -21,9 +21,11 @@ export const create = mutation({
     }
 
     const envJwts: Record<string, string> = {};
-    await Promise.all(Object.entries(args.env ?? {}).map(async ([key, value]) => {
-      envJwts[key] = await createJwt(userId, key, value);
-    }));
+    await Promise.all(
+      Object.entries(args.env ?? {}).map(async ([key, value]) => {
+        envJwts[key] = await createJwt(userId, key, value);
+      }),
+    );
 
     const newMCPId = await ctx.db.insert("mcps", {
       name: args.name,
@@ -56,7 +58,13 @@ export const update = mutation({
       url: v.optional(v.string()),
       enabled: v.optional(v.boolean()),
       resetOnNewChat: v.optional(v.boolean()),
-      status: v.optional(v.union(v.literal("creating"), v.literal("created"), v.literal("error"))),
+      status: v.optional(
+        v.union(
+          v.literal("creating"),
+          v.literal("created"),
+          v.literal("error"),
+        ),
+      ),
     }),
   },
   handler: async (ctx, args) => {
@@ -67,9 +75,11 @@ export const update = mutation({
     });
 
     const envJwts: Record<string, string> = {};
-    await Promise.all(Object.entries(args.updates.env ?? {}).map(async ([key, value]) => {
-      envJwts[key] = await createJwt(userId, key, value);
-    }));
+    await Promise.all(
+      Object.entries(args.updates.env ?? {}).map(async ([key, value]) => {
+        envJwts[key] = await createJwt(userId, key, value);
+      }),
+    );
 
     await ctx.db.patch(args.mcpId, {
       ...args.updates,

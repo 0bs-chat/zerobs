@@ -20,7 +20,7 @@ export const UserMessageComponent = React.memo(
   ({ message, messageId }: UserMessageProps) => {
     const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
     const setDocumentDialogDocumentId = useSetAtom(
-      documentDialogDocumentIdAtom
+      documentDialogDocumentIdAtom,
     );
 
     const text = Array.isArray(message.content)
@@ -32,7 +32,7 @@ export const UserMessageComponent = React.memo(
     const fileIds = Array.isArray(message.content)
       ? message.content
           .map((item) =>
-            item.type === "file" && "file" in item ? item.file.file_id : null
+            item.type === "file" && "file" in item ? item.file.file_id : null,
           )
           .filter(Boolean)
       : [];
@@ -41,25 +41,26 @@ export const UserMessageComponent = React.memo(
       documentIds: fileIds as Id<"documents">[],
     });
 
-  return (
-    <div className="flex flex-col gap-2 max-w-[70%] self-end bg-card text-card-foreground rounded-xl border shadow-sm p-3">
-      <div className="text-md">
-        <Markdown content={text} id={messageId} />
+    return (
+      <div className="flex flex-col gap-2 max-w-[70%] self-end bg-card text-card-foreground rounded-xl border shadow-sm p-3">
+        <div className="text-md">
+          <Markdown content={text} id={messageId} />
+        </div>
+        {documents?.map((document) => (
+          <Badge
+            className="text-xs font-bold p-4 w-full cursor-pointer shadow-sm"
+            key={document._id}
+            onClick={() => {
+              setDocumentDialogOpen(true);
+              setDocumentDialogDocumentId(document._id);
+            }}
+          >
+            {document.name}
+          </Badge>
+        ))}
       </div>
-      {documents?.map((document) => (
-        <Badge
-          className="text-xs font-bold p-4 w-full cursor-pointer shadow-sm"
-          key={document._id}
-          onClick={() => {
-            setDocumentDialogOpen(true);
-            setDocumentDialogDocumentId(document._id);
-          }}
-        >
-          {document.name}
-        </Badge>
-      ))}
-    </div>
-  );
-});
+    );
+  },
+);
 
 UserMessageComponent.displayName = "UserMessageComponent";

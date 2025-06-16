@@ -88,7 +88,7 @@ function main() {
     const [filePath, fnName] = fn.identifier.split(":");
     if (!filePath || !fnName) continue;
     const visibility = fn.visibility?.kind;
-    if (visibility !== "public") continue;  // skip internals
+    if (visibility !== "public") continue; // skip internals
 
     const pathBits = filePath
       .split("/")

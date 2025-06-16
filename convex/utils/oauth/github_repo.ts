@@ -82,11 +82,14 @@ export const handleCallback = httpAction(async (_ctx, request) => {
 
 export const handleRedirect = httpAction(async (ctx, _request) => {
   const { user } = await requireAuth(ctx);
-  const token = user.subject.split("|")[1]
+  const token = user.subject.split("|")[1];
 
   const oauthUrl = new URL("https://github.com/login/oauth/authorize");
   oauthUrl.searchParams.set("client_id", process.env.AUTH_GITHUB_REPO_ID || "");
-  oauthUrl.searchParams.set("redirect_uri", `${process.env.CONVEX_SITE_URL}/github_repo/callback`);
+  oauthUrl.searchParams.set(
+    "redirect_uri",
+    `${process.env.CONVEX_SITE_URL}/github_repo/callback`,
+  );
   oauthUrl.searchParams.set("state", token);
   oauthUrl.searchParams.set("scope", "repo read:org");
 

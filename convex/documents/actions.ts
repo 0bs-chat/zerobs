@@ -16,13 +16,12 @@ export const addDocument = internalAction({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    const document = await ctx.runQuery(
-      internal.documents.crud.read,
-      {
-        id: args.documentId,
-      },
-    );
-    if (!document) { throw new Error("Document not found") }
+    const document = await ctx.runQuery(internal.documents.crud.read, {
+      id: args.documentId,
+    });
+    if (!document) {
+      throw new Error("Document not found");
+    }
 
     try {
       // Process documents by type
@@ -69,7 +68,7 @@ export const addDocument = internalAction({
 
       const chunks = await textSplitter.splitDocuments([processedDoc]);
       // cleanup metadata and set source to documentId
-      chunks.forEach(chunk => {
+      chunks.forEach((chunk) => {
         chunk.metadata = {
           source: document._id,
         };
@@ -82,7 +81,6 @@ export const addDocument = internalAction({
           status: "done" as const,
         },
       });
-
     } catch (error) {
       await ctx.runMutation(internal.documents.mutations.updateStatus, {
         documentId: args.documentId,
@@ -90,7 +88,7 @@ export const addDocument = internalAction({
           status: "error" as const,
         },
       });
-      
+
       throw error;
     }
   },

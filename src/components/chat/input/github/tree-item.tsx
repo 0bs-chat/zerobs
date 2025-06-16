@@ -96,7 +96,7 @@ export function TreeItem({
         if (isSelected) {
           // Always allow deselection
           const newSelected = currentSelected.filter(
-            (filePath) => !filesInFolder.includes(filePath)
+            (filePath) => !filesInFolder.includes(filePath),
           );
           setSelectedFiles(newSelected);
           toggleFolder(item.path);
@@ -105,7 +105,7 @@ export function TreeItem({
           let totalTokensForFolder = 0;
           for (const filePath of filesInFolder) {
             const fileItem = combinedItems.items.find(
-              (item) => item.path === filePath && item.type === "file"
+              (item) => item.path === filePath && item.type === "file",
             );
             if (fileItem?.tokenCount) {
               totalTokensForFolder += fileItem.tokenCount;
@@ -114,7 +114,7 @@ export function TreeItem({
 
           if (currentTokenUsage + totalTokensForFolder > maxTokens) {
             toast.error(
-              "Token limit would be exceeded. Deselect some files first."
+              "Token limit would be exceeded. Deselect some files first.",
             );
             return;
           }

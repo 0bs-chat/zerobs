@@ -9,7 +9,11 @@ import {
   internalAction,
 } from "../_generated/server.js";
 import { ConvexError } from "convex/values";
-import { zCustomAction, zCustomMutation, zCustomQuery } from "convex-helpers/server/zod";
+import {
+  zCustomAction,
+  zCustomMutation,
+  zCustomQuery,
+} from "convex-helpers/server/zod";
 import { NoOp } from "convex-helpers/server/customFunctions";
 
 export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {

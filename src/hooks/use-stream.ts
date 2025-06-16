@@ -29,7 +29,9 @@ interface UseStreamProcessorProps {
   streamChunks?: StreamEvent[];
 }
 
-export const useStreamProcessor = ({ streamChunks }: UseStreamProcessorProps) => {
+export const useStreamProcessor = ({
+  streamChunks,
+}: UseStreamProcessorProps) => {
   return React.useMemo(() => {
     if (!streamChunks) {
       return { chunkGroups: [] };
@@ -51,8 +53,10 @@ export const useStreamProcessor = ({ streamChunks }: UseStreamProcessorProps) =>
 
       switch (chunk.event) {
         case "on_chat_model_stream": {
-          const { content = "", additional_kwargs = {} } = chunk.data.chunk.kwargs;
-          const reasoningPart: string | undefined = additional_kwargs.reasoning_content;
+          const { content = "", additional_kwargs = {} } =
+            chunk.data.chunk.kwargs;
+          const reasoningPart: string | undefined =
+            additional_kwargs.reasoning_content;
 
           aiBuffer ??= { type: "ai", content: "" };
           aiBuffer.content += content;
@@ -106,7 +110,9 @@ export function useStream(chatId: Id<"chats"> | "new") {
   const convex = useConvex();
   const lastTimeRef = useRef<number | undefined>(undefined);
   const [chunks, setChunks] = useState<StreamEvent[]>([]);
-  const stream = useQuery(api.streams.queries.getFromChatId, { chatId: chatId });
+  const stream = useQuery(api.streams.queries.getFromChatId, {
+    chatId: chatId,
+  });
 
   useEffect(() => {
     if (!stream) return;
@@ -123,18 +129,16 @@ export function useStream(chatId: Id<"chats"> | "new") {
         let hasMore = true;
 
         while (hasMore && !cancelled) {
-          const result: PaginationResult<Doc<"streamChunks">> = await convex.query(
-            api.streams.queries.getChunks,
-            {
+          const result: PaginationResult<Doc<"streamChunks">> =
+            await convex.query(api.streams.queries.getChunks, {
               streamId: stream._id,
               lastChunkTime: lastTimeRef.current,
               paginationOpts: {
                 numItems: 50,
                 cursor,
               },
-            },
-          );
-          
+            });
+
           if (cancelled) return;
 
           if (result.page.length > 0) {
@@ -142,12 +146,20 @@ export function useStream(chatId: Id<"chats"> | "new") {
             result.page.forEach((d) => {
               d.chunks.forEach((chunkStr: string) => {
                 const event = JSON.parse(chunkStr) as StreamEvent;
-                console.log("event", event.event, event.name, event.metadata, event.tags, event.run_id)
+                console.log(
+                  "event",
+                  event.event,
+                  event.name,
+                  event.metadata,
+                  event.tags,
+                  event.run_id,
+                );
                 events.push(event);
               });
             });
             setChunks((prev) => [...prev, ...events]);
-            lastTimeRef.current = result.page[result.page.length - 1]._creationTime;
+            lastTimeRef.current =
+              result.page[result.page.length - 1]._creationTime;
           }
 
           // Determine if we should continue fetching.

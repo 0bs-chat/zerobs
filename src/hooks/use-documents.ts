@@ -21,16 +21,24 @@ export const useRemoveDocument = () => {
   };
 };
 
-export const useUploadDocuments = ({ type, addToChatInput }: { type: "file" | "url" | "site" | "youtube" | "text" | "github", addToChatInput?: boolean } = { type: "file", addToChatInput: true }) => {
+export const useUploadDocuments = (
+  {
+    type,
+    addToChatInput,
+  }: {
+    type: "file" | "url" | "site" | "youtube" | "text" | "github";
+    addToChatInput?: boolean;
+  } = { type: "file", addToChatInput: true },
+) => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const chatId = params.chatId as Id<"chats"> | "new";
   const chatInputQuery = useQuery(api.chatInputs.queries.get, { chatId });
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
   const generateUploadUrlMutation = useMutation(
-    api.documents.mutations.generateUploadUrl
+    api.documents.mutations.generateUploadUrl,
   );
   const createMultipleMutation = useMutation(
-    api.documents.mutations.createMultiple
+    api.documents.mutations.createMultiple,
   );
 
   return async (files: FileList) => {
@@ -82,7 +90,7 @@ export const useUploadDocuments = ({ type, addToChatInput }: { type: "file" | "u
       }
 
       toast(
-        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`
+        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`,
       );
 
       return documentIds;
@@ -102,7 +110,7 @@ export const mergeAndCreateDocument = () => {
         const response = await fetch(path);
         if (!response.ok) throw new Error(`Failed to fetch ${path}`);
         return await response.text();
-      })
+      }),
     );
 
     const mergedContent = fileContents.join("\n\n");

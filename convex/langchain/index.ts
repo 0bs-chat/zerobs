@@ -1,29 +1,72 @@
 "use node";
 
+import { z } from "zod"
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import type { ActionCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
-import { HumanMessage, RemoveMessage, BaseMessage, AIMessage } from "@langchain/core/messages";
+import {
+  HumanMessage,
+  RemoveMessage,
+  BaseMessage,
+  AIMessage,
+} from "@langchain/core/messages";
 import { api, internal } from "../_generated/api";
 import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
 import { agentGraph } from "./agent";
 import { ChatInputs, Chats } from "../schema";
+import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
+import { getModel } from "./models";
+import { FunctionReturnType } from "convex/server";
+
+/**
+ * Helper function to create a HumanMessage with text and document attachments
+ */
+async function createHumanMessage(
+  ctx: ActionCtx,
+  text: string,
+  documents?: Id<"documents">[]
+): Promise<HumanMessage> {
+  return new HumanMessage({
+    content: [
+      {
+        type: "text",
+        text,
+      },
+      ...(await Promise.all(
+        documents?.map(async (documentId) => {
+          let document = await ctx.runQuery(api.documents.queries.get, {
+            documentId,
+          });
+
+          return {
+            type: "file",
+            file: {
+              file_id: document._id,
+            },
+          };
+        }) ?? [],
+      )),
+    ],
+  });
+}
 
 export const chat = internalAction({
   args: {
-    chatInputId: v.id("chatInputs"),
+    chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
-    const chatInput = await ctx.runQuery(
-      internal.chatInputs.queries.getById,
-      { chatInputId: args.chatInputId }
-    );    
+    const chatInput = await ctx.runQuery(internal.chatInputs.queries.getInternal, {
+      chatId: args.chatId,
+    });
     let streamDoc: Doc<"streams"> | null = null;
-    
+
     // Create AbortController for cancellation
     const abortController = new AbortController();
-    const stream = await streamHelper(ctx, { chatInput, signal: abortController.signal });
+    const stream = await streamHelper(ctx, {
+      chatInput,
+      signal: abortController.signal,
+    });
 
     // ---- new batching logic ----
     const streamId = chatInput.streamId!;
@@ -60,10 +103,10 @@ export const chat = internalAction({
             {
               streamId,
               chunks: buffer.splice(0, buffer.length),
-            }
+            },
           );
           lastFlush = now;
-          
+
           // Also check cancellation status from the returned streamDoc
           if (streamDoc.status === "cancelled") {
             wasCancelled = true;
@@ -79,78 +122,55 @@ export const chat = internalAction({
           {
             streamId,
             chunks: buffer.splice(0, buffer.length),
-          }
+          },
         );
-        
+
         // Final check after flushing remaining buffer
         if (streamDoc.status === "cancelled") {
           wasCancelled = true;
         }
       }
-      
+
       // Only mark as done if not cancelled
       if (!wasCancelled) {
-        await ctx.runMutation(
-          internal.streams.mutations.update,
-          {
-            streamId,
-            updates: { status: "done" },
-          }
-        );
+        await ctx.runMutation(internal.streams.mutations.update, {
+          streamId,
+          updates: { status: "done" },
+        });
       }
     } catch (error) {
       console.error(error);
-      
+
       // If we already know it was cancelled, don't override the status
       if (wasCancelled) {
         return;
       }
-      
+
       // Check if the error was due to cancellation
-      const errorStatus = streamDoc?.status || (await ctx.runQuery(api.streams.queries.get, { streamId })).status;
-      
+      const errorStatus =
+        streamDoc?.status ||
+        (await ctx.runQuery(api.streams.queries.get, { streamId })).status;
+
       if (errorStatus === "cancelled") {
         return;
       }
-      
-      await ctx.runMutation(
-        internal.streams.mutations.update,
-        {
-          streamId,
-          updates: { status: "error" },
-        }
-      );
+
+      await ctx.runMutation(internal.streams.mutations.update, {
+        streamId,
+        updates: { status: "error" },
+      });
     }
   },
 });
 
 async function* streamHelper(
   ctx: ActionCtx,
-  args: { chatInput: Doc<"chatInputs">; signal?: AbortSignal }
+  args: { chatInput: FunctionReturnType<typeof internal.chatInputs.queries.getInternal>; signal?: AbortSignal },
 ) {
-  const humanMessage = new HumanMessage({
-    content: [
-      {
-        type: "text",
-        text: args.chatInput.text,
-      },
-      ...(await Promise.all(args.chatInput.documents?.map(async (documentId) => {
-        let document = await ctx.runQuery(api.documents.queries.get, {
-          documentId,
-        });
-        
-        return {
-          type: "file",
-          file: {
-            file_id: document._id
-          }
-        }
-      }) ?? [])),
-    ],
-  });
+  const humanMessage = await createHumanMessage(ctx, args.chatInput.text!, args.chatInput.documents);
 
   await ctx.runMutation(api.chatInputs.mutations.update, {
-    chatId: args.chatInput.chatId,
+    chatId: args.chatInput.chatId!,
     updates: { text: "", documents: [] },
   });
 
@@ -165,18 +185,23 @@ async function* streamHelper(
     recursionLimit: 100,
     ...(args.signal && { signal: args.signal }),
   };
-  
+
   const response = agentGraph
     .compile({ checkpointer })
-    .streamEvents(
-      { messages: [humanMessage] },
-      streamConfig
-    );
+    .streamEvents({ messages: [humanMessage] }, streamConfig);
 
   for await (const event of response) {
-    if (["on_chat_model_stream", "on_tool_start", "on_tool_end"].includes(event.event)) {
+    if (
+      ["on_chat_model_stream", "on_tool_start", "on_tool_end"].includes(
+        event.event,
+      )
+    ) {
       const allowedNodes = ["baseAgent"];
-      if (allowedNodes.some(node => event.metadata.checkpoint_ns.startsWith(node))) {
+      if (
+        allowedNodes.some((node) =>
+          event.metadata.checkpoint_ns.startsWith(node),
+        )
+      ) {
         yield event;
       }
     }
@@ -191,10 +216,10 @@ export const removeMessages = internalAction({
   },
   handler: async (ctx, args) => {
     const checkpointer = new ConvexCheckpointSaver(ctx);
-    const checkpoint = await checkpointer.get({ 
-      configurable: { thread_id: args.chatId } 
+    const checkpoint = await checkpointer.get({
+      configurable: { thread_id: args.chatId },
     });
-    const messages = checkpoint?.channel_values.messages as BaseMessage[]
+    const messages = checkpoint?.channel_values.messages as BaseMessage[];
 
     if (!messages) {
       throw new Error("No messages found in chat");
@@ -205,14 +230,23 @@ export const removeMessages = internalAction({
     }
     let updatedMessages: RemoveMessage[] = [];
     if (args.cascade) {
-      updatedMessages = messages.slice(0, args.messageIndex).map(message => new RemoveMessage({ id: message.id! }));
+      updatedMessages = messages
+        .slice(0, args.messageIndex)
+        .map((message) => new RemoveMessage({ id: message.id! }));
     } else {
-      updatedMessages = [new RemoveMessage({ id: messages[args.messageIndex].id! })];
+      updatedMessages = [
+        new RemoveMessage({ id: messages[args.messageIndex].id! }),
+      ];
     }
 
-    return await agentGraph.compile({ checkpointer }).updateState({ configurable: { thread_id: args.chatId } }, { messages: updatedMessages });
-  }
-})
+    return await agentGraph
+      .compile({ checkpointer })
+      .updateState(
+        { configurable: { thread_id: args.chatId } },
+        { messages: updatedMessages },
+      );
+  },
+});
 
 export const editMessage = internalAction({
   args: {
@@ -223,8 +257,8 @@ export const editMessage = internalAction({
   },
   handler: async (ctx, args) => {
     const checkpointer = new ConvexCheckpointSaver(ctx);
-    const checkpoint = await checkpointer.get({ 
-      configurable: { thread_id: args.chatId } 
+    const checkpoint = await checkpointer.get({
+      configurable: { thread_id: args.chatId },
     });
     const messages = checkpoint?.channel_values.messages as BaseMessage[];
 
@@ -259,25 +293,29 @@ export const editMessage = internalAction({
     // If cascade is true, remove all subsequent messages
     if (args.cascade) {
       const messagesToRemove = messages.slice(args.messageIndex + 1);
-      const removeMessages = messagesToRemove.map(message => new RemoveMessage({ id: message.id! }));
+      const removeMessages = messagesToRemove.map(
+        (message) => new RemoveMessage({ id: message.id! }),
+      );
       updatedMessages.push(...removeMessages);
     }
 
-    return await agentGraph.compile({ checkpointer }).updateState(
-      { configurable: { thread_id: args.chatId } }, 
-      { messages: updatedMessages }
-    );
-  }
-})
+    return await agentGraph
+      .compile({ checkpointer })
+      .updateState(
+        { configurable: { thread_id: args.chatId } },
+        { messages: updatedMessages },
+      );
+  },
+});
 
 export const addMessage = internalAction({
   args: {
-    chatInputDoc: ChatInputs.doc
+    chatInputDoc: ChatInputs.doc,
   },
   handler: async (ctx, args): Promise<Record<string, any>> => {
     const checkpointer = new ConvexCheckpointSaver(ctx);
-    const checkpoint = await checkpointer.get({ 
-      configurable: { thread_id: args.chatInputDoc.chatId } 
+    const checkpoint = await checkpointer.get({
+      configurable: { thread_id: args.chatInputDoc.chatId },
     });
     const messages = checkpoint?.channel_values.messages as BaseMessage[];
 
@@ -285,40 +323,23 @@ export const addMessage = internalAction({
       throw new Error("No messages found in chat");
     }
 
-    const humanMessage = new HumanMessage({
-      content: [
-        {
-          type: "text",
-          text: args.chatInputDoc.text,
-        },
-        ...(await Promise.all(args.chatInputDoc.documents?.map(async (documentId) => {
-          let document = await ctx.runQuery(api.documents.queries.get, {
-            documentId,
-          });
-          
-          return {
-            type: "file",
-            file: {
-              file_id: document._id
-            }
-          }
-        }) ?? [])),
-      ],
-    });
+    const humanMessage = await createHumanMessage(ctx, args.chatInputDoc.text!, args.chatInputDoc.documents);
 
     await ctx.runMutation(api.chatInputs.mutations.update, {
       chatId: args.chatInputDoc.chatId,
       updates: { text: "", documents: [] },
     });
 
-    const response = await agentGraph.compile({ checkpointer }).updateState(
-      { configurable: { thread_id: args.chatInputDoc.chatId } },
-      { messages: [...messages, humanMessage] }
-    );
+    const response = await agentGraph
+      .compile({ checkpointer })
+      .updateState(
+        { configurable: { thread_id: args.chatInputDoc.chatId } },
+        { messages: [...messages, humanMessage] },
+      );
 
     return response;
-  }
-})
+  },
+});
 
 export const branchChat = internalAction({
   args: {
@@ -348,35 +369,16 @@ export const branchChat = internalAction({
 
     const branchedMessages = messages.slice(0, args.messageIndex + 1);
 
-    const humanMessage = new HumanMessage({
-      content: [
-        {
-          type: "text",
-          text: args.chatInputDoc.text ?? "",
-        },
-        ...(await Promise.all(
-          args.chatInputDoc.documents?.map(async (documentId) => {
-            let document = await ctx.runQuery(api.documents.queries.get, {
-              documentId,
-            });
-
-            return {
-              type: "file",
-              file: {
-                file_id: document._id,
-              },
-            };
-          }) ?? []
-        )),
-      ],
-    });
+    const humanMessage = await createHumanMessage(ctx, args.chatInputDoc.text!, args.chatInputDoc.documents);
 
     const newChatMessages = [...branchedMessages, humanMessage];
 
-    await agentGraph.compile({ checkpointer }).updateState(
-      { configurable: { thread_id: newChatId } },
-      { messages: newChatMessages }
-    );
+    await agentGraph
+      .compile({ checkpointer })
+      .updateState(
+        { configurable: { thread_id: newChatId } },
+        { messages: newChatMessages },
+      );
 
     await ctx.runMutation(api.chatInputs.mutations.update, {
       chatId: args.chatInputDoc.chatId,
@@ -384,5 +386,35 @@ export const branchChat = internalAction({
     });
 
     return newChatId;
+  },
+});
+
+export const generateTitle = internalAction({
+  args: {
+    chatInputDoc: ChatInputs.doc,
+  },
+  handler: async (ctx, args) => {
+    const prompt = ChatPromptTemplate.fromMessages([
+      ["system", "You are a helpful assistant that generates titles for chats."],
+      new MessagesPlaceholder("input"),
+    ])
+    const output = z.object({
+      title: z.string(),
+    })
+
+    const modelWithOutputParser = prompt.pipe(
+      await getModel("worker").withStructuredOutput(output),
+    );
+
+    if (args.chatInputDoc.chatId !== "new") {
+      const response = await modelWithOutputParser.invoke({
+        input: [await createHumanMessage(ctx, args.chatInputDoc.text!, args.chatInputDoc.documents)],
+      });
+
+      await ctx.runMutation(api.chats.mutations.update, {
+        chatId: args.chatInputDoc.chatId,
+        updates: { name: response.title },
+      });
+    }
   },
 });

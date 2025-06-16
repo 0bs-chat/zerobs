@@ -12,14 +12,16 @@ import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { projectDialogOpenAtom } from "@/store/chatStore";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useSelectProject } from "@/hooks/use-projects";
+import type { Id } from "convex/_generated/dataModel";
+import { useParams } from "@tanstack/react-router";
 
 export const CreateProjectDialog = () => {
   const projectDialogOpen = useAtomValue(projectDialogOpenAtom);
   const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
   const createProject = useMutation(api.projects.mutations.create);
-  const { selectProject } = useSelectProject();
-
+  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const params = useParams({ strict: false });
+  const chatId = params.chatId as Id<"chats"> | "new";
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -34,7 +36,12 @@ export const CreateProjectDialog = () => {
     });
 
     setProjectDialogOpen(false);
-    await selectProject(project._id);
+    await updateChatInputMutation({
+      chatId,
+      updates: {
+        projectId: project._id,
+      },
+    });
   };
 
   return (

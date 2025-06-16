@@ -26,7 +26,7 @@ export const getFromKey = query({
     return {
       ...apiKeyDoc,
       value,
-    }
+    };
   },
 });
 
@@ -37,9 +37,7 @@ export const getPublicFromKey = query({
   handler: async (ctx, args) => {
     const apiKeyDoc = await ctx.db
       .query("apiKeys")
-      .withIndex("by_key", (q) =>
-        q.eq("key", args.key),
-      )
+      .withIndex("by_key", (q) => q.eq("key", args.key))
       .first();
 
     if (!apiKeyDoc || apiKeyDoc.userId) {
@@ -51,7 +49,7 @@ export const getPublicFromKey = query({
     return {
       ...apiKeyDoc,
       value,
-    }
+    };
   },
 });
 
@@ -78,7 +76,7 @@ export const getFromValue = internalQuery({
     return {
       ...apiKeyDoc,
       value,
-    }
+    };
   },
 });
 
@@ -92,13 +90,15 @@ export const getAll = query({
       .withIndex("by_user_key", (q) => q.eq("userId", userId))
       .collect();
 
-    return await Promise.all(userApiKeys.map(async (apiKeyDoc) => {
-      const { value } = await verifyJwt(apiKeyDoc.value);
+    return await Promise.all(
+      userApiKeys.map(async (apiKeyDoc) => {
+        const { value } = await verifyJwt(apiKeyDoc.value);
 
-      return {
-        ...apiKeyDoc,
-        value,
-      }
-    }));
+        return {
+          ...apiKeyDoc,
+          value,
+        };
+      }),
+    );
   },
 });

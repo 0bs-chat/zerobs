@@ -24,11 +24,13 @@ export const DocumentDialog = () => {
 
   const document = useQuery(
     api.documents.queries.get,
-    documentDialogDocumentId ? { documentId: documentDialogDocumentId } : "skip"
+    documentDialogDocumentId
+      ? { documentId: documentDialogDocumentId }
+      : "skip",
   );
 
   const generateDownloadUrl = useMutation(
-    api.documents.mutations.generateDownloadUrl
+    api.documents.mutations.generateDownloadUrl,
   );
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export const DocumentDialog = () => {
 
   const { icon: Icon, className: IconClassName } = getTagInfo(
     document?.type!,
-    document?.status!
+    document?.status!,
   );
 
   return (

@@ -35,7 +35,7 @@ export const tokenUsageAtom = atom((get) => {
   let totalTokens = 0;
   for (const filePath of selectedFiles) {
     const item = combinedItems.items.find(
-      (item) => item.path === filePath && item.type === "file"
+      (item) => item.path === filePath && item.type === "file",
     );
     if (item?.tokenCount) {
       totalTokens += item.tokenCount;
@@ -68,12 +68,12 @@ export const wouldExceedLimitAtom = atom(
     const combinedItems = get(githubCombinedItemsAtom);
 
     const item = combinedItems.items.find(
-      (item) => item.path === filePath && item.type === "file"
+      (item) => item.path === filePath && item.type === "file",
     );
     const fileTokens = item?.tokenCount || 0;
 
     return currentUsage + fileTokens > maxTokens;
-  }
+  },
 );
 
 // Derived atoms for selection management
@@ -99,7 +99,7 @@ export const toggleFileSelectionAtom = atom(
       // Check if adding this file would exceed the limit
       const combinedItems = get(githubCombinedItemsAtom);
       const item = combinedItems.items.find(
-        (item) => item.path === filePath && item.type === "file"
+        (item) => item.path === filePath && item.type === "file",
       );
       const fileTokens = item?.tokenCount || 0;
       const currentUsage = get(tokenUsageAtom);
@@ -113,7 +113,7 @@ export const toggleFileSelectionAtom = atom(
       set(selectedFilesAtom, newSelected);
       return true;
     }
-  }
+  },
 );
 
 export const toggleFolderSelectionAtom = atom(
@@ -138,27 +138,26 @@ export const toggleFolderSelectionAtom = atom(
       set(selectedFoldersAtom, newSelected);
       return true;
     }
-  }
+  },
 );
 
 export const setSelectedFilesAtom = atom(
   null,
   (_get, set, filePaths: string[]) => {
     set(selectedFilesAtom, new Set(filePaths));
-  }
+  },
 );
 
 export const selectAllFilesAtom = atom(
   null,
   (get, set, filePaths: string[], folderPaths: string[]) => {
-    // Calculate total tokens for all files
     const combinedItems = get(githubCombinedItemsAtom);
     const maxTokens = get(maxTokensAtom);
 
     let totalTokens = 0;
     for (const filePath of filePaths) {
       const item = combinedItems.items.find(
-        (item) => item.path === filePath && item.type === "file"
+        (item) => item.path === filePath && item.type === "file",
       );
       if (item?.tokenCount) {
         totalTokens += item.tokenCount;
@@ -172,7 +171,7 @@ export const selectAllFilesAtom = atom(
     set(selectedFilesAtom, new Set(filePaths));
     set(selectedFoldersAtom, new Set(folderPaths));
     return true;
-  }
+  },
 );
 
 export const clearAllSelectionsAtom = atom(null, (_get, set) => {

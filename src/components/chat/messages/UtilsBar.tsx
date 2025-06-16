@@ -1,14 +1,36 @@
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CheckIcon, CopyIcon, GitBranchIcon, MoreHorizontalIcon, PencilIcon, RefreshCcwIcon, TrashIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  CheckIcon,
+  CopyIcon,
+  GitBranchIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  RefreshCcwIcon,
+  TrashIcon,
+} from "lucide-react";
 
-export const AIToolUtilsBar = ({ isDropdownOpen, setIsDropdownOpen, handleCopyText, copied }: { isDropdownOpen: boolean, setIsDropdownOpen: (open: boolean) => void, handleCopyText: () => void, copied: boolean }) => {
+export const AIToolUtilsBar = ({
+  isDropdownOpen,
+  setIsDropdownOpen,
+  handleCopyText,
+  copied,
+}: {
+  isDropdownOpen: boolean;
+  setIsDropdownOpen: (open: boolean) => void;
+  handleCopyText: () => void;
+  copied: boolean;
+}) => {
   return (
     <div
       className={`flex flex-row items-center justify-start ${
-        isDropdownOpen
-          ? "opacity-100"
-          : "opacity-0 group-hover:opacity-100"
+        isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
       } transition-opacity duration-100 gap-1`}
     >
       <Button
@@ -62,13 +84,21 @@ export const AIToolUtilsBar = ({ isDropdownOpen, setIsDropdownOpen, handleCopyTe
   );
 };
 
-export const UserUtilsBar = ({ isDropdownOpen, setIsDropdownOpen, handleCopyText, copied }: { isDropdownOpen: boolean, setIsDropdownOpen: (open: boolean) => void, handleCopyText: () => void, copied: boolean }) => {
+export const UserUtilsBar = ({
+  isDropdownOpen,
+  setIsDropdownOpen,
+  handleCopyText,
+  copied,
+}: {
+  isDropdownOpen: boolean;
+  setIsDropdownOpen: (open: boolean) => void;
+  handleCopyText: () => void;
+  copied: boolean;
+}) => {
   return (
     <div
       className={`flex flex-row items-center justify-start ${
-        isDropdownOpen
-          ? "opacity-100"
-          : "opacity-0 group-hover:opacity-100"
+        isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
       } transition-opacity duration-100 gap-1`}
     >
       <Button variant="ghost" size="icon">

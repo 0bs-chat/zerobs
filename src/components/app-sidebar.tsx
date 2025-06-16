@@ -50,7 +50,7 @@ function ChatItem({
       e.preventDefault();
       onPin(chat._id);
     },
-    [onPin, chat._id]
+    [onPin, chat._id],
   );
 
   const handleUnpin = useCallback(
@@ -58,7 +58,7 @@ function ChatItem({
       e.preventDefault();
       onUnpin(chat._id);
     },
-    [onUnpin, chat._id]
+    [onUnpin, chat._id],
   );
 
   const handleDelete = useCallback(
@@ -67,7 +67,7 @@ function ChatItem({
       e.stopPropagation();
       onDelete(chat._id);
     },
-    [onDelete, chat._id]
+    [onDelete, chat._id],
   );
 
   return (
@@ -138,7 +138,7 @@ export function AppSidebar() {
         params: { chatId },
       });
     },
-    [navigate]
+    [navigate],
   );
 
   const handlePin = useCallback(
@@ -149,7 +149,7 @@ export function AppSidebar() {
       });
       toast.success("Chat pinned");
     },
-    [updateChat]
+    [updateChat],
   );
 
   const handleUnpin = useCallback(
@@ -160,7 +160,7 @@ export function AppSidebar() {
       });
       toast.success("Chat unpinned");
     },
-    [updateChat]
+    [updateChat],
   );
 
   const handleDelete = useCallback(
@@ -173,7 +173,7 @@ export function AppSidebar() {
       removeChat({ chatId: chatId as Id<"chats"> });
       toast.success("Chat deleted");
     },
-    [navigate, removeChat]
+    [navigate, removeChat],
   );
 
   const handleNewChat = useCallback(() => {

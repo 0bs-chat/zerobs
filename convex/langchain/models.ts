@@ -5,7 +5,12 @@ import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Embeddings } from "@langchain/core/embeddings";
 import { ActionCtx } from "../_generated/server";
-import { BaseMessage, HumanMessage, MessageContentComplex, DataContentBlock } from "@langchain/core/messages";
+import {
+  BaseMessage,
+  HumanMessage,
+  MessageContentComplex,
+  DataContentBlock,
+} from "@langchain/core/messages";
 import { Doc } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
 import mime from "mime";
@@ -16,7 +21,7 @@ export const models: {
   model: string;
   isThinking: boolean;
   toolSupport: boolean;
-  provider: "openai" | "google"
+  provider: "openai" | "google";
   modalities: ("text" | "image" | "pdf")[];
   image: string;
   description: string;
@@ -32,8 +37,10 @@ export const models: {
     toolSupport: true,
     provider: "openai",
     modalities: ["text", "image", "pdf"],
-    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-    description: "Gemini 2.5 Flash is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "Gemini 2.5 Flash is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     usageRateMultiplier: 1.0,
   },
   {
@@ -44,8 +51,10 @@ export const models: {
     toolSupport: true,
     provider: "openai",
     modalities: ["text", "image", "pdf"],
-    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-    description: "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
     usageRateMultiplier: 1.0,
   },
   {
@@ -56,8 +65,10 @@ export const models: {
     toolSupport: true,
     provider: "openai",
     modalities: ["text", "image"],
-    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
-    description: "GPT-4.1 is a state-of-the-art language model capable of understanding and generating human-like text.",
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
+    description:
+      "GPT-4.1 is a state-of-the-art language model capable of understanding and generating human-like text.",
     usageRateMultiplier: 1.0,
   },
   {
@@ -68,8 +79,10 @@ export const models: {
     toolSupport: true,
     provider: "openai",
     modalities: ["text", "image", "pdf"],
-    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSCRxLvQkYbi8sZjauXl0P9cm7wv6oqd4TkgLy",
-    description: "Claude 4 is a versatile model that excels in various text and image processing tasks.",
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSCRxLvQkYbi8sZjauXl0P9cm7wv6oqd4TkgLy",
+    description:
+      "Claude 4 is a versatile model that excels in various text and image processing tasks.",
     usageRateMultiplier: 1.0,
   },
   {
@@ -80,8 +93,10 @@ export const models: {
     toolSupport: true,
     provider: "openai",
     modalities: ["text", "image", "pdf"],
-    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-    description: "The Worker model is designed for specialized tasks requiring high efficiency.",
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "The Worker model is designed for specialized tasks requiring high efficiency.",
     usageRateMultiplier: 1.0,
     hidden: true,
   },
@@ -93,8 +108,10 @@ export const models: {
     toolSupport: false,
     provider: "openai",
     modalities: ["text"],
-    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSc6tHQtOkQ3diauvF12HnrWNtOmhI0eYwBKzf",
-    description: "Deepseek R1 is a model focused on deep learning tasks with a strong emphasis on text processing.",
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSc6tHQtOkQ3diauvF12HnrWNtOmhI0eYwBKzf",
+    description:
+      "Deepseek R1 is a model focused on deep learning tasks with a strong emphasis on text processing.",
     usageRateMultiplier: 1.0,
   },
   {
@@ -105,8 +122,10 @@ export const models: {
     toolSupport: false,
     provider: "google",
     modalities: ["text"],
-    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-    description: "The Embeddings model is designed for generating high-quality text embeddings.",
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "The Embeddings model is designed for generating high-quality text embeddings.",
     usageRateMultiplier: 1.0,
     hidden: true,
     type: "embeddings",
@@ -119,11 +138,13 @@ export const models: {
     toolSupport: true,
     provider: "openai",
     modalities: ["text"],
-    image: "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-    description: "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     usageRateMultiplier: 1.0,
-  }
-]
+  },
+];
 
 export function getModel(model: string): BaseChatModel {
   const modelConfig = models.find((m) => m.model_name === model);
@@ -139,7 +160,7 @@ export function getModel(model: string): BaseChatModel {
     apiKey: API_KEY,
     configuration: {
       baseURL: `https://openrouter.ai/api/v1`,
-    }
+    },
   });
 }
 
@@ -158,9 +179,13 @@ export function getEmbeddingModel(model: string): Embeddings {
   });
 }
 
-export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], model: string): Promise<BaseMessage[]> {
+export async function formatMessages(
+  ctx: ActionCtx,
+  messages: BaseMessage[],
+  model: string,
+): Promise<BaseMessage[]> {
   const modelConfig = models.find((m) => m.model_name === model);
-  
+
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);
   }
@@ -168,93 +193,111 @@ export async function formatMessages(ctx: ActionCtx, messages: BaseMessage[], mo
   const supportedTags = modelConfig.modalities;
 
   // Process all messages in parallel
-  const formattedMessages = await Promise.all(messages.map(async (message) => {
-    if (message instanceof HumanMessage) {
-      const content = message.content;
-      
-      // If content is a string, no processing needed
-      if (typeof content === "string") {
-        return message;
-      }
+  const formattedMessages = await Promise.all(
+    messages.map(async (message) => {
+      if (message instanceof HumanMessage) {
+        const content = message.content;
 
-      // If content is an array, check each item
-      if (Array.isArray(content)) {
-        // Process all content items in parallel
-        const processedContent = await Promise.all(content.map(async (contentItem) => {
-          if (typeof contentItem === "string") {
-            return contentItem;
-          }
+        // If content is a string, no processing needed
+        if (typeof content === "string") {
+          return message;
+        }
 
-          if (typeof contentItem === "object" && contentItem !== null) {
-            if (contentItem.type === "file" && "file" in contentItem) {
-              const documentId = contentItem.file?.file_id;
-              const document = await ctx.runQuery(api.documents.queries.get, {
-                documentId,
-              });
-              if (document.type === "file") {
-                const mimeType = mime.getType(document.name) ?? "application/octet-stream";
-                const fileType = mimeType === "application/pdf" ? "pdf" : mimeType.split("/")[0];
-                if (supportedTags.includes(fileType as ("text" | "image" | "pdf"))) {
-                  const url = await ctx.storage.getUrl(document.key);
-                  if (fileType === "image") {
-                    return {
-                      type: "image_url",
-                      image_url: {
-                        url: url,
-                        format: mimeType,
-                        detail: "high",
+        // If content is an array, check each item
+        if (Array.isArray(content)) {
+          // Process all content items in parallel
+          const processedContent = await Promise.all(
+            content.map(async (contentItem) => {
+              if (typeof contentItem === "string") {
+                return contentItem;
+              }
+
+              if (typeof contentItem === "object" && contentItem !== null) {
+                if (contentItem.type === "file" && "file" in contentItem) {
+                  const documentId = contentItem.file?.file_id;
+                  const document = await ctx.runQuery(
+                    api.documents.queries.get,
+                    {
+                      documentId,
+                    },
+                  );
+                  if (document.type === "file") {
+                    const mimeType =
+                      mime.getType(document.name) ?? "application/octet-stream";
+                    const fileType =
+                      mimeType === "application/pdf"
+                        ? "pdf"
+                        : mimeType.split("/")[0];
+                    if (
+                      supportedTags.includes(
+                        fileType as "text" | "image" | "pdf",
+                      )
+                    ) {
+                      const url = await ctx.storage.getUrl(document.key);
+                      if (fileType === "image") {
+                        return {
+                          type: "image_url",
+                          image_url: {
+                            url: url,
+                            format: mimeType,
+                            detail: "high",
+                          },
+                        };
+                      } else {
+                        return {
+                          type: "file",
+                          source_type: "id",
+                          id: url,
+                          metadata: {
+                            format: mimeType,
+                          },
+                        };
                       }
+                    } else {
+                      return await getVectorText(ctx, document);
                     }
+                  } else if (["text", "github"].includes(document.type)) {
+                    const blob = await ctx.storage.get(document.key);
+                    return {
+                      type: "text",
+                      text: `# ${document.name}\n${blob?.text()}\n`,
+                    };
                   } else {
-                    return {
-                      type: "file",
-                      source_type: "id",
-                      id: url,
-                      metadata: {
-                        format: mimeType,
-                      }
-                    }
+                    return await getVectorText(ctx, document);
                   }
                 } else {
-                  return await getVectorText(ctx, document)
-                }
-              } else if (["text", "github"].includes(document.type)) {
-                const blob = await ctx.storage.get(document.key);
-                return {
-                  type: "text",
-                  text: `# ${document.name}\n${blob?.text()}\n`,
+                  return contentItem;
                 }
               } else {
-                return await getVectorText(ctx, document)
+                return contentItem;
               }
-            } else {
-              return contentItem;
-            }
-          } else {
-            return contentItem;
-          }
-        }));
+            }),
+          );
 
-        // Create new message with processed content
-        return new HumanMessage({ content: processedContent });
+          // Create new message with processed content
+          return new HumanMessage({ content: processedContent });
+        } else {
+          // Handle other content types
+          return message;
+        }
       } else {
-        // Handle other content types
         return message;
       }
-    } else {
-      return message;
-    }
-  }));
+    }),
+  );
 
   return formattedMessages;
 }
 
-export async function getVectorText(ctx: ActionCtx, document: Doc<"documents">): Promise<MessageContentComplex | DataContentBlock> {
+export async function getVectorText(
+  ctx: ActionCtx,
+  document: Doc<"documents">,
+): Promise<MessageContentComplex | DataContentBlock> {
   // Fall back to vector processing for unsupported file types
   let doc = document;
   let maxAttempts = 50;
   while (doc.status === "processing" && maxAttempts > 0) {
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     doc = await ctx.runQuery(api.documents.queries.get, {
       documentId: document._id,
     });
@@ -263,16 +306,19 @@ export async function getVectorText(ctx: ActionCtx, document: Doc<"documents">):
   const vectors = await ctx.runQuery(internal.documents.queries.getAllVectors, {
     documentId: doc._id,
   });
-  const text = vectors.length > 0 ? vectors.map((vector) => vector.text).join("\n") : "No text found";
+  const text =
+    vectors.length > 0
+      ? vectors.map((vector) => vector.text).join("\n")
+      : "No text found";
   return {
     type: "text",
     text: `# ${doc.name}\n${text}\n`,
-  }
+  };
 }
 
 export function modelSupportsTools(model: string): boolean {
   const modelConfig = models.find((m) => m.model_name === model);
-  
+
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);
   }

@@ -18,7 +18,7 @@ export const get = query({
     if (!chat || chat.userId !== userId) {
       throw new Error("Chat not found");
     }
-    
+
     return chat;
   },
 });
@@ -76,8 +76,11 @@ export const search = query({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const chats = await ctx.db.query("chats")
-      .withSearchIndex("by_name", (q) => q.search("name", args.query).eq("userId", userId))
+    const chats = await ctx.db
+      .query("chats")
+      .withSearchIndex("by_name", (q) =>
+        q.search("name", args.query).eq("userId", userId),
+      )
       .take(10);
 
     return chats;
@@ -99,26 +102,34 @@ export const getCheckpoint = query({
 
     if (args.chatId === "new") {
       return {
-        page: JSON.stringify({
-          messages: [],
-        }, null, 2),
+        page: JSON.stringify(
+          {
+            messages: [],
+          },
+          null,
+          2,
+        ),
         isDone: true,
         continueCursor: null,
       };
     }
     const checkpointer = new ConvexCheckpointSaver(ctx);
 
-    const checkpoint = await checkpointer.get({ configurable: { thread_id: args.chatId } });
-    const messages = (checkpoint?.channel_values as { messages: BaseMessage[] } | undefined)?.messages || [];
-    
+    const checkpoint = await checkpointer.get({
+      configurable: { thread_id: args.chatId },
+    });
+    const messages =
+      (checkpoint?.channel_values as { messages: BaseMessage[] } | undefined)
+        ?.messages || [];
+
     // Pagination options with defaults
     const { numItems = 20, cursor = null } = args.paginationOpts || {};
-    
+
     // Start from the end (most recent messages) and work backwards
     const totalMessages = messages.length;
     let startIndex = 0;
     let endIndex = totalMessages;
-    
+
     if (cursor) {
       // Parse cursor to get the starting position
       try {
@@ -131,20 +142,24 @@ export const getCheckpoint = query({
         endIndex = totalMessages;
       }
     }
-    
+
     // Calculate the slice bounds
     startIndex = Math.max(0, endIndex - numItems);
     const paginatedMessages = messages.slice(startIndex, endIndex);
-    
+
     // Determine if there are more messages to load
     const isDone = startIndex === 0;
     const continueCursor = isDone ? null : startIndex.toString();
 
     return {
-      page: JSON.stringify({
-        ...checkpoint?.channel_values,
-        messages: paginatedMessages,
-      }, null, 2),
+      page: JSON.stringify(
+        {
+          ...checkpoint?.channel_values,
+          messages: paginatedMessages,
+        },
+        null,
+        2,
+      ),
       isDone,
       continueCursor,
     };

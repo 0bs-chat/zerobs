@@ -5,36 +5,18 @@ import type { MCPData } from "@/components/chat/panels/mcp/types";
 
 export const resizablePanelsOpenAtom = atomWithStorage(
   "resizablePanelsOpen",
-  false
+  false,
 );
 
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
 
-export const selectedProjectIdAtom = atomWithStorage<
-  Id<"projects"> | undefined
->("selectedProjectId", undefined);
-
-export const openedProjectIdAtom = atom<Id<"projects"> | undefined>(undefined);
-
-export const resizablePanelTabAtom = atomWithStorage<
-  "mcp" | "artifacts" | "projects" | "settings"
->("resizablePanelTab", "mcp");
-
 export const documentDialogOpenAtom = atom(false);
 export const documentDialogDocumentIdAtom = atom<Id<"documents"> | undefined>(
-  undefined
+  undefined,
 );
 export const projectDialogOpenAtom = atom(false);
 
-export const chatInputTextAtom = atom("");
-
-// ================================
-//        mcp panel state
-// ================================
 export const mcpEditDialogOpenAtom = atom(false);
-export const mcpEditDialogMcpIdAtom = atom<Id<"mcps"> | undefined>(undefined);
-export const currentSelectedMcpAtom = atom<Id<"mcps"> | undefined>(undefined);
-
 export const mcpAtom = atom<MCPData>({
   name: "",
   type: "sse",
@@ -46,8 +28,12 @@ export const mcpAtom = atom<MCPData>({
   resetOnNewChat: false,
 });
 
-// ================================
-//         chat state
-// ================================
-
 export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", true);
+
+
+export type TabValue = "artifacts" | "projects" | "mcp";
+
+export const resizablePanelTabAtom = atomWithStorage<TabValue>(
+  "resizablePanelTab",
+  "mcp",
+);

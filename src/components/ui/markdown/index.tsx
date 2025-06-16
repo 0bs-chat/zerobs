@@ -40,7 +40,7 @@ const MemoizedMarkdownBlock = memo(
         margin: "0",
         wrapLongLines: wrapLongLines,
       }),
-      [wrapLongLines]
+      [wrapLongLines],
     );
 
     const components = useMemo(
@@ -167,7 +167,7 @@ const MemoizedMarkdownBlock = memo(
           );
         },
       }),
-      [copy, copied, wrapLongLines, setWrapLongLines]
+      [copy, copied, wrapLongLines, setWrapLongLines],
     );
 
     return (
@@ -193,7 +193,7 @@ const MemoizedMarkdownBlock = memo(
       prevProps.content === nextProps.content &&
       prevProps.className === nextProps.className
     );
-  }
+  },
 );
 
 MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
@@ -222,7 +222,7 @@ export const Markdown = memo(
         ))}
       </>
     );
-  }
+  },
 );
 
 Markdown.displayName = "Markdown";

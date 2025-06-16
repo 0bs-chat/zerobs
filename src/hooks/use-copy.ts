@@ -34,7 +34,7 @@ export function useCopy(options: UseCopyOptions = {}) {
         onError?.(error);
       }
     },
-    [duration, onSuccess, onError]
+    [duration, onSuccess, onError],
   );
 
   return {

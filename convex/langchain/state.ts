@@ -12,7 +12,8 @@ export const planStep = z.object({
 
 export const planItem = z.union([
   planStep,
-  z.array(planStep)
+  z
+    .array(planStep)
     .describe("Steps that can be executed in parallel")
     .min(2)
     .max(5),
@@ -20,13 +21,15 @@ export const planItem = z.union([
 
 export const planArray = z
   .array(planItem)
-  .describe("A step by step plan to achieve the objective. Use parallel_steps for steps that can run simultaneously.")
+  .describe(
+    "A step by step plan to achieve the objective. Use parallel_steps for steps that can run simultaneously.",
+  )
   .min(1)
-  .max(9)
+  .max(9);
 
 export const planSchema = z.object({
-  plan: planArray
-})
+  plan: planArray,
+});
 
 export type CompletedStep = [z.infer<typeof planStep>, StoredMessage];
 

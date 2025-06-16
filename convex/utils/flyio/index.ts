@@ -99,23 +99,25 @@ const flyGraphqlRequest = async (
 
 export const fly = {
   getApp: async (appName: string) => {
-    return (await flyRequest(`/apps/${appName}`, "GET"));
+    return await flyRequest(`/apps/${appName}`, "GET");
   },
 
   createApp: async (params: CreateAppRequest): Promise<FlyApp | null> => {
     await flyRequest(`/apps`, "POST", params);
     if (params.app_name) {
-      return (await fly.getApp(params.app_name));
+      return await fly.getApp(params.app_name);
     }
     return null;
   },
 
   deleteApp: async (appName: string) => {
-    return (await flyRequest(`/apps/${appName}`, "DELETE"));
+    return await flyRequest(`/apps/${appName}`, "DELETE");
   },
 
   listMachines: async (appName: string) => {
-    return (await flyRequest(`/apps/${appName}/machines`, "GET")) as FlyMachine[] | null;
+    return (await flyRequest(`/apps/${appName}/machines`, "GET")) as
+      | FlyMachine[]
+      | null;
   },
 
   createMachine: async (
@@ -129,40 +131,40 @@ export const fly = {
       );
       return existingMachines[0];
     }
-    return (await flyRequest(
-      `/apps/${appName}/machines`,
-      "POST",
-      params,
-    ));
+    return await flyRequest(`/apps/${appName}/machines`, "POST", params);
   },
 
   getMachine: async (
     appName: string,
     machineId: string,
   ): Promise<FlyMachine | null> => {
-    return (await flyRequest(
-      `/apps/${appName}/machines/${machineId}`,
-      "GET",
-    ));
+    return await flyRequest(`/apps/${appName}/machines/${machineId}`, "GET");
   },
 
   deleteMachine: async (appName: string, machineId: string) => {
-    return (await flyRequest(`/apps/${appName}/machines/${machineId}`, "DELETE"));
+    return await flyRequest(`/apps/${appName}/machines/${machineId}`, "DELETE");
   },
 
   stopMachine: async (appName: string, machineId: string) => {
-    return (await flyRequest(`/apps/${appName}/machines/${machineId}/stop`, "POST", {}));
+    return await flyRequest(
+      `/apps/${appName}/machines/${machineId}/stop`,
+      "POST",
+      {},
+    );
   },
 
   startMachine: async (appName: string, machineId: string) => {
-    return (await flyRequest(
+    return await flyRequest(
       `/apps/${appName}/machines/${machineId}/start`,
       "POST",
       {},
-    ));
+    );
   },
 
-  allocateIpAddress: async (appId: string, type: "v4" | "v6" | "shared_v4" = "shared_v4") => {
+  allocateIpAddress: async (
+    appId: string,
+    type: "v4" | "v6" | "shared_v4" = "shared_v4",
+  ) => {
     const mutation = `
       mutation AllocateIpAddress($appId: ID!, $type: IPAddressType!) {
         allocateIpAddress(input: {appId: $appId, type: $type, region: "global"}) {
@@ -176,7 +178,7 @@ export const fly = {
         }
       }
     `;
-    return (await flyGraphqlRequest(mutation, { appId, type }));
+    return await flyGraphqlRequest(mutation, { appId, type });
   },
 
   scaleMachine: async (appName: string, region: string, count: number) => {
@@ -204,27 +206,30 @@ export const fly = {
       }
     `;
 
-  // Construct the input object according to the GraphQL schema
-  const input = {
-    appId: appName,
-    regions: [
-      {
-        region: region,
-        count: count,
-      },
-    ],
-  };
-    return (await flyGraphqlRequest(mutation, { input }));
+    // Construct the input object according to the GraphQL schema
+    const input = {
+      appId: appName,
+      regions: [
+        {
+          region: region,
+          count: count,
+        },
+      ],
+    };
+    return await flyGraphqlRequest(mutation, { input });
   },
 
-  uploadFileToAllMachines: async (appName: string, files: { name: string, url: string }[]) => {
+  uploadFileToAllMachines: async (
+    appName: string,
+    files: { name: string; url: string }[],
+  ) => {
     const machines = await fly.listMachines(appName);
     if (!machines || machines.length === 0) {
       throw new Error(`No machines found for app ${appName}`);
     }
 
     const results = [];
-    
+
     for (const machine of machines) {
       if (!machine.id) {
         console.warn(`Skipping machine without ID`);
@@ -239,7 +244,7 @@ export const fly = {
           const command = [
             "sh",
             "-c",
-            `mkdir -p /mnt/data && curl -L "${file.url}" -o "/mnt/data/${file.name}" && echo "File uploaded successfully to /mnt/data/${file.name}"`
+            `mkdir -p /mnt/data && curl -L "${file.url}" -o "/mnt/data/${file.name}" && echo "File uploaded successfully to /mnt/data/${file.name}"`,
           ];
 
           const execResult = await flyRequest(
@@ -247,29 +252,31 @@ export const fly = {
             "POST",
             {
               command: command,
-              timeout: 60
-            }
+              timeout: 60,
+            },
           );
 
           machineResults.push({
             fileName: file.name,
             success: true,
-            result: execResult
+            result: execResult,
           });
-
         } catch (error) {
-          console.error(`Failed to upload ${file.name} to machine ${machine.id}:`, error);
+          console.error(
+            `Failed to upload ${file.name} to machine ${machine.id}:`,
+            error,
+          );
           machineResults.push({
             fileName: file.name,
             success: false,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
         }
       }
 
       results.push({
         machineId: machine.id,
-        files: machineResults
+        files: machineResults,
       });
     }
 

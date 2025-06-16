@@ -1,11 +1,12 @@
 "use node";
 
-import { getEmbeddingModel, getModel, formatMessages, modelSupportsTools } from "./models";
 import {
-  END,
-  START,
-  StateGraph,
-} from "@langchain/langgraph";
+  getEmbeddingModel,
+  getModel,
+  formatMessages,
+  modelSupportsTools,
+} from "./models";
+import { END, START, StateGraph } from "@langchain/langgraph";
 import type { DocumentInterface } from "@langchain/core/documents";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import type { ActionCtx } from "../_generated/server";
@@ -15,7 +16,7 @@ import {
   HumanMessage,
   AIMessage,
   mapStoredMessageToChatMessage,
-  mapChatMessagesToStoredMessages
+  mapChatMessagesToStoredMessages,
 } from "@langchain/core/messages";
 import {
   ChatPromptTemplate,
@@ -40,23 +41,25 @@ type ExtendedRunnableConfig = RunnableConfig & {
   chatInput: Doc<"chatInputs">;
 };
 
-function createStructuredOutputWithFallback<T extends z.ZodType>(schema: T): OutputFixingParser<z.infer<T>> {
+function createStructuredOutputWithFallback<T extends z.ZodType>(
+  schema: T,
+): OutputFixingParser<z.infer<T>> {
   const baseParser = StructuredOutputParser.fromZodSchema(schema);
-  return OutputFixingParser.fromLLM(
-    getModel("worker"),
-    baseParser
-  );
+  return OutputFixingParser.fromLLM(getModel("worker"), baseParser);
 }
 
 // Helper function to create system message for agents
-function createAgentSystemMessage(model: string, taskDescription?: string): SystemMessage {
+function createAgentSystemMessage(
+  model: string,
+  taskDescription?: string,
+): SystemMessage {
   const baseIdentity = `You are 0bs Chat, an AI assistant powered by the ${model} model.`;
-  
-  const roleDescription = taskDescription 
+
+  const roleDescription = taskDescription
     ? `Your role is to complete the following specific task, you will be given the user input as well for context but focus on the given task:\n${taskDescription}\n\n`
     : `Your role is to assist and engage in conversation while being helpful, respectful, and engaging.\n`;
-  
-  const guidelines = 
+
+  const guidelines =
     `- If you are specifically asked about the model you are using, you may mention that you use the ${model} model. If you are not asked specifically about the model you are using, you do not need to mention it.\n` +
     `- The current date and time is ${new Date().toLocaleString()}.\n` +
     `- Always use LaTeX for mathematical expressions.\n` +
@@ -66,7 +69,7 @@ function createAgentSystemMessage(model: string, taskDescription?: string): Syst
     `- When generating code:\n` +
     `   - Ensure it is properly formatted using Prettier with a print width of 80 characters\n` +
     `   - Present it in Markdown code blocks with the correct language extension indicated\n`;
-  
+
   return new SystemMessage(`${baseIdentity} ${roleDescription}${guidelines}`);
 }
 
@@ -142,13 +145,10 @@ async function retrieve(
   config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
-  const vectorStore = new ConvexVectorStore(
-    getEmbeddingModel("embeddings"),
-    {
-      ctx: formattedConfig.ctx,
-      table: "documentVectors",
-    },
-  );
+  const vectorStore = new ConvexVectorStore(getEmbeddingModel("embeddings"), {
+    ctx: formattedConfig.ctx,
+    table: "documentVectors",
+  });
   if (!formattedConfig.chatInput.model) {
     throw new Error("Model is required");
   }
@@ -170,16 +170,22 @@ async function retrieve(
     ]);
 
     const modelWithOutputParser = promptTemplate.pipe(
-      getModel("worker").withStructuredOutput(z.object({
-        queries: z
-          .array(z.string())
-          .describe("Queries for the " + type + ".")
-          .max(3)
-          .min(1),
-      }))
+      getModel("worker").withStructuredOutput(
+        z.object({
+          queries: z
+            .array(z.string())
+            .describe("Queries for the " + type + ".")
+            .max(3)
+            .min(1),
+        }),
+      ),
     );
 
-    const formattedMessages = await formatMessages(config.ctx, state.messages.slice(-5), model);
+    const formattedMessages = await formatMessages(
+      config.ctx,
+      state.messages.slice(-5),
+      model,
+    );
     const queries = await modelWithOutputParser.invoke({
       messages: formattedMessages,
       config,
@@ -191,7 +197,10 @@ async function retrieve(
   // Retrive documents
   let documents: DocumentInterface[] = [];
   if (formattedConfig.chatInput.projectId) {
-    console.log("retrieving documents for project", formattedConfig.chatInput.projectId);
+    console.log(
+      "retrieving documents for project",
+      formattedConfig.chatInput.projectId,
+    );
     const includedProjectDocuments = await formattedConfig.ctx.runQuery(
       internal.projectDocuments.queries.getSelected,
       {
@@ -210,10 +219,14 @@ async function retrieve(
     await Promise.all(
       queries.map(async (query) => {
         const results = await vectorStore.similaritySearch(query, 4, {
-          filter: q =>
-            q.or(...includedProjectDocuments.map(document => q.eq("metadata", {
-              source: document.documentId,
-            }))),
+          filter: (q) =>
+            q.or(
+              ...includedProjectDocuments.map((document) =>
+                q.eq("metadata", {
+                  source: document.documentId,
+                }),
+              ),
+            ),
         });
         documents.push(...results);
       }),
@@ -292,11 +305,13 @@ async function retrieve(
     ]);
 
     const modelWithOutputParser = promptTemplate.pipe(
-      getModel("worker").withStructuredOutput(z.object({
-        relevant: z
-          .boolean()
-          .describe("Whether the document is relevant to the user question"),
-      }))
+      getModel("worker").withStructuredOutput(
+        z.object({
+          relevant: z
+            .boolean()
+            .describe("Whether the document is relevant to the user question"),
+        }),
+      ),
     );
 
     const formattedMessage = await formatMessages(config.ctx, [message], model);
@@ -330,10 +345,7 @@ async function retrieve(
   };
 }
 
-async function pass(
-  _state: typeof GraphState.State,
-  _config: RunnableConfig,
-) {
+async function pass(_state: typeof GraphState.State, _config: RunnableConfig) {
   return {};
 }
 
@@ -364,7 +376,11 @@ async function simple(state: typeof GraphState.State, config: RunnableConfig) {
   const model = getModel(formattedConfig.chatInput.model!);
   const chain = promptTemplate.pipe(model);
 
-  const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model!);
+  const formattedMessages = await formatMessages(
+    formattedConfig.ctx,
+    state.messages.slice(-100),
+    formattedConfig.chatInput.model!,
+  );
   const response = await chain.invoke(
     {
       messages: formattedMessages,
@@ -373,22 +389,26 @@ async function simple(state: typeof GraphState.State, config: RunnableConfig) {
   );
 
   // Add documents to message metadata if available
-  const responseWithDocuments = state.documents && state.documents.length > 0 
-    ? new AIMessage({
-        content: response.content,
-        additional_kwargs: {
-          ...response.additional_kwargs,
-          documents: state.documents,
-        },
-      })
-    : response;
+  const responseWithDocuments =
+    state.documents && state.documents.length > 0
+      ? new AIMessage({
+          content: response.content,
+          additional_kwargs: {
+            ...response.additional_kwargs,
+            documents: state.documents,
+          },
+        })
+      : response;
 
   return {
     messages: [responseWithDocuments],
   };
 }
 
-async function baseAgent(state: typeof GraphState.State, config: RunnableConfig) {
+async function baseAgent(
+  state: typeof GraphState.State,
+  config: RunnableConfig,
+) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
   const promptTemplate = ChatPromptTemplate.fromMessages([
@@ -406,7 +426,11 @@ async function baseAgent(state: typeof GraphState.State, config: RunnableConfig)
 
   const agent = await createAgentWithTools(formattedConfig, promptTemplate);
 
-  const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model!);
+  const formattedMessages = await formatMessages(
+    formattedConfig.ctx,
+    state.messages.slice(-100),
+    formattedConfig.chatInput.model!,
+  );
   const response = await agent.invoke(
     {
       messages: formattedMessages,
@@ -420,8 +444,12 @@ async function baseAgent(state: typeof GraphState.State, config: RunnableConfig)
   );
 
   // Add documents to message metadata
-  const messagesWithDocuments = newMessages.map(message => {
-    if (message._getType() === "ai" && state.documents && state.documents.length > 0) {
+  const messagesWithDocuments = newMessages.map((message) => {
+    if (
+      message._getType() === "ai" &&
+      state.documents &&
+      state.documents.length > 0
+    ) {
       return new AIMessage({
         content: message.content,
         additional_kwargs: {
@@ -435,7 +463,7 @@ async function baseAgent(state: typeof GraphState.State, config: RunnableConfig)
 
   return {
     messages: messagesWithDocuments,
-    documents: []
+    documents: [],
   };
 }
 
@@ -470,11 +498,15 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   ]);
 
   const structuredOutputParser = createStructuredOutputWithFallback(planSchema);
-  const modelWithOutputParser = promptTemplate.pipe(
-    getModel(formattedConfig.chatInput.model!)
-  ).pipe(structuredOutputParser);
+  const modelWithOutputParser = promptTemplate
+    .pipe(getModel(formattedConfig.chatInput.model!))
+    .pipe(structuredOutputParser);
 
-  const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model!);
+  const formattedMessages = await formatMessages(
+    formattedConfig.ctx,
+    state.messages.slice(-100),
+    formattedConfig.chatInput.model!,
+  );
   const response = await modelWithOutputParser.invoke(
     {
       messages: formattedMessages,
@@ -483,7 +515,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   );
 
   return {
-      plan: response.plan,
+    plan: response.plan,
   };
 }
 
@@ -504,37 +536,52 @@ async function plannerAgent(
   // Handle parallel steps
   if (Array.isArray(currentPlanItem)) {
     const parallelSteps = currentPlanItem;
-    
+
     // Execute all parallel steps simultaneously
     const parallelResults = await Promise.all(
       parallelSteps.map(async (step) => {
-        const taskDescription = 
-          `${step.step}\n\n` +
-          `Additional Context: ${step.additional_context}`;
+        const taskDescription =
+          `${step.step}\n\n` + `Additional Context: ${step.additional_context}`;
 
         const promptTemplate = ChatPromptTemplate.fromMessages([
-          createAgentSystemMessage(formattedConfig.chatInput.model!, taskDescription),
+          createAgentSystemMessage(
+            formattedConfig.chatInput.model!,
+            taskDescription,
+          ),
           new MessagesPlaceholder("messages"),
         ]);
 
-        const plannerAgent = await createAgentWithTools(formattedConfig, promptTemplate, "plannerAgent");
-        const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model!);
-        
+        const plannerAgent = await createAgentWithTools(
+          formattedConfig,
+          promptTemplate,
+          "plannerAgent",
+        );
+        const formattedMessages = await formatMessages(
+          formattedConfig.ctx,
+          state.messages.slice(-100),
+          formattedConfig.chatInput.model!,
+        );
+
         const response = await plannerAgent.invoke(
           {
             messages: formattedMessages,
           },
           config,
         );
-        const lastMessage = mapChatMessagesToStoredMessages(response.messages.slice(-1))[0];
+        const lastMessage = mapChatMessagesToStoredMessages(
+          response.messages.slice(-1),
+        )[0];
         return {
           step,
-          message: lastMessage
+          message: lastMessage,
         };
-      })
+      }),
     );
 
-    const parallelPastSteps = parallelResults.map((result, index) => [currentPlanItem[index], result.message]);
+    const parallelPastSteps = parallelResults.map((result, index) => [
+      currentPlanItem[index],
+      result.message,
+    ]);
     return {
       plan: remainingPlan,
       pastSteps: [...pastSteps, parallelPastSteps],
@@ -542,12 +589,15 @@ async function plannerAgent(
   } else {
     // Handle sequential step
     const currentTask = currentPlanItem;
-    const taskDescription = 
+    const taskDescription =
       `${currentTask.step}\n\n` +
       `Additional Context: ${currentTask.additional_context}`;
 
     const promptTemplate = ChatPromptTemplate.fromMessages([
-      createAgentSystemMessage(formattedConfig.chatInput.model!, taskDescription),
+      createAgentSystemMessage(
+        formattedConfig.chatInput.model!,
+        taskDescription,
+      ),
       ...(state.documents && state.documents.length > 0
         ? [
             new HumanMessage(
@@ -559,9 +609,17 @@ async function plannerAgent(
       new MessagesPlaceholder("messages"),
     ]);
 
-    const plannerAgent = await createAgentWithTools(formattedConfig, promptTemplate, "plannerAgent");
+    const plannerAgent = await createAgentWithTools(
+      formattedConfig,
+      promptTemplate,
+      "plannerAgent",
+    );
 
-    const formattedMessages = await formatMessages(formattedConfig.ctx, state.messages.slice(-100), formattedConfig.chatInput.model!);
+    const formattedMessages = await formatMessages(
+      formattedConfig.ctx,
+      state.messages.slice(-100),
+      formattedConfig.chatInput.model!,
+    );
     const response = await plannerAgent.invoke(
       {
         messages: formattedMessages,
@@ -569,7 +627,9 @@ async function plannerAgent(
       config,
     );
 
-    const lastMessage = mapChatMessagesToStoredMessages(response.messages.slice(-1))[0];
+    const lastMessage = mapChatMessagesToStoredMessages(
+      response.messages.slice(-1),
+    )[0];
     return {
       plan: remainingPlan,
       pastSteps: [...pastSteps, [currentTask, lastMessage]],
@@ -599,18 +659,28 @@ async function replanner(
   const planOutput = z.object({
     action: z.literal("continue_planning"),
     plan: planArray,
-  })
+  });
   const responseOutput = z.object({
     action: z.literal("respond_to_user"),
-    response: z.string().describe("A concise and informative response to the user, summarizing the results of the completed steps and addressing their original request."),
-  })
+    response: z
+      .string()
+      .describe(
+        "A concise and informative response to the user, summarizing the results of the completed steps and addressing their original request.",
+      ),
+  });
   const outputSchema = z.union([planOutput, responseOutput]);
-  const structuredOutputParser = createStructuredOutputWithFallback(outputSchema);
-  const modelWithOutputParser = promptTemplate.pipe(
-    getModel(formattedConfig.chatInput.model!)
-  ).pipe(structuredOutputParser);
+  const structuredOutputParser =
+    createStructuredOutputWithFallback(outputSchema);
+  const modelWithOutputParser = promptTemplate
+    .pipe(getModel(formattedConfig.chatInput.model!))
+    .pipe(structuredOutputParser);
 
-  const inputMessage = state.messages.slice().reverse().find(msg => msg._getType() === "human") || state.messages[state.messages.length - 1];
+  const inputMessage =
+    state.messages
+      .slice()
+      .reverse()
+      .find((msg) => msg._getType() === "human") ||
+    state.messages[state.messages.length - 1];
   const currentPastStepsMessages: BaseMessage[] = [];
 
   const pastSteps = state.pastSteps;
@@ -622,7 +692,9 @@ async function replanner(
       parallelSteps.forEach((stepTuple, pIdx) => {
         const [plan, msg] = stepTuple;
         currentPastStepsMessages.push(
-          new AIMessage(`${idx + 1}.${pIdx + 1} (Parallel): ${plan.step}\n${plan.additional_context}\n`),
+          new AIMessage(
+            `${idx + 1}.${pIdx + 1} (Parallel): ${plan.step}\n${plan.additional_context}\n`,
+          ),
           mapStoredMessageToChatMessage(msg),
         );
       });
@@ -636,8 +708,16 @@ async function replanner(
     }
   });
 
-  const formattedInputMessage = await formatMessages(formattedConfig.ctx, [inputMessage], formattedConfig.chatInput.model!);
-  const formattedPastStepsMessages = await formatMessages(formattedConfig.ctx, currentPastStepsMessages, formattedConfig.chatInput.model!);
+  const formattedInputMessage = await formatMessages(
+    formattedConfig.ctx,
+    [inputMessage],
+    formattedConfig.chatInput.model!,
+  );
+  const formattedPastStepsMessages = await formatMessages(
+    formattedConfig.ctx,
+    currentPastStepsMessages,
+    formattedConfig.chatInput.model!,
+  );
 
   const response = await modelWithOutputParser.invoke(
     {
@@ -654,26 +734,28 @@ async function replanner(
         // Parallel steps (array of CompletedStep)
         const parallelSteps = entry as CompletedStep[];
         return parallelSteps.map(([plan, msg]) => {
-          return [ plan, msg ];
+          return [plan, msg];
         });
       } else {
         // Single CompletedStep
         const [plan, msg] = entry as CompletedStep;
-        return [ plan, msg ];
+        return [plan, msg];
       }
     });
 
     return {
-      messages: [new AIMessage({
-        content: response.response,
-        additional_kwargs: {
-          pastSteps,
-          documents: state.documents,
-        },
-      })],
+      messages: [
+        new AIMessage({
+          content: response.response,
+          additional_kwargs: {
+            pastSteps,
+            documents: state.documents,
+          },
+        }),
+      ],
       plan: [],
       pastSteps: [],
-      documents: []
+      documents: [],
     };
   } else if (response.action === "continue_planning") {
     return {
@@ -688,7 +770,7 @@ async function shouldEndPlanner(state: typeof GraphState.State) {
   if (!state.plan || state.plan.length === 0) {
     return "true";
   }
-  
+
   return "false";
 }
 

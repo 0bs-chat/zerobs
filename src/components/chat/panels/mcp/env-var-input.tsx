@@ -39,14 +39,14 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
 
     // Prevent default paste behavior
     e.preventDefault();
-    
+
     // Get pasted text
     const pastedText = e.clipboardData.getData("text");
     if (!pastedText.trim()) return;
-    
+
     // Try to parse as environment variables
     const parsedEnvVars = parseEnvVars(pastedText);
-    
+
     // If we have parsed env vars, update state with them
     if (parsedEnvVars.length > 0) {
       // Replace the current empty env var with the parsed ones
@@ -61,16 +61,16 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
 
   const parseEnvVars = (text: string): EnvVar[] => {
     const result: EnvVar[] = [];
-    
+
     // Split by newlines
     const lines = text.split(/\r?\n/);
-    
+
     for (const line of lines) {
       const trimmedLine = line.trim();
-      
+
       // Skip empty lines and comments
       if (!trimmedLine || trimmedLine.startsWith("#")) continue;
-      
+
       // Try to match KEY=VALUE pattern
       const match = trimmedLine.match(/^([^=]+)=(.*)$/);
       if (match) {
@@ -80,7 +80,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
         });
       }
     }
-    
+
     return result;
   };
 

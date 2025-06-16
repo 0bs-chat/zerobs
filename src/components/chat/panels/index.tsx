@@ -4,8 +4,6 @@ import { ProjectsPanel } from "./projects";
 import { MCPPanel } from "./mcp/index";
 import { useAtomValue, useSetAtom } from "jotai";
 
-type TabValue = "artifacts" | "projects" | "settings" | "mcp";
-
 export const Panel = () => {
   const resizablePanelTab = useAtomValue(resizablePanelTabAtom);
   const setResizablePanelTab = useSetAtom(resizablePanelTabAtom);
@@ -13,7 +11,7 @@ export const Panel = () => {
   return (
     <Tabs
       value={resizablePanelTab}
-      onValueChange={(value) => setResizablePanelTab(value as TabValue)}
+      onValueChange={(value) => setResizablePanelTab(value as typeof resizablePanelTab)}
       className="py-2 px-4"
     >
       <div className="flex items-center justify-between gap-2 pr-10">

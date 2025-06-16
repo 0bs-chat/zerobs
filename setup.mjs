@@ -49,7 +49,10 @@ async function collectEnvironmentVariables() {
   const requiredVars = [
     { name: "FLY_API_TOKEN", prompt: "Enter FLY_API_TOKEN" },
     { name: "AUTH_GITHUB_REPO_ID", prompt: "Enter AUTH_GITHUB_REPO_ID" },
-    { name: "AUTH_GITHUB_REPO_SECRET", prompt: "Enter AUTH_GITHUB_REPO_SECRET" },
+    {
+      name: "AUTH_GITHUB_REPO_SECRET",
+      prompt: "Enter AUTH_GITHUB_REPO_SECRET",
+    },
   ];
 
   /** @type {OptionalEnvVar[]} */
@@ -70,8 +73,16 @@ async function collectEnvironmentVariables() {
       defaultValue: "http://localhost:3000",
     },
     { name: "SERVICE_PASSWORD", prompt: "Enter SERVICE_PASSWORD" },
-    { name: "CRAWLER_URL", prompt: "Enter CRAWLER_URL", defaultValue: "http://127.0.0.1:7860" },
-    { name: "DOC_PROCESSOR_URL", prompt: "Enter DOC_PROCESSOR_URL", defaultValue: "http://127.0.0.1:7861" },
+    {
+      name: "CRAWLER_URL",
+      prompt: "Enter CRAWLER_URL",
+      defaultValue: "http://127.0.0.1:7860",
+    },
+    {
+      name: "DOC_PROCESSOR_URL",
+      prompt: "Enter DOC_PROCESSOR_URL",
+      defaultValue: "http://127.0.0.1:7861",
+    },
   ];
 
   const envVars = {};

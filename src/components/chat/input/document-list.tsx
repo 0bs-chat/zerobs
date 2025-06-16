@@ -14,7 +14,7 @@ import { getTagInfo } from "@/lib/react-utils";
 import React, { useCallback } from "react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../convex/langchain/models";
-import mime from "mime"
+import mime from "mime";
 
 type DocumentBadgeProps = {
   doc: Doc<"documents">;
@@ -42,7 +42,9 @@ const DocumentBadge = React.memo(
         resolvedTag = "text";
       } else {
         // Fallback: derive from extension if mime type couldn't classify
-        const extension = mime.getExtension(mimeType) ?? doc.name.split(".").pop()?.toLowerCase();
+        const extension =
+          mime.getExtension(mimeType) ??
+          doc.name.split(".").pop()?.toLowerCase();
         if (extension === "pdf") {
           resolvedTag = "pdf";
         }
@@ -64,7 +66,7 @@ const DocumentBadge = React.memo(
         e.stopPropagation();
         onRemove(doc._id);
       },
-      [onRemove, doc._id]
+      [onRemove, doc._id],
     );
 
     return (
@@ -85,7 +87,7 @@ const DocumentBadge = React.memo(
         </Button>
       </Badge>
     );
-  }
+  },
 );
 DocumentBadge.displayName = "DocumentBadge";
 
@@ -109,14 +111,14 @@ export const DocumentList = ({
       setDocumentDialogDocumentId(documentId);
       setDocumentDialogOpen(true);
     },
-    [setDocumentDialogDocumentId, setDocumentDialogOpen]
+    [setDocumentDialogDocumentId, setDocumentDialogOpen],
   );
 
   const handleRemove = useCallback(
     (documentId: Id<"documents">) => {
       removeDocument(documentId);
     },
-    [removeDocument]
+    [removeDocument],
   );
 
   if (!documents?.length) return null;

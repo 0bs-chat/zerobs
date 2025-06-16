@@ -39,7 +39,7 @@ export const send = action({
     });
 
     await ctx.runAction(internal.langchain.index.chat, {
-      chatInputId: chatInput._id as Id<"chatInputs">,
+      chatId: args.chatId,
     });
 
     return null;
@@ -59,11 +59,14 @@ export const removeMessage = action({
       chatId: args.chatId,
     });
 
-    const result = await ctx.runAction(internal.langchain.index.removeMessages, {
-      chatId: args.chatId,
-      messageIndex: args.messageIndex,
-      cascade: args.cascade,
-    });
+    const result = await ctx.runAction(
+      internal.langchain.index.removeMessages,
+      {
+        chatId: args.chatId,
+        messageIndex: args.messageIndex,
+        cascade: args.cascade,
+      },
+    );
 
     return result;
   },

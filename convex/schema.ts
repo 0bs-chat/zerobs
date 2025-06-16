@@ -17,7 +17,7 @@ export const Documents = Table("documents", {
     v.literal("site"),
     v.literal("youtube"),
     v.literal("text"),
-    v.literal("github")
+    v.literal("github"),
   ),
   size: v.number(),
   key: v.union(v.id("_storage"), v.string()),
@@ -164,6 +164,7 @@ export default defineSchema({
     }),
   chatInputs: ChatInputs.table
     .index("by_user", ["userId"])
+    .index("by_user_project", ["userId", "projectId"])
     .index("by_chat_user", ["chatId", "userId"]),
   streams: Streams.table
     .index("by_user", ["userId"])

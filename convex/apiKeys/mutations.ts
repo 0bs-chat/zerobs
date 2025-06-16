@@ -41,9 +41,12 @@ export const createPublic = internalMutation({
     value: v.string(),
   },
   handler: async (ctx, args) => {
-    const existingApiKeyDoc = await ctx.runQuery(api.apiKeys.queries.getPublicFromKey, {
-      key: args.key,
-    });
+    const existingApiKeyDoc = await ctx.runQuery(
+      api.apiKeys.queries.getPublicFromKey,
+      {
+        key: args.key,
+      },
+    );
     if (existingApiKeyDoc) {
       await ctx.db.delete(existingApiKeyDoc._id);
     }

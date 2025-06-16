@@ -1,5 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
-@import url('https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap");
 
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
@@ -251,12 +251,12 @@ code {
 
 /* Custom markdown content styles */
 .markdown-content {
-  font-family: 'Rubik', sans-serif !important;
+  font-family: "Rubik", sans-serif !important;
   font-weight: 500 !important;
 }
 
 .markdown-content p {
-  font-family: 'Rubik', sans-serif !important;
+  font-family: "Rubik", sans-serif !important;
   font-weight: 600 !important;
   font-size: 1.1rem !important;
   line-height: 1.6 !important;
@@ -268,7 +268,7 @@ code {
 .markdown-content h4,
 .markdown-content h5,
 .markdown-content h6 {
-  font-family: 'Rubik', sans-serif !important;
+  font-family: "Rubik", sans-serif !important;
   font-weight: 700 !important;
 }
 
@@ -297,7 +297,7 @@ code {
 }
 
 .markdown-content li {
-  font-family: 'Rubik', sans-serif !important;
+  font-family: "Rubik", sans-serif !important;
   font-weight: 600 !important;
   font-size: 1.1rem !important;
 }
@@ -311,7 +311,7 @@ code {
 }
 
 .markdown-content blockquote {
-  font-family: 'Rubik', sans-serif !important;
+  font-family: "Rubik", sans-serif !important;
   font-weight: 500 !important;
   font-size: 1.1rem !important;
 }
