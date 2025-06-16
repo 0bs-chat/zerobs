@@ -72,6 +72,34 @@ export const removeMessage = action({
   },
 });
 
+export const removeMessageGroup = action({
+  args: {
+    chatId: v.id("chats"),
+    startIndex: v.number(),
+    count: v.number(),
+    cascade: v.boolean(),
+  },
+  handler: async (ctx, args): Promise<Record<string, any>> => {
+    await requireAuth(ctx);
+
+    await ctx.runQuery(api.chats.queries.get, {
+      chatId: args.chatId,
+    });
+
+    const result = await ctx.runAction(
+      internal.langchain.index.removeMessageGroup,
+      {
+        chatId: args.chatId,
+        startIndex: args.startIndex,
+        count: args.count,
+        cascade: args.cascade,
+      },
+    );
+
+    return result;
+  },
+});
+
 export const editMessage = action({
   args: {
     chatId: v.id("chats"),

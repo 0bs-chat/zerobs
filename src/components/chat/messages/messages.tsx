@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStream } from "@/hooks/use-stream";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
-import { useQuery } from "convex/react";
+import { useQuery, useAction } from "convex/react";
 import {
   HumanMessage,
   AIMessage,
@@ -60,9 +60,18 @@ const groupMessages = (messages: BaseMessage[]): BaseMessage[][] => {
   return grouped;
 };
 
-const MessageGroup = ({ messages }: { messages: BaseMessage[] }) => {
+const MessageGroup = ({ 
+  messages, 
+  firstMessageIndex,
+  chatId,
+}: { 
+  messages: BaseMessage[];
+  firstMessageIndex: number;
+  chatId: Id<"chats"> | "new";
+}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const removeMessageGroup = useAction(api.chats.actions.removeMessageGroup);
 
   if (messages.length === 0) return null;
 
@@ -86,6 +95,36 @@ const MessageGroup = ({ messages }: { messages: BaseMessage[] }) => {
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDeleteMessage = async () => {
+    if (chatId === "new") return;
+    
+    try {
+      await removeMessageGroup({
+        chatId: chatId as Id<"chats">,
+        startIndex: firstMessageIndex,
+        count: messages.length,
+        cascade: false,
+      });
+    } catch (error) {
+      console.error("Failed to delete message group:", error);
+    }
+  };
+
+  const handleDeleteCascading = async () => {
+    if (chatId === "new") return;
+    
+    try {
+      await removeMessageGroup({
+        chatId: chatId as Id<"chats">,
+        startIndex: firstMessageIndex,
+        count: messages.length,
+        cascade: true,
+      });
+    } catch (error) {
+      console.error("Failed to delete cascading messages:", error);
+    }
   };
 
   const renderMessage = (message: BaseMessage, index: number) => {
@@ -119,6 +158,8 @@ const MessageGroup = ({ messages }: { messages: BaseMessage[] }) => {
             setIsDropdownOpen={setIsDropdownOpen}
             handleCopyText={handleCopyText}
             copied={copied}
+            onDeleteMessage={handleDeleteMessage}
+            onDeleteCascading={handleDeleteCascading}
           />
         ) : (
           <AIToolUtilsBar
@@ -126,6 +167,8 @@ const MessageGroup = ({ messages }: { messages: BaseMessage[] }) => {
             setIsDropdownOpen={setIsDropdownOpen}
             handleCopyText={handleCopyText}
             copied={copied}
+            onDeleteMessage={handleDeleteMessage}
+            onDeleteCascading={handleDeleteCascading}
           />
         )}
       </div>
@@ -155,11 +198,26 @@ export const ChatMessages = React.memo(() => {
     ? groupMessages(parsedCheckpoint.messages)
     : [];
 
+  // Calculate the first message index for each group by flattening and tracking position
+  const messageGroupsWithIndices = messageGroups.map((group, groupIndex) => {
+    // Calculate the first message index by summing all previous group lengths
+    const firstMessageIndex = messageGroups
+      .slice(0, groupIndex)
+      .reduce((sum, prevGroup) => sum + prevGroup.length, 0);
+    
+    return { group, firstMessageIndex };
+  });
+
   return (
     <ScrollArea className="overflow-hidden w-full h-full">
       <div className="flex flex-col max-w-4xl mx-auto p-1 gap-1">
-        {messageGroups.map((group, groupIndex) => (
-          <MessageGroup key={groupIndex} messages={group} />
+        {messageGroupsWithIndices.map(({ group, firstMessageIndex }, groupIndex) => (
+          <MessageGroup 
+            key={groupIndex} 
+            messages={group} 
+            firstMessageIndex={firstMessageIndex}
+            chatId={params.chatId as Id<"chats"> | "new"}
+          />
         ))}
 
         {/* Handle streaming messages */}

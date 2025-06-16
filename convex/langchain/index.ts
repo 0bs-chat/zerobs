@@ -231,12 +231,65 @@ export const removeMessages = internalAction({
     let updatedMessages: RemoveMessage[] = [];
     if (args.cascade) {
       updatedMessages = messages
-        .slice(0, args.messageIndex)
+        .slice(args.messageIndex)
         .map((message) => new RemoveMessage({ id: message.id! }));
     } else {
       updatedMessages = [
         new RemoveMessage({ id: messages[args.messageIndex].id! }),
       ];
+    }
+
+    return await agentGraph
+      .compile({ checkpointer })
+      .updateState(
+        { configurable: { thread_id: args.chatId } },
+        { messages: updatedMessages },
+      );
+  },
+});
+
+export const removeMessageGroup = internalAction({
+  args: {
+    chatId: v.id("chats"),
+    startIndex: v.number(),
+    count: v.number(),
+    cascade: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const checkpointer = new ConvexCheckpointSaver(ctx);
+    const checkpoint = await checkpointer.get({
+      configurable: { thread_id: args.chatId },
+    });
+    const messages = checkpoint?.channel_values.messages as BaseMessage[];
+
+    if (!messages) {
+      throw new Error("No messages found in chat");
+    }
+
+    if (args.startIndex < 0 || args.startIndex >= messages.length) {
+      throw new Error("Invalid start index");
+    }
+
+    if (args.count <= 0) {
+      throw new Error("Count must be positive");
+    }
+
+    const endIndex = args.startIndex + args.count;
+    if (endIndex > messages.length) {
+      throw new Error("Count exceeds available messages");
+    }
+
+    let updatedMessages: RemoveMessage[] = [];
+    if (args.cascade) {
+      // Remove from startIndex to end of conversation
+      updatedMessages = messages
+        .slice(args.startIndex)
+        .map((message) => new RemoveMessage({ id: message.id! }));
+    } else {
+      // Remove only the specified range
+      updatedMessages = messages
+        .slice(args.startIndex, endIndex)
+        .map((message) => new RemoveMessage({ id: message.id! }));
     }
 
     return await agentGraph

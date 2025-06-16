@@ -22,7 +22,7 @@ export const ChatInput = () => {
         text: text,
       },
     });
-  }, 300);
+  }, 500);
 
   return (
     <div className="flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">

@@ -21,11 +21,15 @@ export const AIToolUtilsBar = ({
   setIsDropdownOpen,
   handleCopyText,
   copied,
+  onDeleteMessage,
+  onDeleteCascading,
 }: {
   isDropdownOpen: boolean;
   setIsDropdownOpen: (open: boolean) => void;
   handleCopyText: () => void;
   copied: boolean;
+  onDeleteMessage?: () => void;
+  onDeleteCascading?: () => void;
 }) => {
   return (
     <div
@@ -69,12 +73,18 @@ export const AIToolUtilsBar = ({
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem className="text-destructive">
+          <DropdownMenuItem 
+            className="text-destructive"
+            onClick={onDeleteMessage}
+          >
             <TrashIcon className="w-4 h-4 mr-2" />
             Delete message
           </DropdownMenuItem>
 
-          <DropdownMenuItem className="text-destructive">
+          <DropdownMenuItem 
+            className="text-destructive"
+            onClick={onDeleteCascading}
+          >
             <img src="/cascade-del.svg" className="w-4 h-4 mr-2" />
             Delete Cascading
           </DropdownMenuItem>
@@ -89,11 +99,15 @@ export const UserUtilsBar = ({
   setIsDropdownOpen,
   handleCopyText,
   copied,
+  onDeleteMessage,
+  onDeleteCascading,
 }: {
   isDropdownOpen: boolean;
   setIsDropdownOpen: (open: boolean) => void;
   handleCopyText: () => void;
   copied: boolean;
+  onDeleteMessage?: () => void;
+  onDeleteCascading?: () => void;
 }) => {
   return (
     <div
@@ -130,12 +144,18 @@ export const UserUtilsBar = ({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuItem className="text-destructive">
+          <DropdownMenuItem 
+            className="text-destructive"
+            onClick={onDeleteMessage}
+          >
             <TrashIcon className="w-4 h-4 mr-2" />
             Delete message
           </DropdownMenuItem>
 
-          <DropdownMenuItem className="text-destructive">
+          <DropdownMenuItem 
+            className="text-destructive"
+            onClick={onDeleteCascading}
+          >
             <img src="/cascade-del.svg" className="w-4 h-4 mr-2" />
             Delete Cascading
           </DropdownMenuItem>
