@@ -113,6 +113,11 @@ export const getCheckpoint = query({
         continueCursor: null,
       };
     }
+
+    await ctx.runQuery(api.chats.queries.get, {
+      chatId: args.chatId,
+    })
+
     const checkpointer = new ConvexCheckpointSaver(ctx);
 
     const checkpoint = await checkpointer.get({

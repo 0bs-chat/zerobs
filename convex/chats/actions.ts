@@ -100,6 +100,55 @@ export const removeMessageGroup = action({
   },
 });
 
+export const regenerate = action({
+  args: {
+    chatId: v.id("chats"),
+    startIndex: v.number(),
+    count: v.number(),
+  },
+  handler: async (ctx, args): Promise<Record<string, any>> => {
+    await requireAuth(ctx);
+
+    await ctx.runQuery(api.chats.queries.get, {
+      chatId: args.chatId,
+    });
+
+    // First remove the AI response group
+    await ctx.runAction(internal.langchain.index.removeMessageGroup, {
+      chatId: args.chatId,
+      startIndex: args.startIndex,
+      count: args.count,
+      cascade: false,
+    });
+
+    // Get the chat input to check if we need to create a stream
+    const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
+      chatId: args.chatId,
+    });
+
+    // Create a new stream for the regenerated response
+    const stream = await ctx.runMutation(internal.streams.crud.create, {
+      userId: chatInput.userId!,
+      status: "pending",
+    });
+
+    // Update the chat input with the new stream
+    await ctx.runMutation(api.chatInputs.mutations.update, {
+      chatId: args.chatId,
+      updates: {
+        streamId: stream._id,
+      },
+    });
+
+    // Trigger new generation without adding a human message
+    await ctx.runAction(internal.langchain.index.regenerateResponse, {
+      chatId: args.chatId,
+    });
+
+    return { success: true };
+  },
+});
+
 export const editMessage = action({
   args: {
     chatId: v.id("chats"),

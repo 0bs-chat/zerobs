@@ -72,6 +72,7 @@ const MessageGroup = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const removeMessageGroup = useAction(api.chats.actions.removeMessageGroup);
+  const regenerate = useAction(api.chats.actions.regenerate);
 
   if (messages.length === 0) return null;
 
@@ -127,6 +128,20 @@ const MessageGroup = ({
     }
   };
 
+  const handleRegenerate = async () => {
+    if (chatId === "new" || isUserGroup) return;
+    
+    try {
+      await regenerate({
+        chatId: chatId as Id<"chats">,
+        startIndex: firstMessageIndex,
+        count: messages.length,
+      });
+    } catch (error) {
+      console.error("Failed to regenerate message:", error);
+    }
+  };
+
   const renderMessage = (message: BaseMessage, index: number) => {
     const messageId = message.id ?? `msg-${index}`;
 
@@ -169,6 +184,7 @@ const MessageGroup = ({
             copied={copied}
             onDeleteMessage={handleDeleteMessage}
             onDeleteCascading={handleDeleteCascading}
+            onRegenerate={handleRegenerate}
           />
         )}
       </div>

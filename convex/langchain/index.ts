@@ -163,6 +163,118 @@ export const chat = internalAction({
   },
 });
 
+export const regenerateResponse = internalAction({
+  args: {
+    chatId: v.id("chats"),
+  },
+  handler: async (ctx, args) => {
+    const chatInput = await ctx.runQuery(internal.chatInputs.queries.getInternal, {
+      chatId: args.chatId,
+    });
+    let streamDoc: Doc<"streams"> | null = null;
+
+    // Create AbortController for cancellation
+    const abortController = new AbortController();
+    const stream = await regenerateStreamHelper(ctx, {
+      chatInput,
+      signal: abortController.signal,
+    });
+
+    // ---- new batching logic ----
+    const streamId = chatInput.streamId!;
+    const BUFFER_FLUSH_DELAY = 300; // ms
+    const CANCELLATION_CHECK_DELAY = 1000; // ms - check for cancellation every 1s
+    let lastFlush = Date.now();
+    let lastCancellationCheck = Date.now();
+    const buffer: string[] = [];
+    let wasCancelled = false;
+
+    try {
+      for await (const event of stream) {
+        // Check for cancellation periodically, not on every event
+        const now = Date.now();
+        if (now - lastCancellationCheck >= CANCELLATION_CHECK_DELAY) {
+          const currentStream = await ctx.runQuery(api.streams.queries.get, {
+            streamId,
+          });
+          if (currentStream.status === "cancelled") {
+            wasCancelled = true;
+            abortController.abort();
+            break;
+          }
+          lastCancellationCheck = now;
+        }
+
+        // collect
+        buffer.push(JSON.stringify(event));
+
+        // if it's been >300ms since last flush, send a batch
+        if (now - lastFlush >= BUFFER_FLUSH_DELAY) {
+          streamDoc = await ctx.runMutation(
+            internal.streams.mutations.appendChunks,
+            {
+              streamId,
+              chunks: buffer.splice(0, buffer.length),
+            },
+          );
+          lastFlush = now;
+
+          // Also check cancellation status from the returned streamDoc
+          if (streamDoc.status === "cancelled") {
+            wasCancelled = true;
+            abortController.abort();
+            break;
+          }
+        }
+      }
+
+      if (buffer.length > 0 && !wasCancelled) {
+        streamDoc = await ctx.runMutation(
+          internal.streams.mutations.appendChunks,
+          {
+            streamId,
+            chunks: buffer.splice(0, buffer.length),
+          },
+        );
+
+        // Final check after flushing remaining buffer
+        if (streamDoc.status === "cancelled") {
+          wasCancelled = true;
+        }
+      }
+
+      // Only mark as done if not cancelled
+      if (!wasCancelled) {
+        await ctx.runMutation(internal.streams.mutations.update, {
+          streamId,
+          updates: { status: "done" },
+        });
+      }
+    } catch (error) {
+      console.error(error);
+
+      // If we already know it was cancelled, don't override the status
+      if (wasCancelled) {
+        return;
+      }
+
+      // Check if the error was due to cancellation
+      const errorStatus =
+        streamDoc?.status ||
+        (await ctx.runQuery(api.streams.queries.get, { streamId })).status;
+
+      if (errorStatus === "cancelled") {
+        return;
+      }
+
+      await ctx.runMutation(internal.streams.mutations.update, {
+        streamId,
+        updates: { status: "error" },
+      });
+    }
+  },
+});
+
 async function* streamHelper(
   ctx: ActionCtx,
   args: { chatInput: FunctionReturnType<typeof internal.chatInputs.queries.getInternal>; signal?: AbortSignal },
@@ -189,6 +301,46 @@ async function* streamHelper(
   const response = agentGraph
     .compile({ checkpointer })
     .streamEvents({ messages: [humanMessage] }, streamConfig);
+
+  for await (const event of response) {
+    if (
+      ["on_chat_model_stream", "on_tool_start", "on_tool_end"].includes(
+        event.event,
+      )
+    ) {
+      const allowedNodes = ["baseAgent"];
+      if (
+        allowedNodes.some((node) =>
+          event.metadata.checkpoint_ns.startsWith(node),
+        )
+      ) {
+        yield event;
+      }
+    }
+  }
+}
+
+async function* regenerateStreamHelper(
+  ctx: ActionCtx,
+  args: { chatInput: FunctionReturnType<typeof internal.chatInputs.queries.getInternal>; signal?: AbortSignal },
+) {
+  // For regeneration, don't add a new human message - just generate from existing conversation
+  const checkpointer = new ConvexCheckpointSaver(ctx);
+  const streamConfig = {
+    version: "v2" as const,
+    configurable: {
+      ctx,
+      chatInput: args.chatInput,
+      thread_id: args.chatInput.chatId,
+    },
+    recursionLimit: 100,
+    ...(args.signal && { signal: args.signal }),
+  };
+
+  // Stream events without adding a new message - just continue from the existing conversation
+  const response = agentGraph
+    .compile({ checkpointer })
+    .streamEvents({ messages: [] }, streamConfig);
 
   for await (const event of response) {
     if (

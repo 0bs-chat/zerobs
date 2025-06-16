@@ -23,6 +23,7 @@ export const AIToolUtilsBar = ({
   copied,
   onDeleteMessage,
   onDeleteCascading,
+  onRegenerate,
 }: {
   isDropdownOpen: boolean;
   setIsDropdownOpen: (open: boolean) => void;
@@ -30,6 +31,7 @@ export const AIToolUtilsBar = ({
   copied: boolean;
   onDeleteMessage?: () => void;
   onDeleteCascading?: () => void;
+  onRegenerate?: () => void;
 }) => {
   return (
     <div
@@ -54,7 +56,11 @@ export const AIToolUtilsBar = ({
         <GitBranchIcon className="w-4 h-4" />
       </Button>
 
-      <Button variant="ghost" size="icon">
+      <Button 
+        variant="ghost" 
+        size="icon"
+        onClick={onRegenerate}
+      >
         <RefreshCcwIcon className="w-4 h-4" />
       </Button>
 
