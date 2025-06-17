@@ -1,24 +1,49 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   XIcon, 
   CopyIcon, 
   CheckIcon,
   ExternalLinkIcon,
+  EyeIcon,
+  CodeIcon,
 } from "lucide-react";
 import { useCopy } from "@/hooks/use-copy";
 import { Markdown } from "@/components/ui/markdown";
 import { MermaidChart } from "@/components/ui/markdown/mermaid";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import type { Artifact } from "./index";
+import type { Artifact } from "../../artifacts/utils";
 
 interface ArtifactViewerProps {
   artifact: Artifact;
   onClose: () => void;
 }
+
+const TabbedRenderer = ({
+  preview,
+  source,
+  language,
+}: {
+  preview: React.ReactNode;
+  source: string;
+  language: string;
+}) => (
+  <Tabs defaultValue="preview">
+    <TabsList>
+      <TabsTrigger value="preview">
+        <EyeIcon className="w-4 h-4" />
+      </TabsTrigger>
+      <TabsTrigger value="source">
+        <CodeIcon className="w-4 h-4" />
+      </TabsTrigger>
+    </TabsList>
+    <TabsContent value="preview">{preview}</TabsContent>
+    <TabsContent value="source" className="overflow-auto">
+      <Markdown content={`\`\`\`${language || "text"}\n${source}\n\`\`\``} />
+    </TabsContent>
+  </Tabs>
+);
 
 const prepareReactCode = (code: string): string => {
   const withoutImports = code.replace(/import\s+(?:React(?:,\s*)?)?(?:\{[^}]*\})?\s+from\s+['"]react['"];?/g, '');
@@ -114,195 +139,86 @@ const ReactComponentRenderer = ({ content }: { content: string }) => {
     </html>
   `;
 
-  return (
+  const preview = (
     <div className="space-y-4">
-       <div className="border rounded-lg p-1">
-        <Badge variant="secondary" className="mb-2">
-          Live Preview
-        </Badge>
-        <p className="text-xs text-muted-foreground px-1 pb-2">
-          Note: This is a sandboxed preview. Imports for external libraries are not supported yet.
-          {processedCode.length === 0 && (
-            <span className="text-red-500 block mt-1">⚠️ No valid React code found after processing</span>
-          )}
-        </p>
-        <div className="border rounded bg-white">
-          <iframe
-            srcDoc={iframeContent}
-            className="w-full h-96 border-0 rounded"
-            title="React Preview"
-            sandbox="allow-scripts allow-same-origin"
-            onLoad={(e) => {
-              console.log('Iframe loaded');
-              const iframe = e.target as HTMLIFrameElement;
-              try {
-                console.log('Iframe content window:', iframe.contentWindow);
-              } catch (err) {
-                console.log('Cannot access iframe content:', err);
-              }
-            }}
-          />
-        </div>
-      </div>
-      <div>
-        <Badge variant="outline" className="mb-2">
-          Source Code
-        </Badge>
-        <SyntaxHighlighter
-          language="jsx"
-          style={atomDark}
-          customStyle={{
-            backgroundColor: "transparent",
-            padding: "1rem",
-            fontSize: "0.875rem",
-            maxHeight: "300px",
+      <p className="text-xs text-muted-foreground px-1 pb-2">
+        Note: This is a sandboxed preview. Imports for external libraries are not supported yet.
+        {processedCode.length === 0 && (
+          <span className="text-red-500 block mt-1">⚠️ No valid React code found after processing</span>
+        )}
+      </p>
+      <div className="border rounded bg-white">
+        <iframe
+          srcDoc={iframeContent}
+          className="w-full h-96 border-0 rounded"
+          title="React Preview"
+          sandbox="allow-scripts allow-same-origin"
+          onLoad={(e) => {
+            console.log('Iframe loaded');
+            const iframe = e.target as HTMLIFrameElement;
+            try {
+              console.log('Iframe content window:', iframe.contentWindow);
+            } catch (err) {
+              console.log('Cannot access iframe content:', err);
+            }
           }}
-        >
-          {content}
-        </SyntaxHighlighter>
+        />
       </div>
     </div>
   );
+
+  return <TabbedRenderer preview={preview} source={content} language="jsx" />;
 };
 
 const HTMLRenderer = ({ content }: { content: string }) => {
-  return (
-    <div className="space-y-4">
-      <div className="border rounded-lg p-1">
-        <Badge variant="secondary" className="mb-2">
-          Live Preview
-        </Badge>
-        <div className="border rounded bg-white">
-          <iframe
-            srcDoc={content}
-            className="w-full h-96 border-0 rounded"
-            title="HTML Preview"
-            sandbox="allow-scripts allow-same-origin"
-          />
-        </div>
-      </div>
-      <div>
-        <Badge variant="outline" className="mb-2">
-          Source Code
-        </Badge>
-        <SyntaxHighlighter
-          language="html"
-          style={atomDark}
-          customStyle={{
-            backgroundColor: "transparent",
-            padding: "1rem",
-            fontSize: "0.875rem",
-            maxHeight: "300px",
-          }}
-        >
-          {content}
-        </SyntaxHighlighter>
-      </div>
-    </div>
+  const preview = (
+    <iframe
+      srcDoc={content}
+      className="w-full border-0 h-full rounded"
+      title="HTML Preview"
+      sandbox="allow-scripts allow-same-origin"
+    />
   );
+  return <TabbedRenderer preview={preview} source={content} language="html" />;
 };
 
-const CodeRenderer = ({ content, language }: { content: string; language?: string }) => {
+const CodeRenderer = ({
+  content,
+  language,
+}: {
+  content: string;
+  language?: string;
+}) => {
   return (
-    <SyntaxHighlighter
-      language={language || "text"}
-      style={atomDark}
-      customStyle={{
-        backgroundColor: "transparent",
-        padding: "1rem",
-        fontSize: "0.875rem",
-      }}
-      showLineNumbers
-    >
-      {content}
-    </SyntaxHighlighter>
+    <Markdown content={`\`\`\`${language || "text"}\n${content}\n\`\`\``} />
   );
 };
 
 const SVGRenderer = ({ content }: { content: string }) => {
-  return (
-    <div className="space-y-4">
-      <div className="border rounded-lg p-4 bg-background flex items-center justify-center">
-        <div dangerouslySetInnerHTML={{ __html: content }} />
-      </div>
-      <div>
-        <Badge variant="outline" className="mb-2">
-          SVG Code
-        </Badge>
-        <SyntaxHighlighter
-          language="xml"
-          style={atomDark}
-          customStyle={{
-            backgroundColor: "transparent",
-            padding: "1rem",
-            fontSize: "0.875rem",
-            maxHeight: "200px",
-          }}
-        >
-          {content}
-        </SyntaxHighlighter>
-      </div>
+  const preview = (
+    <div className="border rounded-lg p-4 bg-background flex items-center justify-center">
+      <div dangerouslySetInnerHTML={{ __html: content }} />
     </div>
   );
+  return <TabbedRenderer preview={preview} source={content} language="xml" />;
 };
 
 const MarkdownRenderer = ({ content }: { content: string }) => {
-  return (
-    <div className="space-y-4">
-      <div className="border rounded-lg p-4 bg-background">
-        <Badge variant="secondary" className="mb-2">
-          Rendered Preview
-        </Badge>
-        <Markdown content={content} />
-      </div>
-      <div>
-        <Badge variant="outline" className="mb-2">
-          Markdown Source
-        </Badge>
-        <SyntaxHighlighter
-          language="markdown"
-          style={atomDark}
-          customStyle={{
-            backgroundColor: "transparent",
-            padding: "1rem",
-            fontSize: "0.875rem",
-            maxHeight: "200px",
-          }}
-        >
-          {content}
-        </SyntaxHighlighter>
-      </div>
+  const preview = (
+    <div className="border rounded-lg p-4 bg-background">
+      <Markdown content={content} />
     </div>
   );
+  return <TabbedRenderer preview={preview} source={content} language="markdown" />;
 };
 
 const MermaidRenderer = ({ content }: { content: string }) => {
-  return (
-    <div className="space-y-4">
-      <div className="border rounded-lg p-4 bg-background">
-        <Badge variant="secondary" className="mb-2">
-          Diagram Preview
-        </Badge>
-        <MermaidChart chart={content} id={`artifact-${Date.now()}`} />
-      </div>
-      <div>
-        <Badge variant="outline" className="mb-2">
-          Mermaid Code
-        </Badge>
-        <SyntaxHighlighter
-          language="mermaid"
-          style={atomDark}
-          customStyle={{
-            backgroundColor: "transparent",
-            padding: "1rem",
-            fontSize: "0.875rem",
-          }}
-        >
-          {content}
-        </SyntaxHighlighter>
-      </div>
+  const preview = (
+    <div className="border rounded-lg p-4 bg-background">
+      <MermaidChart chart={content} id={`artifact-${Date.now()}`} />
     </div>
   );
+  return <TabbedRenderer preview={preview} source={content} language="mermaid" />;
 };
 
 const renderArtifactContent = (artifact: Artifact) => {
@@ -321,25 +237,6 @@ const renderArtifactContent = (artifact: Artifact) => {
       return <MermaidRenderer content={artifact.content} />;
     default:
       return <CodeRenderer content={artifact.content} language="text" />;
-  }
-};
-
-const getTypeName = (type: string, language?: string): string => {
-  switch (type) {
-    case "application/vnd.ant.react":
-      return "React Component";
-    case "text/html":
-      return "HTML Page";
-    case "application/vnd.ant.code":
-      return language ? `${language.toUpperCase()} Code` : "Code";
-    case "text/markdown":
-      return "Markdown Document";
-    case "image/svg+xml":
-      return "SVG Image";
-    case "application/vnd.ant.mermaid":
-      return "Mermaid Diagram";
-    default:
-      return "Artifact";
   }
 };
 
@@ -364,17 +261,7 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
     <div className="flex flex-col gap-4 h-full">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold">{artifact.title}</h2>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary">
-              {getTypeName(artifact.type, artifact.language)}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              ID: {artifact.id}
-            </span>
-          </div>
-        </div>
+        <h2 className="text-lg font-semibold">{artifact.title}</h2>
         
         <div className="flex items-center gap-2">
           {artifact.type === "text/html" && (
@@ -412,10 +299,8 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
       <Separator />
       
       {/* Content */}
-      <ScrollArea className="flex-1">
-        <div className="space-y-4">
-          {renderArtifactContent(artifact)}
-        </div>
+      <ScrollArea className="h-[calc(100vh-10rem)]">
+        {renderArtifactContent(artifact)}
       </ScrollArea>
     </div>
   );

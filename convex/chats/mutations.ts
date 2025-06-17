@@ -8,13 +8,14 @@ import * as schema from "../schema";
 export const create = mutation({
   args: {
     ...schema.Chats.table.validator.fields,
-    ...partial(schema.Chats.systemFields),
+    ...partial(schema.Chats.withoutSystemFields),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
     const chatId = ctx.db.insert("chats", {
       ...args,
       userId,
+      name: args.name ?? "New Chat",
       pinned: false,
       updatedAt: Date.now(),
     });

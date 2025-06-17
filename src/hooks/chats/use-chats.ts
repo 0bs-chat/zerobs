@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { useAction } from "convex/react";
 import type { Id, Doc } from "convex/_generated/dataModel";
 import { useNavigate, useParams } from "@tanstack/react-router";
@@ -7,7 +7,7 @@ import { useCallback, useState, useMemo } from "react";
 import { useConvex } from "convex/react";
 import React from "react";
 import { coerceMessageLikeToMessage } from "@langchain/core/messages";
-import { GraphState } from "../../convex/langchain/state";
+import { GraphState } from "../../../convex/langchain/state";
 import { chatInputTextAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 
@@ -57,19 +57,15 @@ export const useHandleSubmit = () => {
   return handleSubmit;
 };
 
-interface UseCheckpointParserProps {
-  checkpoint?: { page?: string } | null;
-}
-
-type GraphStateType = typeof GraphState.State;
-
 export const useCheckpointParser = ({
   checkpoint,
-}: UseCheckpointParserProps) => {
+}: {
+  checkpoint?: { page?: string } | null;
+}) => {
   return React.useMemo(() => {
     if (!checkpoint?.page) return null;
 
-    const parsedState = JSON.parse(checkpoint.page) as GraphStateType;
+    const parsedState = JSON.parse(checkpoint.page) as typeof GraphState.State;;
 
     return {
       ...parsedState,

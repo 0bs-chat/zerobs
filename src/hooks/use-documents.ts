@@ -102,29 +102,3 @@ export const useUploadDocuments = (
     }
   };
 };
-
-export const mergeAndCreateDocument = () => {
-  async (filePaths: string[]) => {
-    const fileContents = await Promise.all(
-      filePaths.map(async (path) => {
-        const response = await fetch(path);
-        if (!response.ok) throw new Error(`Failed to fetch ${path}`);
-        return await response.text();
-      }),
-    );
-
-    const mergedContent = fileContents.join("\n\n");
-
-    const mergedFile = new File([mergedContent], "merged-document.txt", {
-      type: "text/plain",
-    });
-
-    const uploadDocuments = useUploadDocuments();
-
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(mergedFile);
-    const mergedFileList = dataTransfer.files;
-
-    await uploadDocuments(mergedFileList);
-  };
-};

@@ -9,7 +9,7 @@ import { partial } from "convex-helpers/validators";
 export const create = mutation({
   args: {
     ...schema.Mcps.table.validator.fields,
-    ...partial(schema.Mcps.systemFields),
+    ...partial(schema.Mcps.withoutSystemFields),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -26,14 +26,14 @@ export const create = mutation({
     );
 
     const newMCPId = await ctx.db.insert("mcps", {
-      name: args.name,
+      name: args.name ?? "",
       type: args.command ? "stdio" : args.dockerImage ? "docker" : "sse",
       dockerImage: args.dockerImage,
       dockerPort: args.dockerImage ? args.dockerPort : undefined,
       command: args.command,
       env: envJwts,
       url: args.url,
-      enabled: args.enabled,
+      enabled: args.enabled ?? false,
       status: "creating",
       restartOnNewChat: args.restartOnNewChat ?? false,
       userId: userId,

@@ -8,13 +8,13 @@ import { partial } from "convex-helpers/validators";
 export const create = mutation({
   args: {
     ...schema.Projects.table.validator.fields,
-    ...partial(schema.Projects.systemFields),
+    ...partial(schema.Projects.withoutSystemFields),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
     const newProjectId = await ctx.db.insert("projects", {
-      name: args.name,
+      name: args.name ?? "",
       description: args.description,
       systemPrompt: args.systemPrompt,
       userId: userId,

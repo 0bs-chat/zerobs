@@ -15,7 +15,7 @@ import { partial } from "convex-helpers/validators";
 export const create = mutation({
   args: {
     ...schema.ChatInputs.table.validator.fields,
-    ...partial(schema.ChatInputs.systemFields),
+    ...partial(schema.ChatInputs.withoutSystemFields),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -24,7 +24,7 @@ export const create = mutation({
     const existingChatInput = await ctx.db
       .query("chatInputs")
       .withIndex("by_chat_user", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
+        q.eq("chatId", args.chatId ?? "new").eq("userId", userId),
       )
       .first();
 
@@ -45,6 +45,7 @@ export const create = mutation({
 
     const newChatInputId = await ctx.db.insert("chatInputs", {
       ...args,
+      chatId: args.chatId ?? "new",
       userId,
       updatedAt: Date.now(),
     });

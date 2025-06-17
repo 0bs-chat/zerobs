@@ -26,7 +26,7 @@ import { Input } from "./ui/input";
 import React, { useCallback } from "react";
 import type { Id, Doc } from "convex/_generated/dataModel";
 import InfiniteScroll from "./ui/infinite-scroll-area";
-import { useInfiniteChats, useSearchChats } from "@/hooks/use-chats";
+import { useInfiniteChats, useSearchChats } from "@/hooks/chats/use-chats";
 
 const ChatItem = React.forwardRef<
   HTMLDivElement,

@@ -35,10 +35,15 @@ export const generateDownloadUrl = mutation({
 
 export const createMultiple = mutation({
   args: {
-    documents: v.array(v.object({
-      ...schema.Documents.table.validator.fields,
-      ...partial(schema.Documents.systemFields),
-    })),
+    documents: v.array(
+      v.object({
+        name: schema.Documents.table.validator.fields.name,
+        type: schema.Documents.table.validator.fields.type,
+        size: schema.Documents.table.validator.fields.size,
+        key: schema.Documents.table.validator.fields.key,
+        ...partial(schema.Documents.systemFields),
+      }),
+    ),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -47,7 +52,7 @@ export const createMultiple = mutation({
       args.documents.map(async (document) => {
         const documentId = await ctx.db.insert("documents", {
           ...document,
-          userId: userId,
+          userId,
           status: "processing",
         });
 

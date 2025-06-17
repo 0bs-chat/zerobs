@@ -31,11 +31,11 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useHandleSubmit } from "@/hooks/use-chats";
+import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useParams } from "@tanstack/react-router";
 import type { Id } from "convex/_generated/dataModel";
 import { useRef, useState } from "react";
-import { getTagInfo } from "@/lib/react-utils";
+import { getTagInfo } from "@/lib/helpers";
 import { GitHubDialog } from "../github";
 
 const AgentToggle = ({
@@ -197,7 +197,7 @@ export const ToolBar = ({
           value={models?.selectedModel.model_name}
           onValueChange={(value) =>
             updateChatInputMutation({
-              chatId: chatInput?.chatId!,
+              chatId: chatId,
               updates: {
                 model: value,
               },

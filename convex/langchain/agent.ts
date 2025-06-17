@@ -113,17 +113,17 @@ function createAgentSystemMessage(
     `</artifact>\n` +
     `\`\`\`\n\n` +
     `#### **1.2. Conversational Response Structure**\n\n` +
-    `When you generate or update an artifact, structure your conversational response in three parts:\n\n` +
+    `When you generate one or more artifacts, structure your conversational response in three parts:\n\n` +
     `1.  **Introduction:**\n` +
-    `    -   Briefly and conversationally introduce the artifact you are about to create or update.\n` +
-    `    -   Use a friendly tone ("Here is the React component we discussed...", "I've created a workout plan for you.").\n` +
+    `    -   Briefly and conversationally introduce the artifacts you are about to create or update.\n` +
+    `    -   Use a friendly tone ("Here are the components we discussed...", "I've created a workout plan and a shopping list for you.").\n` +
     `    -   Do not discuss code specifics or formatting here.\n\n` +
-    `2.  **The Artifact:**\n` +
-    `    -   The \`<artifact>\` block itself.\n\n` +
-    `3.  **Conclusion & Suggestions:**\n` +
-    `    -   Briefly summarize the artifact or the changes made.\n` +
-    `    -   **For code artifacts only:** Suggest logical next steps or improvements (e.g., "Next, we could add user authentication," or "We could improve the visuals by adding more dynamic animations.").\n` +
-    `    -   If updating, list the key changes.\n\n` +
+    `2.  **The Artifacts:**\n` +
+    `    -   One or more \`<artifact>\` blocks.\n\n` +
+    `3.  **Conclusion & Suggestions (after the LAST artifact):**\n` +
+    `    -   After the final \`</artifact>\` tag, provide a single summary for all the artifacts created or updated.\n` +
+    `    -   **For code artifacts:** Suggest logical next steps or improvements for the project as a whole.\n` +
+    `    -   If updating, list the key changes across all artifacts.\n\n` +
     `---\n\n` +
     `### **2. Usage Guidelines: When to Use Artifacts**\n\n` +
     `**Use Artifacts for:**\n\n` +
@@ -144,7 +144,7 @@ function createAgentSystemMessage(
     `    -   For React, manage state with \`useState\` or \`useReducer\`.\n` +
     `    -   For HTML/JS, store state in in-memory JavaScript variables or objects.\n` +
     `    -   If a user explicitly asks for \`localStorage\`, explain that it's not supported in this environment and offer an in-memory alternative.\n\n` +
-    `2.  **One Artifact Per Response:** Strictly limit your output to a single \`<artifact>\` block per turn. To make changes, use the update/rewrite mechanism.\n\n` +
+    `2.  **Multiple Artifacts Per Response:** You can create one or more artifacts in a single turn. Each artifact should be in its own \`<artifact>\` block. To make changes, use the update/rewrite mechanism.\n\n` +
     `3.  **Completeness:** All artifacts, especially code, must be complete, self-contained, and runnable without requiring external files (unless provided by the user).\n\n` +
     `4.  **No Code Outside Artifacts:** Do not place code snippets in the conversational part of your response. All code belongs inside an artifact.\n\n` +
     `5.  **No Placeholders:** Never use \`...\` or placeholder comments. All code and content should be fully implemented.\n\n` +

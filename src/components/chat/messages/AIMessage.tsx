@@ -18,16 +18,32 @@ import { useSetAtom } from "jotai";
 import {
   documentDialogDocumentIdAtom,
   documentDialogOpenAtom,
+  rightPanelActiveTabAtom,
+  rightPanelVisibilityAtom,
+  selectedArtifactAtom,
 } from "@/store/chatStore";
 import { PlanningSteps } from "./PlanningSteps";
+import type { Artifact } from "@/components/chat/artifacts/utils";
+import { ArtifactCard } from "@/components/chat/artifacts/card";
 
 interface AIMessageProps {
   message: AIMessage;
+  messageIndex?: number;
 }
 
 export const AIMessageComponent = React.memo(
-  ({ message }: AIMessageProps) => {
-    const content = React.useMemo(() => {
+  ({ message, messageIndex = -1 }: AIMessageProps) => {
+    const setRightPanelVisible = useSetAtom(rightPanelVisibilityAtom);
+    const setActiveTab = useSetAtom(rightPanelActiveTabAtom);
+    const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
+
+    const handleViewArtifact = (artifact: Artifact) => {
+      setSelectedArtifact(artifact);
+      setActiveTab("artifacts");
+      setRightPanelVisible(true);
+    };
+
+    const rawContent = React.useMemo(() => {
       return typeof message.content === "string"
         ? message.content
         : Array.isArray(message.content)
@@ -36,6 +52,64 @@ export const AIMessageComponent = React.memo(
               .join("")
           : String(message.content);
     }, [message.content]);
+
+    const contentParts = React.useMemo(() => {
+      const parts: (
+        | { type: "text"; content: string }
+        | { type: "artifact"; artifact: Artifact }
+      )[] = [];
+
+      const chunks = rawContent.split(/<artifact/);
+
+      if (chunks[0]) {
+        parts.push({ type: "text", content: chunks[0] });
+      }
+
+      for (let i = 1; i < chunks.length; i++) {
+        const fullChunk = "<artifact" + chunks[i];
+
+        const headerRegex =
+          /<artifact\s+id="([^"]+)"\s+type="([^"]+)"(?:\s+language="([^"]+)")?\s+title="([^"]+)"[^>]*>/;
+        const headerMatch = fullChunk.match(headerRegex);
+
+        if (headerMatch) {
+          const [, id, type, language, title] = headerMatch;
+          const header = headerMatch[0];
+          let artifactContent = fullChunk.substring(header.length);
+          let trailingText = "";
+
+          const endTag = "</artifact>";
+          const endTagIndex = artifactContent.indexOf(endTag);
+
+          if (endTagIndex !== -1) {
+            trailingText = artifactContent.substring(
+              endTagIndex + endTag.length,
+            );
+            artifactContent = artifactContent.substring(0, endTagIndex);
+          }
+
+          const artifact: Artifact = {
+            id,
+            type,
+            language,
+            title,
+            content: artifactContent.trimStart(),
+            messageIndex,
+            createdAt: new Date(),
+          };
+          parts.push({ type: "artifact", artifact });
+
+          if (trailingText) {
+            parts.push({ type: "text", content: trailingText });
+          }
+        } else {
+          // Not a valid artifact start, treat as text
+          parts.push({ type: "text", content: fullChunk });
+        }
+      }
+
+      return parts;
+    }, [rawContent, messageIndex]);
 
     const reasoning = message.additional_kwargs?.reasoning_content as
       | string
@@ -82,7 +156,22 @@ export const AIMessageComponent = React.memo(
           </Accordion>
         )}
         {pastSteps && <PlanningSteps pastSteps={pastSteps} />}
-        <Markdown content={content} />
+        {contentParts.map((part, idx) => {
+          if (part.type === "text") {
+            return <Markdown key={idx} content={part.content} />;
+          }
+          if (part.type === "artifact") {
+            return (
+              <div key={idx} className="my-2">
+                <ArtifactCard
+                  artifact={part.artifact}
+                  onView={handleViewArtifact}
+                />
+              </div>
+            );
+          }
+          return null;
+        })}
         {documents && documents.length > 0 && (
           <Accordion type="single" collapsible>
             <AccordionItem value="documents" className="border-none">

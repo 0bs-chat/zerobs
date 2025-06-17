@@ -20,16 +20,6 @@ export const Markdown = memo(
     const { copy, copied } = useCopy({ duration: 1000 });
     const [wrapLongLines, setWrapLongLines] = useAtom(wrapLongLinesAtom);
 
-    const customStyle = useMemo(
-      () => ({
-        backgroundColor: "transparent",
-        padding: "0.5rem",
-        margin: "0",
-        wrapLongLines: wrapLongLines,
-      }),
-      [wrapLongLines],
-    );
-
     const components = useMemo(
       () => ({
         code({ inline, className, children, ...props }: any) {
@@ -82,9 +72,15 @@ export const Markdown = memo(
                 <SyntaxHighlighter
                   {...props}
                   PreTag="div"
-                  customStyle={customStyle}
+                  customStyle={{
+                    backgroundColor: "transparent",
+                    padding: "0.5rem",
+                    margin: "0",
+                  }}
                   language={language}
                   style={atomDark}
+                  lineProps={{style: {wordBreak: 'break-all', whiteSpace: 'pre-wrap'}}}
+                  wrapLines={wrapLongLines} 
                 >
                   {children}
                 </SyntaxHighlighter>

@@ -8,11 +8,14 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { FoldersIcon, PlusIcon } from "lucide-react";
-import { projectDialogOpenAtom, resizablePanelsOpenAtom, resizablePanelTabAtom } from "@/store/chatStore";
+import {
+  projectDialogOpenAtom,
+  rightPanelVisibilityAtom,
+  rightPanelActiveTabAtom,
+} from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import type { Id } from "convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
-
 
 interface ProjectsDropdownProps {
   onCloseDropdown: () => void;
@@ -28,14 +31,16 @@ export const ProjectsDropdown = ({
   });
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
   const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
-  const setResizablePanelsOpen = useSetAtom(resizablePanelsOpenAtom);
-  const setResizablePanelTab = useSetAtom(resizablePanelTabAtom);
+  const setRightPanelVisible = useSetAtom(rightPanelVisibilityAtom);
+  const setRightPanelActiveTab = useSetAtom(rightPanelActiveTabAtom);
 
   return (
     <DropdownMenuSub>
-      <DropdownMenuSubTrigger className="flex items-center gap-2">
-        <FoldersIcon className="w-4 h-4" />
-        Projects
+      <DropdownMenuSubTrigger>
+        <div className="flex items-center gap-2">
+          <FoldersIcon className="w-4 h-4" />
+          <span>Projects</span>
+        </div>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent className="ml-2">
         {projects?.page.slice(0, 3).map((project) => (
@@ -49,8 +54,8 @@ export const ProjectsDropdown = ({
                 },
               });
               onCloseDropdown();
-              setResizablePanelsOpen(true);
-              setResizablePanelTab("projects");
+              setRightPanelVisible(true);
+              setRightPanelActiveTab("projects");
             }}
           >
             {project.name}

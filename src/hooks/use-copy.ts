@@ -1,22 +1,10 @@
 import { useCallback, useState } from "react";
 
-export interface UseCopyOptions {
-  /**
-   * Duration in milliseconds to show the copied state
-   * @default 1000
-   */
+export function useCopy(options: {
   duration?: number;
-  /**
-   * Callback to execute on successful copy
-   */
   onSuccess?: () => void;
-  /**
-   * Callback to execute on copy error
-   */
   onError?: (error: Error) => void;
-}
-
-export function useCopy(options: UseCopyOptions = {}) {
+} = {}) {
   const { duration = 1000, onSuccess, onError } = options;
   const [copied, setCopied] = useState(false);
 
