@@ -5,6 +5,8 @@ import {
 } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
+import * as schema from "../schema";
+import { partial } from "convex-helpers/validators";
 
 // TODO: Optimization
 // - Instead of fetching the chat and checking if its new, check if before fetching
@@ -12,14 +14,8 @@ import { internal } from "../_generated/api";
 
 export const create = mutation({
   args: {
-    chatId: v.union(v.id("chats"), v.literal("new")),
-    documents: v.optional(v.array(v.id("documents"))),
-    text: v.optional(v.string()),
-    projectId: v.optional(v.id("projects")),
-    model: v.optional(v.string()),
-    agentMode: v.optional(v.boolean()),
-    plannerMode: v.optional(v.boolean()),
-    webSearch: v.optional(v.boolean()),
+    ...schema.ChatInputs.table.validator.fields,
+    ...partial(schema.ChatInputs.systemFields),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -48,9 +44,9 @@ export const create = mutation({
     }
 
     const newChatInputId = await ctx.db.insert("chatInputs", {
+      ...args,
       userId,
       updatedAt: Date.now(),
-      ...args,
     });
     const newChatInput = await ctx.db.get(newChatInputId);
 
@@ -72,16 +68,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     chatId: v.union(v.id("chats"), v.literal("new")),
-    updates: v.object({
-      documents: v.optional(v.array(v.id("documents"))),
-      text: v.optional(v.string()),
-      projectId: v.optional(v.union(v.id("projects"), v.null())),
-      model: v.optional(v.string()),
-      agentMode: v.optional(v.boolean()),
-      plannerMode: v.optional(v.boolean()),
-      webSearch: v.optional(v.boolean()),
-      streamId: v.optional(v.id("streams")),
-    }),
+    updates: v.object(partial(schema.ChatInputs.withoutSystemFields)),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);

@@ -3,6 +3,8 @@ import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
 import { Doc } from "../_generated/dataModel";
+import * as schema from "../schema";
+import { partial } from "convex-helpers/validators";
 
 export const removeStreamChunks = internalMutation({
   args: { streamId: v.id("streams") },
@@ -24,17 +26,7 @@ export const removeStreamChunks = internalMutation({
 export const update = internalMutation({
   args: {
     streamId: v.id("streams"),
-    updates: v.object({
-      status: v.optional(
-        v.union(
-          v.literal("pending"),
-          v.literal("streaming"),
-          v.literal("done"),
-          v.literal("error"),
-          v.literal("cancelled"),
-        ),
-      ),
-    }),
+    updates: v.object(partial(schema.Streams.withoutSystemFields)),
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);

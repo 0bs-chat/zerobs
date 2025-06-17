@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { resizablePanelTabAtom } from "@/store/chatStore";
 import { ProjectsPanel } from "./projects";
 import { MCPPanel } from "./mcp/index";
+import { ArtifactsPanel } from "./artifacts";
 import { useAtomValue, useSetAtom } from "jotai";
 
 export const Panel = () => {
@@ -22,7 +23,9 @@ export const Panel = () => {
         </TabsList>
       </div>
       <div className="flex flex-col gap-2 pt-3">
-        <TabsContent value="artifacts"></TabsContent>
+        <TabsContent value="artifacts">
+          <ArtifactsPanel />
+        </TabsContent>
 
         <TabsContent value="projects">
           <ProjectsPanel />

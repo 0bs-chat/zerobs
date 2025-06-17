@@ -2,12 +2,14 @@ import { internalMutation, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { createJwt } from "../utils/encryption";
-import { api, internal } from "../_generated/api";
+import { api } from "../_generated/api";
+import * as schema from "../schema";
+import { partial } from "convex-helpers/validators";
 
 export const create = internalMutation({
   args: {
-    key: v.string(),
-    value: v.string(),
+    ...schema.ApiKeys.table.validator.fields,
+    ...partial(schema.ApiKeys.systemFields),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -37,8 +39,8 @@ export const create = internalMutation({
 
 export const createPublic = internalMutation({
   args: {
-    key: v.string(),
-    value: v.string(),
+    ...schema.ApiKeys.table.validator.fields,
+    ...partial(schema.ApiKeys.systemFields),
   },
   handler: async (ctx, args) => {
     const existingApiKeyDoc = await ctx.runQuery(

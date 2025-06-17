@@ -2,12 +2,13 @@ import { mutation } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
+import * as schema from "../schema";
+import { partial } from "convex-helpers/validators";
 
 export const create = mutation({
   args: {
-    name: v.string(),
-    description: v.optional(v.string()),
-    systemPrompt: v.optional(v.string()),
+    ...schema.Projects.table.validator.fields,
+    ...partial(schema.Projects.systemFields),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -33,11 +34,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     projectId: v.id("projects"),
-    updates: v.object({
-      name: v.optional(v.string()),
-      description: v.optional(v.string()),
-      systemPrompt: v.optional(v.string()),
-    }),
+    updates: v.object(partial(schema.Projects.withoutSystemFields)),
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);

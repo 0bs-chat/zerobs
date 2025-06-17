@@ -250,7 +250,6 @@ export const ChatMessages = React.memo(() => {
   });
 
   const parsedCheckpoint = useCheckpointParser({ checkpoint });
-  console.log("parsedCheckpoint", parsedCheckpoint);
   const { chunkGroups } = useStreamProcessor({ streamChunks: stream?.chunks });
 
   const messageGroups = parsedCheckpoint?.messages

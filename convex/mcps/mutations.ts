@@ -3,17 +3,13 @@ import { mutation } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
 import { createJwt } from "../utils/encryption";
+import * as schema from "../schema";
+import { partial } from "convex-helpers/validators";
 
 export const create = mutation({
   args: {
-    name: v.string(),
-    command: v.optional(v.string()),
-    dockerImage: v.optional(v.string()),
-    dockerPort: v.optional(v.number()),
-    env: v.optional(v.record(v.string(), v.string())),
-    url: v.optional(v.string()),
-    enabled: v.boolean(),
-    restartOnNewChat: v.optional(v.boolean()),
+    ...schema.Mcps.table.validator.fields,
+    ...partial(schema.Mcps.systemFields),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -55,24 +51,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     mcpId: v.id("mcps"),
-    updates: v.object({
-      name: v.optional(v.string()),
-      type: v.optional(v.union(v.literal("stdio"), v.literal("docker"), v.literal("sse"))),
-      dockerImage: v.optional(v.string()),
-      dockerPort: v.optional(v.number()),
-      command: v.optional(v.string()),
-      env: v.optional(v.record(v.string(), v.string())),
-      url: v.optional(v.string()),
-      enabled: v.optional(v.boolean()),
-      restartOnNewChat: v.optional(v.boolean()),
-      status: v.optional(
-        v.union(
-          v.literal("creating"),
-          v.literal("created"),
-          v.literal("error"),
-        ),
-      ),
-    }),
+    updates: v.object(partial(schema.Mcps.withoutSystemFields)),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
