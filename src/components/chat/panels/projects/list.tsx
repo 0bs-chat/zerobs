@@ -41,7 +41,7 @@ export const ProjectsList = () => {
           {allProjects?.page.map((project) => (
             <Card
               key={project._id}
-              className="group rounded-md flex-row relative group/card px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-accent/30 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              className="group rounded-md flex-row relative group/card px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-accent/30 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => {
                 updateChatInputMutation({
                   chatId,
@@ -51,7 +51,7 @@ export const ProjectsList = () => {
                 });
               }}
             >
-              <div className="flex items-center justify-between flex-1 ">
+              <div className="flex items-center justify-between flex-1">
                 <h3 className="font-medium">{project.name}</h3>
                 {project.description && (
                   <p className="text-sm text-muted-foreground">
@@ -62,7 +62,7 @@ export const ProjectsList = () => {
               <Button
                 variant="default"
                 size="icon"
-                className="cursor-pointer opacity-0 group-hover/card:opacity-100 transition-[opacity] duration-0 group-hover/card:duration-300 hover:text-red-500/80"
+                className="cursor-pointer hidden items-center justify-center z-10 absolute right-2 group-hover/card:flex opacity-0 group-hover/card:opacity-100 transition-all duration-300 hover:text-red-500/80"
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
