@@ -76,7 +76,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
           </div>
           <AddDocumentControls projectId={project._id} />
         </div>
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[calc(100vh-19rem)]">
           <ProjectDocumentList projectId={project._id} />
         </ScrollArea>
       </div>

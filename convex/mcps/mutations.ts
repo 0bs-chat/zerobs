@@ -8,10 +8,12 @@ export const create = mutation({
   args: {
     name: v.string(),
     command: v.optional(v.string()),
+    dockerImage: v.optional(v.string()),
+    dockerPort: v.optional(v.number()),
     env: v.optional(v.record(v.string(), v.string())),
     url: v.optional(v.string()),
     enabled: v.boolean(),
-    resetOnNewChat: v.optional(v.boolean()),
+    restartOnNewChat: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -29,13 +31,15 @@ export const create = mutation({
 
     const newMCPId = await ctx.db.insert("mcps", {
       name: args.name,
-      type: args.command ? "stdio" : "sse",
+      type: args.command ? "stdio" : args.dockerImage ? "docker" : "sse",
+      dockerImage: args.dockerImage,
+      dockerPort: args.dockerImage ? args.dockerPort : undefined,
       command: args.command,
       env: envJwts,
       url: args.url,
       enabled: args.enabled,
       status: "creating",
-      resetOnNewChat: args.resetOnNewChat ?? false,
+      restartOnNewChat: args.restartOnNewChat ?? false,
       userId: userId,
       updatedAt: Date.now(),
     });
@@ -53,11 +57,14 @@ export const update = mutation({
     mcpId: v.id("mcps"),
     updates: v.object({
       name: v.optional(v.string()),
+      type: v.optional(v.union(v.literal("stdio"), v.literal("docker"), v.literal("sse"))),
+      dockerImage: v.optional(v.string()),
+      dockerPort: v.optional(v.number()),
       command: v.optional(v.string()),
       env: v.optional(v.record(v.string(), v.string())),
       url: v.optional(v.string()),
       enabled: v.optional(v.boolean()),
-      resetOnNewChat: v.optional(v.boolean()),
+      restartOnNewChat: v.optional(v.boolean()),
       status: v.optional(
         v.union(
           v.literal("creating"),
@@ -112,7 +119,7 @@ export const remove = mutation({
   },
 });
 
-export const recreate = mutation({
+export const restart = mutation({
   args: {
     mcpId: v.id("mcps"),
   },
@@ -123,7 +130,7 @@ export const recreate = mutation({
       mcpId: args.mcpId,
     });
 
-    await ctx.scheduler.runAfter(0, internal.mcps.actions.reset, {
+    await ctx.scheduler.runAfter(0, internal.mcps.actions.restart, {
       mcpId: args.mcpId,
     });
 

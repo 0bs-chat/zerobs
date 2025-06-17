@@ -158,6 +158,10 @@ export function getModel(model: string): BaseChatModel {
   return new ChatOpenAI({
     model: modelConfig.model,
     apiKey: API_KEY,
+    temperature: 0.3,
+    reasoning: {
+      effort: "medium",
+    },
     configuration: {
       baseURL: `https://openrouter.ai/api/v1`,
     },

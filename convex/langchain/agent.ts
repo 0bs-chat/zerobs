@@ -1,7 +1,6 @@
 "use node";
 
 import {
-  getEmbeddingModel,
   getModel,
   formatMessages,
   modelSupportsTools,
@@ -25,13 +24,10 @@ import {
 import { z } from "zod";
 import type { Doc } from "../_generated/dataModel";
 import { Document } from "langchain/document";
-import type { TavilySearchResponse } from "@langchain/tavily";
 import { formatDocumentsAsString } from "langchain/util/document";
-import { getSearchTools, getMCPTools } from "./getTools";
+import { getSearchTools, getMCPTools, getRetrievalTools } from "./getTools";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
-import { internal } from "../_generated/api";
 import { StructuredOutputParser } from "@langchain/core/output_parsers";
 import { OutputFixingParser } from "langchain/output_parsers";
 import { GraphState, planSchema, planArray, type CompletedStep } from "./state";
@@ -63,7 +59,7 @@ function createAgentSystemMessage(
     `- If you are specifically asked about the model you are using, you may mention that you use the ${model} model. If you are not asked specifically about the model you are using, you do not need to mention it.\n` +
     `- The current date and time is ${new Date().toLocaleString()}.\n` +
     `- Always use LaTeX for mathematical expressions.\n` +
-    `   - Inline math must be wrapped in escaped parentheses: \( content \).\n` +
+    `   - Inline math must be wrapped in escaped parentheses: $ content $.\n` +
     `   - Do not use single dollar signs for inline math.\n` +
     `   - Display math must be wrapped in double dollar signs: $$ content $$.\n` +
     `- When generating code:\n` +
@@ -81,20 +77,32 @@ async function createAgentWithTools(
 ) {
   const tools = await getMCPTools(formattedConfig.ctx);
   const searchTools = await getSearchTools(formattedConfig.ctx);
+  const retrievalTools = getRetrievalTools(formattedConfig.ctx);
 
   if (!formattedConfig.chatInput.model) {
     throw new Error("Model is required");
   }
 
+  // Build list of all available tools
+  const allTools = [
+    ...(tools.tools.length > 0 ? tools.tools : []),
+    // ...(searchTools.tavily
+    //   ? [searchTools.tavily]
+    //   : [searchTools.duckduckgo, searchTools.crawlWeb]),
+  ];
+
+  // Add retrieval tools if relevant configurations are available
+  if (formattedConfig.chatInput.projectId) {
+    allTools.push(retrievalTools.vectorSearch);
+  }
+  if (formattedConfig.chatInput.webSearch) {
+    allTools.push(retrievalTools.webSearch);
+  }
+
   if (!formattedConfig.chatInput.agentMode) {
     return createReactAgent({
       llm: getModel(formattedConfig.chatInput.model),
-      tools: [
-        ...(tools.tools.length > 0 ? tools.tools : []),
-        ...(searchTools.tavily
-          ? [searchTools.tavily]
-          : [searchTools.duckduckgo, searchTools.crawlWeb]),
-      ],
+      tools: allTools,
       prompt: promptTemplate,
       name: name,
     });
@@ -145,149 +153,59 @@ async function retrieve(
   config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
-  const vectorStore = new ConvexVectorStore(getEmbeddingModel("embeddings"), {
-    ctx: formattedConfig.ctx,
-    table: "documentVectors",
-  });
   if (!formattedConfig.chatInput.model) {
     throw new Error("Model is required");
   }
 
-  async function generateQueries(
-    type: "vectorStore" | "webSearch",
-    model: string,
-    state: typeof GraphState.State,
-    config: ExtendedRunnableConfig,
-  ) {
-    const promptTemplate = ChatPromptTemplate.fromMessages([
-      [
-        "system",
-        "Based on the messages and the user's query, generate queries for the " +
-          type +
-          ".",
-      ],
-      new MessagesPlaceholder("messages"),
-    ]);
-
-    const modelWithOutputParser = promptTemplate.pipe(
-      getModel("worker").withStructuredOutput(
-        z.object({
-          queries: z
-            .array(z.string())
-            .describe("Queries for the " + type + ".")
-            .max(3)
-            .min(1),
-        }),
-      ),
-    );
-
-    const formattedMessages = await formatMessages(
-      config.ctx,
-      state.messages.slice(-5),
-      model,
-    );
-    const queries = await modelWithOutputParser.invoke({
-      messages: formattedMessages,
-      config,
-    });
-
-    return queries.queries;
-  }
-
-  // Retrive documents
+  const retrievalTools = getRetrievalTools(formattedConfig.ctx);
   let documents: DocumentInterface[] = [];
+
+  // Generate a single query from the latest user message
+  const lastMessage = state.messages.slice(-1)[0];
+  const query = typeof lastMessage.content === "string" 
+    ? lastMessage.content 
+    : String(lastMessage.content);
+
+  // Retrieve from project documents if projectId is available
   if (formattedConfig.chatInput.projectId) {
-    console.log(
-      "retrieving documents for project",
-      formattedConfig.chatInput.projectId,
-    );
-    const includedProjectDocuments = await formattedConfig.ctx.runQuery(
-      internal.projectDocuments.queries.getSelected,
-      {
+    try {
+      const projectResults = await retrievalTools.vectorSearch.invoke({
+        query,
         projectId: formattedConfig.chatInput.projectId,
-        selected: true,
-      },
-    );
-    console.log("includedProjectDocuments", includedProjectDocuments.length);
-    const queries = await generateQueries(
-      "vectorStore",
-      formattedConfig.chatInput.model,
-      state,
-      formattedConfig,
-    );
-
-    await Promise.all(
-      queries.map(async (query) => {
-        const results = await vectorStore.similaritySearch(query, 4, {
-          filter: (q) =>
-            q.or(
-              ...includedProjectDocuments.map((document) =>
-                q.eq("metadata", {
-                  source: document.documentId,
-                }),
-              ),
-            ),
-        });
-        documents.push(...results);
-      }),
-    );
+      });
+      
+      if (projectResults !== "No project documents available for retrieval.") {
+        const parsedResults = JSON.parse(projectResults);
+        const projectDocs = parsedResults.map((result: any) => new Document({
+          pageContent: result.content,
+          metadata: result.metadata,
+        }));
+        documents.push(...projectDocs);
+      }
+    } catch (error) {
+      console.error("Error retrieving project documents:", error);
+    }
   }
+
+  // Retrieve from web search if webSearch is enabled
   if (formattedConfig.chatInput.webSearch) {
-    const searchTools = await getSearchTools(formattedConfig.ctx);
-
-    const queries = await generateQueries(
-      "webSearch",
-      formattedConfig.chatInput.model,
-      state,
-      formattedConfig,
-    );
-    await Promise.all(
-      queries.map(async (query) => {
-        if (searchTools.tavily) {
-          const searchResults = (await searchTools.tavily._call({
-            query: query,
-            topic: "general",
-            includeImages: false,
-            includeDomains: [],
-            excludeDomains: [],
-            searchDepth: "basic",
-          })) as TavilySearchResponse;
-          const docs = searchResults.results.map((result) => {
-            return new Document({
-              pageContent: `${result.score}. ${result.title}\n${result.url}\n${result.content}`,
-              metadata: {
-                source: "tavily",
-              },
-            });
-          });
-          documents.push(...docs);
-        } else {
-          const searchResults = await searchTools.duckduckgo._call(query);
-          const searchResultsArray: {
-            title: string;
-            url: string;
-            snippet: string;
-          }[] = JSON.parse(searchResults);
-          const urlMarkdownContents = await Promise.all(
-            searchResultsArray.map((result) =>
-              searchTools.crawlWeb.invoke({ url: result.url }),
-            ),
-          );
-          const docs = searchResultsArray.map((result, index) => {
-            return new Document({
-              pageContent: `${result.title}\n${result.url}\n${urlMarkdownContents[index]}`,
-              metadata: {
-                source: "duckduckgo",
-              },
-            });
-          });
-          documents.push(...docs);
-        }
-      }),
-    );
+    try {
+      const webResults = await retrievalTools.webSearch.invoke({
+        query,
+      });
+      
+      const parsedResults = JSON.parse(webResults);
+      const webDocs = parsedResults.map((result: any) => new Document({
+        pageContent: result.content,
+        metadata: result.metadata,
+      }));
+      documents.push(...webDocs);
+    } catch (error) {
+      console.error("Error retrieving web documents:", error);
+    }
   }
 
-  // Grade documents
+  // Grade documents for relevance
   async function gradeDocument(
     model: string,
     document: DocumentInterface,
@@ -325,13 +243,15 @@ async function retrieve(
 
     return gradedDocument.relevant;
   }
+
+  // Grade all retrieved documents
   const gradedDocuments = (
     await Promise.all(
       documents.map(async (document) => {
         return (await gradeDocument(
           formattedConfig.chatInput.model!,
           document,
-          state.messages.slice(-1)[0],
+          lastMessage,
           formattedConfig,
         ))
           ? document
@@ -643,18 +563,27 @@ async function replanner(
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
-  const promptTemplate = ChatPromptTemplate.fromTemplate(
-    `For the given objective, come up with a simple step by step plan. ` +
-      `This plan should involve individual tasks that, if executed correctly, will yield the correct answer. Do not add any superfluous steps. ` +
-      `The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.\n\n` +
-      `Your objective was this:` +
-      new MessagesPlaceholder("input") +
-      "\n\n" +
+  const promptTemplate = ChatPromptTemplate.fromMessages([
+    [
+      "system",
+      `For the given objective, come up with a simple step by step plan. ` +
+        `This plan should involve individual tasks that, if executed correctly, will yield the correct answer. Do not add any superfluous steps. ` +
+        `The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.\n\n` +
+        `Your objective was this:`,
+    ],
+    new MessagesPlaceholder("input"),
+    [
+      "system",
       `Your original plan was this:\n{plan}\n\n` +
-      `You have currently done the following steps:\n${new MessagesPlaceholder("pastSteps")}\n\n` +
+        `You have currently done the following steps:`,
+    ],
+    new MessagesPlaceholder("pastSteps"),
+    [
+      "system",
       `Update your plan accordingly. If no more steps are needed and you can return to the user, set action to "respond_to_user" and provide the response. ` +
-      `Otherwise, set action to "continue_planning" and fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
-  );
+        `Otherwise, set action to "continue_planning" and fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
+    ],
+  ]);
 
   const planOutput = z.object({
     action: z.literal("continue_planning"),
@@ -721,8 +650,8 @@ async function replanner(
 
   const response = await modelWithOutputParser.invoke(
     {
-      input: formattedInputMessage[0],
-      plan: state.plan,
+      input: formattedInputMessage,
+      plan: JSON.stringify(state.plan),
       pastSteps: formattedPastStepsMessages,
     },
     config,

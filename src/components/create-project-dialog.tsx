@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { projectDialogOpenAtom } from "@/store/chatStore";
+import { projectDialogOpenAtom, resizablePanelsOpenAtom, resizablePanelTabAtom } from "@/store/chatStore";
 import { useAtomValue, useSetAtom } from "jotai";
 import type { Id } from "convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
@@ -18,6 +18,8 @@ import { useParams } from "@tanstack/react-router";
 export const CreateProjectDialog = () => {
   const projectDialogOpen = useAtomValue(projectDialogOpenAtom);
   const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
+  const setResizablePanelsOpen = useSetAtom(resizablePanelsOpenAtom);
+  const setResizablePanelTab = useSetAtom(resizablePanelTabAtom);
   const createProject = useMutation(api.projects.mutations.create);
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
   const params = useParams({ strict: false });
@@ -42,6 +44,8 @@ export const CreateProjectDialog = () => {
         projectId: project._id,
       },
     });
+    setResizablePanelsOpen(true);
+    setResizablePanelTab("projects");
   };
 
   return (

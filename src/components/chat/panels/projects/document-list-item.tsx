@@ -47,10 +47,10 @@ export function ProjectDocumentListItem({
           return <Icon className={className} />;
         })()}
         <div className="flex-1 min-w-0">
-          <p className="font-medium truncate">
+          <p className="font-medium" style={{ wordBreak: "break-word" }}>
             {projectDocument.document.name}
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground" style={{ wordBreak: "break-word" }}>
             Size: {(projectDocument.document.size / 1024).toFixed(2)} KB
           </p>
         </div>

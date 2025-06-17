@@ -58,7 +58,7 @@ export const create = mutation({
       throw new Error("Chat input not found");
     }
 
-    await ctx.scheduler.runAfter(0, internal.langchain.index.generateTitle, {
+    ctx.scheduler.runAfter(0, internal.langchain.index.generateTitle, {
       chatInputDoc: newChatInput,
     });
 

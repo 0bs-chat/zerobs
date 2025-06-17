@@ -7,9 +7,136 @@ import { MultiServerMCPClient, type Connection } from "@langchain/mcp-adapters";
 import { z } from "zod";
 import { api, internal } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
-import { ToolSchemaBase } from "@langchain/core/tools";
+import type { ToolSchemaBase } from "@langchain/core/tools";
 import type { Id } from "../_generated/dataModel";
 import { fly } from "../utils/flyio";
+import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
+import { getEmbeddingModel } from "./models";
+import { Document } from "langchain/document";
+import type { TavilySearchResponse } from "@langchain/tavily";
+import type { DocumentInterface } from "@langchain/core/documents";
+
+export const getRetrievalTools = (ctx: ActionCtx) => {
+  const vectorSearchTool = tool(
+    async ({ 
+      query, 
+      projectId
+    }: { 
+      query: string; 
+      projectId: string;
+    }) => {
+      const vectorStore = new ConvexVectorStore(getEmbeddingModel("embeddings"), {
+        ctx,
+        table: "documentVectors",
+      });
+
+      const includedProjectDocuments = await ctx.runQuery(
+        internal.projectDocuments.queries.getSelected,
+        {
+          projectId: projectId as Id<"projects">,
+          selected: true,
+        },
+      );
+
+      if (includedProjectDocuments.length === 0) {
+        return "No project documents available for retrieval.";
+      }
+
+      const results = await vectorStore.similaritySearch(query, 4, {
+        filter: (q) =>
+          q.or(
+            ...includedProjectDocuments.map((document) =>
+              q.eq("metadata", {
+                source: document.documentId,
+              }),
+            ),
+          ),
+      });
+
+      return JSON.stringify(results.map(doc => ({
+        content: doc.pageContent,
+        metadata: doc.metadata,
+      })));
+    },
+    {
+      name: "searchProjectDocuments",
+      description: "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents.",
+      schema: z.object({
+        query: z.string().describe("The search query to find relevant documents"),
+        projectId: z.string().describe("The project ID to search within"),
+      }),
+    },
+  );
+
+  const webSearchTool = tool(
+    async ({ 
+      query
+    }: { 
+      query: string;
+    }) => {
+      const searchTools = await getSearchTools(ctx);
+      let documents: DocumentInterface[] = [];
+
+      if (searchTools.tavily) {
+        const searchResults = (await searchTools.tavily._call({
+          query: query,
+          topic: "general",
+          includeImages: false,
+          includeDomains: [],
+          excludeDomains: [],
+          searchDepth: "basic",
+        })) as TavilySearchResponse;
+        const docs = searchResults.results.map((result) => {
+          return new Document({
+            pageContent: `${result.score}. ${result.title}\n${result.url}\n${result.content}`,
+            metadata: {
+              source: "tavily",
+            },
+          });
+        });
+        documents.push(...docs);
+      } else {
+        const searchResults = await searchTools.duckduckgo._call(query);
+        const searchResultsArray: {
+          title: string;
+          url: string;
+          snippet: string;
+        }[] = JSON.parse(searchResults);
+        const urlMarkdownContents = await Promise.all(
+          searchResultsArray.map((result) =>
+            searchTools.crawlWeb.invoke({ url: result.url }),
+          ),
+        );
+        const docs = searchResultsArray.map((result, index) => {
+          return new Document({
+            pageContent: `${result.title}\n${result.url}\n${urlMarkdownContents[index]}`,
+            metadata: {
+              source: "duckduckgo",
+            },
+          });
+        });
+        documents.push(...docs);
+      }
+
+      return JSON.stringify(documents.map(doc => ({
+        content: doc.pageContent,
+        metadata: doc.metadata,
+      })));
+    },
+    {
+      name: "searchWeb",
+      description: "Search the web for current information using Tavily or DuckDuckGo. Use this to find up-to-date information from the internet.",
+      schema: z.object({
+        query: z.string().describe("The search query to find relevant web information"),
+      }),
+    },
+  );
+
+  return {
+    vectorSearch: vectorSearchTool,
+    webSearch: webSearchTool,
+  };
+};
 
 export const getSearchTools = (ctx: ActionCtx) => {
   const tools: {
@@ -71,8 +198,8 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
   // Reset all mcps that have resetOnNewChat set to true
   await Promise.all(
     mcps.page.map((mcp) => {
-      if (mcp.resetOnNewChat) {
-        return ctx.runAction(internal.mcps.actions.reset, { mcpId: mcp._id });
+      if (mcp.restartOnNewChat) {
+        return ctx.runAction(internal.mcps.actions.restart, { mcpId: mcp._id });
       }
     }),
   );

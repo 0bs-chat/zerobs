@@ -88,7 +88,9 @@ export const ProjectDocuments = Table("projectDocuments", {
 
 export const Mcps = Table("mcps", {
   name: v.string(),
-  type: v.union(v.literal("sse"), v.literal("stdio")),
+  type: v.union(v.literal("sse"), v.literal("stdio"), v.literal("docker")),
+  dockerImage: v.optional(v.string()),
+  dockerPort: v.optional(v.number()),
   command: v.optional(v.string()),
   url: v.optional(v.string()),
   env: v.optional(v.record(v.string(), v.string())),
@@ -98,7 +100,7 @@ export const Mcps = Table("mcps", {
     v.literal("created"),
     v.literal("error"),
   ),
-  resetOnNewChat: v.boolean(),
+  restartOnNewChat: v.boolean(),
   userId: v.id("users"),
   updatedAt: v.number(),
 });

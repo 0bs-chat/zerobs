@@ -7,6 +7,9 @@ import type { Id } from "convex/_generated/dataModel";
 import { useDebouncedCallback } from "use-debounce";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/use-chats";
+import { useAtom } from "jotai";
+import { chatInputTextAtom } from "@/store/chatStore";
+import { useEffect, useRef } from "react";
 
 export const ChatInput = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
@@ -14,6 +17,8 @@ export const ChatInput = () => {
   const chatInput = useQuery(api.chatInputs.queries.get, { chatId });
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
   const handleSubmit = useHandleSubmit();
+  const [chatInputText, setChatInputText] = useAtom(chatInputTextAtom);
+  const loadedChatId = useRef<string | undefined>(undefined);
 
   const debouncedUpdateChatInput = useDebouncedCallback((text: string) => {
     updateChatInputMutation({
@@ -22,7 +27,14 @@ export const ChatInput = () => {
         text: text,
       },
     });
-  }, 500);
+  }, 300);
+
+  useEffect(() => {
+    if (chatInput && loadedChatId.current !== chatId) {
+      setChatInputText(chatInput.text ?? "");
+      loadedChatId.current = chatId;
+    }
+  }, [chatId, chatInput, setChatInputText]);
 
   return (
     <div className="flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">
@@ -37,9 +49,10 @@ export const ChatInput = () => {
         id="chatInputText"
         maxHeight={192}
         minHeight={56}
-        defaultValue={chatInput?.text}
+        value={chatInputText}
         className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+          setChatInputText(e.target.value);
           debouncedUpdateChatInput(e.target.value);
         }}
         onKeyDown={async (e) => {

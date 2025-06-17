@@ -1,6 +1,6 @@
 import React from "react";
 import { AIMessage } from "@langchain/core/messages";
-import { BrainIcon, ListTodoIcon } from "lucide-react";
+import { BrainIcon, FileIcon, ExternalLinkIcon } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -8,19 +8,25 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Markdown } from "@/components/ui/markdown/index";
+import { Favicon } from "@/components/ui/favicon";
 import type { CompletedStep } from "../../../../convex/langchain/state";
+import { Document } from "@langchain/core/documents";
+import type { Id } from "../../../../convex/_generated/dataModel";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { useSetAtom } from "jotai";
 import {
-  coerceMessageLikeToMessage,
-  mapStoredMessageToChatMessage,
-} from "@langchain/core/messages";
+  documentDialogDocumentIdAtom,
+  documentDialogOpenAtom,
+} from "@/store/chatStore";
+import { PlanningSteps } from "./PlanningSteps";
 
 interface AIMessageProps {
   message: AIMessage;
-  messageId?: string;
 }
 
 export const AIMessageComponent = React.memo(
-  ({ message, messageId }: AIMessageProps) => {
+  ({ message }: AIMessageProps) => {
     const content = React.useMemo(() => {
       return typeof message.content === "string"
         ? message.content
@@ -39,6 +45,21 @@ export const AIMessageComponent = React.memo(
       | (CompletedStep | CompletedStep[])[]
       | undefined;
 
+    const documents = message.additional_kwargs?.documents as
+      | Document[]
+      | undefined;
+
+    // Helper function to extract URL from Tavily content
+    const extractUrlFromTavilyContent = (content: string): string | null => {
+      const urlMatch = content.match(/https?:\/\/[^\s\n]+/);
+      return urlMatch ? urlMatch[0] : null;
+    };
+
+    const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
+    const setDocumentDialogDocumentId = useSetAtom(
+      documentDialogDocumentIdAtom,
+    );
+
     return (
       <div className="flex flex-col w-full">
         {reasoning && (
@@ -54,104 +75,80 @@ export const AIMessageComponent = React.memo(
                   <Markdown
                     content={reasoning}
                     className="text-sm text-muted-foreground"
-                    id={messageId ? `${messageId}-reasoning` : undefined}
                   />
                 </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
         )}
-        {pastSteps && pastSteps.length > 0 && (
+        {pastSteps && <PlanningSteps pastSteps={pastSteps} />}
+        <Markdown content={content} />
+        {documents && documents.length > 0 && (
           <Accordion type="single" collapsible>
-            <AccordionItem value="planning-steps" className="border-none">
+            <AccordionItem value="documents" className="border-none">
               <AccordionTrigger className="text-sm justify-start items-center py-2 text-muted-foreground hover:text-foreground">
-                <ListTodoIcon className="w-4 h-4" />
-                View planning steps ({pastSteps.length})
+                <FileIcon className="w-4 h-4" />
+                View sources ({documents.length})
               </AccordionTrigger>
               <AccordionContent>
                 <div className="bg-background/50 rounded-md p-3 border space-y-3">
-                  {pastSteps.map((entry, idx) => {
-                    if (
-                      Array.isArray(entry) &&
-                      entry.length > 0 &&
-                      Array.isArray(entry[0])
-                    ) {
-                      // Parallel steps (array of CompletedStep)
-                      const parallelSteps = entry as CompletedStep[];
+                  {documents.map((doc, idx) => {
+                    const isTavilyDoc = doc.metadata.source === "tavily";
+                    
+                    if (isTavilyDoc) {
+                      const url = extractUrlFromTavilyContent(doc.pageContent);
+                      
                       return (
-                        <div key={idx} className="space-y-2">
-                          <div className="text-sm font-medium text-muted-foreground">
-                            Step {idx + 1} (Parallel execution):
-                          </div>
-                          {parallelSteps.map((stepTuple, pIdx) => {
-                            const [plan, msg] = stepTuple;
-                            const messageContent = coerceMessageLikeToMessage(
-                              mapStoredMessageToChatMessage(msg),
-                            );
-                            const content =
-                              typeof messageContent.content === "string"
-                                ? messageContent.content
-                                : String(messageContent.content);
-
-                            return (
-                              <div
-                                key={pIdx}
-                                className="ml-4 p-2 border-l-2 border-muted space-y-1"
+                        <div key={idx} className="space-y-2 p-3 border rounded-md bg-background">
+                          <div className="flex items-center gap-2">
+                            {url ? (
+                              <Favicon 
+                                url={url} 
+                                className="w-4 h-4 flex-shrink-0" 
+                                fallbackIcon={ExternalLinkIcon}
+                              />
+                            ) : (
+                              <ExternalLinkIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                            )}
+                            {url && (
+                              <a 
+                                href={url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-500 hover:underline truncate"
                               >
-                                <div className="text-sm font-medium">
-                                  {idx + 1}.{pIdx + 1}: {plan.step}
-                                </div>
-                                {plan.additional_context && (
-                                  <div className="text-xs text-muted-foreground">
-                                    Context: {plan.additional_context}
-                                  </div>
-                                )}
-                                <div className="text-sm">
-                                  <Markdown
-                                    content={content}
-                                    className="text-sm"
-                                    id={
-                                      messageId
-                                        ? `${messageId}-step-${idx}-${pIdx}`
-                                        : undefined
-                                    }
-                                  />
-                                </div>
-                              </div>
-                            );
-                          })}
+                                {url}
+                              </a>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground line-clamp-3">
+                            {doc.pageContent.split('\n').slice(2).join('\n').trim()}
+                          </div>
                         </div>
                       );
                     } else {
-                      // Single CompletedStep
-                      const [plan, msg] = entry as CompletedStep;
-                      const messageContent = coerceMessageLikeToMessage(
-                        mapStoredMessageToChatMessage(msg),
-                      );
-                      const content =
-                        typeof messageContent.content === "string"
-                          ? messageContent.content
-                          : String(messageContent.content);
-
+                      const docId = doc.metadata.source as Id<"documents">;
+                      const document = useQuery(api.documents.queries.get, {
+                        documentId: docId,
+                      });
+                      console.log("document", doc.pageContent);
                       return (
-                        <div key={idx} className="space-y-1">
-                          <div className="text-sm font-medium">
-                            Step {idx + 1}: {plan.step}
-                          </div>
-                          {plan.additional_context && (
-                            <div className="text-xs text-muted-foreground">
-                              Context: {plan.additional_context}
+                        <div key={idx} className="space-y-2 p-3 border rounded-md bg-background" onClick={() => {
+                          setDocumentDialogDocumentId(docId);
+                          setDocumentDialogOpen(true);
+                        }}>
+                          <div className="flex items-center gap-2">
+                            <FileIcon className="w-4 h-4 text-gray-500" />
+                            <div className="font-medium text-sm cursor-pointer" >
+                              {document?.name}
                             </div>
-                          )}
-                          <div className="text-sm">
+                          </div>
+                          <div className="text-sm text-muted-foreground">
                             <Markdown
-                              content={content}
+                              content={doc.pageContent.length > 500 
+                                ? doc.pageContent.substring(0, 500) + "..." 
+                                : doc.pageContent}
                               className="text-sm"
-                              id={
-                                messageId
-                                  ? `${messageId}-step-${idx}`
-                                  : undefined
-                              }
                             />
                           </div>
                         </div>
@@ -163,7 +160,6 @@ export const AIMessageComponent = React.memo(
             </AccordionItem>
           </Accordion>
         )}
-        <Markdown content={content} id={messageId} />
       </div>
     );
   },

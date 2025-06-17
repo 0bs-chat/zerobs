@@ -7,7 +7,7 @@ import { useMCPs } from "@/hooks/use-mcp";
 export const MCPPanel = () => {
   const mcpEditDialogOpen = useAtomValue(mcpEditDialogOpenAtom);
   const setMcpEditDialogOpen = useSetAtom(mcpEditDialogOpenAtom);
-  const { getAllMCPs, toggleMCP, handleDelete } = useMCPs();
+  const { getAllMCPs, toggleMCP, handleDelete, restartMCP } = useMCPs();
 
   const mcps = getAllMCPs();
 
@@ -29,6 +29,7 @@ export const MCPPanel = () => {
             status={mcp.status}
             onStartStop={toggleMCP}
             onDelete={handleDelete}
+            onRestart={restartMCP}
           />
         ))}
       </div>

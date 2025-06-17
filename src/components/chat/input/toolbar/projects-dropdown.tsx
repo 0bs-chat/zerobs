@@ -8,10 +8,11 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { FoldersIcon, PlusIcon } from "lucide-react";
-import { projectDialogOpenAtom } from "@/store/chatStore";
+import { projectDialogOpenAtom, resizablePanelsOpenAtom, resizablePanelTabAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import type { Id } from "convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
+
 
 interface ProjectsDropdownProps {
   onCloseDropdown: () => void;
@@ -27,6 +28,8 @@ export const ProjectsDropdown = ({
   });
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
   const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
+  const setResizablePanelsOpen = useSetAtom(resizablePanelsOpenAtom);
+  const setResizablePanelTab = useSetAtom(resizablePanelTabAtom);
 
   return (
     <DropdownMenuSub>
@@ -46,6 +49,8 @@ export const ProjectsDropdown = ({
                 },
               });
               onCloseDropdown();
+              setResizablePanelsOpen(true);
+              setResizablePanelTab("projects");
             }}
           >
             {project.name}

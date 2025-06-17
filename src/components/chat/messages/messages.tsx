@@ -15,6 +15,7 @@ import {
   UserMessageComponent,
   AIMessageComponent,
   ToolMessageComponent,
+  PlanningSteps,
 } from ".";
 import { useCheckpointParser } from "@/hooks/use-chats";
 import { useStreamProcessor } from "@/hooks/use-stream";
@@ -71,8 +72,10 @@ const MessageGroup = ({
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
   const removeMessageGroup = useAction(api.chats.actions.removeMessageGroup);
   const regenerate = useAction(api.chats.actions.regenerate);
+  const regenerateFromUser = useAction(api.chats.actions.regenerateFromUser);
 
   if (messages.length === 0) return null;
 
@@ -142,17 +145,54 @@ const MessageGroup = ({
     }
   };
 
+  const handleUserRegenerate = async () => {
+    if (chatId === "new" || !isUserGroup) return;
+    
+    try {
+      await regenerateFromUser({
+        chatId: chatId as Id<"chats">,
+        startIndex: firstMessageIndex,
+        count: messages.length,
+      });
+    } catch (error) {
+      console.error("Failed to regenerate from user message:", error);
+    }
+  };
+
+  const handleEditMessage = (messageIndex: number) => {
+    setEditingMessageIndex(messageIndex);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageIndex(null);
+  };
+
+  const handleSaveEdit = () => {
+    setEditingMessageIndex(null);
+  };
+
   const renderMessage = (message: BaseMessage, index: number) => {
     const messageId = message.id ?? `msg-${index}`;
+    const absoluteMessageIndex = firstMessageIndex + index;
+    const isEditing = editingMessageIndex === absoluteMessageIndex;
 
     if (message instanceof HumanMessage) {
-      return <UserMessageComponent key={messageId} message={message} />;
+      return (
+        <UserMessageComponent 
+          key={messageId} 
+          message={message}
+          isEditing={isEditing}
+          onCancelEdit={handleCancelEdit}
+          onSaveEdit={handleSaveEdit}
+          messageIndex={absoluteMessageIndex}
+          chatId={chatId}
+        />
+      );
     } else if (message instanceof AIMessage) {
       return (
         <AIMessageComponent
           key={messageId}
           message={message}
-          messageId={messageId as string}
         />
       );
     } else if (message instanceof ToolMessage) {
@@ -175,6 +215,8 @@ const MessageGroup = ({
             copied={copied}
             onDeleteMessage={handleDeleteMessage}
             onDeleteCascading={handleDeleteCascading}
+            onRegenerate={handleUserRegenerate}
+            onEditMessage={() => handleEditMessage(firstMessageIndex)}
           />
         ) : (
           <AIToolUtilsBar
@@ -208,11 +250,19 @@ export const ChatMessages = React.memo(() => {
   });
 
   const parsedCheckpoint = useCheckpointParser({ checkpoint });
+  console.log("parsedCheckpoint", parsedCheckpoint);
   const { chunkGroups } = useStreamProcessor({ streamChunks: stream?.chunks });
 
   const messageGroups = parsedCheckpoint?.messages
     ? groupMessages(parsedCheckpoint.messages)
     : [];
+
+  const lastMessage =
+    parsedCheckpoint?.messages?.[parsedCheckpoint.messages.length - 1];
+  const lastMessageHasPastSteps =
+    lastMessage instanceof AIMessage &&
+    !!lastMessage.additional_kwargs?.pastSteps &&
+    (lastMessage.additional_kwargs.pastSteps as any[]).length > 0;
 
   // Calculate the first message index for each group by flattening and tracking position
   const messageGroupsWithIndices = messageGroups.map((group, groupIndex) => {
@@ -236,6 +286,14 @@ export const ChatMessages = React.memo(() => {
           />
         ))}
 
+        {parsedCheckpoint?.pastSteps &&
+          parsedCheckpoint.pastSteps.length > 0 &&
+          !lastMessageHasPastSteps && (
+            <div className="flex flex-col w-full">
+              <PlanningSteps pastSteps={parsedCheckpoint.pastSteps} />
+            </div>
+          )}
+
         {/* Handle streaming messages */}
         {chunkGroups.length > 0 && (
           <div className="flex flex-col w-full gap-1">
@@ -255,7 +313,6 @@ export const ChatMessages = React.memo(() => {
                   <AIMessageComponent
                     key={`stream-ai-${index}`}
                     message={streamingMessage}
-                    messageId={`stream-ai-${index}`}
                   />
                 );
               } else if (chunkGroup.type === "tool") {

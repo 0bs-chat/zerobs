@@ -22,51 +22,70 @@ export function useMCPs() {
   const createMCP = useMutation(api.mcps.mutations.create);
   const updateMCP = useMutation(api.mcps.mutations.update);
   const removeMCP = useMutation(api.mcps.mutations.remove);
+  const restartMutation = useMutation(api.mcps.mutations.restart);
 
   const handleCreate = async (
     newMCPData: MCPData,
     setMcpEditDialogOpen: (open: boolean) => void,
   ) => {
     try {
-      const env =
-        newMCPData.type === "stdio"
-          ? Object.fromEntries(
-              newMCPData.envVars
-                .filter((env) => env.key && env.value)
-                .map((env) => [env.key, env.value]),
-            )
-          : {};
+      // Filter out empty environment variables
+      const env = Object.fromEntries(
+        newMCPData.envVars
+          .filter((envVar) => envVar.key.trim() && envVar.value.trim())
+          .map((envVar) => [envVar.key.trim(), envVar.value.trim()]),
+      );
 
-      await createMCP({
-        name: newMCPData.name,
-        command:
-          newMCPData.type === "stdio" ? newMCPData.command : newMCPData.url,
-        env,
+      // Prepare the mutation parameters based on MCP type
+      const createParams: Parameters<typeof createMCP>[0] = {
+        name: newMCPData.name.trim(),
         enabled: true,
-        resetOnNewChat: newMCPData.resetOnNewChat,
-      });
+        restartOnNewChat: newMCPData.restartOnNewChat,
+        env: Object.keys(env).length > 0 ? env : undefined,
+      };
 
-      setMcpAtom((prev) => ({
-        ...prev,
+      // Add type-specific parameters
+      if (newMCPData.type === "stdio") {
+        createParams.command = newMCPData.command.trim();
+      } else if (newMCPData.type === "sse") {
+        createParams.url = newMCPData.url.trim();
+      } else if (newMCPData.type === "docker") {
+        createParams.dockerImage = newMCPData.dockerImage.trim();
+        createParams.dockerPort = newMCPData.dockerPort;
+      }
+
+      await createMCP(createParams);
+
+      // Reset the form
+      setMcpAtom({
         name: "",
         command: "",
         url: "",
-        type: "stdio",
+        dockerImage: "",
+        dockerPort: 8000,
+        type: "sse",
         envVars: [{ key: "", value: "" }],
-        resetOnNewChat: false,
-      }));
+        restartOnNewChat: false,
+        enabled: false,
+        status: "creating",
+      });
+      
       setMcpEditDialogOpen(false);
-      toast.success("MCP created");
+      toast.success("MCP created successfully");
     } catch (error) {
       console.error("Failed to create MCP:", error);
+      toast.error("Failed to create MCP");
+      throw error;
     }
   };
 
   const handleDelete = async (mcpId: Id<"mcps">) => {
     try {
       await removeMCP({ mcpId });
+      toast.success("MCP deleted successfully");
     } catch (error) {
       console.error("Failed to delete MCP:", error);
+      toast.error("Failed to delete MCP");
     }
   };
 
@@ -76,6 +95,17 @@ export function useMCPs() {
       toast.success(enabled ? "MCP stopped" : "MCP started");
     } catch (error) {
       console.error("Failed to start/stop MCP:", error);
+      toast.error("Failed to start/stop MCP");
+    }
+  };
+
+  const restartMCP = async (mcpId: Id<"mcps">) => {
+    try {
+      await restartMutation({ mcpId });
+      toast.success("MCP restarted successfully");
+    } catch (error) {
+      console.error("Failed to restart MCP:", error);
+      toast.error("Failed to restart MCP");
     }
   };
 
@@ -87,5 +117,6 @@ export function useMCPs() {
     handleCreate,
     toggleMCP,
     handleDelete,
+    restartMCP,
   };
 }

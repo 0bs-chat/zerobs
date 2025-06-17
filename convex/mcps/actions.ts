@@ -21,11 +21,14 @@ export const create = internalAction({
       if (!mcp.enabled) {
         throw new Error("MCP is not enabled");
       }
-      if (mcp.type !== "stdio") {
-        throw new Error("MCP is not a stdio type");
+      if (!["stdio", "docker"].includes(mcp.type)) {
+        throw new Error("MCP is not a stdio or docker type");
       }
-      if (!mcp.command) {
+      if (mcp.type === "stdio" && !mcp.command) {
         throw new Error("MCP command is not defined");
+      }
+      if (mcp.type === "docker" && !mcp.dockerImage) {
+        throw new Error("MCP docker image is not defined");
       }
 
       const appName = String(mcp._id);
@@ -35,17 +38,17 @@ export const create = internalAction({
         name: `${appName}-machine`,
         region: "sea",
         config: {
-          image: "mantrakp04/mcprunner:latest",
+          image: mcp.dockerImage || "mantrakp04/mcprunner:latest",
           env: {
             ...(await verifyEnv(mcp.env!)),
-            MCP_COMMAND: mcp.command,
+            MCP_COMMAND: mcp.command || "",
           },
           guest: { cpus: 1, memory_mb: 1024, cpu_kind: "shared" },
           services: [
             {
               ports: [{ port: 443, handlers: ["tls", "http"] }],
               protocol: "tcp",
-              internal_port: 8000,
+              internal_port: mcp.dockerPort || 8000,
               autostart: true,
               autostop: "suspend",
               min_machines_running: 0,
@@ -76,7 +79,7 @@ export const create = internalAction({
   },
 });
 
-export const reset = internalAction({
+export const restart = internalAction({
   args: {
     mcpId: v.id("mcps"),
   },
