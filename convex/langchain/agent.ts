@@ -22,7 +22,7 @@ import {
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
 import { z } from "zod";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { Document } from "langchain/document";
 import { formatDocumentsAsString } from "langchain/util/document";
 import { getSearchTools, getMCPTools, getRetrievalTools } from "./getTools";
@@ -31,10 +31,12 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { StructuredOutputParser } from "@langchain/core/output_parsers";
 import { OutputFixingParser } from "langchain/output_parsers";
 import { GraphState, planSchema, planArray, type CompletedStep } from "./state";
+import { api } from "../_generated/api";
 
 type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;
   chatInput: Doc<"chatInputs">;
+  customPrompt?: string;
 };
 
 function createStructuredOutputWithFallback<T extends z.ZodType>(
@@ -48,6 +50,7 @@ function createStructuredOutputWithFallback<T extends z.ZodType>(
 function createAgentSystemMessage(
   model: string,
   taskDescription?: string,
+  customPrompt?: string,
   baseAgentType: boolean = true,
   artifacts: boolean = true,
 ): SystemMessage {
@@ -207,7 +210,7 @@ function createAgentSystemMessage(
     `-   **Web Search:** Use the \`web_search\` tool for information beyond your knowledge cutoff (January 2025) or for rapidly changing topics. Follow all copyright and safety guidelines meticulously. Never reproduce large chunks of text. Cite sources appropriately.\n` +
     `-   **Citations:** When using search results, cite claims by wrapping them in tags with document and sentence indices.\n`
 
-  return new SystemMessage(`${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}`);
+  return new SystemMessage(`${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`);
 }
 
 // Helper function to create agent with tools
@@ -430,7 +433,7 @@ async function simple(state: typeof GraphState.State, config: RunnableConfig) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
   const promptTemplate = ChatPromptTemplate.fromMessages([
-    createAgentSystemMessage(formattedConfig.chatInput.model!, undefined, false),
+    createAgentSystemMessage(formattedConfig.chatInput.model!, undefined, formattedConfig.customPrompt, formattedConfig.chatInput.artifacts),
     new MessagesPlaceholder("messages"),
   ]);
 
@@ -473,7 +476,7 @@ async function baseAgent(
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
   const promptTemplate = ChatPromptTemplate.fromMessages([
-    createAgentSystemMessage(formattedConfig.chatInput.model!),
+    createAgentSystemMessage(formattedConfig.chatInput.model!, undefined, formattedConfig.customPrompt, formattedConfig.chatInput.artifacts),
     ...(state.documents && state.documents.length > 0
       ? [
           new HumanMessage(
@@ -708,7 +711,7 @@ async function replanner(
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
   const promptTemplate = ChatPromptTemplate.fromMessages([
-    createAgentSystemMessage(formattedConfig.chatInput.model!, undefined, false),
+    createAgentSystemMessage(formattedConfig.chatInput.model!, undefined, formattedConfig.customPrompt, formattedConfig.chatInput.artifacts),
     [
       "system",
         `## Your Task: Reflect and Re-plan\n\n` +

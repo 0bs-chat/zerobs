@@ -80,51 +80,26 @@ export const useCheckpointParser = ({
 };
 
 export const useInfiniteChats = () => {
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [allChats, setAllChats] = useState<Doc<"chats">[]>([]);
+  const [numItems, setNumItems] = useState(20);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+  // Single query that gets all items up to numItems
   const chats = useQuery(api.chats.queries.getAll, {
-    paginationOpts: { numItems: 20, cursor },
+    paginationOpts: { numItems, cursor: null },
   });
 
-  // Update allChats when new data comes in
-  React.useEffect(() => {
-    if (chats?.page) {
-      console.log('Chats loaded:', {
-        pageSize: chats.page.length,
-        isDone: chats.isDone,
-        cursor,
-        continueCursor: chats.continueCursor
-      });
-      
-      if (cursor === null) {
-        // First load - replace all chats
-        setAllChats(chats.page);
-      } else {
-        // Subsequent loads - append to existing chats
-        setAllChats(prev => [...prev, ...chats.page]);
-      }
-      setIsLoadingMore(false);
-    }
-  }, [chats, cursor]);
-
   const loadMore = useCallback(() => {
-    console.log('loadMore called:', { 
-      hasChats: !!chats,
-      isDone: chats?.isDone,
-      isLoadingMore,
-      continueCursor: chats?.continueCursor
-    });
-    
     if (chats && !chats.isDone && !isLoadingMore) {
-      console.log('Loading more chats with cursor:', chats.continueCursor);
+      console.log('Loading more chats, increasing numItems from', numItems);
       setIsLoadingMore(true);
-      setCursor(chats.continueCursor);
+      setNumItems(prev => prev + 20);
+      // Reset loading state after a brief delay to allow query to update
+      setTimeout(() => setIsLoadingMore(false), 100);
     }
-  }, [chats, isLoadingMore]);
+  }, [chats, isLoadingMore, numItems]);
 
   const groupedChats = useMemo(() => {
+    const allChats = chats?.page || [];
     const pinned = allChats.filter((chat) => chat.pinned);
     const history = allChats.filter((chat) => !chat.pinned);
     console.log('Grouped chats:', { 
@@ -133,14 +108,14 @@ export const useInfiniteChats = () => {
       historyCount: history.length 
     });
     return { pinned, history };
-  }, [allChats]);
+  }, [chats?.page]);
 
   return {
     groupedChats,
     hasMore: chats ? !chats.isDone : false,
     isLoading: !chats || isLoadingMore,
     loadMore,
-    allChats,
+    allChats: chats?.page || [],
   };
 };
 

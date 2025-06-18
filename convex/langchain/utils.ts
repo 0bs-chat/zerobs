@@ -139,17 +139,23 @@ export async function processStreamWithBatching(
   }
 }
 
-function createStreamConfig(
+async function createStreamConfig(
   ctx: ActionCtx,
   chatInput: FunctionReturnType<typeof internal.chatInputs.queries.getInternal>,
   signal?: AbortSignal
 ) {
+
+  const project = chatInput.projectId ? await ctx.runQuery(api.projects.queries.get, {
+    projectId: chatInput.projectId,
+  }) : null;
+
   return {
     version: "v2" as const,
     configurable: {
       ctx,
       chatInput,
       thread_id: chatInput.chatId,
+      customPrompt: project?.systemPrompt,
     },
     recursionLimit: 100,
     ...(signal && { signal }),
@@ -184,7 +190,7 @@ export async function* streamHelper(
   },
 ) {
   const checkpointer = new ConvexCheckpointSaver(ctx);
-  const streamConfig = createStreamConfig(ctx, args.chatInput, args.signal);
+  const streamConfig = await createStreamConfig(ctx, args.chatInput, args.signal);
 
   let messages: BaseMessage[] = [];
   
