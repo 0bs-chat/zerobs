@@ -2,9 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  XIcon, 
-  CopyIcon, 
+import {
+  XIcon,
+  CopyIcon,
   CheckIcon,
   ExternalLinkIcon,
   EyeIcon,
@@ -29,7 +29,7 @@ const TabbedRenderer = ({
   source: string;
   language: string;
 }) => (
-  <Tabs defaultValue="preview" className="h-[calc(100vh-10rem)] max-w-full overflow-hidden">
+  <Tabs defaultValue="preview" className="w-full">
     <TabsList className="overflow-x-auto">
       <TabsTrigger value="preview">
         <EyeIcon className="w-4 h-4" />
@@ -39,21 +39,24 @@ const TabbedRenderer = ({
       </TabsTrigger>
     </TabsList>
     <TabsContent value="preview">{preview}</TabsContent>
-    <TabsContent value="source" className="overflow-y-auto">
+    <TabsContent value="source">
       <Markdown content={`\`\`\`${language || "text"}\n${source}\n\`\`\``} />
     </TabsContent>
   </Tabs>
 );
 
 const prepareReactCode = (code: string): string => {
-  const withoutImports = code.replace(/import\s+(?:React(?:,\s*)?)?(?:\{[^}]*\})?\s+from\s+['"]react['"];?/g, '');
-  const withoutExports = withoutImports.replace(/export\s+default\s+App;?/, '');
+  const withoutImports = code.replace(
+    /import\s+(?:React(?:,\s*)?)?(?:\{[^}]*\})?\s+from\s+['"]react['"];?/g,
+    "",
+  );
+  const withoutExports = withoutImports.replace(/export\s+default\s+App;?/, "");
   return withoutExports;
 };
 
 const ReactComponentRenderer = ({ content }: { content: string }) => {
   const processedCode = prepareReactCode(content);
-  
+
   const iframeContent = `
     <!DOCTYPE html>
     <html>
@@ -142,16 +145,16 @@ const ReactComponentRenderer = ({ content }: { content: string }) => {
   const preview = (
     <iframe
       srcDoc={iframeContent}
-      className="w-full h-full border-0 rounded"
+      className="w-full h-[600px] border-0 rounded"
       title="React Preview"
       sandbox="allow-scripts allow-same-origin"
       onLoad={(e) => {
-        console.log('Iframe loaded');
+        console.log("Iframe loaded");
         const iframe = e.target as HTMLIFrameElement;
         try {
-          console.log('Iframe content window:', iframe.contentWindow);
+          console.log("Iframe content window:", iframe.contentWindow);
         } catch (err) {
-          console.log('Cannot access iframe content:', err);
+          console.log("Cannot access iframe content:", err);
         }
       }}
     />
@@ -164,7 +167,7 @@ const HTMLRenderer = ({ content }: { content: string }) => {
   const preview = (
     <iframe
       srcDoc={content}
-      className="w-full h-full border-0 rounded"
+      className="w-full h-[600px] border-0 rounded"
       title="HTML Preview"
       sandbox="allow-scripts allow-same-origin"
     />
@@ -199,7 +202,9 @@ const MarkdownRenderer = ({ content }: { content: string }) => {
       <Markdown content={content} />
     </div>
   );
-  return <TabbedRenderer preview={preview} source={content} language="markdown" />;
+  return (
+    <TabbedRenderer preview={preview} source={content} language="markdown" />
+  );
 };
 
 const MermaidRenderer = ({ content }: { content: string }) => {
@@ -208,7 +213,9 @@ const MermaidRenderer = ({ content }: { content: string }) => {
       <MermaidChart chart={content} id={`artifact-${Date.now()}`} />
     </div>
   );
-  return <TabbedRenderer preview={preview} source={content} language="mermaid" />;
+  return (
+    <TabbedRenderer preview={preview} source={content} language="mermaid" />
+  );
 };
 
 const renderArtifactContent = (artifact: Artifact) => {
@@ -218,7 +225,9 @@ const renderArtifactContent = (artifact: Artifact) => {
     case "text/html":
       return <HTMLRenderer content={artifact.content} />;
     case "application/vnd.ant.code":
-      return <CodeRenderer content={artifact.content} language={artifact.language} />;
+      return (
+        <CodeRenderer content={artifact.content} language={artifact.language} />
+      );
     case "text/markdown":
       return <MarkdownRenderer content={artifact.content} />;
     case "image/svg+xml":
@@ -252,23 +261,15 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">{artifact.title}</h2>
-        
+
         <div className="flex items-center gap-2">
           {artifact.type === "text/html" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleOpenInNewTab}
-            >
+            <Button variant="outline" size="sm" onClick={handleOpenInNewTab}>
               <ExternalLinkIcon className="w-4 h-4" />
               Open in New Tab
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopy}
-          >
+          <Button variant="outline" size="sm" onClick={handleCopy}>
             {copied ? (
               <CheckIcon className="w-4 h-4" />
             ) : (
@@ -276,22 +277,18 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
             )}
             {copied ? "Copied!" : "Copy"}
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onClose}
-          >
+          <Button variant="outline" size="icon" onClick={onClose}>
             <XIcon className="w-4 h-4" />
           </Button>
         </div>
       </div>
-      
+
       <Separator />
-      
+
       {/* Content */}
-      <ScrollArea className="h-[calc(100vh-7.5rem)]">
+      <ScrollArea className="h-[calc(100vh-7.5rem)] pr-3">
         {renderArtifactContent(artifact)}
       </ScrollArea>
     </div>
   );
-}; 
+};

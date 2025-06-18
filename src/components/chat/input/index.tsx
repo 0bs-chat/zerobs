@@ -32,12 +32,15 @@ export const ChatInput = () => {
   }, 300);
 
   useEffect(() => {
-    if (chatInput && loadedChatId.current !== chatId || chatInput?.text === "") {
+    if (
+      (chatInput && loadedChatId.current !== chatId) ||
+      chatInput?.text === ""
+    ) {
       setChatInputText(chatInput.text ?? "");
       loadedChatId.current = chatId;
     }
   }, [chatId, chatInput, setChatInputText]);
-  
+
   setChatProjectId(chatInput?.projectId ?? undefined);
 
   return (

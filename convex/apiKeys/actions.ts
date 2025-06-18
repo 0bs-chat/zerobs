@@ -1,4 +1,4 @@
-import { api, internal } from "../_generated/api";
+import { internal } from "../_generated/api";
 import { requireAuth } from "../utils/helpers";
 import { httpAction } from "../_generated/server";
 

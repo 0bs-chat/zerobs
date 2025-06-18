@@ -2,19 +2,16 @@
 
 import type { ActionCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
-import {
-  HumanMessage,
-  BaseMessage,
-} from "@langchain/core/messages";
+import { HumanMessage, BaseMessage } from "@langchain/core/messages";
 import { api, internal } from "../_generated/api";
 import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
 import { agentGraph } from "./agent";
-import { FunctionReturnType } from "convex/server";
+import type { FunctionReturnType } from "convex/server";
 
 export async function createHumanMessage(
   ctx: ActionCtx,
   text: string,
-  documents?: Id<"documents">[]
+  documents?: Id<"documents">[],
 ): Promise<HumanMessage> {
   return new HumanMessage({
     content: [
@@ -44,7 +41,7 @@ export async function processStreamWithBatching(
   ctx: ActionCtx,
   stream: AsyncIterable<any>,
   streamId: Id<"streams">,
-  abortController: AbortController
+  abortController: AbortController,
 ): Promise<void> {
   const BUFFER_FLUSH_DELAY = 300; // ms
   const CANCELLATION_CHECK_DELAY = 1000; // ms - check for cancellation every 1s
@@ -142,12 +139,13 @@ export async function processStreamWithBatching(
 async function createStreamConfig(
   ctx: ActionCtx,
   chatInput: FunctionReturnType<typeof internal.chatInputs.queries.getInternal>,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) {
-
-  const project = chatInput.projectId ? await ctx.runQuery(api.projects.queries.get, {
-    projectId: chatInput.projectId,
-  }) : null;
+  const project = chatInput.projectId
+    ? await ctx.runQuery(api.projects.queries.get, {
+        projectId: chatInput.projectId,
+      })
+    : null;
 
   return {
     version: "v2" as const,
@@ -183,19 +181,27 @@ export async function* filterStreamEvents(response: AsyncIterable<any>) {
 
 export async function* streamHelper(
   ctx: ActionCtx,
-  args: { 
-    chatInput: FunctionReturnType<typeof api.chatInputs.queries.get>; 
+  args: {
+    chatInput: FunctionReturnType<typeof api.chatInputs.queries.get>;
     signal?: AbortSignal;
     includeHumanMessage?: boolean;
   },
 ) {
   const checkpointer = new ConvexCheckpointSaver(ctx);
-  const streamConfig = await createStreamConfig(ctx, args.chatInput, args.signal);
+  const streamConfig = await createStreamConfig(
+    ctx,
+    args.chatInput,
+    args.signal,
+  );
 
   let messages: BaseMessage[] = [];
-  
+
   if (args.includeHumanMessage !== false) {
-    const humanMessage = await createHumanMessage(ctx, args.chatInput.text!, args.chatInput.documents);
+    const humanMessage = await createHumanMessage(
+      ctx,
+      args.chatInput.text!,
+      args.chatInput.documents,
+    );
     messages = [humanMessage];
   }
 

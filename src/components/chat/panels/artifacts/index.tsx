@@ -45,7 +45,10 @@ const ArtifactsList = ({
 
       <Separator />
 
-      <ScrollArea type="always" className="flex-grow h-[calc(100vh-10rem)] pr-3">
+      <ScrollArea
+        type="always"
+        className="flex-grow h-[calc(100vh-10rem)] pr-3"
+      >
         <div className="flex flex-col gap-3">
           {artifacts.map((artifact) => (
             <ArtifactCard
@@ -77,9 +80,7 @@ export const ArtifactsPanel = () => {
               ? message.content
               : Array.isArray(message.content)
                 ? message.content
-                    .map((item: any) =>
-                      item.type === "text" ? item.text : "",
-                    )
+                    .map((item: any) => (item.type === "text" ? item.text : ""))
                     .join("")
                 : String(message.content);
 
@@ -129,5 +130,10 @@ export const ArtifactsPanel = () => {
     );
   }
 
-  return <ArtifactsList artifacts={allArtifacts} onSelectArtifact={setSelectedArtifact} />;
-}; 
+  return (
+    <ArtifactsList
+      artifacts={allArtifacts}
+      onSelectArtifact={setSelectedArtifact}
+    />
+  );
+};

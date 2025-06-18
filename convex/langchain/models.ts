@@ -1,17 +1,17 @@
 "use node";
 
-import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
+import { ChatOpenAI } from "@langchain/openai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Embeddings } from "@langchain/core/embeddings";
-import { ActionCtx } from "../_generated/server";
+import type { ActionCtx } from "../_generated/server";
 import {
   BaseMessage,
   HumanMessage,
-  MessageContentComplex,
-  DataContentBlock,
+  type MessageContentComplex,
+  type DataContentBlock,
 } from "@langchain/core/messages";
-import { Doc } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
 import mime from "mime";
 

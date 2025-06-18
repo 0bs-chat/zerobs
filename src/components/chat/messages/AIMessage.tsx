@@ -1,6 +1,6 @@
 import React from "react";
 import { AIMessage } from "@langchain/core/messages";
-import { BrainIcon, FileIcon, ExternalLinkIcon } from "lucide-react";
+import { BrainIcon } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -8,16 +8,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Markdown } from "@/components/ui/markdown/index";
-import { Favicon } from "@/components/ui/favicon";
 import type { CompletedStep } from "../../../../convex/langchain/state";
-import { Document } from "@langchain/core/documents";
-import type { Id } from "../../../../convex/_generated/dataModel";
-import { useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
 import { useSetAtom } from "jotai";
 import {
-  documentDialogDocumentIdAtom,
-  documentDialogOpenAtom,
   rightPanelActiveTabAtom,
   rightPanelVisibilityAtom,
   selectedArtifactAtom,
@@ -66,21 +59,6 @@ export const AIMessageComponent = React.memo(
     const pastSteps = message.additional_kwargs?.pastSteps as
       | (CompletedStep | CompletedStep[])[]
       | undefined;
-
-    const documents = message.additional_kwargs?.documents as
-      | Document[]
-      | undefined;
-
-    // Helper function to extract URL from Tavily content
-    const extractUrlFromTavilyContent = (content: string): string | null => {
-      const urlMatch = content.match(/https?:\/\/[^\s\n]+/);
-      return urlMatch ? urlMatch[0] : null;
-    };
-
-    const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
-    const setDocumentDialogDocumentId = useSetAtom(
-      documentDialogDocumentIdAtom,
-    );
 
     return (
       <div className="flex flex-col w-full">

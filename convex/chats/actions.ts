@@ -1,4 +1,4 @@
-"use node"
+"use node";
 
 import { api, internal } from "../_generated/api";
 import { action } from "../_generated/server";
@@ -48,12 +48,12 @@ export const send = action({
         documents: [],
       },
     });
-    
+
     ctx.runMutation(api.chatInputs.mutations.update, {
       chatId: "new",
       updates: {
         text: "",
-        documents: []
+        documents: [],
       },
     });
 
@@ -61,7 +61,7 @@ export const send = action({
       ...chatInput,
       streamId: stream._id,
       text: args.text,
-    }
+    };
     console.log("inputText", input.text);
     await chat(ctx, input);
 

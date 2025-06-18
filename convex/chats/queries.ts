@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { paginationOptsValidator } from "convex/server";
 import { api } from "../_generated/api";
-import { Doc } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
 import { BaseMessage } from "@langchain/core/messages";
 
@@ -116,7 +116,7 @@ export const getCheckpoint = query({
 
     await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
-    })
+    });
 
     const checkpointer = new ConvexCheckpointSaver(ctx);
 

@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { Annotation, messagesStateReducer } from "@langchain/langgraph/web";
-import { BaseMessage, StoredMessage } from "@langchain/core/messages";
-import { DocumentInterface } from "@langchain/core/documents";
+import { BaseMessage } from "@langchain/core/messages";
+import type { StoredMessage } from "@langchain/core/messages";
+import type { DocumentInterface } from "@langchain/core/documents";
 
 export const planStep = z.object({
   step: z.string().describe("The step to be executed"),

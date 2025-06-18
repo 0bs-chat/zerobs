@@ -66,8 +66,14 @@ export const parseContent = (
 };
 
 // Parse artifacts from AI message content
-export const parseArtifacts = (content: string, messageIndex: number): Artifact[] => {
+export const parseArtifacts = (
+  content: string,
+  messageIndex: number,
+): Artifact[] => {
   return parseContent(content, messageIndex)
-    .filter((part): part is { type: "artifact"; artifact: Artifact } => part.type === "artifact")
-    .map(part => part.artifact);
+    .filter(
+      (part): part is { type: "artifact"; artifact: Artifact } =>
+        part.type === "artifact",
+    )
+    .map((part) => part.artifact);
 };

@@ -1,7 +1,8 @@
 "use node";
 
-import { z } from "zod"
-import { ActionCtx, internalAction } from "../_generated/server";
+import { z } from "zod";
+import type { ActionCtx } from "../_generated/server";
+import { internalAction } from "../_generated/server";
 import {
   RemoveMessage,
   BaseMessage,
@@ -10,10 +11,17 @@ import {
 import { api, internal } from "../_generated/api";
 import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
 import { agentGraph } from "./agent";
-import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
+import {
+  ChatPromptTemplate,
+  MessagesPlaceholder,
+} from "@langchain/core/prompts";
 import { getModel } from "./models";
-import { createHumanMessage, processStreamWithBatching, streamHelper } from "./utils";
-import { Doc, Id } from "../_generated/dataModel";
+import {
+  createHumanMessage,
+  processStreamWithBatching,
+  streamHelper,
+} from "./utils";
+import type { Doc, Id } from "../_generated/dataModel";
 import * as schema from "../schema";
 
 export async function chat(
@@ -26,12 +34,7 @@ export async function chat(
     signal: abortController.signal,
     includeHumanMessage: true,
   });
-  await processStreamWithBatching(
-    ctx,
-    stream,
-    args.streamId!,
-    abortController,
-  );
+  await processStreamWithBatching(ctx, stream, args.streamId!, abortController);
 }
 
 export async function removeMessageGroup(
@@ -170,25 +173,23 @@ export const generateTitle = internalAction({
   args: schema.ChatInputs.doc,
   handler: async (ctx, args) => {
     const prompt = ChatPromptTemplate.fromMessages([
-      ["system", "You are a helpful assistant that generates titles for chats."],
+      [
+        "system",
+        "You are a helpful assistant that generates titles for chats.",
+      ],
       new MessagesPlaceholder("input"),
     ]);
     const output = z.object({
       title: z.string(),
     });
 
-    const modelWithOutputParser = prompt
-      .pipe(await getModel("worker").withStructuredOutput(output));
+    const modelWithOutputParser = prompt.pipe(
+      await getModel("worker").withStructuredOutput(output),
+    );
 
     if (args.chatId !== "new") {
       const response = await modelWithOutputParser.invoke({
-        input: [
-          await createHumanMessage(
-            ctx,
-            args.text!,
-            args.documents,
-          ),
-        ],
+        input: [await createHumanMessage(ctx, args.text!, args.documents)],
       });
 
       await ctx.runMutation(internal.chats.crud.update, {
@@ -214,7 +215,11 @@ export async function editMessage(
   });
   const messages = checkpoint?.channel_values.messages as BaseMessage[];
 
-  if (!messages || args.messageIndex < 0 || args.messageIndex >= messages.length) {
+  if (
+    !messages ||
+    args.messageIndex < 0 ||
+    args.messageIndex >= messages.length
+  ) {
     throw new Error("Invalid message index");
   }
 

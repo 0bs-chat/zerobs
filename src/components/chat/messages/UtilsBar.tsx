@@ -55,11 +55,7 @@ export const AIToolUtilsBar = ({
         <GitBranchIcon className="w-4 h-4" />
       </Button>
 
-      <Button 
-        variant="ghost" 
-        size="icon"
-        onClick={onRegenerate}
-      >
+      <Button variant="ghost" size="icon" onClick={onRegenerate}>
         <RefreshCcwIcon className="w-4 h-4" />
       </Button>
 
@@ -71,7 +67,7 @@ export const AIToolUtilsBar = ({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuItem 
+          <DropdownMenuItem
             className="text-destructive"
             onClick={onDeleteMessage}
           >
@@ -79,7 +75,7 @@ export const AIToolUtilsBar = ({
             Delete message
           </DropdownMenuItem>
 
-          <DropdownMenuItem 
+          <DropdownMenuItem
             className="text-destructive"
             onClick={onDeleteCascading}
           >
@@ -117,19 +113,11 @@ export const UserUtilsBar = ({
         isDropdownOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
       } transition-opacity duration-100 gap-1`}
     >
-      <Button 
-        variant="ghost" 
-        size="icon"
-        onClick={onRegenerate}
-      >
+      <Button variant="ghost" size="icon" onClick={onRegenerate}>
         <RefreshCcwIcon className="w-4 h-4" />
       </Button>
 
-      <Button 
-        variant="ghost" 
-        size="icon"
-        onClick={onEditMessage}
-      >
+      <Button variant="ghost" size="icon" onClick={onEditMessage}>
         <PencilIcon className="w-4 h-4" />
       </Button>
 
@@ -154,7 +142,7 @@ export const UserUtilsBar = ({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuItem 
+          <DropdownMenuItem
             className="text-destructive"
             onClick={onDeleteMessage}
           >
@@ -162,7 +150,7 @@ export const UserUtilsBar = ({
             Delete message
           </DropdownMenuItem>
 
-          <DropdownMenuItem 
+          <DropdownMenuItem
             className="text-destructive"
             onClick={onDeleteCascading}
           >

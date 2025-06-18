@@ -79,16 +79,16 @@ export const Markdown = memo(
                   }}
                   language={language}
                   style={atomDark}
-                  lineProps={{style: {wordBreak: 'break-all', whiteSpace: 'pre-wrap'}}}
-                  wrapLines={wrapLongLines} 
+                  lineProps={{
+                    style: { wordBreak: "break-all", whiteSpace: "pre-wrap" },
+                  }}
+                  wrapLines={wrapLongLines}
                 >
                   {children}
                 </SyntaxHighlighter>
               </div>
             ) : (
-              <span
-                className="bg-muted p-1 font-mono font-medium rounded-md text-sm"
-              >
+              <span className="bg-muted p-1 font-mono font-medium rounded-md text-sm">
                 {children}
               </span>
             )
@@ -103,9 +103,11 @@ export const Markdown = memo(
     return (
       <div
         className={`prose font-normal max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 ${className || ""}`}
-        style={{
-          fontFamily: "Rubik, sans-serif",
-        } as React.CSSProperties}
+        style={
+          {
+            fontFamily: "Rubik, sans-serif",
+          } as React.CSSProperties
+        }
       >
         <ReactMarkdown
           remarkPlugins={[remarkMath, remarkGfm, remarkBreaks]}

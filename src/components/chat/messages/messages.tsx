@@ -26,16 +26,22 @@ import {
   documentDialogDocumentIdAtom,
 } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
-import { Document } from "@langchain/core/documents";
+import { Document, type DocumentInterface } from "@langchain/core/documents";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ExternalLinkIcon, FileIcon } from "lucide-react";
+import { BanIcon, CircleXIcon, ExternalLinkIcon, FileIcon } from "lucide-react";
 import { Favicon } from "@/components/ui/favicon";
 import { Markdown } from "@/components/ui/markdown";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { getTagInfo } from "@/lib/helpers";
 
 const MessageSources = ({ documents }: { documents: Document[] }) => {
   if (!documents || documents.length === 0) return null;
@@ -54,6 +60,12 @@ const MessageSources = ({ documents }: { documents: Document[] }) => {
       documentId: docId,
     });
 
+    const tagInfo = getTagInfo(
+      documentData?.type || "file",
+      documentData?.status,
+    );
+    const IconComponent = tagInfo.icon;
+
     return (
       <div
         className="space-y-2 p-3 border rounded-md bg-background cursor-pointer"
@@ -63,7 +75,16 @@ const MessageSources = ({ documents }: { documents: Document[] }) => {
         }}
       >
         <div className="flex items-center gap-2">
-          <FileIcon className="w-4 h-4 text-gray-500" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center">
+                <IconComponent className={`w-4 h-4 ${tagInfo.className}`} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{documentData?.name || "Document"}</p>
+            </TooltipContent>
+          </Tooltip>
           <div className="font-medium text-sm">{documentData?.name}</div>
         </div>
         <div className="text-sm text-muted-foreground">
@@ -121,11 +142,7 @@ const MessageSources = ({ documents }: { documents: Document[] }) => {
                         )}
                       </div>
                       <div className="text-sm text-muted-foreground line-clamp-3">
-                        {doc.pageContent
-                          .split("\n")
-                          .slice(2)
-                          .join("\n")
-                          .trim()}
+                        {doc.pageContent.split("\n").slice(2).join("\n").trim()}
                       </div>
                     </div>
                   );
@@ -137,6 +154,163 @@ const MessageSources = ({ documents }: { documents: Document[] }) => {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+    </div>
+  );
+};
+
+const ConvexDocumentChip = React.memo(
+  ({ docId, onOpen }: { docId: Id<"documents">; onOpen: () => void }) => {
+    const documentData = useQuery(api.documents.queries.get, {
+      documentId: docId,
+    });
+
+    const tagInfo = getTagInfo(
+      documentData?.type || "file",
+      documentData?.status,
+    );
+    const IconComponent = tagInfo.icon;
+
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            className="flex items-center gap-1 px-2 py-1 border rounded-md bg-background cursor-pointer hover:bg-muted transition-colors text-sm"
+            onClick={onOpen}
+          >
+            <IconComponent className={`w-3 h-3 ${tagInfo.className}`} />
+            <span className="truncate max-w-[120px]">
+              {documentData?.name || "Document"}
+            </span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{documentData?.name || "Document"}</p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  },
+);
+ConvexDocumentChip.displayName = "ConvexDocumentChip";
+
+const DocumentDisplay = ({ documents }: { documents: DocumentInterface[] }) => {
+  if (!documents || documents.length === 0) return null;
+
+  const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
+  const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
+
+  const extractUrlFromTavilyContent = (content: string): string | null => {
+    const urlMatch = content.match(/https?:\/\/[^\s\n]+/);
+    return urlMatch ? urlMatch[0] : null;
+  };
+
+  const MemoizedConvexDocument = React.memo(
+    ({ doc }: { doc: DocumentInterface }) => {
+      const docId = doc.metadata.source as Id<"documents">;
+      const documentData = useQuery(api.documents.queries.get, {
+        documentId: docId,
+      });
+
+      const tagInfo = getTagInfo(
+        documentData?.type || "file",
+        documentData?.status,
+      );
+      const IconComponent = tagInfo.icon;
+
+      return (
+        <div
+          className="space-y-2 p-3 border rounded-md bg-background cursor-pointer"
+          onClick={() => {
+            setDocumentDialogDocumentId(docId);
+            setDocumentDialogOpen(true);
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center">
+                  <IconComponent className={`w-4 h-4 ${tagInfo.className}`} />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{documentData?.name || "Document"}</p>
+              </TooltipContent>
+            </Tooltip>
+            <div className="font-medium text-sm">{documentData?.name}</div>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            <Markdown
+              content={
+                doc.pageContent.length > 500
+                  ? doc.pageContent.substring(0, 500) + "..."
+                  : doc.pageContent
+              }
+              className="text-sm"
+            />
+          </div>
+        </div>
+      );
+    },
+  );
+  MemoizedConvexDocument.displayName = "MemoizedConvexDocument";
+
+  const webDocuments = documents.filter(
+    (doc) => doc.metadata?.source === "tavily",
+  );
+  const convexDocuments = documents.filter(
+    (doc) => doc.metadata?.source !== "tavily",
+  );
+
+  return (
+    <div className="flex flex-col w-full gap-1 mb-4">
+      {/* Web documents with overlapping favicons */}
+      {webDocuments.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {webDocuments.slice(0, 5).map((doc, idx) => {
+            const url = extractUrlFromTavilyContent(doc.pageContent);
+            if (!url) return null;
+
+            return (
+              <div
+                key={idx}
+                className="relative cursor-pointer hover:scale-110 transition-transform"
+                style={{ marginLeft: idx > 0 ? "-8px" : "0" }}
+                onClick={() => window.open(url, "_blank")}
+                title={url}
+              >
+                <Favicon
+                  url={url}
+                  className="w-6 h-6 border-2 border-background rounded-full bg-background"
+                  fallbackIcon={ExternalLinkIcon}
+                />
+              </div>
+            );
+          })}
+          {webDocuments.length > 5 && (
+            <div className="flex items-center justify-center w-6 h-6 border-2 border-background rounded-full bg-muted text-xs font-medium text-muted-foreground ml-1">
+              +{webDocuments.length - 5}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Convex documents as simple list */}
+      {convexDocuments.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {convexDocuments.map((doc, idx) => {
+            const docId = doc.metadata?.source as Id<"documents">;
+            return (
+              <ConvexDocumentChip
+                key={idx}
+                docId={docId}
+                onOpen={() => {
+                  setDocumentDialogDocumentId(docId);
+                  setDocumentDialogOpen(true);
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
@@ -181,18 +355,20 @@ const groupMessages = (messages: BaseMessage[]): BaseMessage[][] => {
   return grouped;
 };
 
-const MessageGroup = ({ 
-  messages, 
+const MessageGroup = ({
+  messages,
   firstMessageIndex,
   chatId,
-}: { 
+}: {
   messages: BaseMessage[];
   firstMessageIndex: number;
   chatId: Id<"chats"> | "new";
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
+  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(
+    null,
+  );
   const removeMessageGroup = useAction(api.chats.actions.removeMessageGroup);
   const regenerate = useAction(api.chats.actions.regenerate);
   const regenerateFromUser = useAction(api.chats.actions.regenerateFromUser);
@@ -231,7 +407,7 @@ const MessageGroup = ({
 
   const handleDeleteMessage = async () => {
     if (chatId === "new") return;
-    
+
     try {
       await removeMessageGroup({
         chatId: chatId as Id<"chats">,
@@ -246,7 +422,7 @@ const MessageGroup = ({
 
   const handleDeleteCascading = async () => {
     if (chatId === "new") return;
-    
+
     try {
       await removeMessageGroup({
         chatId: chatId as Id<"chats">,
@@ -261,7 +437,7 @@ const MessageGroup = ({
 
   const handleRegenerate = async () => {
     if (chatId === "new" || isUserGroup) return;
-    
+
     try {
       await regenerate({
         chatId: chatId as Id<"chats">,
@@ -275,7 +451,7 @@ const MessageGroup = ({
 
   const handleUserRegenerate = async () => {
     if (chatId === "new" || !isUserGroup) return;
-    
+
     try {
       await regenerateFromUser({
         chatId: chatId as Id<"chats">,
@@ -306,8 +482,8 @@ const MessageGroup = ({
 
     if (message instanceof HumanMessage) {
       return (
-        <UserMessageComponent 
-          key={messageId} 
+        <UserMessageComponent
+          key={messageId}
           message={message}
           isEditing={isEditing}
           onCancelEdit={handleCancelEdit}
@@ -382,12 +558,12 @@ export const ChatMessages = React.memo(() => {
     paginationOpts: { numItems: 20, cursor: null },
   });
   const parsedCheckpoint = useCheckpointParser({ checkpoint });
-  
+
   const setStream = useSetAtom(useStreamAtom);
   const setCheckpointParser = useSetAtom(useCheckpointParserAtom);
-  
+
   setStream(stream);
-  setCheckpointParser(parsedCheckpoint);  
+  setCheckpointParser(parsedCheckpoint);
 
   const messageGroups = parsedCheckpoint?.messages
     ? groupMessages(parsedCheckpoint.messages)
@@ -399,6 +575,10 @@ export const ChatMessages = React.memo(() => {
   const lastMessageHasPastSteps =
     lastMessage instanceof AIMessage &&
     !!lastMessage.additional_kwargs?.past_steps;
+
+  const lastMessageHasDocuments =
+    lastMessage instanceof AIMessage &&
+    !!lastMessage.additional_kwargs?.documents;
 
   const messageGroupsWithIndices: {
     group: BaseMessage[];
@@ -424,9 +604,15 @@ export const ChatMessages = React.memo(() => {
         ))}
 
         {/* render planning steps */}
-        {parsedCheckpoint?.pastSteps &&
-          !lastMessageHasPastSteps && (
-            <PlanningSteps pastSteps={parsedCheckpoint.pastSteps} />
+        {parsedCheckpoint?.pastSteps && !lastMessageHasPastSteps && (
+          <PlanningSteps pastSteps={parsedCheckpoint.pastSteps} />
+        )}
+
+        {/* render documents during streaming */}
+        {parsedCheckpoint?.documents &&
+          parsedCheckpoint.documents.length > 0 &&
+          !lastMessageHasDocuments && (
+            <DocumentDisplay documents={parsedCheckpoint.documents} />
           )}
 
         {/* render live stream */}
@@ -449,9 +635,7 @@ export const ChatMessages = React.memo(() => {
                 );
               } else {
                 const msg = new ToolMessage({
-                  content: cg.output
-                    ? JSON.stringify(cg.output)
-                    : "",
+                  content: cg.output ? JSON.stringify(cg.output) : "",
                   tool_call_id: `stream-tool-${idx}`,
                   name: cg.toolName,
                 });
@@ -464,6 +648,35 @@ export const ChatMessages = React.memo(() => {
                 );
               }
             })}
+          </div>
+        )}
+
+        {stream?.status === "pending" && (
+          <div className="flex flex-row items-center justify-start w-full">
+            <div className="w-2 h-2 mx-0.5 rounded-full bg-gray-400 opacity-100 animate-bounce-loader"></div>
+            <div className="w-2 h-2 mx-0.5 rounded-full bg-gray-400 opacity-100 animate-bounce-loader animation-delay-200"></div>
+            <div className="w-2 h-2 mx-0.5 rounded-full bg-gray-400 opacity-100 animate-bounce-loader animation-delay-400"></div>
+          </div>
+        )}
+        {stream?.status === "error" && (
+          <div className="flex flex-col w-full gap-1">
+            <div className="flex items-center gap-2 p-3 rounded-md bg-red-400/20">
+              <CircleXIcon className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                An error occurred while processing your request
+              </span>
+            </div>
+          </div>
+        )}
+        {/* cancelled stream bar */}
+        {stream?.status === "cancelled" && (
+          <div className="flex flex-col w-full gap-1">
+            <div className="flex items-center gap-2 p-3 rounded-md bg-yellow-400/20">
+              <BanIcon className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                The stream was cancelled
+              </span>
+            </div>
           </div>
         )}
       </div>

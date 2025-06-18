@@ -2,7 +2,7 @@ import { internalMutation, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
-import { Doc } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
 

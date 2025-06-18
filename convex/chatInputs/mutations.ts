@@ -1,8 +1,5 @@
 import { requireAuth } from "../utils/helpers";
-import {
-  mutation,
-  internalMutation,
-} from "../_generated/server";
+import { mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import * as schema from "../schema";
@@ -102,9 +99,11 @@ export const update = mutation({
     const { projectId, ...otherUpdates } = args.updates;
     const updates = {
       ...otherUpdates,
-      ...(projectId !== undefined && { projectId: projectId === null ? undefined : projectId }),
+      ...(projectId !== undefined && {
+        projectId: projectId === null ? undefined : projectId,
+      }),
     };
-    
+
     await ctx.db.patch(existingChatInput._id, {
       ...updates,
       updatedAt: Date.now(),

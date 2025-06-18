@@ -1,6 +1,6 @@
 // Helper functions for Fly.io
 
-import { components } from "./types";
+import type { components } from "./types";
 
 const FLY_API_TOKEN = process.env.FLY_API_TOKEN;
 const FLY_API_BASE_URL = "https://api.machines.dev/v1";

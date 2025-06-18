@@ -46,9 +46,7 @@ export const getInternal = internalQuery({
   handler: async (ctx, args) => {
     const chatInput = await ctx.db
       .query("chatInputs")
-      .withIndex("by_chat_user", (q) =>
-        q.eq("chatId", args.chatId),
-      )
+      .withIndex("by_chat_user", (q) => q.eq("chatId", args.chatId))
       .first();
     if (!chatInput && args.chatId !== "new") {
       throw new Error("Chat input not found");

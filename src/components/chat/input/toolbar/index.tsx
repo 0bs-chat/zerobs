@@ -14,6 +14,7 @@ import {
   PaperclipIcon,
   GithubIcon,
   FileIcon,
+  CircleStopIcon,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { Toggle } from "@/components/ui/toggle";
@@ -38,6 +39,8 @@ import type { Id } from "convex/_generated/dataModel";
 import { useRef, useState } from "react";
 import { getTagInfo } from "@/lib/helpers";
 import { GitHubDialog } from "../github";
+import { streamStatusAtom } from "@/store/chatStore";
+import { useAtomValue } from "jotai";
 
 const AgentToggle = ({
   chatId,
@@ -172,12 +175,13 @@ export const ToolBar = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const cancelStreamMutation = useMutation(api.streams.mutations.cancel);
   const models = useQuery(api.chatInputs.queries.getModels, {
     chatId,
   });
   const handleFileUpload = useUploadDocuments();
   const handleSubmit = useHandleSubmit();
-
+  const streamStatus = useAtomValue(streamStatusAtom);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
@@ -275,9 +279,19 @@ export const ToolBar = ({
         <Button
           variant="ghost"
           size="icon"
-          onClick={async () => await handleSubmit()}
+          onClick={async () => {
+            if (!["pending", "streaming"].includes(streamStatus ?? "")) {
+              await handleSubmit();
+            } else {
+              await cancelStreamMutation({ chatId });
+            }
+          }}
         >
-          <ArrowUp className="h-4 w-4" />
+          {["pending", "streaming"].includes(streamStatus ?? "") ? (
+            <CircleStopIcon className="h-4 w-4" />
+          ) : (
+            <ArrowUp className="h-4 w-4" />
+          )}
         </Button>
       </div>
     </div>

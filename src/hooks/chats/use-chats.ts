@@ -33,7 +33,7 @@ export const useHandleSubmit = () => {
         model: newChatInputDoc?.model,
         agentMode: newChatInputDoc?.agentMode,
         plannerMode: newChatInputDoc?.plannerMode,
-        webSearch: newChatInputDoc?.webSearch,
+        webSearch: false,
         documents: newChatInputDoc?.documents,
         projectId: newChatInputDoc?.projectId,
         artifacts: newChatInputDoc?.artifacts,
@@ -69,7 +69,7 @@ export const useCheckpointParser = ({
   return React.useMemo(() => {
     if (!checkpoint?.page) return null;
 
-    const parsedState = JSON.parse(checkpoint.page) as typeof GraphState.State;;
+    const parsedState = JSON.parse(checkpoint.page) as typeof GraphState.State;
 
     return {
       ...parsedState,
@@ -91,9 +91,9 @@ export const useInfiniteChats = () => {
 
   const loadMore = useCallback(() => {
     if (chats && !chats.isDone && !isLoadingMore) {
-      console.log('Loading more chats, increasing numItems from', numItems);
+      console.log("Loading more chats, increasing numItems from", numItems);
       setIsLoadingMore(true);
-      setNumItems(prev => prev + 20);
+      setNumItems((prev) => prev + 20);
       // Reset loading state after a brief delay to allow query to update
       setTimeout(() => setIsLoadingMore(false), 100);
     }
@@ -103,10 +103,10 @@ export const useInfiniteChats = () => {
     const allChats = chats?.page || [];
     const pinned = allChats.filter((chat) => chat.pinned);
     const history = allChats.filter((chat) => !chat.pinned);
-    console.log('Grouped chats:', { 
+    console.log("Grouped chats:", {
       totalChats: allChats.length,
-      pinnedCount: pinned.length, 
-      historyCount: history.length 
+      pinnedCount: pinned.length,
+      historyCount: history.length,
     });
     return { pinned, history };
   }, [chats?.page]);
@@ -126,7 +126,7 @@ export const useSearchChats = () => {
 
   const searchResults = useQuery(
     api.chats.queries.search,
-    debouncedQuery.trim() ? { query: debouncedQuery } : "skip"
+    debouncedQuery.trim() ? { query: debouncedQuery } : "skip",
   );
 
   // Debounce search query

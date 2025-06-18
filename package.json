@@ -7,7 +7,7 @@
     "dev": "vite --port 3000 & bun b",
     "setup": "bun setup.mjs",
     "start": "vite --port 3000",
-    "build": "vite build && tsc",
+    "build": "vite build && tsc --noEmit",
     "serve": "vite preview",
     "test": "vitest run"
   },

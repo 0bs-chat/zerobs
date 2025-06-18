@@ -12,8 +12,8 @@ export const TypeSelector = ({ type, onTypeChange }: TypeSelectorProps) => {
       <button
         type="button"
         className={`flex flex-col items-center justify-center space-y-2 rounded-lg border p-4 transition-colors ${
-          type === "sse" 
-            ? "border-primary bg-primary/10 text-primary" 
+          type === "sse"
+            ? "border-primary bg-primary/10 text-primary"
             : "border-input hover:bg-accent"
         }`}
         onClick={() => onTypeChange("sse")}
@@ -27,8 +27,8 @@ export const TypeSelector = ({ type, onTypeChange }: TypeSelectorProps) => {
       <button
         type="button"
         className={`flex flex-col items-center justify-center space-y-2 rounded-lg border p-4 transition-colors ${
-          type === "stdio" 
-            ? "border-primary bg-primary/10 text-primary" 
+          type === "stdio"
+            ? "border-primary bg-primary/10 text-primary"
             : "border-input hover:bg-accent"
         }`}
         onClick={() => onTypeChange("stdio")}
@@ -42,8 +42,8 @@ export const TypeSelector = ({ type, onTypeChange }: TypeSelectorProps) => {
       <button
         type="button"
         className={`flex flex-col items-center justify-center space-y-2 rounded-lg border p-4 transition-colors ${
-          type === "docker" 
-            ? "border-primary bg-primary/10 text-primary" 
+          type === "docker"
+            ? "border-primary bg-primary/10 text-primary"
             : "border-input hover:bg-accent"
         }`}
         onClick={() => onTypeChange("docker")}

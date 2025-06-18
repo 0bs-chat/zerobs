@@ -1,6 +1,6 @@
-'use client';
-import * as React from 'react';
-import { cn } from '@/lib/utils';
+"use client";
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 export type AutosizeTextAreaRef = {
   textArea: HTMLTextAreaElement;
@@ -14,7 +14,10 @@ type AutosizeTextAreaProps = {
   minHeight?: number;
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-export const AutosizeTextarea = React.forwardRef<AutosizeTextAreaRef, AutosizeTextAreaProps>(
+export const AutosizeTextarea = React.forwardRef<
+  AutosizeTextAreaRef,
+  AutosizeTextAreaProps
+>(
   (
     {
       maxHeight = Number.MAX_SAFE_INTEGER,
@@ -29,7 +32,7 @@ export const AutosizeTextarea = React.forwardRef<AutosizeTextAreaRef, AutosizeTe
   ) => {
     const textAreaRef = React.useRef<HTMLTextAreaElement | null>(null);
     const [internalValue, setInternalValue] = React.useState(
-      value !== undefined ? String(value) : String(defaultValue || '')
+      value !== undefined ? String(value) : String(defaultValue || ""),
     );
 
     // Auto-resize function
@@ -38,20 +41,20 @@ export const AutosizeTextarea = React.forwardRef<AutosizeTextAreaRef, AutosizeTe
       if (!textArea) return;
 
       // Reset height to auto to get the correct scrollHeight
-      textArea.style.height = 'auto';
-      
+      textArea.style.height = "auto";
+
       // Calculate the desired height
       const scrollHeight = textArea.scrollHeight;
       const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
-      
+
       // Set the new height
       textArea.style.height = `${newHeight}px`;
-      
+
       // Handle overflow - enable scrolling when content exceeds maxHeight
       if (scrollHeight > maxHeight) {
-        textArea.style.overflowY = 'auto';
+        textArea.style.overflowY = "auto";
       } else {
-        textArea.style.overflowY = 'hidden';
+        textArea.style.overflowY = "hidden";
       }
     }, [minHeight, maxHeight]);
 
@@ -84,7 +87,7 @@ export const AutosizeTextarea = React.forwardRef<AutosizeTextAreaRef, AutosizeTe
       // Set initial styles
       textArea.style.minHeight = `${minHeight}px`;
       textArea.style.maxHeight = `${maxHeight}px`;
-      textArea.style.resize = 'none';
+      textArea.style.resize = "none";
 
       // Initial resize
       autoResize();
@@ -112,7 +115,7 @@ export const AutosizeTextarea = React.forwardRef<AutosizeTextAreaRef, AutosizeTe
         value={value !== undefined ? value : internalValue}
         onChange={handleChange}
         className={cn(
-          'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+          "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
           className,
         )}
       />
@@ -120,4 +123,4 @@ export const AutosizeTextarea = React.forwardRef<AutosizeTextAreaRef, AutosizeTe
   },
 );
 
-AutosizeTextarea.displayName = 'AutosizeTextarea';
+AutosizeTextarea.displayName = "AutosizeTextarea";

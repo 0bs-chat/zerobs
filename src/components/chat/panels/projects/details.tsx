@@ -16,7 +16,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const chatId = params.chatId as Id<"chats"> | "new";
   const project = useQuery(
     api.projects.queries.get,
-    projectId ? { projectId } : "skip"
+    projectId ? { projectId } : "skip",
   );
   const updateProject = useMutation(api.projects.mutations.update);
   const updateChatInput = useMutation(api.chatInputs.mutations.update);

@@ -57,8 +57,8 @@ export function useStream(chatId: Id<"chats"> | "new") {
           const events: StreamEvent[] = [];
           result.page.forEach((d) =>
             d.chunks.forEach((chunkStr) =>
-              events.push(JSON.parse(chunkStr) as StreamEvent)
-            )
+              events.push(JSON.parse(chunkStr) as StreamEvent),
+            ),
           );
           setChunks((prev) => [...prev, ...events]);
           lastTimeRef.current =
@@ -101,13 +101,13 @@ export function useStream(chatId: Id<"chats"> | "new") {
         case "on_chat_model_stream": {
           const { content = "", additional_kwargs = {} } =
             chunk.data.chunk.kwargs;
-          const reasoningPart =
-            additional_kwargs.reasoning_content as string | undefined;
+          const reasoningPart = additional_kwargs.reasoning_content as
+            | string
+            | undefined;
           if (!aiBuffer) aiBuffer = { type: "ai", content: "" };
           aiBuffer.content += content;
           if (reasoningPart) {
-            aiBuffer.reasoning =
-              (aiBuffer.reasoning ?? "") + reasoningPart;
+            aiBuffer.reasoning = (aiBuffer.reasoning ?? "") + reasoningPart;
           }
           break;
         }

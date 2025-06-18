@@ -18,17 +18,14 @@ import type { DocumentInterface } from "@langchain/core/documents";
 
 export const getRetrievalTools = (ctx: ActionCtx) => {
   const vectorSearchTool = tool(
-    async ({ 
-      query, 
-      projectId
-    }: { 
-      query: string; 
-      projectId: string;
-    }) => {
-      const vectorStore = new ConvexVectorStore(getEmbeddingModel("embeddings"), {
-        ctx,
-        table: "documentVectors",
-      });
+    async ({ query, projectId }: { query: string; projectId: string }) => {
+      const vectorStore = new ConvexVectorStore(
+        getEmbeddingModel("embeddings"),
+        {
+          ctx,
+          table: "documentVectors",
+        },
+      );
 
       const includedProjectDocuments = await ctx.runQuery(
         internal.projectDocuments.queries.getSelected,
@@ -53,27 +50,28 @@ export const getRetrievalTools = (ctx: ActionCtx) => {
           ),
       });
 
-      return JSON.stringify(results.map(doc => ({
-        content: doc.pageContent,
-        metadata: doc.metadata,
-      })));
+      return JSON.stringify(
+        results.map((doc) => ({
+          content: doc.pageContent,
+          metadata: doc.metadata,
+        })),
+      );
     },
     {
       name: "searchProjectDocuments",
-      description: "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents.",
+      description:
+        "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents.",
       schema: z.object({
-        query: z.string().describe("The search query to find relevant documents"),
+        query: z
+          .string()
+          .describe("The search query to find relevant documents"),
         projectId: z.string().describe("The project ID to search within"),
       }),
     },
   );
 
   const webSearchTool = tool(
-    async ({ 
-      query
-    }: { 
-      query: string;
-    }) => {
+    async ({ query }: { query: string }) => {
       const searchTools = await getSearchTools(ctx);
       let documents: DocumentInterface[] = [];
 
@@ -118,16 +116,21 @@ export const getRetrievalTools = (ctx: ActionCtx) => {
         documents.push(...docs);
       }
 
-      return JSON.stringify(documents.map(doc => ({
-        content: doc.pageContent,
-        metadata: doc.metadata,
-      })));
+      return JSON.stringify(
+        documents.map((doc) => ({
+          content: doc.pageContent,
+          metadata: doc.metadata,
+        })),
+      );
     },
     {
       name: "searchWeb",
-      description: "Search the web for current information using Tavily or DuckDuckGo. Use this to find up-to-date information from the internet.",
+      description:
+        "Search the web for current information using Tavily or DuckDuckGo. Use this to find up-to-date information from the internet.",
       schema: z.object({
-        query: z.string().describe("The search query to find relevant web information"),
+        query: z
+          .string()
+          .describe("The search query to find relevant web information"),
       }),
     },
   );
@@ -170,6 +173,8 @@ export const getSearchTools = (ctx: ActionCtx) => {
     tools.tavily = new TavilySearch({
       maxResults: 5,
       topic: "general",
+      includeImages: true,
+      includeImageDescriptions: true,
       tavilyApiKey: process.env.TAVILY_API_KEY,
     });
   }

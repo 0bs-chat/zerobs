@@ -10,7 +10,7 @@ export function extractDomain(url: string): string | null {
 export function getFaviconUrl(url: string): string {
   const domain = extractDomain(url);
   if (!domain) {
-    return '';
+    return "";
   }
 
   // Try Google's favicon service first (most reliable)
@@ -20,7 +20,7 @@ export function getFaviconUrl(url: string): string {
 export function getHighResFaviconUrl(url: string): string {
   const domain = extractDomain(url);
   if (!domain) {
-    return '';
+    return "";
   }
 
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;

@@ -59,7 +59,7 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const existingProject = await ctx.runQuery(api.projects.queries.get, {
+    await ctx.runQuery(api.projects.queries.get, {
       projectId: args.projectId,
     });
 
@@ -81,9 +81,11 @@ export const remove = mutation({
     // Remove project from wherever it was selected
     const selectProjectChatInputs = await ctx.db
       .query("chatInputs")
-      .withIndex("by_user_project", (q) => q.eq("userId", userId).eq("projectId", args.projectId))
+      .withIndex("by_user_project", (q) =>
+        q.eq("userId", userId).eq("projectId", args.projectId),
+      )
       .collect();
-    
+
     await Promise.all(
       selectProjectChatInputs.map((chatInput) =>
         ctx.runMutation(api.chatInputs.mutations.update, {
