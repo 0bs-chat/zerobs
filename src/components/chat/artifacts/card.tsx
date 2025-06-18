@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   FileIcon,
   CodeIcon,
@@ -8,13 +8,13 @@ import {
   BarChart3Icon,
   EyeIcon,
   CopyIcon,
-  CheckIcon
+  CheckIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCopy } from "@/hooks/use-copy";
-import type { Artifact } from './utils';
+import type { Artifact } from "./utils";
 
 // Get appropriate icon for artifact type
 const getArtifactIcon = (type: string, language?: string) => {
@@ -40,17 +40,17 @@ const getArtifactIcon = (type: string, language?: string) => {
 const getTypeName = (type: string, language?: string): string => {
   switch (type) {
     case "application/vnd.ant.react":
-      return "React Component";
+      return "React";
     case "text/html":
-      return "HTML Page";
+      return "HTML";
     case "application/vnd.ant.code":
-      return language ? `${language.toUpperCase()} Code` : "Code";
+      return language ? `${language.toUpperCase()}` : "Code";
     case "text/markdown":
-      return "Markdown Document";
+      return "Markdown";
     case "image/svg+xml":
-      return "SVG Image";
+      return "SVG";
     case "application/vnd.ant.mermaid":
-      return "Mermaid Diagram";
+      return "Mermaid";
     default:
       return "Artifact";
   }
@@ -61,65 +61,66 @@ interface ArtifactCardProps {
   onView: (artifact: Artifact) => void;
 }
 
-export const ArtifactCard = React.memo(({ artifact, onView }: ArtifactCardProps) => {
-  const { Icon, className } = getArtifactIcon(artifact.type, artifact.language);
-  const { copy, copied } = useCopy({ duration: 2000 });
-  
-  const handleCopy = () => {
-    copy(artifact.content);
-  };
+export const ArtifactCard = React.memo(
+  ({ artifact, onView }: ArtifactCardProps) => {
+    const { Icon, className } = getArtifactIcon(
+      artifact.type,
+      artifact.language
+    );
+    const { copy, copied } = useCopy({ duration: 2000 });
 
-  const handleView = () => {
-    onView(artifact);
-  };
+    const handleCopy = () => {
+      copy(artifact.content);
+    };
 
-  return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Icon className={`w-4 h-4 ${className}`} />
-            <CardTitle className="text-sm font-medium truncate">
-              {artifact.title}
-            </CardTitle>
+    const handleView = () => {
+      onView(artifact);
+    };
+
+    return (
+      <Card className="hover:shadow-md transition-shadow">
+        <CardHeader className="py-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <Icon className={`w-5 h-5 ${className} flex-shrink-0`} />
+              <CardTitle className="text-lg font-medium truncate">
+                {artifact.title}
+              </CardTitle>
+            </div>
+            <Badge variant="default" className="text-sm flex-shrink-0">
+              {getTypeName(artifact.type, artifact.language)}
+            </Badge>
           </div>
-          <Badge variant="secondary" className="text-xs">
-            {getTypeName(artifact.type, artifact.language)}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-muted-foreground">
-            ID: {artifact.id}
-          </div>
-          <div className="flex items-center gap-1">
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex items-center justify-center gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={handleView}
-              className="h-8 px-2"
+              className="h-10 flex-1"
             >
               <EyeIcon className="w-3 h-3 mr-1" />
               View
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={handleCopy}
-              className="h-8 px-2"
+              className="h-10 flex-1"
             >
               {copied ? (
-                <CheckIcon className="w-3 h-3" />
+                <CheckIcon className="w-3 h-3 mr-1" />
               ) : (
-                <CopyIcon className="w-3 h-3" />
+                <CopyIcon className="w-3 h-3 mr-1" />
               )}
+              {copied ? "Copied" : "Copy"}
             </Button>
           </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-});
+        </CardContent>
+      </Card>
+    );
+  }
+);
 
-ArtifactCard.displayName = "ArtifactCard"; 
+ArtifactCard.displayName = "ArtifactCard";
