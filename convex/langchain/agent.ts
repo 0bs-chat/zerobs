@@ -11,6 +11,7 @@ import {
   HumanMessage,
   AIMessage,
   mapStoredMessageToChatMessage,
+  mapStoredMessagesToChatMessages,
   mapChatMessagesToStoredMessages,
 } from "@langchain/core/messages";
 import {
@@ -56,7 +57,9 @@ function createAgentSystemMessage(
   const baseIdentity = `You are 0bs Chat, an AI assistant powered by the ${model} model.`;
 
   const roleDescription = taskDescription
-    ? `Your role is to complete the following specific task, you will be given the user input as well for context but focus on the given task:\n${taskDescription}\n\n`
+    ? `Your role is to complete the following specific task, you will be given the user input as well for context but focus on the given task:\n${taskDescription}.\n` + 
+      `Once you have completed the task, always write a detailed response/answer for the provided task, above conversation will not be shared forward so be descriptive.` +
+      `You are a single task agent do not ask for more information or context.`
     : `Your role is to assist and engage in conversation while being helpful, respectful, and engaging.\n`;
 
   const communicationGuidelines =
@@ -70,7 +73,7 @@ function createAgentSystemMessage(
     `## Formatting Guidelines\n` +
     `- The current date and time is ${new Date().toLocaleString()}.\n` +
     `- Always use LaTeX for mathematical expressions.\n` +
-    `   - Inline math must be wrapped in escaped parentheses: \\( content \\).\n` +
+    `   - Inline math must be wrapped in single dollar signs: $ content $.\n` +
     `   - Do not use single dollar signs for inline math.\n` +
     `   - Display math must be wrapped in double dollar signs: $$ content $$.\n` +
     `- When generating code:\n` +
@@ -684,6 +687,36 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   };
 }
 
+function getFinalAgentMessage(
+  messages: BaseMessage[],
+): ReturnType<typeof mapChatMessagesToStoredMessages>[0] {
+  const agentMessages = messages.filter(
+    (message) => message._getType() === "ai" && message.content,
+  );
+  if (agentMessages.length === 0) {
+    if (messages.length === 0) {
+      return mapChatMessagesToStoredMessages([new AIMessage("")])[0];
+    }
+    const lastMessage = messages[messages.length - 1];
+    return mapChatMessagesToStoredMessages([lastMessage])[0];
+  }
+
+  const concatenatedContent = agentMessages
+    .map((message) => message.content)
+    .join("\n\n");
+
+  const lastAiMessage = agentMessages[agentMessages.length - 1];
+  const lastAiStoredMessage = mapChatMessagesToStoredMessages([lastAiMessage])[0];
+
+  return {
+    ...lastAiStoredMessage,
+    data: {
+      ...lastAiStoredMessage.data,
+      content: concatenatedContent,
+    },
+  };
+}
+
 async function plannerAgent(
   state: typeof GraphState.State,
   config: RunnableConfig,
@@ -736,12 +769,10 @@ async function plannerAgent(
           },
           config,
         );
-        const lastMessage = mapChatMessagesToStoredMessages(
-          response.messages.slice(-1),
-        )[0];
+        const message = getFinalAgentMessage(response.messages);
         return {
           step,
-          message: lastMessage,
+          message,
         };
       }),
     );
@@ -798,12 +829,10 @@ async function plannerAgent(
       config,
     );
 
-    const lastMessage = mapChatMessagesToStoredMessages(
-      response.messages.slice(-1),
-    )[0];
+    const message = getFinalAgentMessage(response.messages);
     return {
       plan: remainingPlan,
-      pastSteps: [...pastSteps, [currentTask, lastMessage]],
+      pastSteps: [...pastSteps, [currentTask, message]],
     };
   }
 }

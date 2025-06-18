@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, usePaginatedQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useAction } from "convex/react";
 import type { Id } from "convex/_generated/dataModel";
@@ -40,10 +40,10 @@ export const useHandleSubmit = () => {
         chatId: newChatId,
         text: chatInputText,
       });
-      await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
-      await sendAction({ text: chatInputText, chatId: newChatId });
+      navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
+      sendAction({ text: chatInputText, chatId: newChatId });
     } else {
-      await sendAction({ text: chatInputText, chatId: chatId });
+      sendAction({ text: chatInputText, chatId: chatId });
     }
 
     setChatInputText("");
@@ -81,42 +81,29 @@ export const useCheckpointParser = ({
 };
 
 export const useInfiniteChats = () => {
-  const [numItems, setNumItems] = useState(20);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-  // Single query that gets all items up to numItems
-  const chats = useQuery(api.chats.queries.getAll, {
-    paginationOpts: { numItems, cursor: null },
-  });
-
-  const loadMore = useCallback(() => {
-    if (chats && !chats.isDone && !isLoadingMore) {
-      console.log("Loading more chats, increasing numItems from", numItems);
-      setIsLoadingMore(true);
-      setNumItems((prev) => prev + 20);
-      // Reset loading state after a brief delay to allow query to update
-      setTimeout(() => setIsLoadingMore(false), 100);
-    }
-  }, [chats, isLoadingMore, numItems]);
+  const {
+    results: chats,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.chats.queries.getAll,
+    {},
+    { initialNumItems: 20 },
+  );
 
   const groupedChats = useMemo(() => {
-    const allChats = chats?.page || [];
+    const allChats = chats || [];
     const pinned = allChats.filter((chat) => chat.pinned);
     const history = allChats.filter((chat) => !chat.pinned);
-    console.log("Grouped chats:", {
-      totalChats: allChats.length,
-      pinnedCount: pinned.length,
-      historyCount: history.length,
-    });
     return { pinned, history };
-  }, [chats?.page]);
+  }, [chats]);
 
   return {
     groupedChats,
-    hasMore: chats ? !chats.isDone : false,
-    isLoading: !chats || isLoadingMore,
+    hasMore: status !== "Exhausted",
+    isLoading: status === "LoadingFirstPage" || status === "LoadingMore",
     loadMore,
-    allChats: chats?.page || [],
+    allChats: chats || [],
   };
 };
 

@@ -189,7 +189,7 @@ export const generateTitle = internalAction({
 
     if (args.chatId !== "new") {
       const response = await modelWithOutputParser.invoke({
-        input: [await createHumanMessage(ctx, args.text!, args.documents)],
+        input: [await createHumanMessage(ctx, args.text!, [])],
       });
 
       await ctx.runMutation(internal.chats.crud.update, {

@@ -54,6 +54,7 @@ export const send = action({
       updates: {
         text: "",
         documents: [],
+        projectId: null,
       },
     });
 
@@ -62,7 +63,6 @@ export const send = action({
       streamId: stream._id,
       text: args.text,
     };
-    console.log("inputText", input.text);
     await chat(ctx, input);
 
     return null;

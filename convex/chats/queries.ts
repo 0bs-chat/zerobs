@@ -25,7 +25,7 @@ export const get = query({
 
 export const getAll = query({
   args: {
-    paginationOpts: v.optional(paginationOptsValidator),
+    paginationOpts: paginationOptsValidator,
     filters: v.optional(
       v.object({
         pinned: v.optional(v.boolean()),
@@ -44,7 +44,7 @@ export const getAll = query({
           : q.eq(q.field("pinned"), args.filters.pinned),
       )
       .order("desc")
-      .paginate(args.paginationOpts ?? { numItems: 10, cursor: null });
+      .paginate(args.paginationOpts);
 
     return userChats;
   },

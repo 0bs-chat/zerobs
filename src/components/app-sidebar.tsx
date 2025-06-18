@@ -277,7 +277,7 @@ export function AppSidebar() {
                         <InfiniteScroll
                           isLoading={isLoading}
                           hasMore={hasMore}
-                          next={loadMore}
+                          next={() => loadMore(20)}
                           threshold={0.8}
                           root={scrollContainerRef.current}
                         >
