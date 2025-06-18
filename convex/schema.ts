@@ -51,6 +51,7 @@ export const ChatInputs = Table("chatInputs", {
   agentMode: v.optional(v.boolean()),
   plannerMode: v.optional(v.boolean()),
   webSearch: v.optional(v.boolean()),
+  artifacts: v.optional(v.boolean()),
   model: v.optional(v.string()),
   streamId: v.optional(v.id("streams")),
   updatedAt: v.number(),
