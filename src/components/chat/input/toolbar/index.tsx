@@ -13,6 +13,7 @@ import {
   ArrowUp,
   PaperclipIcon,
   GithubIcon,
+  FileIcon,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { Toggle } from "@/components/ui/toggle";
@@ -132,6 +133,35 @@ const WebSearchToggle = ({
   );
 };
 
+const ArtifactsToggle = ({
+  chatId,
+  artifacts,
+}: {
+  chatId: Id<"chats">;
+  artifacts?: boolean;
+}) => {
+  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+
+  return (
+    <Toggle
+      variant="outline"
+      className="hover:transition hover:duration-500"
+      pressed={artifacts ?? false}
+      onPressedChange={() => {
+        updateChatInputMutation({
+          chatId,
+          updates: {
+            artifacts: !artifacts,
+          },
+        });
+      }}
+    >
+      <FileIcon className="h-4 w-4" />
+      Artifacts
+    </Toggle>
+  );
+};
+
 export const ToolBar = ({
   chatInput,
 }: {
@@ -189,6 +219,7 @@ export const ToolBar = ({
 
         <AgentToggle chatId={chatId} agentMode={chatInput?.agentMode} />
         <PlannerToggle chatId={chatId} plannerMode={chatInput?.plannerMode} />
+        <ArtifactsToggle chatId={chatId} artifacts={chatInput?.artifacts} />
         <WebSearchToggle chatId={chatId} webSearch={chatInput?.webSearch} />
       </div>
 

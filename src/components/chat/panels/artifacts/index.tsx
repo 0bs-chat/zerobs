@@ -13,46 +13,6 @@ import type { Artifact } from "../../artifacts/utils";
 import { parseArtifacts } from "../../artifacts/utils";
 import { ArtifactCard } from "../../artifacts/card";
 
-const parseStreamingArtifacts = (
-  streamingContent: string,
-  baseMessageIndex: number,
-): Artifact[] => {
-  const artifacts: Artifact[] = [];
-  if (!streamingContent) return artifacts;
-
-  const chunks = streamingContent.split(/<artifact/);
-
-  for (let i = 1; i < chunks.length; i++) {
-    const fullChunk = "<artifact" + chunks[i];
-    const headerRegex =
-      /<artifact\s+id="([^"]+)"\s+type="([^"]+)"(?:\s+language="([^"]+)")?\s+title="([^"]+)"[^>]*>/;
-    const headerMatch = fullChunk.match(headerRegex);
-
-    if (headerMatch) {
-      const [, id, type, language, title] = headerMatch;
-      const header = headerMatch[0];
-      let artifactContent = fullChunk.substring(header.length);
-
-      const endTag = "</artifact>";
-      const endTagIndex = artifactContent.indexOf(endTag);
-      if (endTagIndex !== -1) {
-        artifactContent = artifactContent.substring(0, endTagIndex);
-      }
-
-      artifacts.push({
-        id,
-        type,
-        language,
-        title,
-        content: artifactContent.trimStart(),
-        messageIndex: baseMessageIndex,
-        createdAt: new Date(),
-      });
-    }
-  }
-  return artifacts;
-};
-
 const ArtifactsList = ({
   artifacts,
   onSelectArtifact,
@@ -139,7 +99,7 @@ export const ArtifactsPanel = () => {
         .join("") ?? "";
 
     if (streamingContent) {
-      const streamingArtifacts = parseStreamingArtifacts(
+      const streamingArtifacts = parseArtifacts(
         streamingContent,
         parsedCheckpoint?.messages.length ?? 0,
       );

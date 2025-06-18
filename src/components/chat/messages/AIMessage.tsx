@@ -24,6 +24,7 @@ import {
 } from "@/store/chatStore";
 import { PlanningSteps } from "./PlanningSteps";
 import type { Artifact } from "@/components/chat/artifacts/utils";
+import { parseContent } from "@/components/chat/artifacts/utils";
 import { ArtifactCard } from "@/components/chat/artifacts/card";
 
 interface AIMessageProps {
@@ -53,63 +54,10 @@ export const AIMessageComponent = React.memo(
           : String(message.content);
     }, [message.content]);
 
-    const contentParts = React.useMemo(() => {
-      const parts: (
-        | { type: "text"; content: string }
-        | { type: "artifact"; artifact: Artifact }
-      )[] = [];
-
-      const chunks = rawContent.split(/<artifact/);
-
-      if (chunks[0]) {
-        parts.push({ type: "text", content: chunks[0] });
-      }
-
-      for (let i = 1; i < chunks.length; i++) {
-        const fullChunk = "<artifact" + chunks[i];
-
-        const headerRegex =
-          /<artifact\s+id="([^"]+)"\s+type="([^"]+)"(?:\s+language="([^"]+)")?\s+title="([^"]+)"[^>]*>/;
-        const headerMatch = fullChunk.match(headerRegex);
-
-        if (headerMatch) {
-          const [, id, type, language, title] = headerMatch;
-          const header = headerMatch[0];
-          let artifactContent = fullChunk.substring(header.length);
-          let trailingText = "";
-
-          const endTag = "</artifact>";
-          const endTagIndex = artifactContent.indexOf(endTag);
-
-          if (endTagIndex !== -1) {
-            trailingText = artifactContent.substring(
-              endTagIndex + endTag.length,
-            );
-            artifactContent = artifactContent.substring(0, endTagIndex);
-          }
-
-          const artifact: Artifact = {
-            id,
-            type,
-            language,
-            title,
-            content: artifactContent.trimStart(),
-            messageIndex,
-            createdAt: new Date(),
-          };
-          parts.push({ type: "artifact", artifact });
-
-          if (trailingText) {
-            parts.push({ type: "text", content: trailingText });
-          }
-        } else {
-          // Not a valid artifact start, treat as text
-          parts.push({ type: "text", content: fullChunk });
-        }
-      }
-
-      return parts;
-    }, [rawContent, messageIndex]);
+    const contentParts = React.useMemo(
+      () => parseContent(rawContent, messageIndex),
+      [rawContent, messageIndex],
+    );
 
     const reasoning = message.additional_kwargs?.reasoning_content as
       | string
@@ -172,83 +120,6 @@ export const AIMessageComponent = React.memo(
           }
           return null;
         })}
-        {documents && documents.length > 0 && (
-          <Accordion type="single" collapsible>
-            <AccordionItem value="documents" className="border-none">
-              <AccordionTrigger className="text-sm justify-start items-center py-2 text-muted-foreground hover:text-foreground">
-                <FileIcon className="w-4 h-4" />
-                View sources ({documents.length})
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="bg-background/50 rounded-md p-3 border space-y-3">
-                  {documents.map((doc, idx) => {
-                    const isTavilyDoc = doc.metadata.source === "tavily";
-                    
-                    if (isTavilyDoc) {
-                      const url = extractUrlFromTavilyContent(doc.pageContent);
-                      
-                      return (
-                        <div key={idx} className="space-y-2 p-3 border rounded-md bg-background">
-                          <div className="flex items-center gap-2">
-                            {url ? (
-                              <Favicon 
-                                url={url} 
-                                className="w-4 h-4 flex-shrink-0" 
-                                fallbackIcon={ExternalLinkIcon}
-                              />
-                            ) : (
-                              <ExternalLinkIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                            )}
-                            {url && (
-                              <a 
-                                href={url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-xs text-blue-500 hover:underline truncate"
-                              >
-                                {url}
-                              </a>
-                            )}
-                          </div>
-                          <div className="text-sm text-muted-foreground line-clamp-3">
-                            {doc.pageContent.split('\n').slice(2).join('\n').trim()}
-                          </div>
-                        </div>
-                      );
-                    } else {
-                      const docId = doc.metadata.source as Id<"documents">;
-                      const document = useQuery(api.documents.queries.get, {
-                        documentId: docId,
-                      });
-                      console.log("document", doc.pageContent);
-                      return (
-                        <div key={idx} className="space-y-2 p-3 border rounded-md bg-background" onClick={() => {
-                          setDocumentDialogDocumentId(docId);
-                          setDocumentDialogOpen(true);
-                        }}>
-                          <div className="flex items-center gap-2">
-                            <FileIcon className="w-4 h-4 text-gray-500" />
-                            <div className="font-medium text-sm cursor-pointer" >
-                              {document?.name}
-                            </div>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            <Markdown
-                              content={doc.pageContent.length > 500 
-                                ? doc.pageContent.substring(0, 500) + "..." 
-                                : doc.pageContent}
-                              className="text-sm"
-                            />
-                          </div>
-                        </div>
-                      );
-                    }
-                  })}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
       </div>
     );
   },

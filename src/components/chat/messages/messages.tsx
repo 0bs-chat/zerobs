@@ -19,8 +19,127 @@ import {
 import { useCheckpointParser } from "@/hooks/chats/use-chats";
 import { useStream } from "@/hooks/chats/use-stream";
 import { AIToolUtilsBar, UserUtilsBar } from "./UtilsBar";
-import { useStreamAtom, useCheckpointParserAtom } from "@/store/chatStore";
+import {
+  useStreamAtom,
+  useCheckpointParserAtom,
+  documentDialogOpenAtom,
+  documentDialogDocumentIdAtom,
+} from "@/store/chatStore";
 import { useSetAtom } from "jotai";
+import { Document } from "@langchain/core/documents";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ExternalLinkIcon, FileIcon } from "lucide-react";
+import { Favicon } from "@/components/ui/favicon";
+import { Markdown } from "@/components/ui/markdown";
+
+const MessageSources = ({ documents }: { documents: Document[] }) => {
+  if (!documents || documents.length === 0) return null;
+
+  const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
+  const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
+
+  const extractUrlFromTavilyContent = (content: string): string | null => {
+    const urlMatch = content.match(/https?:\/\/[^\s\n]+/);
+    return urlMatch ? urlMatch[0] : null;
+  };
+
+  const MemoizedConvexDocument = React.memo(({ doc }: { doc: Document }) => {
+    const docId = doc.metadata.source as Id<"documents">;
+    const documentData = useQuery(api.documents.queries.get, {
+      documentId: docId,
+    });
+
+    return (
+      <div
+        className="space-y-2 p-3 border rounded-md bg-background cursor-pointer"
+        onClick={() => {
+          setDocumentDialogDocumentId(docId);
+          setDocumentDialogOpen(true);
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <FileIcon className="w-4 h-4 text-gray-500" />
+          <div className="font-medium text-sm">{documentData?.name}</div>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          <Markdown
+            content={
+              doc.pageContent.length > 500
+                ? doc.pageContent.substring(0, 500) + "..."
+                : doc.pageContent
+            }
+            className="text-sm"
+          />
+        </div>
+      </div>
+    );
+  });
+  MemoizedConvexDocument.displayName = "MemoizedConvexDocument";
+
+  return (
+    <div>
+      <Accordion type="single" collapsible>
+        <AccordionItem value="documents" className="border-none">
+          <AccordionTrigger className="text-sm justify-start items-center py-2 text-muted-foreground hover:text-foreground">
+            <FileIcon className="w-4 h-4 mr-1" />
+            View sources ({documents.length})
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="bg-background/50 rounded-md p-3 border space-y-3">
+              {documents.map((doc, idx) => {
+                if (doc.metadata.source === "tavily") {
+                  const url = extractUrlFromTavilyContent(doc.pageContent);
+                  return (
+                    <div
+                      key={idx}
+                      className="space-y-2 p-3 border rounded-md bg-background"
+                    >
+                      <div className="flex items-center gap-2">
+                        {url ? (
+                          <Favicon
+                            url={url}
+                            className="w-4 h-4 flex-shrink-0"
+                            fallbackIcon={ExternalLinkIcon}
+                          />
+                        ) : (
+                          <ExternalLinkIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                        )}
+                        {url && (
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-500 hover:underline truncate"
+                          >
+                            {url}
+                          </a>
+                        )}
+                      </div>
+                      <div className="text-sm text-muted-foreground line-clamp-3">
+                        {doc.pageContent
+                          .split("\n")
+                          .slice(2)
+                          .join("\n")
+                          .trim()}
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return <MemoizedConvexDocument key={idx} doc={doc} />;
+                }
+              })}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </div>
+  );
+};
 
 const groupMessages = (messages: BaseMessage[]): BaseMessage[][] => {
   if (messages.length === 0) return [];
@@ -82,6 +201,14 @@ const MessageGroup = ({
 
   const firstMessage = messages[0];
   const isUserGroup = firstMessage instanceof HumanMessage;
+
+  const allDocuments = messages.reduce((acc: Document[], msg) => {
+    if (msg instanceof AIMessage && msg.additional_kwargs?.documents) {
+      const docs = msg.additional_kwargs.documents as Document[];
+      return acc.concat(docs);
+    }
+    return acc;
+  }, []);
 
   const handleCopyText = () => {
     const textToCopy = messages
@@ -208,6 +335,9 @@ const MessageGroup = ({
       className={`flex flex-col w-full gap-1 group ${isUserGroup ? "items-end" : ""}`}
     >
       {messages.map(renderMessage)}
+      {!isUserGroup && allDocuments.length > 0 && (
+        <MessageSources documents={allDocuments} />
+      )}
       <div className="flex flex-row items-center justify-start">
         {isUserGroup ? (
           <UserUtilsBar

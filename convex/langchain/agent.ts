@@ -31,7 +31,10 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { StructuredOutputParser } from "@langchain/core/output_parsers";
 import { OutputFixingParser } from "langchain/output_parsers";
 import { GraphState, planSchema, planArray, type CompletedStep } from "./state";
-import { api } from "../_generated/api";
+import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
+import { getEmbeddingModel } from "./models";
+import { api, internal } from "../_generated/api";
+import { TavilySearchResponse } from "@langchain/tavily";
 
 type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;
@@ -297,59 +300,139 @@ async function retrieve(
   config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
+  const vectorStore = new ConvexVectorStore(
+    getEmbeddingModel("embeddings"),
+    {
+      ctx: formattedConfig.ctx,
+      table: "documentVectors",
+    },
+  );
   if (!formattedConfig.chatInput.model) {
     throw new Error("Model is required");
   }
 
-  const retrievalTools = getRetrievalTools(formattedConfig.ctx);
+  async function generateQueries(
+    type: "vectorStore" | "webSearch",
+    model: string,
+    state: typeof GraphState.State,
+    config: ExtendedRunnableConfig,
+  ) {
+    const promptTemplate = ChatPromptTemplate.fromMessages([
+      [
+        "system",
+        "Based on the messages and the user's query, generate queries for the " +
+          type +
+          ".",
+      ],
+      new MessagesPlaceholder("messages"),
+    ]);
+
+    const modelWithOutputParser = promptTemplate.pipe(
+      getModel("worker").withStructuredOutput(z.object({
+        queries: z
+          .array(z.string())
+          .describe("Queries for the " + type + ".")
+          .max(3)
+          .min(1),
+      }))
+    );
+
+    const formattedMessages = await formatMessages(config.ctx, state.messages.slice(-5), model);
+    const queries = await modelWithOutputParser.invoke({
+      messages: formattedMessages,
+      config,
+    });
+
+    return queries.queries;
+  }
+
+  // Retrive documents
   let documents: DocumentInterface[] = [];
-
-  // Generate a single query from the latest user message
-  const lastMessage = state.messages.slice(-1)[0];
-  const query = typeof lastMessage.content === "string" 
-    ? lastMessage.content 
-    : String(lastMessage.content);
-
-  // Retrieve from project documents if projectId is available
   if (formattedConfig.chatInput.projectId) {
-    try {
-      const projectResults = await retrievalTools.vectorSearch.invoke({
-        query,
+    const includedProjectDocuments = await formattedConfig.ctx.runQuery(
+      internal.projectDocuments.queries.getSelected,
+      {
         projectId: formattedConfig.chatInput.projectId,
-      });
-      
-      if (projectResults !== "No project documents available for retrieval.") {
-        const parsedResults = JSON.parse(projectResults);
-        const projectDocs = parsedResults.map((result: any) => new Document({
-          pageContent: result.content,
-          metadata: result.metadata,
-        }));
-        documents.push(...projectDocs);
-      }
-    } catch (error) {
-      console.error("Error retrieving project documents:", error);
+        selected: true,
+      },
+    );
+    const queries = await generateQueries(
+      "vectorStore",
+      formattedConfig.chatInput.model,
+      state,
+      formattedConfig,
+    );
+
+    if (includedProjectDocuments.length > 0) {
+      await Promise.all(
+        queries.map(async (query) => {
+          const results = await vectorStore.similaritySearch(query, 4, {
+            filter: q =>
+              q.or(...includedProjectDocuments.map(document => q.eq("metadata", {
+                source: document.documentId,
+              }))),
+          });
+          documents.push(...results);
+        }),
+      );
     }
   }
-
-  // Retrieve from web search if webSearch is enabled
   if (formattedConfig.chatInput.webSearch) {
-    try {
-      const webResults = await retrievalTools.webSearch.invoke({
-        query,
-      });
-      
-      const parsedResults = JSON.parse(webResults);
-      const webDocs = parsedResults.map((result: any) => new Document({
-        pageContent: result.content,
-        metadata: result.metadata,
-      }));
-      documents.push(...webDocs);
-    } catch (error) {
-      console.error("Error retrieving web documents:", error);
-    }
+    const searchTools = await getSearchTools(formattedConfig.ctx);
+
+    const queries = await generateQueries(
+      "webSearch",
+      formattedConfig.chatInput.model,
+      state,
+      formattedConfig,
+    );
+    await Promise.all(
+      queries.map(async (query) => {
+        if (searchTools.tavily) {
+          const searchResults = (await searchTools.tavily._call({
+            query: query,
+            topic: "general",
+            includeImages: false,
+            includeDomains: [],
+            excludeDomains: [],
+            searchDepth: "basic",
+          })) as TavilySearchResponse;
+          const docs = searchResults.results.map((result) => {
+            return new Document({
+              pageContent: `${result.score}. ${result.title}\n${result.url}\n${result.content}`,
+              metadata: {
+                source: "tavily",
+              },
+            });
+          });
+          documents.push(...docs);
+        } else {
+          const searchResults = await searchTools.duckduckgo._call(query);
+          const searchResultsArray: {
+            title: string;
+            url: string;
+            snippet: string;
+          }[] = JSON.parse(searchResults);
+          const urlMarkdownContents = await Promise.all(
+            searchResultsArray.map((result) =>
+              searchTools.crawlWeb.invoke({ url: result.url }),
+            ),
+          );
+          const docs = searchResultsArray.map((result, index) => {
+            return new Document({
+              pageContent: `${result.title}\n${result.url}\n${urlMarkdownContents[index]}`,
+              metadata: {
+                source: "duckduckgo",
+              },
+            });
+          });
+          documents.push(...docs);
+        }
+      }),
+    );
   }
 
-  // Grade documents for relevance
+  // Grade documents
   async function gradeDocument(
     model: string,
     document: DocumentInterface,
@@ -367,13 +450,11 @@ async function retrieve(
     ]);
 
     const modelWithOutputParser = promptTemplate.pipe(
-      getModel("worker").withStructuredOutput(
-        z.object({
-          relevant: z
-            .boolean()
-            .describe("Whether the document is relevant to the user question"),
-        }),
-      ),
+      getModel("worker").withStructuredOutput(z.object({
+        relevant: z
+          .boolean()
+          .describe("Whether the document is relevant to the user question"),
+      }))
     );
 
     const formattedMessage = await formatMessages(config.ctx, [message], model);
@@ -387,15 +468,13 @@ async function retrieve(
 
     return gradedDocument.relevant;
   }
-
-  // Grade all retrieved documents
   const gradedDocuments = (
     await Promise.all(
       documents.map(async (document) => {
         return (await gradeDocument(
           formattedConfig.chatInput.model!,
           document,
-          lastMessage,
+          state.messages.slice(-1)[0],
           formattedConfig,
         ))
           ? document

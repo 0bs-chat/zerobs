@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useAction } from "convex/react";
-import type { Id, Doc } from "convex/_generated/dataModel";
+import type { Id } from "convex/_generated/dataModel";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useCallback, useState, useMemo } from "react";
 import { useConvex } from "convex/react";
@@ -36,6 +36,7 @@ export const useHandleSubmit = () => {
         webSearch: newChatInputDoc?.webSearch,
         documents: newChatInputDoc?.documents,
         projectId: newChatInputDoc?.projectId,
+        artifacts: newChatInputDoc?.artifacts,
         chatId: newChatId,
         text: chatInputText,
       });
