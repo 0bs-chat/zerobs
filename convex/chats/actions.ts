@@ -1,11 +1,21 @@
+"use node"
+
 import { api, internal } from "../_generated/api";
 import { action } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
+import {
+  chat,
+  removeMessageGroup as removeMessageGroupHelper,
+  regenerateResponse,
+  getMessageCount,
+  editMessage as editMessageHelper,
+} from "../langchain/index";
 
 export const send = action({
   args: {
     chatId: v.id("chats"),
+    text: v.string(),
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
@@ -18,7 +28,7 @@ export const send = action({
       chatId: args.chatId,
     });
 
-    if (!chatInput.text && !chatInput.documents?.length) {
+    if (!args.text.trim() && !chatInput.documents?.length) {
       throw new Error("Chat input text or documents not found");
     }
 
@@ -30,16 +40,30 @@ export const send = action({
       userId: chatInput.userId!,
       status: "pending",
     });
-    await ctx.runMutation(api.chatInputs.mutations.update, {
+
+    ctx.runMutation(api.chatInputs.mutations.update, {
       chatId: args.chatId,
       updates: {
         streamId: stream._id,
+        documents: [],
+      },
+    });
+    
+    ctx.runMutation(api.chatInputs.mutations.update, {
+      chatId: "new",
+      updates: {
+        text: "",
+        documents: []
       },
     });
 
-    await ctx.runAction(internal.langchain.index.chat, {
-      chatId: args.chatId,
-    });
+    const input = {
+      ...chatInput,
+      streamId: stream._id,
+      text: args.text,
+    }
+    console.log("inputText", input.text);
+    await chat(ctx, input);
 
     return null;
   },
@@ -59,15 +83,12 @@ export const removeMessageGroup = action({
       chatId: args.chatId,
     });
 
-    const result = await ctx.runAction(
-      internal.langchain.index.removeMessageGroup,
-      {
-        chatId: args.chatId,
-        startIndex: args.startIndex,
-        count: args.count,
-        cascade: args.cascade,
-      },
-    );
+    const result = await removeMessageGroupHelper(ctx, {
+      chatId: args.chatId,
+      startIndex: args.startIndex,
+      count: args.count,
+      cascade: args.cascade,
+    });
 
     return result;
   },
@@ -87,7 +108,7 @@ export const regenerate = action({
     });
 
     // First remove the AI response group
-    await ctx.runAction(internal.langchain.index.removeMessageGroup, {
+    await removeMessageGroupHelper(ctx, {
       chatId: args.chatId,
       startIndex: args.startIndex,
       count: args.count,
@@ -101,7 +122,7 @@ export const regenerate = action({
 
     // Create a new stream for the regenerated response
     const stream = await ctx.runMutation(internal.streams.crud.create, {
-      userId: chatInput.userId!,
+      userId: chatInput!.userId!,
       status: "pending",
     });
 
@@ -114,7 +135,7 @@ export const regenerate = action({
     });
 
     // Trigger new generation without adding a human message
-    await ctx.runAction(internal.langchain.index.regenerateResponse, {
+    await regenerateResponse(ctx, {
       chatId: args.chatId,
     });
 
@@ -140,16 +161,17 @@ export const regenerateFromUser = action({
 
     // For user message regeneration, we need to remove all messages after the user message
     // First, we need to check if there are any messages after the user group
-    const checkpointResult = await ctx.runAction(internal.langchain.index.getMessageCount, {
+    const checkpointResult = await getMessageCount(ctx, {
       chatId: args.chatId,
     });
 
     const totalMessages = checkpointResult.totalMessages;
-    const messagesAfterUserGroup = totalMessages - (args.startIndex + args.count);
+    const messagesAfterUserGroup =
+      totalMessages - (args.startIndex + args.count);
 
     // Only remove messages if there are any after the user group
     if (messagesAfterUserGroup > 0) {
-      await ctx.runAction(internal.langchain.index.removeMessageGroup, {
+      await removeMessageGroupHelper(ctx, {
         chatId: args.chatId,
         startIndex: args.startIndex + args.count, // Start from the message after the user group
         count: messagesAfterUserGroup, // Remove all subsequent messages
@@ -164,7 +186,7 @@ export const regenerateFromUser = action({
 
     // Create a new stream for the regenerated response
     const stream = await ctx.runMutation(internal.streams.crud.create, {
-      userId: chatInput.userId!,
+      userId: chatInput!.userId!,
       status: "pending",
     });
 
@@ -177,7 +199,7 @@ export const regenerateFromUser = action({
     });
 
     // Trigger new generation without adding a human message
-    await ctx.runAction(internal.langchain.index.regenerateResponse, {
+    await regenerateResponse(ctx, {
       chatId: args.chatId,
     });
 
@@ -204,7 +226,7 @@ export const editMessage = action({
     });
 
     // Edit the message
-    await ctx.runAction(internal.langchain.index.editMessage, {
+    await editMessageHelper(ctx, {
       chatId: args.chatId,
       messageIndex: args.messageIndex,
       newContent: args.newContent,
@@ -214,7 +236,7 @@ export const editMessage = action({
     // If regenerateAfterEdit is true, regenerate responses after the edited message
     if (args.regenerateAfterEdit) {
       // Get the total message count to determine if there are messages after the edited one
-      const checkpointResult = await ctx.runAction(internal.langchain.index.getMessageCount, {
+      const checkpointResult = await getMessageCount(ctx, {
         chatId: args.chatId,
       });
 
@@ -223,7 +245,7 @@ export const editMessage = action({
 
       // Remove all messages after the edited message if any exist
       if (messagesAfterEdited > 0) {
-        await ctx.runAction(internal.langchain.index.removeMessageGroup, {
+        await removeMessageGroupHelper(ctx, {
           chatId: args.chatId,
           startIndex: args.messageIndex + 1,
           count: messagesAfterEdited,
@@ -238,7 +260,7 @@ export const editMessage = action({
 
       // Create a new stream for the regenerated response
       const stream = await ctx.runMutation(internal.streams.crud.create, {
-        userId: chatInput.userId!,
+        userId: chatInput!.userId!,
         status: "pending",
       });
 
@@ -251,7 +273,7 @@ export const editMessage = action({
       });
 
       // Trigger new generation without adding a human message
-      await ctx.runAction(internal.langchain.index.regenerateResponse, {
+      await regenerateResponse(ctx, {
         chatId: args.chatId,
       });
     }

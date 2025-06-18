@@ -10,20 +10,26 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { projectDialogOpenAtom, resizablePanelsOpenAtom, resizablePanelTabAtom } from "@/store/chatStore";
-import { useAtomValue, useSetAtom } from "jotai";
+import {
+  projectDialogOpenAtom,
+  rightPanelVisibilityAtom,
+  rightPanelActiveTabAtom,
+} from "@/store/chatStore";
+import { useAtom, useSetAtom } from "jotai";
 import type { Id } from "convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
 
 export const CreateProjectDialog = () => {
-  const projectDialogOpen = useAtomValue(projectDialogOpenAtom);
-  const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
-  const setResizablePanelsOpen = useSetAtom(resizablePanelsOpenAtom);
-  const setResizablePanelTab = useSetAtom(resizablePanelTabAtom);
+  const [projectDialogOpen, setProjectDialogOpen] = useAtom(
+    projectDialogOpenAtom,
+  );
+  const setRightPanelVisible = useSetAtom(rightPanelVisibilityAtom);
+  const setRightPanelActiveTab = useSetAtom(rightPanelActiveTabAtom);
   const createProject = useMutation(api.projects.mutations.create);
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats"> | "new";
+
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -44,8 +50,8 @@ export const CreateProjectDialog = () => {
         projectId: project._id,
       },
     });
-    setResizablePanelsOpen(true);
-    setResizablePanelTab("projects");
+    setRightPanelVisible(true);
+    setRightPanelActiveTab("projects");
   };
 
   return (

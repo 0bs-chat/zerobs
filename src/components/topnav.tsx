@@ -1,16 +1,15 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/theme-switcher";
-import { resizablePanelsOpenAtom } from "@/store/chatStore";
+import { rightPanelVisibilityAtom } from "@/store/chatStore";
 import { LogOutIcon, PanelRightCloseIcon } from "lucide-react";
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { toast } from "sonner";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 
 export function TopNav() {
-  const resizablePanelsOpen = useAtomValue(resizablePanelsOpenAtom);
-  const setResizablePanelsOpen = useSetAtom(resizablePanelsOpenAtom);
+  const [rightPanelVisible, setRightPanelVisible] = useAtom(rightPanelVisibilityAtom);
   const { signOut } = useAuthActions();
 
   return (
@@ -19,7 +18,7 @@ export function TopNav() {
         <SidebarTrigger className="h-8 w-8" />
       </div>
       <div className="flex items-center gap-2 justify-center top-0 right-0 pointer-events-auto">
-        {!resizablePanelsOpen ? (
+        {!rightPanelVisible ? (
           <Button
             variant="ghost"
             size="icon"
@@ -32,15 +31,15 @@ export function TopNav() {
             <LogOutIcon className="h-4 w-4" />
           </Button>
         ) : null}
-        {!resizablePanelsOpen ? <ModeToggle /> : null}
+        {!rightPanelVisible ? <ModeToggle /> : null}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => {
-            setResizablePanelsOpen(!resizablePanelsOpen);
+            setRightPanelVisible(!rightPanelVisible);
           }}
         >
-          {resizablePanelsOpen ? (
+          {rightPanelVisible ? (
             <PanelRightCloseIcon className="h-4 w-4" />
           ) : (
             <PanelRightOpenIcon className="h-4 w-4" />

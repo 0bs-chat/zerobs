@@ -47,7 +47,7 @@ export const ChatInputs = Table("chatInputs", {
   userId: v.id("users"),
   documents: v.optional(v.array(v.id("documents"))),
   text: v.optional(v.string()),
-  projectId: v.optional(v.id("projects")),
+  projectId: v.optional(v.union(v.id("projects"), v.null())),
   agentMode: v.optional(v.boolean()),
   plannerMode: v.optional(v.boolean()),
   webSearch: v.optional(v.boolean()),

@@ -1,17 +1,18 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { resizablePanelTabAtom } from "@/store/chatStore";
+import { rightPanelActiveTabAtom } from "@/store/chatStore";
 import { ProjectsPanel } from "./projects";
 import { MCPPanel } from "./mcp/index";
+import { ArtifactsPanel } from "./artifacts";
 import { useAtomValue, useSetAtom } from "jotai";
 
 export const Panel = () => {
-  const resizablePanelTab = useAtomValue(resizablePanelTabAtom);
-  const setResizablePanelTab = useSetAtom(resizablePanelTabAtom);
+  const activeTab = useAtomValue(rightPanelActiveTabAtom);
+  const setActiveTab = useSetAtom(rightPanelActiveTabAtom);
 
   return (
     <Tabs
-      value={resizablePanelTab}
-      onValueChange={(value) => setResizablePanelTab(value as typeof resizablePanelTab)}
+      value={activeTab}
+      onValueChange={(value) => setActiveTab(value)}
       className="py-2 px-4"
     >
       <div className="flex items-center justify-between gap-2 pr-10">
@@ -22,7 +23,9 @@ export const Panel = () => {
         </TabsList>
       </div>
       <div className="flex flex-col gap-2 pt-3">
-        <TabsContent value="artifacts"></TabsContent>
+        <TabsContent value="artifacts">
+          <ArtifactsPanel />
+        </TabsContent>
 
         <TabsContent value="projects">
           <ProjectsPanel />

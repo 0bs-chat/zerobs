@@ -1,16 +1,12 @@
-import { useQuery } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
 import { ProjectsList } from "./list";
 import { ProjectDetails } from "./details";
-import { useParams } from "@tanstack/react-router";
+import { useAtomValue } from "jotai";
+import { chatProjectIdAtom } from "@/store/chatStore";
 
 export const ProjectsPanel = () => {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats"> | "new";
-  const chatInput = useQuery(api.chatInputs.queries.get, { chatId });
+  const chatProjectId = useAtomValue(chatProjectIdAtom);
 
-  const showProjectList = !chatInput?.projectId;
+  const showProjectList = !chatProjectId;
 
   if (showProjectList) {
     return (
@@ -20,7 +16,7 @@ export const ProjectsPanel = () => {
 
   return (
     <ProjectDetails
-      projectId={chatInput?.projectId!}
+      projectId={chatProjectId!}
     />
   );
 };

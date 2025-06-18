@@ -3,6 +3,8 @@ import type { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
+import * as schema from "../schema";
+import { partial } from "convex-helpers/validators";
 
 export const generateUploadUrl = mutation({
   args: {},
@@ -35,17 +37,11 @@ export const createMultiple = mutation({
   args: {
     documents: v.array(
       v.object({
-        name: v.string(),
-        type: v.union(
-          v.literal("file"),
-          v.literal("url"),
-          v.literal("site"),
-          v.literal("youtube"),
-          v.literal("text"),
-          v.literal("github"),
-        ),
-        size: v.number(),
-        key: v.union(v.id("_storage"), v.string()),
+        name: schema.Documents.table.validator.fields.name,
+        type: schema.Documents.table.validator.fields.type,
+        size: schema.Documents.table.validator.fields.size,
+        key: schema.Documents.table.validator.fields.key,
+        ...partial(schema.Documents.systemFields),
       }),
     ),
   },
@@ -55,9 +51,9 @@ export const createMultiple = mutation({
     const documentIds = await Promise.all(
       args.documents.map(async (document) => {
         const documentId = await ctx.db.insert("documents", {
-          userId: userId,
-          status: "processing",
           ...document,
+          userId,
+          status: "processing",
         });
 
         return documentId;
@@ -106,11 +102,7 @@ export const updateStatus = internalMutation({
   args: {
     documentId: v.id("documents"),
     update: v.object({
-      status: v.union(
-        v.literal("processing"),
-        v.literal("done"),
-        v.literal("error"),
-      ),
+      status: schema.Documents.table.validator.fields.status,
     }),
   },
   handler: async (ctx, args) => {

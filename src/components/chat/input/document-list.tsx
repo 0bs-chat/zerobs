@@ -10,7 +10,7 @@ import {
   documentDialogOpenAtom,
 } from "@/store/chatStore";
 import { useRemoveDocument } from "@/hooks/use-documents";
-import { getTagInfo } from "@/lib/react-utils";
+import { getTagInfo } from "@/lib/helpers";
 import React, { useCallback } from "react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../convex/langchain/models";

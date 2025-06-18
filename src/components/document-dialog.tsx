@@ -11,7 +11,7 @@ import {
 import { api } from "../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { Button } from "@/components/ui/button";
-import { getTagInfo } from "@/lib/react-utils";
+import { getTagInfo } from "@/lib/helpers";
 import { formatBytes } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";

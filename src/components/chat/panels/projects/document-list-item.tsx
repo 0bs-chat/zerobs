@@ -3,7 +3,7 @@ import { Trash2Icon, EyeIcon } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { ProjectDocument } from "./types";
-import { getTagInfo } from "@/lib/react-utils";
+import { getTagInfo } from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { useSetAtom } from "jotai";
 import {

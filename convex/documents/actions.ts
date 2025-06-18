@@ -35,6 +35,15 @@ export const addDocument = internalAction({
       } else if (document.type === "youtube") {
         result = await processYoutubeVideo(ctx, document);
       } else {
+        if (["text", "github"].includes(document.type)) {
+          await ctx.runMutation(internal.documents.mutations.updateStatus, {
+            documentId: args.documentId,
+            update: {
+              status: "done" as const,
+            },
+          });
+          return;
+        }
         throw new Error(`Unknown document type: ${document.type}`);
       }
 

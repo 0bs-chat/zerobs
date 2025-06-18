@@ -2,16 +2,20 @@ import { v } from "convex/values";
 import { mutation } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
+import { partial } from "convex-helpers/validators";
+import * as schema from "../schema";
 
 export const create = mutation({
   args: {
-    name: v.string(),
+    ...schema.Chats.table.validator.fields,
+    ...partial(schema.Chats.withoutSystemFields),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
     const chatId = ctx.db.insert("chats", {
+      ...args,
       userId,
-      name: args.name,
+      name: args.name ?? "New Chat",
       pinned: false,
       updatedAt: Date.now(),
     });
@@ -22,18 +26,10 @@ export const create = mutation({
 export const update = mutation({
   args: {
     chatId: v.id("chats"),
-    updates: v.object({
-      name: v.optional(v.string()),
-      pinned: v.optional(v.boolean()),
-    }),
+    updates: v.object(partial(schema.Chats.withoutSystemFields)),
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
-
-    if (Object.keys(args.updates).length === 0) {
-      // No actual updates provided
-      return null;
-    }
 
     await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,

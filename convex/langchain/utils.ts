@@ -178,7 +178,7 @@ export async function* filterStreamEvents(response: AsyncIterable<any>) {
 export async function* streamHelper(
   ctx: ActionCtx,
   args: { 
-    chatInput: FunctionReturnType<typeof internal.chatInputs.queries.getInternal>; 
+    chatInput: FunctionReturnType<typeof api.chatInputs.queries.get>; 
     signal?: AbortSignal;
     includeHumanMessage?: boolean;
   },
@@ -191,11 +191,6 @@ export async function* streamHelper(
   if (args.includeHumanMessage !== false) {
     const humanMessage = await createHumanMessage(ctx, args.chatInput.text!, args.chatInput.documents);
     messages = [humanMessage];
-
-    await ctx.runMutation(api.chatInputs.mutations.update, {
-      chatId: args.chatInput.chatId!,
-      updates: { text: "", documents: [] },
-    });
   }
 
   const response = agentGraph
