@@ -85,8 +85,8 @@ const ArtifactsList = ({
 
       <Separator />
 
-      <ScrollArea type="always" className="flex-1 w-1 pr-3">
-        <div className="space-y-3">
+      <ScrollArea type="always" className="flex-grow h-[calc(100vh-10rem)] pr-3">
+        <div className="flex flex-col gap-3">
           {artifacts.map((artifact) => (
             <ArtifactCard
               key={`${artifact.id}-${artifact.messageIndex}`}

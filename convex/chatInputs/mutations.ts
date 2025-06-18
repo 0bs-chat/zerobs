@@ -45,6 +45,7 @@ export const create = mutation({
 
     const newChatInputId = await ctx.db.insert("chatInputs", {
       ...args,
+      text: "",
       chatId: args.chatId ?? "new",
       userId,
       updatedAt: Date.now(),
@@ -56,7 +57,8 @@ export const create = mutation({
     }
 
     ctx.scheduler.runAfter(0, internal.langchain.index.generateTitle, {
-      chatInputDoc: newChatInput,
+      ...newChatInput,
+      text: args.text,
     });
 
     return {

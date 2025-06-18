@@ -29,8 +29,8 @@ const TabbedRenderer = ({
   source: string;
   language: string;
 }) => (
-  <Tabs defaultValue="preview">
-    <TabsList>
+  <Tabs defaultValue="preview" className="h-[calc(100vh-10rem)] max-w-full overflow-hidden">
+    <TabsList className="overflow-x-auto">
       <TabsTrigger value="preview">
         <EyeIcon className="w-4 h-4" />
       </TabsTrigger>
@@ -39,7 +39,7 @@ const TabbedRenderer = ({
       </TabsTrigger>
     </TabsList>
     <TabsContent value="preview">{preview}</TabsContent>
-    <TabsContent value="source" className="overflow-auto">
+    <TabsContent value="source" className="overflow-y-auto">
       <Markdown content={`\`\`\`${language || "text"}\n${source}\n\`\`\``} />
     </TabsContent>
   </Tabs>
@@ -140,31 +140,21 @@ const ReactComponentRenderer = ({ content }: { content: string }) => {
   `;
 
   const preview = (
-    <div className="space-y-4">
-      <p className="text-xs text-muted-foreground px-1 pb-2">
-        Note: This is a sandboxed preview. Imports for external libraries are not supported yet.
-        {processedCode.length === 0 && (
-          <span className="text-red-500 block mt-1">⚠️ No valid React code found after processing</span>
-        )}
-      </p>
-      <div className="border rounded bg-white">
-        <iframe
-          srcDoc={iframeContent}
-          className="w-full h-96 border-0 rounded"
-          title="React Preview"
-          sandbox="allow-scripts allow-same-origin"
-          onLoad={(e) => {
-            console.log('Iframe loaded');
-            const iframe = e.target as HTMLIFrameElement;
-            try {
-              console.log('Iframe content window:', iframe.contentWindow);
-            } catch (err) {
-              console.log('Cannot access iframe content:', err);
-            }
-          }}
-        />
-      </div>
-    </div>
+    <iframe
+      srcDoc={iframeContent}
+      className="w-full h-full border-0 rounded"
+      title="React Preview"
+      sandbox="allow-scripts allow-same-origin"
+      onLoad={(e) => {
+        console.log('Iframe loaded');
+        const iframe = e.target as HTMLIFrameElement;
+        try {
+          console.log('Iframe content window:', iframe.contentWindow);
+        } catch (err) {
+          console.log('Cannot access iframe content:', err);
+        }
+      }}
+    />
   );
 
   return <TabbedRenderer preview={preview} source={content} language="jsx" />;
@@ -174,7 +164,7 @@ const HTMLRenderer = ({ content }: { content: string }) => {
   const preview = (
     <iframe
       srcDoc={content}
-      className="w-full border-0 h-full rounded"
+      className="w-full h-full border-0 rounded"
       title="HTML Preview"
       sandbox="allow-scripts allow-same-origin"
     />
@@ -258,7 +248,7 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
   };
 
   return (
-    <div className="flex flex-col gap-4 h-full">
+    <div className="flex flex-col gap-2 h-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">{artifact.title}</h2>
@@ -270,7 +260,7 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
               size="sm"
               onClick={handleOpenInNewTab}
             >
-              <ExternalLinkIcon className="w-4 h-4 mr-2" />
+              <ExternalLinkIcon className="w-4 h-4" />
               Open in New Tab
             </Button>
           )}
@@ -280,9 +270,9 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
             onClick={handleCopy}
           >
             {copied ? (
-              <CheckIcon className="w-4 h-4 mr-2" />
+              <CheckIcon className="w-4 h-4" />
             ) : (
-              <CopyIcon className="w-4 h-4 mr-2" />
+              <CopyIcon className="w-4 h-4" />
             )}
             {copied ? "Copied!" : "Copy"}
           </Button>
@@ -299,7 +289,7 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
       <Separator />
       
       {/* Content */}
-      <ScrollArea className="h-[calc(100vh-10rem)]">
+      <ScrollArea className="h-[calc(100vh-7.5rem)]">
         {renderArtifactContent(artifact)}
       </ScrollArea>
     </div>

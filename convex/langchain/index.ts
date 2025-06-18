@@ -1,237 +1,248 @@
 "use node";
 
 import { z } from "zod"
-import { internalAction } from "../_generated/server";
-import { v } from "convex/values";
+import { ActionCtx, internalAction } from "../_generated/server";
 import {
   RemoveMessage,
   BaseMessage,
   HumanMessage,
-  AIMessage,
 } from "@langchain/core/messages";
 import { api, internal } from "../_generated/api";
 import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
 import { agentGraph } from "./agent";
-import { ChatInputs } from "../schema";
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
 import { getModel } from "./models";
 import { createHumanMessage, processStreamWithBatching, streamHelper } from "./utils";
+import { Doc, Id } from "../_generated/dataModel";
+import * as schema from "../schema";
 
-export const chat = internalAction({
+export async function chat(
+  ctx: ActionCtx,
+  args: Partial<Doc<"chatInputs">> & { chat: Doc<"chats"> | null },
+) {
+  const abortController = new AbortController();
+  const stream = streamHelper(ctx, {
+    chatInput: args,
+    signal: abortController.signal,
+    includeHumanMessage: true,
+  });
+  await processStreamWithBatching(
+    ctx,
+    stream,
+    args.streamId!,
+    abortController,
+  );
+}
+
+export async function removeMessageGroup(
+  ctx: ActionCtx,
   args: {
-    chatId: v.id("chats"),
+    chatId: Id<"chats">;
+    startIndex: number;
+    count: number;
+    cascade: boolean;
   },
-  handler: async (ctx, args) => {
-    const chatInput = await ctx.runQuery(internal.chatInputs.queries.getInternal, {
+) {
+  const checkpointer = new ConvexCheckpointSaver(ctx);
+  const checkpoint = await checkpointer.get({
+    configurable: { thread_id: args.chatId },
+  });
+  const messages = checkpoint?.channel_values.messages as BaseMessage[];
+
+  if (args.startIndex < 0 || args.startIndex >= messages.length) {
+    throw new Error("Invalid start index");
+  }
+
+  if (args.count <= 0) {
+    throw new Error("Count must be positive");
+  }
+
+  const endIndex = args.startIndex + args.count;
+  if (endIndex > messages.length) {
+    throw new Error("Count exceeds available messages");
+  }
+
+  let updatedMessages: RemoveMessage[] = [];
+  if (args.cascade) {
+    // Remove from startIndex to end of conversation
+    updatedMessages = messages
+      .slice(args.startIndex)
+      .map((message) => new RemoveMessage({ id: message.id! }));
+  } else {
+    // Remove only the specified range
+    updatedMessages = messages
+      .slice(args.startIndex, endIndex)
+      .map((message) => new RemoveMessage({ id: message.id! }));
+  }
+
+  return await agentGraph
+    .compile({ checkpointer })
+    .updateState(
+      { configurable: { thread_id: args.chatId } },
+      { messages: updatedMessages },
+    );
+}
+
+export async function regenerateResponse(
+  ctx: ActionCtx,
+  args: {
+    chatId: Id<"chats">;
+  },
+) {
+  const chatInput = await ctx.runQuery(
+    internal.chatInputs.queries.getInternal,
+    {
       chatId: args.chatId,
-    });
+    },
+  );
 
-    // Create AbortController for cancellation
-    const abortController = new AbortController();
-    const stream = streamHelper(ctx, {
-      chatInput,
-      signal: abortController.signal,
-      includeHumanMessage: true,
-    });
+  // Create AbortController for cancellation
+  const abortController = new AbortController();
+  const stream = streamHelper(ctx, {
+    chatInput,
+    signal: abortController.signal,
+    includeHumanMessage: false,
+  });
 
-    await processStreamWithBatching(ctx, stream, chatInput.streamId!, abortController);
-  },
-});
+  await processStreamWithBatching(
+    ctx,
+    stream,
+    chatInput.streamId!,
+    abortController,
+  );
+}
 
-export const removeMessageGroup = internalAction({
+export async function addMessage(
+  ctx: ActionCtx,
   args: {
-    chatId: v.id("chats"),
-    startIndex: v.number(),
-    count: v.number(),
-    cascade: v.boolean(),
+    chatInputDoc: Doc<"chatInputs">;
   },
-  handler: async (ctx, args) => {
-    const checkpointer = new ConvexCheckpointSaver(ctx);
-    const checkpoint = await checkpointer.get({
-      configurable: { thread_id: args.chatId },
-    });
-    const messages = checkpoint?.channel_values.messages as BaseMessage[];
+): Promise<Record<string, any>> {
+  const checkpointer = new ConvexCheckpointSaver(ctx);
+  const checkpoint = await checkpointer.get({
+    configurable: { thread_id: args.chatInputDoc.chatId },
+  });
+  const messages = checkpoint?.channel_values.messages as BaseMessage[];
 
-    if (args.startIndex < 0 || args.startIndex >= messages.length) {
-      throw new Error("Invalid start index");
-    }
+  if (!messages) {
+    throw new Error("No messages found in chat");
+  }
 
-    if (args.count <= 0) {
-      throw new Error("Count must be positive");
-    }
+  const humanMessage = await createHumanMessage(
+    ctx,
+    args.chatInputDoc.text!,
+    args.chatInputDoc.documents,
+  );
 
-    const endIndex = args.startIndex + args.count;
-    if (endIndex > messages.length) {
-      throw new Error("Count exceeds available messages");
-    }
+  await ctx.runMutation(api.chatInputs.mutations.update, {
+    chatId: args.chatInputDoc.chatId,
+    updates: { text: "", documents: [] },
+  });
 
-    let updatedMessages: RemoveMessage[] = [];
-    if (args.cascade) {
-      // Remove from startIndex to end of conversation
-      updatedMessages = messages
-        .slice(args.startIndex)
-        .map((message) => new RemoveMessage({ id: message.id! }));
-    } else {
-      // Remove only the specified range
-      updatedMessages = messages
-        .slice(args.startIndex, endIndex)
-        .map((message) => new RemoveMessage({ id: message.id! }));
-    }
+  const response = await agentGraph
+    .compile({ checkpointer })
+    .updateState(
+      { configurable: { thread_id: args.chatInputDoc.chatId } },
+      { messages: [...messages, humanMessage] },
+    );
 
-    return await agentGraph
-      .compile({ checkpointer })
-      .updateState(
-        { configurable: { thread_id: args.chatId } },
-        { messages: updatedMessages },
-      );
-  },
-});
+  return response;
+}
 
-export const regenerateResponse = internalAction({
+export async function getMessageCount(
+  ctx: ActionCtx,
   args: {
-    chatId: v.id("chats"),
+    chatId: Id<"chats">;
   },
-  handler: async (ctx, args) => {
-    const chatInput = await ctx.runQuery(internal.chatInputs.queries.getInternal, {
-      chatId: args.chatId,
-    });
+) {
+  const checkpointer = new ConvexCheckpointSaver(ctx);
+  const checkpoint = await checkpointer.get({
+    configurable: { thread_id: args.chatId },
+  });
+  const messages = checkpoint?.channel_values.messages as BaseMessage[];
 
-    // Create AbortController for cancellation
-    const abortController = new AbortController();
-    const stream = streamHelper(ctx, {
-      chatInput,
-      signal: abortController.signal,
-      includeHumanMessage: false,
-    });
-
-    await processStreamWithBatching(ctx, stream, chatInput.streamId!, abortController);
-  },
-});
-
-export const addMessage = internalAction({
-  args: {
-    chatInputDoc: ChatInputs.doc,
-  },
-  handler: async (ctx, args): Promise<Record<string, any>> => {
-    const checkpointer = new ConvexCheckpointSaver(ctx);
-    const checkpoint = await checkpointer.get({
-      configurable: { thread_id: args.chatInputDoc.chatId },
-    });
-    const messages = checkpoint?.channel_values.messages as BaseMessage[];
-
-    if (!messages) {
-      throw new Error("No messages found in chat");
-    }
-
-    const humanMessage = await createHumanMessage(ctx, args.chatInputDoc.text!, args.chatInputDoc.documents);
-
-    await ctx.runMutation(api.chatInputs.mutations.update, {
-      chatId: args.chatInputDoc.chatId,
-      updates: { text: "", documents: [] },
-    });
-
-    const response = await agentGraph
-      .compile({ checkpointer })
-      .updateState(
-        { configurable: { thread_id: args.chatInputDoc.chatId } },
-        { messages: [...messages, humanMessage] },
-      );
-
-    return response;
-  },
-});
-
-export const getMessageCount = internalAction({
-  args: {
-    chatId: v.id("chats"),
-  },
-  returns: v.object({
-    totalMessages: v.number(),
-  }),
-  handler: async (ctx, args) => {
-    const checkpointer = new ConvexCheckpointSaver(ctx);
-    const checkpoint = await checkpointer.get({
-      configurable: { thread_id: args.chatId },
-    });
-    const messages = checkpoint?.channel_values.messages as BaseMessage[];
-
-    return {
-      totalMessages: messages ? messages.length : 0,
-    };
-  },
-});
+  return {
+    totalMessages: messages ? messages.length : 0,
+  };
+}
 
 export const generateTitle = internalAction({
-  args: {
-    chatInputDoc: ChatInputs.doc,
-  },
+  args: schema.ChatInputs.doc,
   handler: async (ctx, args) => {
     const prompt = ChatPromptTemplate.fromMessages([
       ["system", "You are a helpful assistant that generates titles for chats."],
       new MessagesPlaceholder("input"),
-    ])
+    ]);
     const output = z.object({
       title: z.string(),
-    })
+    });
 
-    const modelWithOutputParser = prompt.pipe(
-      await getModel("worker").withStructuredOutput(output),
-    );
+    const modelWithOutputParser = prompt
+      .pipe(await getModel("worker").withStructuredOutput(output));
 
-    if (args.chatInputDoc.chatId !== "new") {
+    if (args.chatId !== "new") {
       const response = await modelWithOutputParser.invoke({
-        input: [await createHumanMessage(ctx, args.chatInputDoc.text!, args.chatInputDoc.documents)],
+        input: [
+          await createHumanMessage(
+            ctx,
+            args.text!,
+            args.documents,
+          ),
+        ],
       });
 
       await ctx.runMutation(internal.chats.crud.update, {
-        id: args.chatInputDoc.chatId,
+        id: args.chatId!,
         patch: { name: response.title, updatedAt: Date.now() },
       });
     }
   },
 });
 
-export const editMessage = internalAction({
+export async function editMessage(
+  ctx: ActionCtx,
   args: {
-    chatId: v.id("chats"),
-    messageIndex: v.number(),
-    newContent: v.string(),
-    documents: v.optional(v.array(v.id("documents"))),
+    chatId: Id<"chats">;
+    messageIndex: number;
+    newContent: string;
+    documents?: Id<"documents">[];
   },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const checkpointer = new ConvexCheckpointSaver(ctx);
-    const checkpoint = await checkpointer.get({
-      configurable: { thread_id: args.chatId },
-    });
-    const messages = checkpoint?.channel_values.messages as BaseMessage[];
+) {
+  const checkpointer = new ConvexCheckpointSaver(ctx);
+  const checkpoint = await checkpointer.get({
+    configurable: { thread_id: args.chatId },
+  });
+  const messages = checkpoint?.channel_values.messages as BaseMessage[];
 
-    if (!messages || args.messageIndex < 0 || args.messageIndex >= messages.length) {
-      throw new Error("Invalid message index");
-    }
+  if (!messages || args.messageIndex < 0 || args.messageIndex >= messages.length) {
+    throw new Error("Invalid message index");
+  }
 
-    const messageToEdit = messages[args.messageIndex];
+  const messageToEdit = messages[args.messageIndex];
 
-    if (!(messageToEdit instanceof HumanMessage)) {
-      throw new Error("Only human messages can be edited");
-    }
+  if (!(messageToEdit instanceof HumanMessage)) {
+    throw new Error("Only human messages can be edited");
+  }
 
-    // For human messages, create a new HumanMessage with updated content
-    const updatedMessage = await createHumanMessage(ctx, args.newContent, args.documents);
-    updatedMessage.id = messageToEdit.id; // Preserve the original ID
+  // For human messages, create a new HumanMessage with updated content
+  const updatedMessage = await createHumanMessage(
+    ctx,
+    args.newContent,
+    args.documents,
+  );
+  updatedMessage.id = messageToEdit.id; // Preserve the original ID
 
-    // Create a new messages array with the updated message
-    const updatedMessages = [...messages];
-    updatedMessages[args.messageIndex] = updatedMessage;
+  // Create a new messages array with the updated message
+  const updatedMessages = [...messages];
+  updatedMessages[args.messageIndex] = updatedMessage;
 
-    // Update the state with the new messages array
-    await agentGraph
-      .compile({ checkpointer })
-      .updateState(
-        { configurable: { thread_id: args.chatId } },
-        { messages: updatedMessages },
-      );
+  // Update the state with the new messages array
+  await agentGraph
+    .compile({ checkpointer })
+    .updateState(
+      { configurable: { thread_id: args.chatId } },
+      { messages: updatedMessages },
+    );
 
-    return null;
-  },
-});
+  return null;
+}

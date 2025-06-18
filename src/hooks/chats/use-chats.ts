@@ -9,7 +9,7 @@ import React from "react";
 import { coerceMessageLikeToMessage } from "@langchain/core/messages";
 import { GraphState } from "../../../convex/langchain/state";
 import { chatInputTextAtom } from "@/store/chatStore";
-import { useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 
 export const useHandleSubmit = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
@@ -19,8 +19,8 @@ export const useHandleSubmit = () => {
   const createChatInputMutation = useMutation(api.chatInputs.mutations.create);
   const sendAction = useAction(api.chats.actions.send);
   const convex = useConvex();
-  const setChatInputText = useSetAtom(chatInputTextAtom);
-  
+  const [chatInputText, setChatInputText] = useAtom(chatInputTextAtom);
+
   const handleSubmit = useCallback(async () => {
     if (chatId === "new") {
       const newChatId = await createChatMutation({ name: "New Chat" });
@@ -30,19 +30,19 @@ export const useHandleSubmit = () => {
       });
 
       await createChatInputMutation({
-        chatId: newChatId,
-        text: newChatInputDoc?.text,
         model: newChatInputDoc?.model,
         agentMode: newChatInputDoc?.agentMode,
         plannerMode: newChatInputDoc?.plannerMode,
         webSearch: newChatInputDoc?.webSearch,
         documents: newChatInputDoc?.documents,
         projectId: newChatInputDoc?.projectId,
+        chatId: newChatId,
+        text: chatInputText,
       });
-      navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
-      sendAction({ chatId: newChatId });
+      await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
+      await sendAction({ text: chatInputText, chatId: newChatId });
     } else {
-      sendAction({ chatId: chatId });
+      await sendAction({ text: chatInputText, chatId: chatId });
     }
 
     setChatInputText("");
@@ -52,6 +52,9 @@ export const useHandleSubmit = () => {
     createChatInputMutation,
     sendAction,
     navigate,
+    chatInputText,
+    setChatInputText,
+    convex,
   ]);
 
   return handleSubmit;
