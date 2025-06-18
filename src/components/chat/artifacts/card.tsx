@@ -80,8 +80,8 @@ export const ArtifactCard = React.memo(
     return (
       <Card className="hover:shadow-md transition-shadow">
         <CardHeader className="py-1.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2 max-w-full">
+            <div className="flex items-center gap-2 min-w-1/2 flex-1">
               <Icon className={`w-5 h-5 ${className} flex-shrink-0`} />
               <CardTitle className="text-lg font-medium truncate">
                 {artifact.title}

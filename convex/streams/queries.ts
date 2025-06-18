@@ -65,11 +65,39 @@ export const getChunks = query({
       .filter((q) =>
         args.lastChunkTime
           ? q.gt(q.field("_creationTime"), args.lastChunkTime)
-          : true,
+          : true
       )
       .paginate({
         cursor: args.paginationOpts.cursor,
         numItems: args.paginationOpts.numItems,
       });
+  },
+});
+
+export const getAllChunks = query({
+  args: {
+    streamId: v.id("streams"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.runQuery(api.streams.queries.get, {
+      streamId: args.streamId,
+    });
+
+    // Get all chunks reactively - Convex will push updates automatically
+    const chunks = await ctx.db
+      .query("streamChunks")
+      .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
+      .order("asc")
+      .collect();
+
+    // Flatten all chunks into a single array of parsed events
+    const events: string[] = [];
+    chunks.forEach((chunkDoc) => {
+      chunkDoc.chunks.forEach((chunkStr) => {
+        events.push(chunkStr);
+      });
+    });
+
+    return events;
   },
 });
