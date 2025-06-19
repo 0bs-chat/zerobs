@@ -1,6 +1,6 @@
 [submodule "services/mcps"]
 	path = services/mcps
-	url = https://github.com/0bs-chat/mcp-runner.git
+	url = https://${BUILD_GITHUB_ACCESS_TOKEN}@github.com/0bs-chat/mcp-runner.git
 [submodule "services/crawler"]
 	path = services/crawler
 	url = https://github.com/0bs-chat/crawler.git
