@@ -86,7 +86,7 @@ export const models: {
   {
     label: "Worker",
     model_name: "worker",
-    model: "google/gemini-2.5-flash-lite-preview-06-17",
+    model: "google/gemini-2.5-flash-preview-05-20",
     isThinking: false,
     toolSupport: true,
     provider: "openai",
@@ -95,6 +95,21 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "The Worker model is designed for specialized tasks requiring high efficiency.",
+    usageRateMultiplier: 1.0,
+    hidden: true,
+  },
+  {
+    label: "Smart Worker",
+    model_name: "smart-worker",
+    model: "openai/gpt-4.1",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image"],
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
+    description:
+      "The Smart Worker model is designed for specialized tasks requiring high accuracy.",
     usageRateMultiplier: 1.0,
     hidden: true,
   },

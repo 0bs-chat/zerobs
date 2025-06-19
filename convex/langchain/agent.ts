@@ -24,8 +24,6 @@ import { formatDocumentsAsString } from "langchain/util/document";
 import { getSearchTools, getMCPTools, getRetrievalTools } from "./getTools";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { StructuredOutputParser } from "@langchain/core/output_parsers";
-import { OutputFixingParser } from "langchain/output_parsers";
 import { GraphState, planSchema, planArray, type CompletedStep } from "./state";
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 import { getEmbeddingModel } from "./models";
@@ -37,13 +35,6 @@ type ExtendedRunnableConfig = RunnableConfig & {
   chatInput: Doc<"chatInputs">;
   customPrompt?: string;
 };
-
-export function createStructuredOutputWithFallback<T extends z.ZodType>(
-  schema: T,
-): OutputFixingParser<z.infer<T>> {
-  const baseParser = StructuredOutputParser.fromZodSchema(schema);
-  return OutputFixingParser.fromLLM(getModel("worker"), baseParser);
-}
 
 // Helper function to create system message for agents
 function createAgentSystemMessage(
@@ -325,13 +316,14 @@ async function retrieve(
       new MessagesPlaceholder("messages"),
     ]);
 
-    const modelWithOutputParser = promptTemplate.pipe(getModel("worker")).pipe(createStructuredOutputWithFallback(z.object({
+    const schema = z.object({
       queries: z
         .array(z.string())
         .describe("Queries for the " + type + ".")
         .max(3)
         .min(1),
-    })));
+    })
+    const modelWithOutputParser = promptTemplate.pipe(getModel("worker").withStructuredOutput(schema));
 
     const formattedMessages = await formatMessages(
       config.ctx,
@@ -341,7 +333,7 @@ async function retrieve(
     const queries = await modelWithOutputParser.invoke({
       messages: formattedMessages,
       config,
-    });
+    }) as z.infer<typeof schema>;
 
     return queries.queries;
   }
@@ -453,14 +445,13 @@ async function retrieve(
       new MessagesPlaceholder("message"),
     ]);
 
+    const schema = z.object({
+      relevant: z
+        .boolean()
+        .describe("Whether the document is relevant to the user question"),
+    });
     const modelWithOutputParser = promptTemplate.pipe(
-      getModel("worker").pipe(createStructuredOutputWithFallback(
-        z.object({
-          relevant: z
-            .boolean()
-            .describe("Whether the document is relevant to the user question"),
-        }),
-      )),
+      getModel("worker").withStructuredOutput(schema),
     );
 
     const formattedMessage = await formatMessages(config.ctx, [message], model);
@@ -470,7 +461,7 @@ async function retrieve(
         message: formattedMessage[0],
       },
       config,
-    );
+    ) as z.infer<typeof schema>;
 
     return gradedDocument.relevant;
   }
@@ -653,8 +644,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
         `- Parallel steps: [Research topic B, Research topic C, Research topic D]\n` +
         `- Step 2: Combine all research findings\n` +
         `- Step 3: Generate final answer\n\n` +
-        `Use parallel execution when steps are independent and can benefit from simultaneous execution.` +
-        `Always respond in a valid JSON format.`,
+        `Use parallel execution when steps are independent and can benefit from simultaneous execution.`
     ],
     ...(state.documents && state.documents.length > 0
       ? [
@@ -667,10 +657,8 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
     new MessagesPlaceholder("messages"),
   ]);
 
-  const structuredOutputParser = createStructuredOutputWithFallback(planSchema);
   const modelWithOutputParser = promptTemplate
-    .pipe(getModel(formattedConfig.chatInput.model!))
-    .pipe(structuredOutputParser);
+    .pipe(getModel(formattedConfig.chatInput.model!).withStructuredOutput(planSchema));
 
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
@@ -682,7 +670,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
       messages: formattedMessages,
     },
     config,
-  );
+  ) as z.infer<typeof planSchema>;
 
   return {
     plan: response.plan,
@@ -850,16 +838,11 @@ async function replanner(
   const promptTemplate = ChatPromptTemplate.fromMessages([
     [
       "system",
-      `You are a planning assistant that ONLY outputs structured JSON. Your job is to analyze completed steps and decide what to do next.\n\n` +
-        `CRITICAL: You MUST respond with ONLY a valid JSON object in one of these two formats:\n` +
-        `1. Continue planning: {"action": "continue_planning", "plan": [...]}\n` +
-        `2. Final response: {"action": "respond_to_user", "response": "comprehensive answer here"}\n\n` +
-        `DO NOT generate any content, examples, or demonstrations directly. Your ONLY job is to return the JSON structure.\n\n` +
-        `Decision criteria:\n` +
-        `- If there are still unfinished tasks from the original objective, return "continue_planning" with remaining steps\n` +
-        `- If ALL tasks are complete OR you have enough information to fully answer the user, return "respond_to_user" with a comprehensive synthesis\n\n` +
-        `When creating the final response, ensure it addresses ALL parts of the original user request using information from completed steps.\n\n` +
-        `**The user's original objective was:**\n`,
+      `## Your Task: Reflect and Re-plan\n\n` +
+        `For the given objective, come up with a simple step by step plan.\n` +
+        `- This plan should involve individual tasks that, if executed correctly, will yield the correct answer. Do not add any superfluous steps.\n` +
+        `- The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.\n\n` +
+        `**Your objective was this:**\n`,
     ],
     new MessagesPlaceholder("input"),
     [
@@ -870,12 +853,8 @@ async function replanner(
     new MessagesPlaceholder("pastSteps"),
     [
       "system",
-      `Now analyze what still needs to be done:\n` +
-        `- Compare the original user request with completed steps\n` +
-        `- Identify any missing or incomplete parts\n` +
-        `- If tasks remain: {"action": "continue_planning", "plan": [remaining tasks only]}\n` +
-        `- If complete: {"action": "respond_to_user", "response": "comprehensive answer covering all parts"}\n\n` +
-        `Remember: You are NOT generating the final answer yourself - you are either planning next steps OR telling the system to compile a final response from completed work.`,
+      `Update your plan accordingly. If no more steps are needed and you can return to the user, set action to "respond_to_user" and provide the response. ` +
+      `Otherwise, set action to "continue_planning" and fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
     ],
   ]);
 
@@ -892,11 +871,8 @@ async function replanner(
       ),
   });
   const outputSchema = z.union([planOutput, responseOutput]);
-  const structuredOutputParser =
-    createStructuredOutputWithFallback(outputSchema);
   const modelWithOutputParser = promptTemplate
-    .pipe(getModel(formattedConfig.chatInput.model!))
-    .pipe(structuredOutputParser);
+    .pipe(getModel(formattedConfig.chatInput.model!).withStructuredOutput(outputSchema));
 
   const inputMessage =
     state.messages
@@ -949,7 +925,7 @@ async function replanner(
       pastSteps: formattedPastStepsMessages,
     },
     config,
-  );
+  ) as z.infer<typeof outputSchema>;
 
   if (response.action === "respond_to_user") {
     const pastSteps = state.pastSteps.map((entry) => {
