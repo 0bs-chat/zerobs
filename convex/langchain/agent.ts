@@ -221,9 +221,10 @@ async function createAgentWithTools(
   formattedConfig: ExtendedRunnableConfig,
   promptTemplate: ChatPromptTemplate,
   name: string = "baseAgent",
+  includeSearchTools: boolean = false,
 ) {
   const tools = await getMCPTools(formattedConfig.ctx);
-  // const searchTools = await getSearchTools(formattedConfig.ctx);
+  const searchTools = await getSearchTools(formattedConfig.ctx);
   const retrievalTools = getRetrievalTools(formattedConfig.ctx);
 
   if (!formattedConfig.chatInput.model) {
@@ -233,9 +234,9 @@ async function createAgentWithTools(
   // Build list of all available tools
   const allTools = [
     ...(tools.tools.length > 0 ? tools.tools : []),
-    // ...(searchTools.tavily
-    //   ? [searchTools.tavily]
-    //   : [searchTools.duckduckgo, searchTools.crawlWeb]),
+    ...(includeSearchTools && searchTools.tavily
+      ? [searchTools.tavily]
+      : [searchTools.duckduckgo, searchTools.crawlWeb]),
   ];
 
   // Add retrieval tools if relevant configurations are available
@@ -591,7 +592,12 @@ async function baseAgent(
     new MessagesPlaceholder("messages"),
   ]);
 
-  const agent = await createAgentWithTools(formattedConfig, promptTemplate);
+  const agent = await createAgentWithTools(
+    formattedConfig,
+    promptTemplate,
+    "baseAgent",
+    !formattedConfig.chatInput.webSearch,
+  );
 
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
@@ -755,6 +761,7 @@ async function plannerAgent(
           formattedConfig,
           promptTemplate,
           "plannerAgent",
+          !formattedConfig.chatInput.webSearch,
         );
         const formattedMessages = await formatMessages(
           formattedConfig.ctx,
@@ -814,6 +821,7 @@ async function plannerAgent(
       formattedConfig,
       promptTemplate,
       "plannerAgent",
+      !formattedConfig.chatInput.webSearch,
     );
 
     const formattedMessages = await formatMessages(

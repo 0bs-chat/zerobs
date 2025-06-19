@@ -264,7 +264,7 @@ export async function formatMessages(
                     const blob = await ctx.storage.get(document.key);
                     return {
                       type: "text",
-                      text: `# ${document.name}\n${blob?.text()}\n`,
+                      text: `# ${document.name}\n${await blob?.text()}\n`,
                     };
                   } else {
                     return await getVectorText(ctx, document);
