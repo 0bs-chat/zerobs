@@ -42,6 +42,7 @@ export const rightPanelActiveTabAtom = atomWithStorage(
 export const rightPanelWidthAtom = atomWithStorage("rightPanelWidth", 40);
 
 export const chatProjectIdAtom = atom<Id<"projects"> | undefined>(undefined);
+export const selectedArtifactIdAtom = atom<string | null>(null);
 export const useStreamAtom = atom<ReturnType<typeof useStream> | null>(null);
 export const useCheckpointParserAtom = atom<ReturnType<
   typeof useCheckpointParser

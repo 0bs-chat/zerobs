@@ -4,6 +4,7 @@ import { ProjectsPanel } from "./projects";
 import { MCPPanel } from "./mcp/index";
 import { ArtifactsPanel } from "./artifacts";
 import { useAtomValue, useSetAtom } from "jotai";
+import { EyeIcon, CodeIcon } from "lucide-react";
 
 export const Panel = () => {
   const activeTab = useAtomValue(rightPanelActiveTabAtom);
@@ -25,6 +26,14 @@ export const Panel = () => {
       <div className="flex flex-col gap-2 pt-3">
         <TabsContent value="artifacts">
           <ArtifactsPanel />
+          <TabsList className=" flex justify-between items-center sticky top-0 right-0 w-32 ">
+            <TabsTrigger value="preview">
+              <EyeIcon className="w-4 h-4" />
+            </TabsTrigger>
+            <TabsTrigger value="source">
+              <CodeIcon className="w-4 h-4" />
+            </TabsTrigger>
+          </TabsList>
         </TabsContent>
 
         <TabsContent value="projects">

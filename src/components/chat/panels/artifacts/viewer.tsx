@@ -30,6 +30,14 @@ const TabbedRenderer = ({
   language: string;
 }) => (
   <Tabs defaultValue="preview" className="w-full h-full flex flex-col">
+    <TabsList className=" flex justify-between items-center sticky top-0 right-0 w-32 ">
+      <TabsTrigger value="preview">
+        <EyeIcon className="w-4 h-4" />
+      </TabsTrigger>
+      <TabsTrigger value="source">
+        <CodeIcon className="w-4 h-4" />
+      </TabsTrigger>
+    </TabsList>
     <TabsContent value="preview" className="max-w-full  flex w-full">
       {preview}
     </TabsContent>
@@ -233,7 +241,6 @@ const renderArtifactContent = (artifact: Artifact) => {
 
 export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
   const { copy, copied } = useCopy({ duration: 2000 });
-
   const handleCopy = () => {
     copy(artifact.content);
   };
@@ -269,7 +276,13 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
             )}
             {copied ? "Copied!" : "Copy"}
           </Button>
-          <Button variant="outline" size="icon" onClick={onClose}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              onClose();
+            }}
+          >
             <XIcon className="w-4 h-4" />
           </Button>
         </div>

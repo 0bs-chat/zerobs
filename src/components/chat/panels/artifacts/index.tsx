@@ -12,10 +12,12 @@ import { ArtifactViewer } from "./viewer";
 import type { Artifact } from "../../artifacts/utils";
 import { parseArtifacts } from "../../artifacts/utils";
 import { ArtifactCard } from "../../artifacts/card";
+import { useSetAtom } from "jotai";
+import { selectedArtifactIdAtom } from "@/store/chatStore";
 
 const parseStreamingArtifacts = (
   streamingContent: string,
-  baseMessageIndex: number,
+  baseMessageIndex: number
 ): Artifact[] => {
   const artifacts: Artifact[] = [];
   if (!streamingContent) return artifacts;
@@ -85,7 +87,10 @@ const ArtifactsList = ({
 
       <Separator />
 
-      <ScrollArea type="always" className="flex-grow h-[calc(100vh-10rem)] pr-3">
+      <ScrollArea
+        type="always"
+        className="flex-grow h-[calc(100vh-10rem)] pr-3"
+      >
         <div className="flex flex-col gap-3">
           {artifacts.map((artifact) => (
             <ArtifactCard
@@ -104,7 +109,7 @@ export const ArtifactsPanel = () => {
   const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
   const parsedCheckpoint = useAtomValue(useCheckpointParserAtom);
   const stream = useAtomValue(useStreamAtom);
-
+  const setSelectedArtifactId = useSetAtom(selectedArtifactIdAtom);
   const allArtifacts = React.useMemo(() => {
     const artifactMap = new Map<string, Artifact>();
 
@@ -117,9 +122,7 @@ export const ArtifactsPanel = () => {
               ? message.content
               : Array.isArray(message.content)
                 ? message.content
-                    .map((item: any) =>
-                      item.type === "text" ? item.text : "",
-                    )
+                    .map((item: any) => (item.type === "text" ? item.text : ""))
                     .join("")
                 : String(message.content);
 
@@ -141,7 +144,7 @@ export const ArtifactsPanel = () => {
     if (streamingContent) {
       const streamingArtifacts = parseStreamingArtifacts(
         streamingContent,
-        parsedCheckpoint?.messages.length ?? 0,
+        parsedCheckpoint?.messages.length ?? 0
       );
       streamingArtifacts.forEach((artifact) => {
         artifactMap.set(artifact.id, artifact);
@@ -161,6 +164,7 @@ export const ArtifactsPanel = () => {
 
   const handleCloseViewer = () => {
     setSelectedArtifact(null);
+    setSelectedArtifactId(null);
   };
 
   if (artifactToView) {
@@ -169,5 +173,13 @@ export const ArtifactsPanel = () => {
     );
   }
 
-  return <ArtifactsList artifacts={allArtifacts} onSelectArtifact={setSelectedArtifact} />;
-}; 
+  return (
+    <ArtifactsList
+      artifacts={allArtifacts}
+      onSelectArtifact={(artifact) => {
+        setSelectedArtifact(artifact);
+        setSelectedArtifactId(artifact.id);
+      }}
+    />
+  );
+};
