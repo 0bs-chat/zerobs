@@ -7,16 +7,16 @@
     "dev": "vite --port 3000 & bun b",
     "setup": "bun setup.mjs",
     "start": "vite --port 3000",
-    "build": "CONVEX_DEPLOYMENT=resolute-lark-139 VITE_CONVEX_SITE_URL=https://resolute-lark-139.convex.site VITE_CONVEX_URL=https://resolute-lark-139.convex.cloud vite build && tsc --noEmit && cd dist/ && zip -r ../my_deployment.zip . && cd ../",
+    "build": "vite build && tsc --noEmit",
+    "build:prod": "CONVEX_DEPLOYMENT=resolute-lark-139 VITE_CONVEX_SITE_URL=https://resolute-lark-139.convex.site VITE_CONVEX_URL=https://resolute-lark-139.convex.cloud bun run build",
     "serve": "vite preview",
     "test": "vitest run",
-    "deploy": "bun run build && bunx convex deploy && bunx gh-pages -d dist"
+    "preview": "bunx convex deploy --cmd 'bun run build && bunx wrangler dev' --preview-create test",
+    "deploy": "bunx convex deploy --cmd 'bun run build:prod'"
   },
   "dependencies": {
     "@auth/core": "0.37.0",
     "@convex-dev/auth": "^0.0.83",
-    "@convex-dev/prosemirror-sync": "^0.1.22",
-    "@convex-dev/workflow": "^0.2.4",
     "@gradio/client": "^1.15.2",
     "@isomorphic-git/lightning-fs": "^4.6.2",
     "@langchain/community": "^0.3.45",
