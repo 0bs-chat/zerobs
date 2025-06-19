@@ -180,18 +180,16 @@ export const generateTitle = internalAction({
       ],
       new MessagesPlaceholder("input"),
     ]);
-    const output = z.object({
-      title: z.string(),
-    });
 
+    const titleSchema = z.object({ title: z.string() });
     const modelWithOutputParser = prompt.pipe(
-      await getModel("worker").withStructuredOutput(output),
+      (await getModel("worker")).withStructuredOutput(titleSchema),
     );
 
     if (args.chatId !== "new") {
       const response = await modelWithOutputParser.invoke({
         input: [await createHumanMessage(ctx, args.text!, [])],
-      });
+      }) as z.infer<typeof titleSchema>;
 
       await ctx.runMutation(internal.chats.crud.update, {
         id: args.chatId!,

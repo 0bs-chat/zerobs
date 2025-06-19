@@ -12,7 +12,7 @@ export default defineConfig({
     TanStackRouterVite({ autoCodeSplitting: true }),
     viteReact(),
     tailwindcss(),
-    visualizer({ open: true }),
+    // visualizer({ open: true }),
   ],
   test: {
     globals: true,

@@ -38,7 +38,7 @@ type ExtendedRunnableConfig = RunnableConfig & {
   customPrompt?: string;
 };
 
-function createStructuredOutputWithFallback<T extends z.ZodType>(
+export function createStructuredOutputWithFallback<T extends z.ZodType>(
   schema: T,
 ): OutputFixingParser<z.infer<T>> {
   const baseParser = StructuredOutputParser.fromZodSchema(schema);
