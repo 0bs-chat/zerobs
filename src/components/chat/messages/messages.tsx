@@ -541,7 +541,6 @@ const MessageGroup = ({
             onDeleteCascading={handleDeleteCascading}
             onRegenerate={handleUserRegenerate}
             onEditMessage={() => handleEditMessage(firstMessageIndex)}
-            onBranch={handleBranch}
           />
         ) : (
           <AIToolUtilsBar

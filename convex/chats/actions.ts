@@ -12,7 +12,7 @@ import {
   editMessage as editMessageHelper,
   branchFromMessage,
 } from "../langchain/index";
-import { Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 
 export const send = action({
   args: {
@@ -307,7 +307,7 @@ export const branchChat = action({
       name: "Branch of " + originalChat.name,
     });
 
-    const newChatInput = await ctx.runMutation(api.chatInputs.mutations.create, {
+    await ctx.runMutation(api.chatInputs.mutations.create, {
       userId: userId,
       model: chatInput.model || "gpt-4o",
       agentMode: chatInput.agentMode || false,

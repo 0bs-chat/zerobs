@@ -99,7 +99,6 @@ export const UserUtilsBar = ({
   onDeleteCascading,
   onRegenerate,
   onEditMessage,
-  onBranch,
 }: {
   isDropdownOpen: boolean;
   setIsDropdownOpen: (open: boolean) => void;
@@ -109,7 +108,6 @@ export const UserUtilsBar = ({
   onDeleteCascading?: () => void;
   onRegenerate?: () => void;
   onEditMessage?: () => void;
-  onBranch?: () => void;
 }) => {
   return (
     <div

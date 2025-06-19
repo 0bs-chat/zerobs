@@ -24,6 +24,7 @@
     "@langchain/google-genai": "^0.2.10",
     "@langchain/langgraph": "^0.2.69",
     "@langchain/langgraph-supervisor": "^0.0.11",
+    "@langchain/mcp-adapters": "^0.5.2",
     "@langchain/openai": "^0.5.12",
     "@langchain/tavily": "^0.1.1",
     "@langchain/textsplitters": "^0.1.0",

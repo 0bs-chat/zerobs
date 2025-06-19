@@ -23,7 +23,7 @@ import {
 } from "./utils";
 import type { Doc, Id } from "../_generated/dataModel";
 import * as schema from "../schema";
-import { FunctionReturnType } from "convex/server";
+import type { FunctionReturnType } from "convex/server";
 
 export async function chat(
   ctx: ActionCtx,
