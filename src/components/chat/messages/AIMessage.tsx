@@ -1,4 +1,4 @@
-import React from "react";
+import { memo, useMemo } from "react";
 import { AIMessage } from "@langchain/core/messages";
 import { BrainIcon, FileIcon, ExternalLinkIcon } from "lucide-react";
 import {
@@ -31,7 +31,7 @@ interface AIMessageProps {
   messageIndex?: number;
 }
 
-export const AIMessageComponent = React.memo(
+export const AIMessageComponent = memo(
   ({ message, messageIndex = -1 }: AIMessageProps) => {
     const setRightPanelVisible = useSetAtom(rightPanelVisibilityAtom);
     const setActiveTab = useSetAtom(rightPanelActiveTabAtom);
@@ -43,7 +43,7 @@ export const AIMessageComponent = React.memo(
       setRightPanelVisible(true);
     };
 
-    const rawContent = React.useMemo(() => {
+    const rawContent = useMemo(() => {
       return typeof message.content === "string"
         ? message.content
         : Array.isArray(message.content)
@@ -53,7 +53,7 @@ export const AIMessageComponent = React.memo(
           : String(message.content);
     }, [message.content]);
 
-    const contentParts = React.useMemo(() => {
+    const contentParts = useMemo(() => {
       const parts: (
         | { type: "text"; content: string }
         | { type: "artifact"; artifact: Artifact }
@@ -83,7 +83,7 @@ export const AIMessageComponent = React.memo(
 
           if (endTagIndex !== -1) {
             trailingText = artifactContent.substring(
-              endTagIndex + endTag.length,
+              endTagIndex + endTag.length
             );
             artifactContent = artifactContent.substring(0, endTagIndex);
           }
@@ -131,11 +131,11 @@ export const AIMessageComponent = React.memo(
 
     const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
     const setDocumentDialogDocumentId = useSetAtom(
-      documentDialogDocumentIdAtom,
+      documentDialogDocumentIdAtom
     );
 
     return (
-      <div className="flex flex-col w-full">
+      <div className="flex flex-col w-full py-1.5">
         {reasoning && (
           <Accordion type="single" collapsible>
             <AccordionItem value="reasoning" className="border-none">
@@ -183,26 +183,29 @@ export const AIMessageComponent = React.memo(
                 <div className="bg-background/50 rounded-md p-3 border space-y-3">
                   {documents.map((doc, idx) => {
                     const isTavilyDoc = doc.metadata.source === "tavily";
-                    
+
                     if (isTavilyDoc) {
                       const url = extractUrlFromTavilyContent(doc.pageContent);
-                      
+
                       return (
-                        <div key={idx} className="space-y-2 p-3 border rounded-md bg-background">
+                        <div
+                          key={idx}
+                          className="space-y-2 p-3 border rounded-md bg-background"
+                        >
                           <div className="flex items-center gap-2">
                             {url ? (
-                              <Favicon 
-                                url={url} 
-                                className="w-4 h-4 flex-shrink-0" 
+                              <Favicon
+                                url={url}
+                                className="w-4 h-4 flex-shrink-0"
                                 fallbackIcon={ExternalLinkIcon}
                               />
                             ) : (
                               <ExternalLinkIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
                             )}
                             {url && (
-                              <a 
-                                href={url} 
-                                target="_blank" 
+                              <a
+                                href={url}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs text-blue-500 hover:underline truncate"
                               >
@@ -211,7 +214,11 @@ export const AIMessageComponent = React.memo(
                             )}
                           </div>
                           <div className="text-sm text-muted-foreground line-clamp-3">
-                            {doc.pageContent.split('\n').slice(2).join('\n').trim()}
+                            {doc.pageContent
+                              .split("\n")
+                              .slice(2)
+                              .join("\n")
+                              .trim()}
                           </div>
                         </div>
                       );
@@ -220,23 +227,29 @@ export const AIMessageComponent = React.memo(
                       const document = useQuery(api.documents.queries.get, {
                         documentId: docId,
                       });
-                      console.log("document", doc.pageContent);
+
                       return (
-                        <div key={idx} className="space-y-2 p-3 border rounded-md bg-background" onClick={() => {
-                          setDocumentDialogDocumentId(docId);
-                          setDocumentDialogOpen(true);
-                        }}>
+                        <div
+                          key={idx}
+                          className="space-y-2 p-3 border rounded-md bg-background"
+                          onClick={() => {
+                            setDocumentDialogDocumentId(docId);
+                            setDocumentDialogOpen(true);
+                          }}
+                        >
                           <div className="flex items-center gap-2">
                             <FileIcon className="w-4 h-4 text-gray-500" />
-                            <div className="font-medium text-sm cursor-pointer" >
+                            <div className="font-medium text-sm cursor-pointer">
                               {document?.name}
                             </div>
                           </div>
                           <div className="text-sm text-muted-foreground">
                             <Markdown
-                              content={doc.pageContent.length > 500 
-                                ? doc.pageContent.substring(0, 500) + "..." 
-                                : doc.pageContent}
+                              content={
+                                doc.pageContent.length > 500
+                                  ? doc.pageContent.substring(0, 500) + "..."
+                                  : doc.pageContent
+                              }
                               className="text-sm"
                             />
                           </div>
@@ -251,7 +264,7 @@ export const AIMessageComponent = React.memo(
         )}
       </div>
     );
-  },
+  }
 );
 
 AIMessageComponent.displayName = "AIMessageComponent";

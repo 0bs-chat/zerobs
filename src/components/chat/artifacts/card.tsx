@@ -87,7 +87,10 @@ export const ArtifactCard = React.memo(
                 {artifact.title}
               </CardTitle>
             </div>
-            <Badge variant="default" className="text-sm flex-shrink-0">
+            <Badge
+              variant="default"
+              className="text-sm flex-shrink-0 max-w-[6rem] truncate"
+            >
               {getTypeName(artifact.type, artifact.language)}
             </Badge>
           </div>

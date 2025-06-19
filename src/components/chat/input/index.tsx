@@ -22,22 +22,24 @@ export const ChatInput = () => {
   const loadedChatId = useRef<string | undefined>(undefined);
   const setChatProjectId = useSetAtom(chatProjectIdAtom);
 
-  const debouncedUpdateChatInput = useDebouncedCallback((text: string) => {
-    updateChatInputMutation({
-      chatId: chatId,
-      updates: {
-        text: text,
-      },
-    });
-  }, 300);
+  const debouncedUpdateChatInput = useDebouncedCallback(
+    (text: string) => {
+      updateChatInputMutation({ chatId, updates: { text } });
+    },
+    300,
+    { leading: false }
+  );
 
   useEffect(() => {
-    if (chatInput && loadedChatId.current !== chatId || chatInput?.text === "") {
+    if (
+      (chatInput && loadedChatId.current !== chatId) ||
+      chatInput?.text === ""
+    ) {
       setChatInputText(chatInput.text ?? "");
       loadedChatId.current = chatId;
     }
   }, [chatId, chatInput, setChatInputText]);
-  
+
   setChatProjectId(chatInput?.projectId ?? undefined);
 
   return (

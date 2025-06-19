@@ -9,7 +9,10 @@ import { toast } from "sonner";
 import { useAtom } from "jotai";
 
 export function TopNav() {
-  const [rightPanelVisible, setRightPanelVisible] = useAtom(rightPanelVisibilityAtom);
+  const [rightPanelVisible, setRightPanelVisible] = useAtom(
+    rightPanelVisibilityAtom
+  );
+
   const { signOut } = useAuthActions();
 
   return (

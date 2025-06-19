@@ -13,7 +13,7 @@ export const Panel = () => {
     <Tabs
       value={activeTab}
       onValueChange={(value) => setActiveTab(value)}
-      className="py-2 px-4"
+      className="py-2 px-4 overflow-hidden h-full"
     >
       <div className="flex items-center justify-between gap-2 pr-10">
         <TabsList className="w-full flex justify-center ">

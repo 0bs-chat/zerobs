@@ -286,7 +286,7 @@ export const ChatMessages = React.memo(() => {
 
   return (
     <ScrollArea className="overflow-hidden w-full h-full">
-      <div className="flex flex-col max-w-4xl mx-auto p-1 gap-1">
+      <div className="flex flex-col max-w-4xl mx-auto p-1 gap-1 ">
         {/* render existing message groups */}
         {messageGroupsWithIndices.map(({ group, firstMessageIndex }, i) => (
           <MessageGroup

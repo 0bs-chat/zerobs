@@ -32,7 +32,6 @@ function RouteComponent() {
   const sidebarOpen = useAtomValue(sidebarOpenAtom);
   const setSidebarOpen = useSetAtom(sidebarOpenAtom);
   const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
-
   useEffect(() => {
     setSelectedArtifact(null);
   }, [chatId, setSelectedArtifact]);
@@ -41,20 +40,27 @@ function RouteComponent() {
     <SidebarProvider
       className="flex h-svh font-sans"
       open={sidebarOpen}
-      onOpenChange={setSidebarOpen}
+      onOpenChange={() => {
+        setSidebarOpen(!sidebarOpen);
+      }}
     >
-      <AppSidebar />
       <TopNav />
+      {sidebarOpen && <AppSidebar />}
       <div className="flex-1">
         <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel className="flex flex-col gap-1 p-2 pt-4">
+          <ResizablePanel className="flex flex-col gap-1 p-2 pt-4 overflow-hidden">
             <ChatMessages />
             <ChatInput />
           </ResizablePanel>
           {rightPanelVisible && (
             <>
               <ResizableHandle />
-              <ResizablePanel defaultSize={40} minSize={25} maxSize={50}>
+              <ResizablePanel
+                defaultSize={40}
+                minSize={25}
+                maxSize={50}
+                className="overflow-hidden h-full"
+              >
                 <Panel />
               </ResizablePanel>
             </>
