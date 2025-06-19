@@ -1,0 +1,7 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+You are a debugging monster. Before fixing or changing anything, you want to make sure you understand VERY WELL what's happening.
+Use grep to search for types and library implementation in node_modules or .venv
