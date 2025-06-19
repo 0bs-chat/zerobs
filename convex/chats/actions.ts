@@ -10,7 +10,9 @@ import {
   regenerateResponse,
   getMessageCount,
   editMessage as editMessageHelper,
+  branchFromMessage,
 } from "../langchain/index";
+import { Id } from "../_generated/dataModel";
 
 export const send = action({
   args: {
@@ -46,6 +48,7 @@ export const send = action({
       updates: {
         streamId: stream._id,
         documents: [],
+        webSearch: false,
       },
     });
 
@@ -55,6 +58,7 @@ export const send = action({
         text: "",
         documents: [],
         projectId: null,
+        webSearch: false,
       },
     });
 
@@ -279,5 +283,65 @@ export const editMessage = action({
     }
 
     return { success: true };
+  },
+});
+
+export const branchChat = action({
+  args: {
+    chatId: v.id("chats"),
+    messageIndex: v.number(),
+  },
+  returns: v.id("chats"),
+  handler: async (ctx, args): Promise<Id<"chats">> => {
+    const { userId } = await requireAuth(ctx);
+
+    const originalChat = await ctx.runQuery(api.chats.queries.get, {
+      chatId: args.chatId,
+    });
+
+    const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
+      chatId: args.chatId,
+    });
+
+    const newChatId = await ctx.runMutation(api.chats.mutations.create, {
+      name: "Branch of " + originalChat.name,
+    });
+
+    const newChatInput = await ctx.runMutation(api.chatInputs.mutations.create, {
+      userId: userId,
+      model: chatInput.model || "gpt-4o",
+      agentMode: chatInput.agentMode || false,
+      plannerMode: chatInput.plannerMode || false,
+      webSearch: chatInput.webSearch || false,
+      documents: chatInput.documents || [],
+      projectId: chatInput.projectId || null,
+      artifacts: chatInput.artifacts || false,
+      chatId: newChatId,
+    });
+
+    await branchFromMessage(ctx, {
+      chatId: args.chatId,
+      chatInput: chatInput,
+      newChatId: newChatId,
+      messageIndex: args.messageIndex,
+    });
+
+    const stream = await ctx.runMutation(internal.streams.crud.create, {
+      userId: userId,
+      status: "pending",
+    });
+
+    await ctx.runMutation(api.chatInputs.mutations.update, {
+      chatId: newChatId,
+      updates: {
+        streamId: stream._id,
+      },
+    });
+
+    await regenerateResponse(ctx, {
+      chatId: newChatId,
+    });
+
+    return newChatId;
   },
 });

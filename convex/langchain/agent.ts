@@ -320,22 +320,18 @@ async function retrieve(
         "system",
         "Based on the messages and the user's query, generate queries for the " +
           type +
-          ".",
+          ". If the input contains multiple questions, identify which one fits the purpose of the query and only generate a query for those user queries.",
       ],
       new MessagesPlaceholder("messages"),
     ]);
 
-    const modelWithOutputParser = promptTemplate.pipe(
-      getModel("worker").withStructuredOutput(
-        z.object({
-          queries: z
-            .array(z.string())
-            .describe("Queries for the " + type + ".")
-            .max(3)
-            .min(1),
-        }),
-      ),
-    );
+    const modelWithOutputParser = promptTemplate.pipe(getModel("worker")).pipe(createStructuredOutputWithFallback(z.object({
+      queries: z
+        .array(z.string())
+        .describe("Queries for the " + type + ".")
+        .max(3)
+        .min(1),
+    })));
 
     const formattedMessages = await formatMessages(
       config.ctx,
@@ -458,13 +454,13 @@ async function retrieve(
     ]);
 
     const modelWithOutputParser = promptTemplate.pipe(
-      getModel("worker").withStructuredOutput(
+      getModel("worker").pipe(createStructuredOutputWithFallback(
         z.object({
           relevant: z
             .boolean()
             .describe("Whether the document is relevant to the user question"),
         }),
-      ),
+      )),
     );
 
     const formattedMessage = await formatMessages(config.ctx, [message], model);
@@ -657,7 +653,8 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
         `- Parallel steps: [Research topic B, Research topic C, Research topic D]\n` +
         `- Step 2: Combine all research findings\n` +
         `- Step 3: Generate final answer\n\n` +
-        `Use parallel execution when steps are independent and can benefit from simultaneous execution.`,
+        `Use parallel execution when steps are independent and can benefit from simultaneous execution.` +
+        `Always respond in a valid JSON format.`,
     ],
     ...(state.documents && state.documents.length > 0
       ? [
@@ -851,31 +848,34 @@ async function replanner(
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
   const promptTemplate = ChatPromptTemplate.fromMessages([
-    createAgentSystemMessage(
-      formattedConfig.chatInput.model!,
-      undefined,
-      formattedConfig.customPrompt,
-      formattedConfig.chatInput.artifacts,
-    ),
     [
       "system",
-      `## Your Task: Reflect and Re-plan\n\n` +
-        `For the given objective, come up with a simple step by step plan.\n` +
-        `- This plan should involve individual tasks that, if executed correctly, will yield the correct answer. Do not add any superfluous steps.\n` +
-        `- The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.\n\n` +
-        `**Your objective was this:**\n`,
+      `You are a planning assistant that ONLY outputs structured JSON. Your job is to analyze completed steps and decide what to do next.\n\n` +
+        `CRITICAL: You MUST respond with ONLY a valid JSON object in one of these two formats:\n` +
+        `1. Continue planning: {"action": "continue_planning", "plan": [...]}\n` +
+        `2. Final response: {"action": "respond_to_user", "response": "comprehensive answer here"}\n\n` +
+        `DO NOT generate any content, examples, or demonstrations directly. Your ONLY job is to return the JSON structure.\n\n` +
+        `Decision criteria:\n` +
+        `- If there are still unfinished tasks from the original objective, return "continue_planning" with remaining steps\n` +
+        `- If ALL tasks are complete OR you have enough information to fully answer the user, return "respond_to_user" with a comprehensive synthesis\n\n` +
+        `When creating the final response, ensure it addresses ALL parts of the original user request using information from completed steps.\n\n` +
+        `**The user's original objective was:**\n`,
     ],
     new MessagesPlaceholder("input"),
     [
       "system",
-      `**Your original plan was this:**\n{plan}\n\n` +
-        `**You have currently done the following steps:**\n`,
+      `**The original plan was:**\n{plan}\n\n` +
+        `**Completed steps so far:**\n`,
     ],
     new MessagesPlaceholder("pastSteps"),
     [
       "system",
-      `Update your plan accordingly. If no more steps are needed and you can return to the user, set action to "respond_to_user" and provide the response. ` +
-        `Otherwise, set action to "continue_planning" and fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
+      `Now analyze what still needs to be done:\n` +
+        `- Compare the original user request with completed steps\n` +
+        `- Identify any missing or incomplete parts\n` +
+        `- If tasks remain: {"action": "continue_planning", "plan": [remaining tasks only]}\n` +
+        `- If complete: {"action": "respond_to_user", "response": "comprehensive answer covering all parts"}\n\n` +
+        `Remember: You are NOT generating the final answer yourself - you are either planning next steps OR telling the system to compile a final response from completed work.`,
     ],
   ]);
 
@@ -888,7 +888,7 @@ async function replanner(
     response: z
       .string()
       .describe(
-        "A concise and informative response to the user, summarizing the results of the completed steps and addressing their original request.",
+        "A comprehensive, final response to the user. Synthesize the results of the completed steps into a single, coherent answer. This is the only thing the user will see, so it must be complete and detailed.",
       ),
   });
   const outputSchema = z.union([planOutput, responseOutput]);

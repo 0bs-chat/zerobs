@@ -30,6 +30,12 @@ export function useStream(chatId: Id<"chats"> | "new") {
     chatId,
   });
 
+  // Reset chunks when chatId changes
+  useEffect(() => {
+    lastTimeRef.current = undefined;
+    setChunks([]);
+  }, [chatId]);
+
   // polling for new chunks
   useEffect(() => {
     if (!stream) return;

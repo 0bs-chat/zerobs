@@ -23,6 +23,7 @@ export const AIToolUtilsBar = ({
   onDeleteMessage,
   onDeleteCascading,
   onRegenerate,
+  onBranch,
 }: {
   isDropdownOpen: boolean;
   setIsDropdownOpen: (open: boolean) => void;
@@ -31,6 +32,7 @@ export const AIToolUtilsBar = ({
   onDeleteMessage?: () => void;
   onDeleteCascading?: () => void;
   onRegenerate?: () => void;
+  onBranch?: () => void;
 }) => {
   return (
     <div
@@ -51,7 +53,7 @@ export const AIToolUtilsBar = ({
         )}
       </Button>
 
-      <Button variant="ghost" size="icon">
+      <Button variant="ghost" size="icon" onClick={onBranch}>
         <GitBranchIcon className="w-4 h-4" />
       </Button>
 
@@ -97,6 +99,7 @@ export const UserUtilsBar = ({
   onDeleteCascading,
   onRegenerate,
   onEditMessage,
+  onBranch,
 }: {
   isDropdownOpen: boolean;
   setIsDropdownOpen: (open: boolean) => void;
@@ -106,6 +109,7 @@ export const UserUtilsBar = ({
   onDeleteCascading?: () => void;
   onRegenerate?: () => void;
   onEditMessage?: () => void;
+  onBranch?: () => void;
 }) => {
   return (
     <div

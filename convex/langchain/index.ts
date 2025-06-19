@@ -23,6 +23,7 @@ import {
 } from "./utils";
 import type { Doc, Id } from "../_generated/dataModel";
 import * as schema from "../schema";
+import { FunctionReturnType } from "convex/server";
 
 export async function chat(
   ctx: ActionCtx,
@@ -250,4 +251,39 @@ export async function editMessage(
     );
 
   return null;
+}
+
+export async function branchFromMessage(
+  ctx: ActionCtx,
+  args: {
+    chatId: Id<"chats">;
+    chatInput: FunctionReturnType<typeof api.chatInputs.queries.get>;
+    newChatId: Id<"chats">;
+    messageIndex: number;
+  },
+) {
+  const checkpointer = new ConvexCheckpointSaver(ctx);
+  const checkpoint = await checkpointer.get({
+    configurable: { thread_id: args.chatId },
+  });
+  const messages = checkpoint?.channel_values.messages as BaseMessage[];
+
+  if (!messages || args.messageIndex < 0 || args.messageIndex > messages.length) {
+    throw new Error("Invalid message index");
+  }
+
+  // Slice the messages up to the specified index
+  const branchedMessages = messages.slice(0, args.messageIndex - 1);
+
+  // Update the new chat's checkpoint with the branched messages
+  if (branchedMessages.length > 0) {
+    await agentGraph
+      .compile({ checkpointer })
+      .updateState(
+        { configurable: { thread_id: args.newChatId, chatInput: args.chatInput } },
+        { messages: branchedMessages },
+      );
+  }
+
+  return { success: true };
 }

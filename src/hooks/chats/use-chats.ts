@@ -33,7 +33,7 @@ export const useHandleSubmit = () => {
         model: newChatInputDoc?.model,
         agentMode: newChatInputDoc?.agentMode,
         plannerMode: newChatInputDoc?.plannerMode,
-        webSearch: false,
+        webSearch: newChatInputDoc?.webSearch,
         documents: newChatInputDoc?.documents,
         projectId: newChatInputDoc?.projectId,
         artifacts: newChatInputDoc?.artifacts,

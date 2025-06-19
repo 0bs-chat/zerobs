@@ -7,7 +7,7 @@
     "dev": "vite --port 3000 & bun b",
     "setup": "bun setup.mjs",
     "start": "vite --port 3000",
-    "build": "CONVEX_DEPLOYMENT=resolute-lark-139 VITE_CONVEX_SITE_URL=https://resolute-lark-139.convex.site VITE_CONVEX_URL=https://resolute-lark-139.convex.cloud vite build && tsc --noEmit",
+    "build": "CONVEX_DEPLOYMENT=resolute-lark-139 VITE_CONVEX_SITE_URL=https://resolute-lark-139.convex.site VITE_CONVEX_URL=https://resolute-lark-139.convex.cloud vite build && tsc --noEmit && cd dist/ && zip -r ../my_deployment.zip . && cd ../",
     "serve": "vite preview",
     "test": "vitest run",
     "deploy": "bun run build && bunx convex deploy && bunx gh-pages -d dist"

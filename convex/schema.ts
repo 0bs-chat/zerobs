@@ -87,6 +87,11 @@ export const ProjectDocuments = Table("projectDocuments", {
   selected: v.boolean(),
 });
 
+export const ProjectChats = Table("projectChats", {
+  projectId: v.id("projects"),
+  chatId: v.id("chats"),
+});
+
 export const Mcps = Table("mcps", {
   name: v.string(),
   type: v.union(v.literal("sse"), v.literal("stdio"), v.literal("docker")),
@@ -142,6 +147,11 @@ export const CheckpointWrites = Table("checkpoint_writes", {
 export const StreamChunkRefs = Table("streamChunkRefs", {
   streamId: v.id("streams"),
   chunkId: v.id("streamChunks"),
+});
+
+export const ProjectVectorsRefs = Table("projectVectorsRefs", {
+  projectId: v.id("projects"),
+  vectorId: v.id("documentVectors"),
 });
 
 export default defineSchema({

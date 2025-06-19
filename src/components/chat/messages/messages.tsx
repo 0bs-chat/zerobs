@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useParams } from "@tanstack/react-router";
+import { useParams, useNavigate } from "@tanstack/react-router";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
@@ -372,6 +372,8 @@ const MessageGroup = ({
   const removeMessageGroup = useAction(api.chats.actions.removeMessageGroup);
   const regenerate = useAction(api.chats.actions.regenerate);
   const regenerateFromUser = useAction(api.chats.actions.regenerateFromUser);
+  const branchChatAction = useAction(api.chats.actions.branchChat);
+  const navigate = useNavigate();
 
   if (messages.length === 0) return null;
 
@@ -386,19 +388,33 @@ const MessageGroup = ({
     return acc;
   }, []);
 
+  const handleBranch = async () => {
+    if (chatId === "new") return;
+    const newChatId = await branchChatAction({
+      chatId: chatId as Id<"chats">,
+      messageIndex: firstMessageIndex + messages.length,
+    });
+    await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
+  };
+
+  // Helper function to extract text content from message
+  const extractTextFromContent = (content: any): string => {
+    if (typeof content === "string") {
+      return content;
+    }
+    if (Array.isArray(content)) {
+      return content
+        .map((item) => (item.type === "text" ? item.text : ""))
+        .filter(Boolean)
+        .join("");
+    }
+    return String(content);
+  };
+
   const handleCopyText = () => {
     const textToCopy = messages
-      .map((m) => m.content)
-      .map((content) => {
-        if (typeof content !== "string") {
-          try {
-            return JSON.stringify(content, null, 2);
-          } catch {
-            return String(content);
-          }
-        }
-        return content;
-      })
+      .map((m) => extractTextFromContent(m.content))
+      .filter(Boolean)
       .join("\n\n");
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
@@ -525,6 +541,7 @@ const MessageGroup = ({
             onDeleteCascading={handleDeleteCascading}
             onRegenerate={handleUserRegenerate}
             onEditMessage={() => handleEditMessage(firstMessageIndex)}
+            onBranch={handleBranch}
           />
         ) : (
           <AIToolUtilsBar
@@ -535,6 +552,7 @@ const MessageGroup = ({
             onDeleteMessage={handleDeleteMessage}
             onDeleteCascading={handleDeleteCascading}
             onRegenerate={handleRegenerate}
+            onBranch={handleBranch}
           />
         )}
       </div>
