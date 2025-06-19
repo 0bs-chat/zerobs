@@ -5,7 +5,6 @@ import { requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
 import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
-import type { FunctionReturnType } from "convex/server";
 import { paginationOptsValidator } from "convex/server";
 
 export const generateUploadUrl = mutation({
