@@ -1,5 +1,3 @@
-"use node";
-
 import { ChatOpenAI } from "@langchain/openai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";

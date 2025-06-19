@@ -10,9 +10,7 @@
     "build": "vite build && tsc --noEmit",
     "build:prod": "CONVEX_DEPLOYMENT=resolute-lark-139 VITE_CONVEX_SITE_URL=https://resolute-lark-139.convex.site VITE_CONVEX_URL=https://resolute-lark-139.convex.cloud bun run build",
     "serve": "vite preview",
-    "test": "vitest run",
-    "preview": "bunx convex deploy --cmd 'bun run build && bunx wrangler dev' --preview-create test",
-    "deploy": "bunx convex deploy --cmd 'bun run build:prod'"
+    "test": "vitest run"
   },
   "dependencies": {
     "@auth/core": "0.37.0",
