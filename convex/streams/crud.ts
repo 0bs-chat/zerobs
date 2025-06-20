@@ -9,3 +9,10 @@ export const {
   update: updateStreamChunk,
   destroy: destroyStreamChunk,
 } = crud(schema, "streamChunks");
+
+export const {
+  create: createStreamState,
+  read: readStreamState,
+  update: updateStreamState,
+  destroy: destroyStreamState,
+} = crud(schema, "streamStates");

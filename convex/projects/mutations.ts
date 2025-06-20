@@ -16,7 +16,7 @@ export const create = mutation({
     const newProjectId = await ctx.db.insert("projects", {
       name: args.name ?? "",
       description: args.description,
-      systemPrompt: args.systemPrompt,
+      systemPrompt: args.systemPrompt ?? "",
       userId: userId,
       updatedAt: Date.now(),
     });
@@ -79,17 +79,17 @@ export const remove = mutation({
     );
 
     // Remove project from wherever it was selected
-    const selectProjectChatInputs = await ctx.db
-      .query("chatInputs")
+    const selectProjectChats = await ctx.db
+      .query("chats")
       .withIndex("by_user_project", (q) =>
         q.eq("userId", userId).eq("projectId", args.projectId),
       )
       .collect();
 
     await Promise.all(
-      selectProjectChatInputs.map((chatInput) =>
-        ctx.runMutation(api.chatInputs.mutations.update, {
-          chatId: chatInput.chatId,
+      selectProjectChats.map((chat) =>
+        ctx.runMutation(api.chats.mutations.update, {
+          chatId: chat._id,
           updates: { projectId: null },
         }),
       ),

@@ -82,7 +82,7 @@ export const cancel = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
+    const chatInput = await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });
     const stream = await ctx.runQuery(api.streams.queries.get, {
@@ -113,6 +113,9 @@ export const remove = internalMutation({
     // Remove the stream document and its associated chunks.
     await ctx.db.delete(args.streamId);
     await ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
+      streamId: args.streamId,
+    });
+    await ctx.runMutation(internal.streams.mutations.deleteState, {
       streamId: args.streamId,
     });
   },
@@ -159,5 +162,40 @@ export const cleanUp = internalMutation({
     // Sum up the total number of removed chunk references.
     const totalRemovedRefs = chunkCounts.reduce((a, b) => a + b, 0);
     return totalRemovedRefs;
+  },
+});
+
+export const updateState = internalMutation({
+  args: {
+    streamId: v.id("streams"),
+    updates: v.object(partial(schema.StreamState.withoutSystemFields)),
+  },
+  handler: async (ctx, args) => {
+    const state = await ctx.db.query("streamState").withIndex("by_stream", (q) => q.eq("streamId", args.streamId)).first();
+    if (!state) {
+      await ctx.db.insert("streamState", {
+        streamId: args.streamId,
+        sources: args.updates.sources ?? [],
+        plan: args.updates.plan ?? [],
+        pastSteps: args.updates.pastSteps ?? [],
+        currentStep: args.updates.currentStep ?? 0,
+      });
+    } else {
+      await ctx.db.patch(state._id, {
+        ...args.updates,
+      });
+    }
+  },
+})
+
+export const deleteState = internalMutation({
+  args: {
+    streamId: v.id("streams"),
+  },
+  handler: async (ctx, args) => {
+    const state = await ctx.db.query("streamState").withIndex("by_stream", (q) => q.eq("streamId", args.streamId)).first();
+    if (state) {
+      await ctx.db.delete(state._id);
+    }
   },
 });

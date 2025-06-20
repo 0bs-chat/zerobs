@@ -8,32 +8,22 @@
  * @module
  */
 
+import type * as agent_models from "../agent/models.js";
+import type * as agent_prompts from "../agent/prompts.js";
+import type * as agent_tools from "../agent/tools.js";
 import type * as apiKeys_actions from "../apiKeys/actions.js";
 import type * as apiKeys_mutations from "../apiKeys/mutations.js";
 import type * as apiKeys_queries from "../apiKeys/queries.js";
 import type * as auth from "../auth.js";
-import type * as chatInputs_mutations from "../chatInputs/mutations.js";
-import type * as chatInputs_queries from "../chatInputs/queries.js";
-import type * as chats_actions from "../chats/actions.js";
 import type * as chats_crud from "../chats/crud.js";
 import type * as chats_mutations from "../chats/mutations.js";
 import type * as chats_queries from "../chats/queries.js";
-import type * as checkpointer_checkpointer from "../checkpointer/checkpointer.js";
-import type * as checkpointer_mutations from "../checkpointer/mutations.js";
-import type * as checkpointer_queries from "../checkpointer/queries.js";
 import type * as crons from "../crons.js";
 import type * as documents_actions from "../documents/actions.js";
 import type * as documents_crud from "../documents/crud.js";
 import type * as documents_mutations from "../documents/mutations.js";
 import type * as documents_queries from "../documents/queries.js";
 import type * as http from "../http.js";
-import type * as langchain_agent from "../langchain/agent.js";
-import type * as langchain_db from "../langchain/db.js";
-import type * as langchain_getTools from "../langchain/getTools.js";
-import type * as langchain_index from "../langchain/index.js";
-import type * as langchain_models from "../langchain/models.js";
-import type * as langchain_state from "../langchain/state.js";
-import type * as langchain_utils from "../langchain/utils.js";
 import type * as mcps_actions from "../mcps/actions.js";
 import type * as mcps_crud from "../mcps/crud.js";
 import type * as mcps_mutations from "../mcps/mutations.js";
@@ -68,32 +58,22 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  "agent/models": typeof agent_models;
+  "agent/prompts": typeof agent_prompts;
+  "agent/tools": typeof agent_tools;
   "apiKeys/actions": typeof apiKeys_actions;
   "apiKeys/mutations": typeof apiKeys_mutations;
   "apiKeys/queries": typeof apiKeys_queries;
   auth: typeof auth;
-  "chatInputs/mutations": typeof chatInputs_mutations;
-  "chatInputs/queries": typeof chatInputs_queries;
-  "chats/actions": typeof chats_actions;
   "chats/crud": typeof chats_crud;
   "chats/mutations": typeof chats_mutations;
   "chats/queries": typeof chats_queries;
-  "checkpointer/checkpointer": typeof checkpointer_checkpointer;
-  "checkpointer/mutations": typeof checkpointer_mutations;
-  "checkpointer/queries": typeof checkpointer_queries;
   crons: typeof crons;
   "documents/actions": typeof documents_actions;
   "documents/crud": typeof documents_crud;
   "documents/mutations": typeof documents_mutations;
   "documents/queries": typeof documents_queries;
   http: typeof http;
-  "langchain/agent": typeof langchain_agent;
-  "langchain/db": typeof langchain_db;
-  "langchain/getTools": typeof langchain_getTools;
-  "langchain/index": typeof langchain_index;
-  "langchain/models": typeof langchain_models;
-  "langchain/state": typeof langchain_state;
-  "langchain/utils": typeof langchain_utils;
   "mcps/actions": typeof mcps_actions;
   "mcps/crud": typeof mcps_crud;
   "mcps/mutations": typeof mcps_mutations;

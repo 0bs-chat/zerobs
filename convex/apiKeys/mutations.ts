@@ -37,31 +37,6 @@ export const create = internalMutation({
   },
 });
 
-export const createPublic = internalMutation({
-  args: {
-    ...schema.ApiKeys.table.validator.fields,
-    ...partial(schema.ApiKeys.systemFields),
-  },
-  handler: async (ctx, args) => {
-    const existingApiKeyDoc = await ctx.runQuery(
-      api.apiKeys.queries.getPublicFromKey,
-      {
-        key: args.key,
-      },
-    );
-    if (existingApiKeyDoc) {
-      await ctx.db.delete(existingApiKeyDoc._id);
-    }
-
-    const jwt = await createJwt(null, args.key, args.value);
-
-    return await ctx.db.insert("apiKeys", {
-      key: args.key,
-      value: jwt,
-    });
-  },
-});
-
 export const remove = mutation({
   args: {
     key: v.string(),

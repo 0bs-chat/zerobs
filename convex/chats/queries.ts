@@ -4,8 +4,6 @@ import { requireAuth } from "../utils/helpers";
 import { paginationOptsValidator } from "convex/server";
 import { api } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
-import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
-import { BaseMessage } from "@langchain/core/messages";
 
 export const get = query({
   args: {
@@ -87,86 +85,18 @@ export const search = query({
   },
 });
 
-export const getCheckpoint = query({
+export const getMessages = query({
   args: {
+    chatId: v.id("chats"),
     paginationOpts: paginationOptsValidator,
-    chatId: v.union(v.id("chats"), v.literal("new")),
   },
-  returns: v.object({
-    page: v.any(),
-    isDone: v.boolean(),
-    continueCursor: v.union(v.string(), v.null()),
-  }),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
-
-    if (args.chatId === "new") {
-      return {
-        page: JSON.stringify(
-          {
-            messages: [],
-          },
-          null,
-          2,
-        ),
-        isDone: true,
-        continueCursor: null,
-      };
-    }
 
     await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });
 
-    const checkpointer = new ConvexCheckpointSaver(ctx);
-
-    const checkpoint = await checkpointer.get({
-      configurable: { thread_id: args.chatId },
-    });
-    const messages =
-      (checkpoint?.channel_values as { messages: BaseMessage[] } | undefined)
-        ?.messages || [];
-
-    // Pagination options with defaults
-    const { numItems = 20, cursor = null } = args.paginationOpts || {};
-
-    // Start from the end (most recent messages) and work backwards
-    const totalMessages = messages.length;
-    let startIndex = 0;
-    let endIndex = totalMessages;
-
-    if (cursor) {
-      // Parse cursor to get the starting position
-      try {
-        const cursorIndex = parseInt(cursor, 10);
-        if (cursorIndex >= 0 && cursorIndex < totalMessages) {
-          endIndex = cursorIndex;
-        }
-      } catch (error) {
-        // Invalid cursor, start from the end
-        endIndex = totalMessages;
-      }
-    }
-
-    // Calculate the slice bounds
-    startIndex = Math.max(0, endIndex - numItems);
-    const paginatedMessages = messages.slice(startIndex, endIndex);
-
-    // Determine if there are more messages to load
-    const isDone = startIndex === 0;
-    const continueCursor = isDone ? null : startIndex.toString();
-
-    return {
-      page: JSON.stringify(
-        {
-          ...checkpoint?.channel_values,
-          messages: paginatedMessages,
-        },
-        null,
-        2,
-      ),
-      isDone,
-      continueCursor,
-    };
+    return await ctx.db.query("chatMessages").withIndex("by_chat", (q) => q.eq("chatId", args.chatId)).order("desc").paginate(args.paginationOpts);
   },
 });

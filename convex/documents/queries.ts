@@ -2,8 +2,8 @@ import { internalQuery, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { paginationOptsValidator } from "convex/server";
-import { api } from "../_generated/api";
-import type { Doc } from "../_generated/dataModel";
+import { api, internal } from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
 
 export const get = query({
   args: {
@@ -76,16 +76,45 @@ export const getByKey = query({
   },
 });
 
+export const getDocumentVectors = internalQuery({
+  args: {
+    documentVectorIds: v.array(v.id("documentVectors")),
+  },
+  handler: async (ctx, args): Promise<{ text: string; document: Doc<"documents">; url: string }[]> => {
+    const vectors = (await Promise.all(
+      args.documentVectorIds.map((id) => ctx.db.get(id)),
+    ))
+
+    const vectorsWithDocs = await Promise.all(
+      vectors
+        .filter((v): v is NonNullable<typeof v> => v !== null)
+        .map(async (v) => {
+          const document = await ctx.db.get(v.documentId);
+          if (!document) return null;
+          const url = ["file", "text", "github", "image"].includes(document.type) ? await ctx.storage.getUrl(document.key) ?? document.key : document.key;
+          return {
+            text: v.text,
+            document,
+            url: url as string,
+          }
+        })
+    );
+
+    const validVectors = vectorsWithDocs.filter((v): v is NonNullable<typeof v> => v !== null);
+
+    return validVectors;
+  },
+})
+
 export const getAllVectors = internalQuery({
   args: {
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    const vectors = await ctx.db
-      .query("documentVectors")
-      .filter((q) => q.eq(q.field("metadata.source"), args.documentId))
-      .order("asc")
-      .collect();
-    return vectors;
+    const vectors = await ctx.db.query("documentVectors").filter((q) => q.eq(q.field("documentId"), args.documentId)).collect();
+    return vectors.map((v) => ({
+      text: v.text,
+      documentId: v.documentId,
+    }));
   },
 });

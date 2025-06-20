@@ -34,68 +34,32 @@ export const generateDownloadUrl = mutation({
   },
 });
 
-export const createMultiple = mutation({
+export const create = mutation({
   args: {
-    documents: v.array(
-      v.object({
-        name: schema.Documents.table.validator.fields.name,
-        type: schema.Documents.table.validator.fields.type,
-        size: schema.Documents.table.validator.fields.size,
-        key: schema.Documents.table.validator.fields.key,
-        ...partial(schema.Documents.systemFields),
-      }),
-    ),
+    name: schema.Documents.table.validator.fields.name,
+    type: schema.Documents.table.validator.fields.type,
+    size: schema.Documents.table.validator.fields.size,
+    key: schema.Documents.table.validator.fields.key,
+    ...partial(schema.Documents.systemFields),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const documentIds = await Promise.all(
-      args.documents.map(async (document) => {
-        const documentId = await ctx.db.insert("documents", {
-          ...document,
-          userId,
-          status: "processing",
-        });
-
-        return documentId;
-      }),
-    );
-
-    await Promise.all(
-      documentIds.map(async (documentId) => {
-        await ctx.scheduler.runAfter(
-          0,
-          internal.documents.actions.addDocument,
-          {
-            documentId,
-          },
-        );
-      }),
-    );
-
-    return documentIds;
-  },
-});
-
-export const updateJsonDoc = mutation({
-  args: {
-    documentId: v.id("documents"),
-    update: v.object({
-      key: v.id("_storage"),
-    }),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
-    const document = await ctx.runQuery(api.documents.queries.get, {
-      documentId: args.documentId,
+    const documentId = await ctx.db.insert("documents", {
+      ...args,
+      userId,
+      status: "processing",
     });
 
-    await ctx.storage.delete(document.key as Id<"_storage">);
+    await ctx.scheduler.runAfter(
+      0,
+      internal.documents.actions.addDocument,
+      {
+        documentId,
+      },
+    );
 
-    return await ctx.db.patch(args.documentId, {
-      key: args.update.key,
-    });
+    return documentId;
   },
 });
 
@@ -113,6 +77,23 @@ export const updateStatus = internalMutation({
   },
 });
 
+export const addVector = internalMutation({
+  args: {
+    documentId: v.id("documents"),
+    text: v.string(),
+    embedding: v.array(v.number()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await ctx.db.insert("documentVectors", {
+      documentId: args.documentId,
+      text: args.text,
+      embedding: args.embedding,
+    });
+    return null;
+  },
+});
+
 export const removeVectorsPaginated = internalMutation({
   args: {
     documentId: v.id("documents"),
@@ -121,7 +102,7 @@ export const removeVectorsPaginated = internalMutation({
   handler: async (ctx, args) => {
     const vectors = await ctx.db
       .query("documentVectors")
-      .filter((q) => q.eq(q.field("metadata.source"), args.documentId))
+      .filter((q) => q.eq(q.field("documentId"), args.documentId))
       .order("asc")
       .paginate(args.paginationOpts);
 
@@ -136,7 +117,7 @@ export const removeVectorsPaginated = internalMutation({
   },
 });
 
-export const remove = internalMutation({
+export const remove = mutation({
   args: {
     documentId: v.id("documents"),
   },

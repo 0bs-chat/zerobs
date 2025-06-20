@@ -37,24 +37,3 @@ export const getAll = query({
     return projects;
   },
 });
-
-export const getMultiple = query({
-  args: {
-    projectIds: v.array(v.id("projects")),
-  },
-  handler: async (ctx, args): Promise<Doc<"projects">[]> => {
-    await requireAuth(ctx);
-
-    const projects = await Promise.all(
-      args.projectIds.map(async (projectId) => {
-        const project = await ctx.runQuery(api.projects.queries.get, {
-          projectId,
-        });
-
-        return project;
-      }),
-    );
-
-    return projects;
-  },
-});

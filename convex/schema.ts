@@ -4,7 +4,7 @@ import { authTables } from "@convex-dev/auth/server";
 import { Table } from "convex-helpers/server";
 
 export const ApiKeys = Table("apiKeys", {
-  userId: v.optional(v.id("users")),
+  userId: v.id("users"),
   key: v.string(),
   value: v.string(),
 });
@@ -32,29 +32,30 @@ export const Documents = Table("documents", {
 export const DocumentVectors = Table("documentVectors", {
   embedding: v.array(v.number()),
   text: v.string(),
-  metadata: v.any(),
+  documentId: v.id("documents"),
 });
 
 export const Chats = Table("chats", {
-  name: v.string(),
   userId: v.id("users"),
+  name: v.string(),
   pinned: v.boolean(),
+  documents: v.array(v.id("documents")),
+  text: v.string(),
+  model: v.string(),
+  reasoningEffort: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+  projectId: v.union(v.id("projects"), v.null()),
+  agentMode: v.boolean(),
+  plannerMode: v.boolean(),
+  webSearch: v.boolean(),
+  artifacts: v.boolean(),
+  streamId: v.optional(v.id("streams")),
   updatedAt: v.number(),
 });
 
-export const ChatInputs = Table("chatInputs", {
-  chatId: v.union(v.id("chats"), v.literal("new")),
-  userId: v.id("users"),
-  documents: v.optional(v.array(v.id("documents"))),
-  text: v.optional(v.string()),
-  projectId: v.optional(v.union(v.id("projects"), v.null())),
-  agentMode: v.optional(v.boolean()),
-  plannerMode: v.optional(v.boolean()),
-  webSearch: v.optional(v.boolean()),
-  artifacts: v.optional(v.boolean()),
-  model: v.optional(v.string()),
-  streamId: v.optional(v.id("streams")),
-  updatedAt: v.number(),
+export const ChatMessages = Table("chatMessages", {
+  chatId: v.id("chats"),
+  index: v.number(),
+  message: v.string(),
 });
 
 export const Streams = Table("streams", {
@@ -65,7 +66,7 @@ export const Streams = Table("streams", {
     v.literal("done"),
     v.literal("error"),
     v.literal("cancelled"),
-  ),
+  )
 });
 
 export const StreamChunks = Table("streamChunks", {
@@ -73,10 +74,31 @@ export const StreamChunks = Table("streamChunks", {
   chunks: v.array(v.string()),
 });
 
+export const StreamStates = Table("streamStates", {
+  streamId: v.id("streams"),
+  sources: v.array(v.object({
+    type: v.union(v.literal("document"), v.literal("search")),
+    searchResult: v.optional(v.object({
+      score: v.number(),
+      title: v.string(),
+      url: v.string(),
+      content: v.string(),
+    })),
+    searchResultImage: v.optional(v.string()),
+    document: v.optional(v.object({
+      doc: Documents.table.validator,
+      text: v.string(),
+    })),
+  })),
+  plan: v.array(v.union(v.string(), v.array(v.string()))),
+  currentStep: v.number(),
+  pastSteps: v.array(v.object({ step: v.string(), message: v.string() })),
+});
+
 export const Projects = Table("projects", {
   name: v.string(),
   description: v.optional(v.string()),
-  systemPrompt: v.optional(v.string()),
+  systemPrompt: v.string(),
   userId: v.id("users"),
   updatedAt: v.number(),
 });
@@ -107,51 +129,13 @@ export const Mcps = Table("mcps", {
     v.literal("error"),
   ),
   restartOnNewChat: v.boolean(),
-  userId: v.id("users"),
+  userId: v.optional(v.id("users")),
   updatedAt: v.number(),
-});
-
-export const Checkpoints = Table("checkpoints", {
-  thread_id: v.string(),
-  checkpoint_ns: v.string(),
-  checkpoint_id: v.string(),
-  parent_checkpoint_id: v.optional(v.string()),
-  checkpoint: v.any(),
-  metadata: v.any(),
-  namespace: v.string(),
-  _creationTime: v.optional(v.number()),
-});
-
-export const CheckpointBlobs = Table("checkpoint_blobs", {
-  thread_id: v.string(),
-  checkpoint_ns: v.string(),
-  channel: v.string(),
-  version: v.string(),
-  type: v.string(),
-  blob: v.bytes(),
-  namespace: v.string(),
-});
-
-export const CheckpointWrites = Table("checkpoint_writes", {
-  thread_id: v.string(),
-  checkpoint_ns: v.string(),
-  checkpoint_id: v.string(),
-  task_id: v.string(),
-  idx: v.number(),
-  channel: v.string(),
-  type: v.string(),
-  blob: v.bytes(),
-  namespace: v.string(),
 });
 
 export const StreamChunkRefs = Table("streamChunkRefs", {
   streamId: v.id("streams"),
   chunkId: v.id("streamChunks"),
-});
-
-export const ProjectVectorsRefs = Table("projectVectorsRefs", {
-  projectId: v.id("projects"),
-  vectorId: v.id("documentVectors"),
 });
 
 export default defineSchema({
@@ -166,23 +150,22 @@ export default defineSchema({
   documentVectors: DocumentVectors.table.vectorIndex("byEmbedding", {
     vectorField: "embedding",
     dimensions: 768,
-    filterFields: ["metadata"],
+    filterFields: ["documentId"],
   }),
   chats: Chats.table
     .index("by_user", ["userId"])
+    .index("by_user_project", ["userId", "projectId"])
     .index("by_user_updated", ["userId", "updatedAt"])
     .searchIndex("by_name", {
       searchField: "name",
       filterFields: ["userId"],
     }),
-  chatInputs: ChatInputs.table
-    .index("by_user", ["userId"])
-    .index("by_user_project", ["userId", "projectId"])
-    .index("by_chat_user", ["chatId", "userId"]),
+  chatMessages: ChatMessages.table.index("by_chat", ["chatId"]),
   streams: Streams.table
     .index("by_user", ["userId"])
     .index("by_status_user", ["status", "userId"]),
   streamChunks: StreamChunks.table.index("by_stream", ["streamId"]),
+  streamStates: StreamStates.table.index("by_stream", ["streamId"]),
   projects: Projects.table.index("by_user_updated", ["userId", "updatedAt"]),
   projectDocuments: ProjectDocuments.table
     .index("by_project", ["projectId"])
@@ -191,35 +174,5 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_updated", ["userId", "updatedAt"])
     .index("by_enabled_user", ["enabled", "userId"]),
-  checkpoints: Checkpoints.table
-    .index("by_thread", ["namespace", "thread_id", "checkpoint_ns"])
-    .index("by_checkpoint", [
-      "namespace",
-      "thread_id",
-      "checkpoint_ns",
-      "checkpoint_id",
-    ]),
-  checkpoint_blobs: CheckpointBlobs.table.index("by_channel", [
-    "namespace",
-    "thread_id",
-    "checkpoint_ns",
-    "channel",
-    "version",
-  ]),
-  checkpoint_writes: CheckpointWrites.table
-    .index("by_checkpoint", [
-      "namespace",
-      "thread_id",
-      "checkpoint_ns",
-      "checkpoint_id",
-    ])
-    .index("by_task", [
-      "namespace",
-      "thread_id",
-      "checkpoint_ns",
-      "checkpoint_id",
-      "task_id",
-      "idx",
-    ]),
   streamChunkRefs: StreamChunkRefs.table.index("by_stream", ["streamId"]),
 });
