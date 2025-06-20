@@ -55,12 +55,7 @@ function RouteComponent() {
           {rightPanelVisible && (
             <>
               <ResizableHandle />
-              <ResizablePanel
-                defaultSize={40}
-                minSize={25}
-                maxSize={50}
-                className="overflow-hidden h-full"
-              >
+              <ResizablePanel defaultSize={40} minSize={25} maxSize={50}>
                 <Panel />
               </ResizablePanel>
             </>

@@ -240,6 +240,36 @@ code {
   }
 }
 
+/* Target react-syntax-highlighter spans directly */
+.syntax-highlighter-nowrap span[style] {
+  white-space: pre !important;
+  word-break: unset !important;
+}
+
+.syntax-highlighter-wrap span[style] {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+.syntax-highlighter-nowrap {
+  overflow-x: auto;
+}
+
+.syntax-highlighter-wrap {
+  overflow-x: hidden;
+}
+
+/* More specific selectors to override inline styles */
+.syntax-highlighter-nowrap .bg-card {
+  white-space: pre !important;
+  word-break: unset !important;
+}
+
+.syntax-highlighter-wrap .bg-card {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
 .mermaid-width-mode > svg {
   max-width: 100%;
   height: auto;

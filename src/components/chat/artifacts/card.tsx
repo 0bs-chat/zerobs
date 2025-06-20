@@ -82,10 +82,10 @@ export const ArtifactCard = React.memo(
 
     return (
       <Card
-        className={`hover:shadow-md transition-shadow border-2 border-transparent ${
+        className={`hover:shadow-md transition-shadow border-3 border-transparent ${
           selectedArtifactId === artifact.id
             ? "border-2  border-primary/50 "
-            : ""
+            : "border-2 border-transparent"
         }`}
       >
         <CardHeader className="py-1.5">

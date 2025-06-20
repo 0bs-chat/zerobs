@@ -6,8 +6,8 @@ import {
   useStreamAtom,
 } from "@/store/chatStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+// import { Badge } from "@/components/ui/badge";
+// import { Separator } from "@/components/ui/separator";
 import { ArtifactViewer } from "./viewer";
 import type { Artifact } from "../../artifacts/utils";
 import { parseArtifacts } from "../../artifacts/utils";
@@ -64,7 +64,7 @@ const ArtifactsList = ({
 }) => {
   if (artifacts.length === 0) {
     return (
-      <div className="flex items-center justify-center h-32 text-center">
+      <div className="flex items-center justify-center text-center h-32">
         <div className="text-sm text-muted-foreground">
           No artifacts found in this conversation
         </div>
@@ -72,25 +72,19 @@ const ArtifactsList = ({
     );
   }
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-4 h-full">
+      {/* <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-medium">Artifacts</h3>
           <p className="text-xs text-muted-foreground">
             Interactive content from this conversation
           </p>
         </div>
-        {artifacts.length > 0 && (
-          <Badge variant="secondary">{artifacts.length}</Badge>
-        )}
-      </div>
+      </div> */}
 
-      <Separator />
+      {/* <Separator /> */}
 
-      <ScrollArea
-        type="always"
-        className="flex-grow h-[calc(100vh-10rem)] pr-3"
-      >
+      <ScrollArea type="always" className="flex-grow h-[calc(100vh-10rem)]">
         <div className="flex flex-col gap-3">
           {artifacts.map((artifact) => (
             <ArtifactCard

@@ -28,7 +28,7 @@ export const mcpAtom = atom<MCPData>({
   restartOnNewChat: false,
 });
 
-export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", true);
+export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", false);
 
 export const rightPanelVisibilityAtom = atomWithStorage(
   "rightPanelVisibility",
@@ -42,12 +42,12 @@ export const rightPanelActiveTabAtom = atomWithStorage(
 export const rightPanelWidthAtom = atomWithStorage("rightPanelWidth", 40);
 
 export const chatProjectIdAtom = atom<Id<"projects"> | undefined>(undefined);
-export const selectedArtifactIdAtom = atom<string | null>(null);
 export const useStreamAtom = atom<ReturnType<typeof useStream> | null>(null);
 export const useCheckpointParserAtom = atom<ReturnType<
   typeof useCheckpointParser
 > | null>(null);
 
 export const selectedArtifactAtom = atom<Artifact | null>(null);
+export const selectedArtifactIdAtom = atom<string | null>(null);
 
 export const themeAtom = atomWithStorage("theme", "dark");
