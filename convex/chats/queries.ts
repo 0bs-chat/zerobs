@@ -25,11 +25,11 @@ export const get = query({
 
 export const getAll = query({
   args: {
-    paginationOpts: v.optional(paginationOptsValidator),
+    paginationOpts: paginationOptsValidator,
     filters: v.optional(
       v.object({
         pinned: v.optional(v.boolean()),
-      }),
+      })
     ),
   },
   handler: async (ctx, args) => {
@@ -41,7 +41,7 @@ export const getAll = query({
       .filter((q) =>
         args.filters?.pinned === undefined
           ? true
-          : q.eq(q.field("pinned"), args.filters.pinned),
+          : q.eq(q.field("pinned"), args.filters.pinned)
       )
       .order("desc")
       .paginate(args.paginationOpts ?? { numItems: 10, cursor: null });
@@ -64,7 +64,7 @@ export const getMultiple = query({
         });
 
         return chat;
-      }),
+      })
     );
   },
 });
@@ -79,7 +79,7 @@ export const search = query({
     const chats = await ctx.db
       .query("chats")
       .withSearchIndex("by_name", (q) =>
-        q.search("name", args.query).eq("userId", userId),
+        q.search("name", args.query).eq("userId", userId)
       )
       .take(10);
 
@@ -107,7 +107,7 @@ export const getCheckpoint = query({
             messages: [],
           },
           null,
-          2,
+          2
         ),
         isDone: true,
         continueCursor: null,
@@ -116,7 +116,7 @@ export const getCheckpoint = query({
 
     await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
-    })
+    });
 
     const checkpointer = new ConvexCheckpointSaver(ctx);
 
@@ -163,7 +163,7 @@ export const getCheckpoint = query({
           messages: paginatedMessages,
         },
         null,
-        2,
+        2
       ),
       isDone,
       continueCursor,
