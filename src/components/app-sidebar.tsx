@@ -40,16 +40,8 @@ const ChatItem = React.forwardRef<
     onDelete: (chatId: string) => void;
   }
 >(function ChatItem(
-  {
-    chat,
-    isPinned,
-    selected,
-    onNavigate,
-    onPin,
-    onUnpin,
-    onDelete,
-  },
-  ref
+  { chat, isPinned, selected, onNavigate, onPin, onUnpin, onDelete },
+  ref,
 ) {
   const handleNavigate = useCallback(() => {
     onNavigate(chat._id);
@@ -124,7 +116,8 @@ export function AppSidebar() {
   }
 
   const { groupedChats, hasMore, isLoading, loadMore } = useInfiniteChats();
-  const { searchQuery, setSearchQuery, searchResults, isSearching } = useSearchChats();
+  const { searchQuery, setSearchQuery, searchResults, isSearching } =
+    useSearchChats();
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
   const selectedChatId = useParams({ strict: false }).chatId;
@@ -224,10 +217,10 @@ export function AppSidebar() {
             // Show search results
             <SidebarGroup className="flex-1 overflow-hidden">
               <SidebarGroupContent className="flex flex-col gap-1 px-2">
-                <div 
+                <div
                   ref={scrollContainerRef}
                   className="flex-1 overflow-y-auto min-h-0 max-h-[calc(100vh-1rem)]"
-                  style={{ scrollbarWidth: 'none' }}
+                  style={{ scrollbarWidth: "none" }}
                 >
                   {searchResults.length > 0 ? (
                     searchResults.map((chat) => (
@@ -260,7 +253,9 @@ export function AppSidebar() {
               return (
                 <SidebarGroup
                   key={group}
-                  className={isPinned ? "w-full flex" : "flex-1 overflow-hidden"}
+                  className={
+                    isPinned ? "w-full flex" : "flex-1 overflow-hidden"
+                  }
                 >
                   <SidebarGroupLabel className="flex items-center gap-2">
                     {isPinned ? (
@@ -274,15 +269,15 @@ export function AppSidebar() {
                   </SidebarGroupLabel>
                   <SidebarGroupContent className="flex flex-col gap-1 px-2">
                     {group === "history" ? (
-                      <div 
+                      <div
                         ref={scrollContainerRef}
                         className="flex-1 overflow-y-auto min-h-0 max-h-[calc(100vh-1rem)]"
-                        style={{ scrollbarWidth: 'none' }}
+                        style={{ scrollbarWidth: "none" }}
                       >
                         <InfiniteScroll
                           isLoading={isLoading}
                           hasMore={hasMore}
-                          next={loadMore}
+                          next={() => loadMore(20)}
                           threshold={0.8}
                           root={scrollContainerRef.current}
                         >

@@ -1,248 +1,113 @@
 "use node";
 
-import { z } from "zod"
-import { ActionCtx, internalAction } from "../_generated/server";
-import {
-  RemoveMessage,
-  BaseMessage,
-  HumanMessage,
-} from "@langchain/core/messages";
-import { api, internal } from "../_generated/api";
-import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
+import { ActionCtx } from "../_generated/server";
+import { Doc } from "../_generated/dataModel";
 import { agentGraph } from "./agent";
-import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
-import { getModel } from "./models";
-import { createHumanMessage, processStreamWithBatching, streamHelper } from "./utils";
-import { Doc, Id } from "../_generated/dataModel";
-import * as schema from "../schema";
+import { api, internal } from "../_generated/api";
+import { mapStoredMessageToChatMessage } from "@langchain/core/messages";
+import { MemorySaver } from "@langchain/langgraph";
+import { parseStateToStreamStatesDoc } from "./helpers";
+import { GraphState } from "./state";
 
 export async function chat(
   ctx: ActionCtx,
-  args: Partial<Doc<"chatInputs">> & { chat: Doc<"chats"> | null },
+  args: {
+    chat: Doc<"chats">;
+  },
 ) {
   const abortController = new AbortController();
-  const stream = streamHelper(ctx, {
-    chatInput: args,
-    signal: abortController.signal,
-    includeHumanMessage: true,
-  });
-  await processStreamWithBatching(
-    ctx,
-    stream,
-    args.streamId!,
-    abortController,
-  );
-}
-
-export async function removeMessageGroup(
-  ctx: ActionCtx,
-  args: {
-    chatId: Id<"chats">;
-    startIndex: number;
-    count: number;
-    cascade: boolean;
-  },
-) {
-  const checkpointer = new ConvexCheckpointSaver(ctx);
-  const checkpoint = await checkpointer.get({
-    configurable: { thread_id: args.chatId },
-  });
-  const messages = checkpoint?.channel_values.messages as BaseMessage[];
-
-  if (args.startIndex < 0 || args.startIndex >= messages.length) {
-    throw new Error("Invalid start index");
-  }
-
-  if (args.count <= 0) {
-    throw new Error("Count must be positive");
-  }
-
-  const endIndex = args.startIndex + args.count;
-  if (endIndex > messages.length) {
-    throw new Error("Count exceeds available messages");
-  }
-
-  let updatedMessages: RemoveMessage[] = [];
-  if (args.cascade) {
-    // Remove from startIndex to end of conversation
-    updatedMessages = messages
-      .slice(args.startIndex)
-      .map((message) => new RemoveMessage({ id: message.id! }));
-  } else {
-    // Remove only the specified range
-    updatedMessages = messages
-      .slice(args.startIndex, endIndex)
-      .map((message) => new RemoveMessage({ id: message.id! }));
-  }
-
-  return await agentGraph
-    .compile({ checkpointer })
-    .updateState(
-      { configurable: { thread_id: args.chatId } },
-      { messages: updatedMessages },
-    );
-}
-
-export async function regenerateResponse(
-  ctx: ActionCtx,
-  args: {
-    chatId: Id<"chats">;
-  },
-) {
-  const chatInput = await ctx.runQuery(
-    internal.chatInputs.queries.getInternal,
-    {
-      chatId: args.chatId,
+  const project = args.chat.projectId 
+    ? await ctx.runQuery(api.projects.queries.get, { 
+        projectId: args.chat.projectId 
+      })
+    : null;
+  const customPrompt = project?.systemPrompt && project.systemPrompt.trim() !== "" 
+    ? project.systemPrompt 
+    : undefined;
+  
+  const messages = (await ctx.runQuery(api.chats.queries.getMessages, {
+    chatId: args.chat._id,
+    paginationOpts: {
+      numItems: 100,
+      cursor: null,
     },
-  );
-
-  // Create AbortController for cancellation
-  const abortController = new AbortController();
-  const stream = streamHelper(ctx, {
-    chatInput,
-    signal: abortController.signal,
-    includeHumanMessage: false,
-  });
-
-  await processStreamWithBatching(
-    ctx,
-    stream,
-    chatInput.streamId!,
-    abortController,
-  );
-}
-
-export async function addMessage(
-  ctx: ActionCtx,
-  args: {
-    chatInputDoc: Doc<"chatInputs">;
-  },
-): Promise<Record<string, any>> {
-  const checkpointer = new ConvexCheckpointSaver(ctx);
-  const checkpoint = await checkpointer.get({
-    configurable: { thread_id: args.chatInputDoc.chatId },
-  });
-  const messages = checkpoint?.channel_values.messages as BaseMessage[];
-
-  if (!messages) {
-    throw new Error("No messages found in chat");
-  }
-
-  const humanMessage = await createHumanMessage(
-    ctx,
-    args.chatInputDoc.text!,
-    args.chatInputDoc.documents,
-  );
-
-  await ctx.runMutation(api.chatInputs.mutations.update, {
-    chatId: args.chatInputDoc.chatId,
-    updates: { text: "", documents: [] },
-  });
-
-  const response = await agentGraph
-    .compile({ checkpointer })
-    .updateState(
-      { configurable: { thread_id: args.chatInputDoc.chatId } },
-      { messages: [...messages, humanMessage] },
-    );
-
-  return response;
-}
-
-export async function getMessageCount(
-  ctx: ActionCtx,
-  args: {
-    chatId: Id<"chats">;
-  },
-) {
-  const checkpointer = new ConvexCheckpointSaver(ctx);
-  const checkpoint = await checkpointer.get({
-    configurable: { thread_id: args.chatId },
-  });
-  const messages = checkpoint?.channel_values.messages as BaseMessage[];
-
-  return {
-    totalMessages: messages ? messages.length : 0,
-  };
-}
-
-export const generateTitle = internalAction({
-  args: schema.ChatInputs.doc,
-  handler: async (ctx, args) => {
-    const prompt = ChatPromptTemplate.fromMessages([
-      ["system", "You are a helpful assistant that generates titles for chats."],
-      new MessagesPlaceholder("input"),
-    ]);
-    const output = z.object({
-      title: z.string(),
-    });
-
-    const modelWithOutputParser = prompt
-      .pipe(await getModel("worker").withStructuredOutput(output));
-
-    if (args.chatId !== "new") {
-      const response = await modelWithOutputParser.invoke({
-        input: [
-          await createHumanMessage(
-            ctx,
-            args.text!,
-            args.documents,
-          ),
-        ],
-      });
-
-      await ctx.runMutation(internal.chats.crud.update, {
-        id: args.chatId!,
-        patch: { name: response.title, updatedAt: Date.now() },
-      });
+  })).page.map((message) => mapStoredMessageToChatMessage(JSON.parse(message.message)));
+  
+  const checkpointer = new MemorySaver();
+  const agent = agentGraph.compile({ checkpointer });
+  const stream = agent.streamEvents(
+    { messages },
+    { 
+      version: "v2",
+      configurable: { 
+        ctx, 
+        chat: args.chat,
+        customPrompt,
+        thread_id: args.chat._id,
+      },
+      recursionLimit: 100,
+      signal: abortController.signal,
     }
-  },
-});
-
-export async function editMessage(
-  ctx: ActionCtx,
-  args: {
-    chatId: Id<"chats">;
-    messageIndex: number;
-    newContent: string;
-    documents?: Id<"documents">[];
-  },
-) {
-  const checkpointer = new ConvexCheckpointSaver(ctx);
-  const checkpoint = await checkpointer.get({
-    configurable: { thread_id: args.chatId },
-  });
-  const messages = checkpoint?.channel_values.messages as BaseMessage[];
-
-  if (!messages || args.messageIndex < 0 || args.messageIndex >= messages.length) {
-    throw new Error("Invalid message index");
-  }
-
-  const messageToEdit = messages[args.messageIndex];
-
-  if (!(messageToEdit instanceof HumanMessage)) {
-    throw new Error("Only human messages can be edited");
-  }
-
-  // For human messages, create a new HumanMessage with updated content
-  const updatedMessage = await createHumanMessage(
-    ctx,
-    args.newContent,
-    args.documents,
   );
-  updatedMessage.id = messageToEdit.id; // Preserve the original ID
 
-  // Create a new messages array with the updated message
-  const updatedMessages = [...messages];
-  updatedMessages[args.messageIndex] = updatedMessage;
+  const BUFFER = 300; // ms
+  let lastFlush = Date.now();
+  const buffer: string[] = [];
+  let wasCancelled = false;
+  let streamDoc: Doc<"streams"> | null = null;
 
-  // Update the state with the new messages array
-  await agentGraph
-    .compile({ checkpointer })
-    .updateState(
-      { configurable: { thread_id: args.chatId } },
-      { messages: updatedMessages },
-    );
+  try {
+    for await (const event of stream) {
+      const state = parseStateToStreamStatesDoc((await agent.getState({ configurable: { thread_id: args.chat._id } })).values as typeof GraphState.State);
+      await ctx.runMutation(internal.streams.mutations.updateState, {
+        streamId: args.chat.streamId!,
+        updates: state,
+      });
 
-  return null;
+      const now = Date.now();
+      if (streamDoc?.status === "cancelled") {
+        wasCancelled = true;
+        abortController.abort();
+        break;
+      }
+
+      if (
+        ["on_chat_model_stream", "on_tool_start", "on_tool_end"].includes(
+          event.event,
+        )
+      ) {
+        const allowedNodes = ["baseAgent", "simple"];
+        if (
+          allowedNodes.some((node) =>
+            event.metadata.checkpoint_ns.startsWith(node),
+          )
+        ) {
+          buffer.push(JSON.stringify(event));
+        }
+      }
+
+      if (now - lastFlush >= BUFFER) {
+        streamDoc = await ctx.runMutation(
+          internal.streams.mutations.appendChunks,
+          {
+            streamId: args.chat.streamId!,
+            chunks: buffer,
+          },
+        );
+        lastFlush = now;
+        buffer.length = 0;
+      }
+    }
+  } catch (error) {
+    if (wasCancelled) {
+      return;
+    }
+    await ctx.runMutation(internal.streams.mutations.update, {
+      streamId: args.chat.streamId!,
+      updates: {
+        status: "error",
+      },
+    });
+    throw error;
+  }
 }

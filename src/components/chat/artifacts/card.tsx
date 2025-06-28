@@ -19,7 +19,7 @@ import { useAtomValue } from "jotai";
 import { selectedArtifactIdAtom } from "@/store/chatStore";
 
 // Get appropriate icon for artifact type
-const getArtifactIcon = (type: string, language?: string) => {
+const getArtifactIcon = (type: string, _language?: string) => {
   switch (type) {
     case "application/vnd.ant.react":
       return { Icon: CodeIcon, className: "text-blue-500" };
@@ -68,7 +68,7 @@ export const ArtifactCard = React.memo(
     const selectedArtifactId = useAtomValue(selectedArtifactIdAtom);
     const { Icon, className } = getArtifactIcon(
       artifact.type,
-      artifact.language
+      artifact.language,
     );
     const { copy, copied } = useCopy({ duration: 2000 });
 
@@ -92,7 +92,13 @@ export const ArtifactCard = React.memo(
           <div className="flex items-center justify-between gap-2 max-w-full">
             <div className="flex items-center gap-2 min-w-1/2 flex-1">
               <Icon className={`w-5 h-5 ${className} flex-shrink-0`} />
-              <CardTitle className="text-lg font-medium truncate">
+              <CardTitle
+                className="text-lg font-medium truncate"
+                style={{
+                  wordBreak: "break-word",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
                 {artifact.title}
               </CardTitle>
             </div>
@@ -132,7 +138,7 @@ export const ArtifactCard = React.memo(
         </CardContent>
       </Card>
     );
-  }
+  },
 );
 
 ArtifactCard.displayName = "ArtifactCard";

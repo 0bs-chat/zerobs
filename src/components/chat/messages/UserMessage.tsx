@@ -24,13 +24,13 @@ interface UserMessageProps {
 }
 
 export const UserMessageComponent = React.memo(
-  ({ 
-    message, 
-    isEditing = false, 
-    onCancelEdit, 
+  ({
+    message,
+    isEditing = false,
+    onCancelEdit,
     onSaveEdit,
     messageIndex,
-    chatId
+    chatId,
   }: UserMessageProps) => {
     const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
     const setDocumentDialogDocumentId = useSetAtom(
@@ -60,10 +60,10 @@ export const UserMessageComponent = React.memo(
 
     const handleSave = async (regenerate: boolean = false) => {
       if (chatId === "new" || messageIndex === undefined) return;
-      
+
       // Close edit state immediately
       onSaveEdit?.(editContent, regenerate);
-      
+
       try {
         await editMessage({
           chatId: chatId as Id<"chats">,
@@ -92,7 +92,7 @@ export const UserMessageComponent = React.memo(
             maxHeight={300}
             placeholder="Edit your message..."
           />
-          
+
           {documents?.map((document) => (
             <Badge
               className="text-xs font-bold p-4 w-full cursor-pointer shadow-sm"

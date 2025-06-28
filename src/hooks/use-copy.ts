@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
 
-export function useCopy(options: {
-  duration?: number;
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-} = {}) {
+export function useCopy(
+  options: {
+    duration?: number;
+    onSuccess?: () => void;
+    onError?: (error: Error) => void;
+  } = {},
+) {
   const { duration = 1000, onSuccess, onError } = options;
   const [copied, setCopied] = useState(false);
 

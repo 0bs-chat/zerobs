@@ -14,9 +14,8 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 export function TopNav() {
   const [rightPanelVisible, setRightPanelVisible] = useAtom(
-    rightPanelVisibilityAtom
+    rightPanelVisibilityAtom,
   );
-  const setSelectedArtifactId = useSetAtom(selectedArtifactIdAtom);
   const { signOut } = useAuthActions();
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
   return (

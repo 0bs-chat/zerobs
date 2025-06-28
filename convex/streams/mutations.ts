@@ -2,7 +2,7 @@ import { internalMutation, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
-import { Doc } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
 
@@ -53,25 +53,30 @@ export const appendChunks = internalMutation({
     chunks: v.array(v.string()),
   },
   handler: async (ctx, args): Promise<Doc<"streams">> => {
+    let stream = await ctx.runQuery(api.streams.queries.get, {
+      streamId: args.streamId,
+    });
+    if (["done", "error", "cancelled"].includes(stream.status)) {
+      return stream;
+    }
+
     await ctx.runMutation(internal.streams.crud.update, {
       id: args.streamId,
       patch: {
         status: "streaming",
       },
     });
+    stream.status = "streaming";
     const chunkDocId = await ctx.db.insert("streamChunks", {
       streamId: args.streamId,
       chunks: args.chunks,
     });
-
     await ctx.db.insert("streamChunkRefs", {
       streamId: args.streamId,
       chunkId: chunkDocId,
     });
 
-    return await ctx.runQuery(api.streams.queries.get, {
-      streamId: args.streamId,
-    });
+    return stream;
   },
 });
 
@@ -82,7 +87,7 @@ export const cancel = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const chatInput = await ctx.runQuery(api.chatInputs.queries.get, {
+    const chatInput = await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });
     const stream = await ctx.runQuery(api.streams.queries.get, {
@@ -113,6 +118,9 @@ export const remove = internalMutation({
     // Remove the stream document and its associated chunks.
     await ctx.db.delete(args.streamId);
     await ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
+      streamId: args.streamId,
+    });
+    await ctx.runMutation(internal.streams.mutations.deleteState, {
       streamId: args.streamId,
     });
   },
@@ -159,5 +167,39 @@ export const cleanUp = internalMutation({
     // Sum up the total number of removed chunk references.
     const totalRemovedRefs = chunkCounts.reduce((a, b) => a + b, 0);
     return totalRemovedRefs;
+  },
+});
+
+export const updateState = internalMutation({
+  args: {
+    streamId: v.id("streams"),
+    updates: v.object(partial(schema.StreamStates.withoutSystemFields)),
+  },
+  handler: async (ctx, args) => {
+    const state = await ctx.db.query("streamStates").withIndex("by_stream", (q) => q.eq("streamId", args.streamId)).first();
+    if (!state) {
+      await ctx.db.insert("streamStates", {
+        streamId: args.streamId,
+        sources: args.updates.sources ?? [],
+        plan: args.updates.plan ?? [],
+        pastSteps: args.updates.pastSteps ?? [],
+      });
+    } else {
+      await ctx.db.patch(state._id, {
+        ...args.updates,
+      });
+    }
+  },
+})
+
+export const deleteState = internalMutation({
+  args: {
+    streamId: v.id("streams"),
+  },
+  handler: async (ctx, args) => {
+    const state = await ctx.db.query("streamStates").withIndex("by_stream", (q) => q.eq("streamId", args.streamId)).first();
+    if (state) {
+      await ctx.db.delete(state._id);
+    }
   },
 });

@@ -15,7 +15,7 @@ function RouteComponent() {
             style={{ pointerEvents: "auto" }}
           >
             <img
-              src="/0bs.png"
+              src="/android-chrome-512x512.png"
               alt="zerobs logo"
               className="cursor-pointer w-12 h-12"
             />

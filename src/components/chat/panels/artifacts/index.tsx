@@ -12,48 +12,6 @@ import { ArtifactViewer } from "./viewer";
 import type { Artifact } from "../../artifacts/utils";
 import { parseArtifacts } from "../../artifacts/utils";
 import { ArtifactCard } from "../../artifacts/card";
-import { useSetAtom } from "jotai";
-import { selectedArtifactIdAtom } from "@/store/chatStore";
-
-const parseStreamingArtifacts = (
-  streamingContent: string,
-  baseMessageIndex: number
-): Artifact[] => {
-  const artifacts: Artifact[] = [];
-  if (!streamingContent) return artifacts;
-
-  const chunks = streamingContent.split(/<artifact/);
-
-  for (let i = 1; i < chunks.length; i++) {
-    const fullChunk = "<artifact" + chunks[i];
-    const headerRegex =
-      /<artifact\s+id="([^"]+)"\s+type="([^"]+)"(?:\s+language="([^"]+)")?\s+title="([^"]+)"[^>]*>/;
-    const headerMatch = fullChunk.match(headerRegex);
-
-    if (headerMatch) {
-      const [, id, type, language, title] = headerMatch;
-      const header = headerMatch[0];
-      let artifactContent = fullChunk.substring(header.length);
-
-      const endTag = "</artifact>";
-      const endTagIndex = artifactContent.indexOf(endTag);
-      if (endTagIndex !== -1) {
-        artifactContent = artifactContent.substring(0, endTagIndex);
-      }
-
-      artifacts.push({
-        id,
-        type,
-        language,
-        title,
-        content: artifactContent.trimStart(),
-        messageIndex: baseMessageIndex,
-        createdAt: new Date(),
-      });
-    }
-  }
-  return artifacts;
-};
 
 const ArtifactsList = ({
   artifacts,
@@ -84,7 +42,10 @@ const ArtifactsList = ({
 
       {/* <Separator /> */}
 
-      <ScrollArea type="always" className="flex-grow h-[calc(100vh-10rem)]">
+      <ScrollArea
+        type="always"
+        className="flex-grow h-[calc(100vh-10rem)] pr-3"
+      >
         <div className="flex flex-col gap-3">
           {artifacts.map((artifact) => (
             <ArtifactCard
@@ -136,7 +97,7 @@ export const ArtifactsPanel = () => {
         .join("") ?? "";
 
     if (streamingContent) {
-      const streamingArtifacts = parseStreamingArtifacts(
+      const streamingArtifacts = parseArtifacts(
         streamingContent,
         parsedCheckpoint?.messages.length ?? 0
       );
@@ -170,10 +131,7 @@ export const ArtifactsPanel = () => {
   return (
     <ArtifactsList
       artifacts={allArtifacts}
-      onSelectArtifact={(artifact) => {
-        setSelectedArtifact(artifact);
-        setSelectedArtifactId(artifact.id);
-      }}
+      onSelectArtifact={setSelectedArtifact}
     />
   );
 };

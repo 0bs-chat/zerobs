@@ -1,9 +1,9 @@
 import { requireAuth } from "../utils/helpers";
-import { internalMutation, mutation } from "../_generated/server";
+import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "../_generated/api";
 
-export const create = internalMutation({
+export const create = mutation({
   args: {
     projectId: v.id("projects"),
     documentId: v.id("documents"),
@@ -22,31 +22,6 @@ export const create = internalMutation({
     });
 
     return projectDocumentId;
-  },
-});
-
-export const createMultiple = mutation({
-  args: {
-    projectId: v.id("projects"),
-    documentIds: v.array(v.id("documents")),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
-    await ctx.runQuery(api.projects.queries.get, {
-      projectId: args.projectId,
-    });
-
-    await Promise.all(
-      args.documentIds.map(async (documentId) => {
-        await ctx.runMutation(internal.projectDocuments.mutations.create, {
-          projectId: args.projectId,
-          documentId: documentId,
-        });
-      }),
-    );
-
-    return true;
   },
 });
 
@@ -87,8 +62,8 @@ export const remove = mutation({
     );
 
     // Delete the associated document
-    await ctx.runMutation(internal.documents.mutations.remove, {
-      documentId: projectDocument.document._id,
+    await ctx.runMutation(api.documents.mutations.remove, {
+      documentId: projectDocument.documentId,
     });
 
     // Delete the project document

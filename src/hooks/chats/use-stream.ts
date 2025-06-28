@@ -27,19 +27,63 @@ export function useStream(chatId: Id<"chats"> | "new") {
     chatId,
   });
 
-  // Get all chunks reactively - no polling needed!
-  const rawChunkStrings = useQuery(
-    api.streams.queries.getAllChunks,
-    stream?._id ? { streamId: stream._id } : "skip"
-  );
+  // Reset chunks when chatId changes
+  useEffect(() => {
+    lastTimeRef.current = undefined;
+    setChunks([]);
+  }, [chatId]);
 
-  // Parse raw chunk strings into events
-  const chunks = useMemo(() => {
-    if (!rawChunkStrings) return [];
-    return rawChunkStrings.map(
-      (chunkStr) => JSON.parse(chunkStr) as StreamEvent
-    );
-  }, [rawChunkStrings]);
+  // polling for new chunks
+  useEffect(() => {
+    if (!stream) return;
+    let cancelled = false;
+    lastTimeRef.current = undefined;
+    setChunks([]);
+
+    async function pollChunks() {
+      if (stream?.status !== "streaming" || cancelled) return;
+
+      let cursor: string | null = null;
+      let hasMore = true;
+
+      while (hasMore && !cancelled) {
+        const result: PaginationResult<Doc<"streamChunks">> =
+          await convex.query(api.streams.queries.getChunks, {
+            streamId: stream._id,
+            lastChunkTime: lastTimeRef.current,
+            paginationOpts: { numItems: 50, cursor },
+          });
+
+        if (cancelled) return;
+
+        if (result.page.length > 0) {
+          const events: StreamEvent[] = [];
+          result.page.forEach((d) =>
+            d.chunks.forEach((chunkStr) =>
+              events.push(JSON.parse(chunkStr) as StreamEvent),
+            ),
+          );
+          setChunks((prev) => [...prev, ...events]);
+          lastTimeRef.current =
+            result.page[result.page.length - 1]._creationTime;
+        }
+
+        hasMore = !result.isDone;
+        cursor = result.continueCursor;
+      }
+
+      if (!cancelled) {
+        // throttle before next poll
+        await new Promise((r) => setTimeout(r, 300));
+        pollChunks();
+      }
+    }
+
+    pollChunks();
+    return () => {
+      cancelled = true;
+    };
+  }, [convex, stream]);
 
   // Process chunks into grouped AI/tool events
   const chunkGroups = useMemo(() => {

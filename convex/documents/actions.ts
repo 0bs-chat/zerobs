@@ -56,7 +56,7 @@ export const addDocument = internalAction({
 
       // Create embeddings
       const vectorStore = new ConvexVectorStore(
-        getEmbeddingModel("embeddings"),
+        await getEmbeddingModel(ctx, "embeddings"),
         {
           ctx,
           table: "documentVectors",

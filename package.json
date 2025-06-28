@@ -7,26 +7,22 @@
     "dev": "vite --port 3000 & bun b",
     "setup": "bun setup.mjs",
     "start": "vite --port 3000",
-    "build": "vite build && tsc",
+    "build": "vite build && tsc --noEmit",
+    "build:prod": "bunx convex deploy --cmd 'CONVEX_DEPLOYMENT=resolute-lark-139 VITE_CONVEX_SITE_URL=https://resolute-lark-139.convex.site VITE_CONVEX_URL=https://resolute-lark-139.convex.cloud bun run build && cd dist && zip -r dist.zip . && cd ..' -y",
     "serve": "vite preview",
     "test": "vitest run"
   },
   "dependencies": {
     "@auth/core": "0.37.0",
     "@convex-dev/auth": "^0.0.83",
-    "@convex-dev/prosemirror-sync": "^0.1.22",
-    "@convex-dev/workflow": "^0.2.4",
-    "@gradio/client": "^1.15.2",
     "@isomorphic-git/lightning-fs": "^4.6.2",
-    "@langchain/community": "^0.3.45",
-    "@langchain/core": "0.3.56",
-    "@langchain/google-genai": "^0.2.10",
-    "@langchain/langgraph": "^0.2.69",
-    "@langchain/langgraph-supervisor": "^0.0.11",
+    "@langchain/community": "^0.3.47",
+    "@langchain/core": "^0.3.61",
+    "@langchain/google-genai": "^0.2.14",
+    "@langchain/langgraph": "^0.3.5",
+    "@langchain/langgraph-supervisor": "^0.0.14",
     "@langchain/mcp-adapters": "^0.5.2",
-    "@langchain/openai": "^0.5.12",
-    "@langchain/tavily": "^0.1.1",
-    "@langchain/textsplitters": "^0.1.0",
+    "@langchain/openai": "^0.5.16",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -59,9 +55,6 @@
     "@tanstack/react-router": "^1.114.3",
     "@tanstack/react-router-devtools": "^1.114.3",
     "@tanstack/router-plugin": "^1.114.3",
-    "@types/react-syntax-highlighter": "^15.5.13",
-    "axios": "^1.9.0",
-    "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -72,6 +65,7 @@
     "duck-duck-scrape": "^2.2.7",
     "embla-carousel-react": "^8.6.0",
     "eventsource": "^3.0.7",
+    "exa-js": "^1.8.17",
     "extended-eventsource": "^2.1.0",
     "graphql": "^16.11.0",
     "ignore": "^7.0.5",
@@ -79,7 +73,6 @@
     "isomorphic-git": "^1.30.2",
     "jose": "^5.0.0",
     "jotai": "^2.12.5",
-    "langchain": "^0.3.26",
     "lucide-react": "^0.514.0",
     "marked": "^15.0.12",
     "mermaid": "^11.6.0",
@@ -106,8 +99,7 @@
     "use-context-selector": "^2.0.0",
     "use-debounce": "^10.0.5",
     "vaul": "^1.1.2",
-    "youtubei.js": "^13.4.0",
-    "zod": "^3.25.56"
+    "youtubei.js": "^13.4.0"
   },
   "devDependencies": {
     "@tanstack/eslint-plugin-query": "^5.78.0",
@@ -122,10 +114,14 @@
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
     "jsdom": "^26.1.0",
+    "rollup-plugin-visualizer": "^6.0.3",
     "typescript": "^5.7.2",
     "vite": "^6.1.0",
     "vitest": "^3.0.5",
-    "web-vitals": "^4.2.4"
+    "web-vitals": "^4.2.4",
+    "webpack-bundle-analyzer": "^4.10.2"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "overrides": {
+    "zod": "3.25.32"
+  }
 }

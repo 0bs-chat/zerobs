@@ -156,9 +156,9 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
                   placeholder="Port (e.g., 8000)"
                   value={mcp.dockerPort}
                   onChange={(e) =>
-                    setMcp((prev) => ({ 
-                      ...prev, 
-                      dockerPort: parseInt(e.target.value) || 8000 
+                    setMcp((prev) => ({
+                      ...prev,
+                      dockerPort: parseInt(e.target.value) || 8000,
                     }))
                   }
                 />

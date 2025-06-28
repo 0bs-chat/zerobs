@@ -3,7 +3,6 @@
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import { Embeddings } from "@langchain/core/embeddings";
 import { ActionCtx } from "../_generated/server";
 import {
   BaseMessage,
@@ -11,7 +10,7 @@ import {
   MessageContentComplex,
   DataContentBlock,
 } from "@langchain/core/messages";
-import { Doc } from "../_generated/dataModel";
+import { Doc, Id } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
 import mime from "mime";
 
@@ -146,41 +145,62 @@ export const models: {
   },
 ];
 
-export function getModel(model: string): BaseChatModel {
+export async function getModel(ctx: ActionCtx, model: string): Promise<BaseChatModel> {
   const modelConfig = models.find((m) => m.model_name === model);
 
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);
   }
 
-  const API_KEY = process.env.OPENAI_API_KEY;
+  const OPENAI_API_KEY = (await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+    key: "OPENAI_API_KEY",
+  }))?.value ?? process.env.OPENAI_API_KEY;
+  const OPENAI_BASE_URL = (await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+    key: "OPENAI_BASE_URL",
+  }))?.value ?? "https://openrouter.ai/api/v1";
 
   return new ChatOpenAI({
     model: modelConfig.model,
-    apiKey: API_KEY,
+    apiKey: OPENAI_API_KEY,
     temperature: 0.3,
     reasoning: {
       effort: "medium",
     },
     configuration: {
-      baseURL: `https://openrouter.ai/api/v1`,
+      baseURL: OPENAI_BASE_URL,
     },
   });
 }
 
-export function getEmbeddingModel(model: string): Embeddings {
+export async function getEmbeddingModel(ctx: ActionCtx, model: string) {
   const modelConfig = models.find((m) => m.model_name === model);
 
   if (!modelConfig || !modelConfig.modalities.includes("text")) {
     throw new Error(`Model ${model} not found in configuration`);
   }
 
-  const API_KEY = process.env.GOOGLE_API_KEY;
+  const API_KEY = (await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+    key: modelConfig.provider === "google" ? "GOOGLE_EMBEDDING_API_KEY" : "OPENAI_EMBEDDING_API_KEY",
+  }))?.value ?? process.env[modelConfig.provider === "google" ? "GOOGLE_API_KEY" : "OPENAI_API_KEY"];
 
-  return new GoogleGenerativeAIEmbeddings({
-    model: modelConfig.model,
-    apiKey: API_KEY,
-  });
+  if (modelConfig.provider === "google") {
+    return new GoogleGenerativeAIEmbeddings({
+      model: modelConfig.model,
+      apiKey: API_KEY,
+    });
+  } else {
+    const OPENAI_BASE_URL = (await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+      key: "OPENAI_EMBEDDING_BASE_URL",
+    }))?.value;
+
+    return new OpenAIEmbeddings({
+      model: modelConfig.model,
+      apiKey: API_KEY,
+      configuration: {
+        baseURL: OPENAI_BASE_URL,
+      },
+    });
+  }
 }
 
 export async function formatMessages(
@@ -314,9 +334,11 @@ export async function getVectorText(
     vectors.length > 0
       ? vectors.map((vector) => vector.text).join("\n")
       : "No text found";
+  
+    const url = await ctx.storage.getUrl(doc.key as Id<"_storage">) ?? doc.key;
   return {
     type: "text",
-    text: `# ${doc.name}\n${text}\n`,
+    text: `# [${doc.name}](${url})\n${text}\n`,
   };
 }
 
