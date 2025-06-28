@@ -84,19 +84,3 @@ export const search = query({
     return chats;
   },
 });
-
-export const getMessages = query({
-  args: {
-    chatId: v.id("chats"),
-    paginationOpts: paginationOptsValidator,
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
-    await ctx.runQuery(api.chats.queries.get, {
-      chatId: args.chatId,
-    });
-
-    return await ctx.db.query("chatMessages").withIndex("by_chat", (q) => q.eq("chatId", args.chatId)).order("desc").paginate(args.paginationOpts);
-  },
-});

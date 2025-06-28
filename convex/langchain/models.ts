@@ -13,6 +13,7 @@ import {
 import { Doc, Id } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
 import mime from "mime";
+import { Base64 } from "convex/values";
 
 export const models: {
   label: string;
@@ -236,7 +237,7 @@ export async function formatMessages(
                 return contentItem;
               }
 
-              if (typeof contentItem === "object" && contentItem !== null) {
+              if (typeof contentItem === "object") {
                 if (contentItem.type === "file" && "file" in contentItem) {
                   const documentId = contentItem.file?.file_id;
                   const document = await ctx.runQuery(
@@ -257,12 +258,12 @@ export async function formatMessages(
                         fileType as "text" | "image" | "pdf",
                       )
                     ) {
-                      const url = await ctx.storage.getUrl(document.key);
+                      const base64 = Base64.fromByteArray(new Uint8Array(await (await ctx.storage.get(document.key as Id<"_storage">))?.arrayBuffer()!));
                       if (fileType === "image") {
                         return {
                           type: "image_url",
                           image_url: {
-                            url: url,
+                            url: `data:${mimeType};base64,${base64}`,
                             format: mimeType,
                             detail: "high",
                           },
@@ -270,11 +271,10 @@ export async function formatMessages(
                       } else {
                         return {
                           type: "file",
-                          source_type: "id",
-                          id: url,
-                          metadata: {
-                            format: mimeType,
-                          },
+                          file: {
+                            filename: document.name,
+                            file_data: `data:${mimeType};base64,${base64}`,
+                          }
                         };
                       }
                     } else {

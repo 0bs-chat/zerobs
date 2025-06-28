@@ -54,8 +54,8 @@ export const Chats = Table("chats", {
 
 export const ChatMessages = Table("chatMessages", {
   chatId: v.id("chats"),
-  index: v.number(),
   message: v.string(),
+  parentId: v.union(v.id("chatMessages"), v.null()),
 });
 
 export const Streams = Table("streams", {
@@ -160,7 +160,9 @@ export default defineSchema({
       searchField: "name",
       filterFields: ["userId"],
     }),
-  chatMessages: ChatMessages.table.index("by_chat", ["chatId"]),
+  chatMessages: ChatMessages.table
+    .index("by_chat", ["chatId"])
+    .index("by_parent", ["parentId"]),
   streams: Streams.table
     .index("by_user", ["userId"])
     .index("by_status_user", ["status", "userId"]),
