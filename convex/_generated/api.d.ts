@@ -8,9 +8,6 @@
  * @module
  */
 
-import type * as agent_models from "../agent/models.js";
-import type * as agent_prompts from "../agent/prompts.js";
-import type * as agent_tools from "../agent/tools.js";
 import type * as apiKeys_actions from "../apiKeys/actions.js";
 import type * as apiKeys_mutations from "../apiKeys/mutations.js";
 import type * as apiKeys_queries from "../apiKeys/queries.js";
@@ -24,6 +21,14 @@ import type * as documents_crud from "../documents/crud.js";
 import type * as documents_mutations from "../documents/mutations.js";
 import type * as documents_queries from "../documents/queries.js";
 import type * as http from "../http.js";
+import type * as langchain_agent from "../langchain/agent.js";
+import type * as langchain_db from "../langchain/db.js";
+import type * as langchain_helpers from "../langchain/helpers.js";
+import type * as langchain_index from "../langchain/index.js";
+import type * as langchain_models from "../langchain/models.js";
+import type * as langchain_prompts from "../langchain/prompts.js";
+import type * as langchain_state from "../langchain/state.js";
+import type * as langchain_tools from "../langchain/tools.js";
 import type * as mcps_actions from "../mcps/actions.js";
 import type * as mcps_crud from "../mcps/crud.js";
 import type * as mcps_mutations from "../mcps/mutations.js";
@@ -33,6 +38,7 @@ import type * as projectDocuments_mutations from "../projectDocuments/mutations.
 import type * as projectDocuments_queries from "../projectDocuments/queries.js";
 import type * as projects_mutations from "../projects/mutations.js";
 import type * as projects_queries from "../projects/queries.js";
+import type * as schemaUtils from "../schemaUtils.js";
 import type * as streams_crud from "../streams/crud.js";
 import type * as streams_mutations from "../streams/mutations.js";
 import type * as streams_queries from "../streams/queries.js";
@@ -58,9 +64,6 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  "agent/models": typeof agent_models;
-  "agent/prompts": typeof agent_prompts;
-  "agent/tools": typeof agent_tools;
   "apiKeys/actions": typeof apiKeys_actions;
   "apiKeys/mutations": typeof apiKeys_mutations;
   "apiKeys/queries": typeof apiKeys_queries;
@@ -74,6 +77,14 @@ declare const fullApi: ApiFromModules<{
   "documents/mutations": typeof documents_mutations;
   "documents/queries": typeof documents_queries;
   http: typeof http;
+  "langchain/agent": typeof langchain_agent;
+  "langchain/db": typeof langchain_db;
+  "langchain/helpers": typeof langchain_helpers;
+  "langchain/index": typeof langchain_index;
+  "langchain/models": typeof langchain_models;
+  "langchain/prompts": typeof langchain_prompts;
+  "langchain/state": typeof langchain_state;
+  "langchain/tools": typeof langchain_tools;
   "mcps/actions": typeof mcps_actions;
   "mcps/crud": typeof mcps_crud;
   "mcps/mutations": typeof mcps_mutations;
@@ -83,6 +94,7 @@ declare const fullApi: ApiFromModules<{
   "projectDocuments/queries": typeof projectDocuments_queries;
   "projects/mutations": typeof projects_mutations;
   "projects/queries": typeof projects_queries;
+  schemaUtils: typeof schemaUtils;
   "streams/crud": typeof streams_crud;
   "streams/mutations": typeof streams_mutations;
   "streams/queries": typeof streams_queries;

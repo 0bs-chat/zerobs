@@ -21,7 +21,7 @@ export const get = query({
   },
 });
 
-export const getAll = internalQuery({
+export const getAll = query({
   args: {
     paginationOpts: paginationOptsValidator,
   },
@@ -76,45 +76,59 @@ export const getByKey = query({
   },
 });
 
-export const getDocumentVectors = internalQuery({
+export const getVectorPaginated = internalQuery({
   args: {
-    documentVectorIds: v.array(v.id("documentVectors")),
+    documentId: v.id("documents"),
+    paginationOpts: paginationOptsValidator,
   },
-  handler: async (ctx, args): Promise<{ text: string; document: Doc<"documents">; url: string }[]> => {
-    const vectors = (await Promise.all(
-      args.documentVectorIds.map((id) => ctx.db.get(id)),
-    ))
+  handler: async (ctx, args) => {
+    const vectors = await ctx.db.query("documentVectors")
+      .filter((q) => q.eq(q.field("metadata"), { source: args.documentId }))
+      .order("asc")
+      .paginate(args.paginationOpts);
 
-    const vectorsWithDocs = await Promise.all(
-      vectors
-        .filter((v): v is NonNullable<typeof v> => v !== null)
-        .map(async (v) => {
-          const document = await ctx.db.get(v.documentId);
-          if (!document) return null;
-          const url = ["file", "text", "github", "image"].includes(document.type) ? await ctx.storage.getUrl(document.key) ?? document.key : document.key;
-          return {
-            text: v.text,
-            document,
-            url: url as string,
-          }
-        })
-    );
-
-    const validVectors = vectorsWithDocs.filter((v): v is NonNullable<typeof v> => v !== null);
-
-    return validVectors;
+    return {
+      isDone: vectors.isDone,
+      continueCursor: vectors.continueCursor,
+      page: vectors.page.map((v) => ({
+        text: v.text,
+        source: v.metadata.source,
+      })),
+    }
   },
-})
+});
 
 export const getAllVectors = internalQuery({
   args: {
     documentId: v.id("documents"),
   },
+  returns: v.array(v.object({
+    text: v.string(),
+    source: v.id("documents"),
+  })),
   handler: async (ctx, args) => {
-    const vectors = await ctx.db.query("documentVectors").filter((q) => q.eq(q.field("documentId"), args.documentId)).collect();
-    return vectors.map((v) => ({
-      text: v.text,
-      documentId: v.documentId,
-    }));
+    let cursor: string | null = null;
+    const vectors: { text: string; source: Id<"documents"> }[] = [];
+    
+    while (true) {
+      const result: {
+        isDone: boolean;
+        continueCursor: string | null;
+        page: { text: string; source: Id<"documents"> }[];
+      } = await ctx.runQuery(internal.documents.queries.getVectorPaginated, {
+        documentId: args.documentId,
+        paginationOpts: { 
+          cursor,
+          numItems: 100,
+        },
+      });
+      
+      vectors.push(...result.page);
+      
+      if (result.isDone) break;
+      cursor = result.continueCursor;
+    }
+    
+    return vectors;
   },
 });

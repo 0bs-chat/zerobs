@@ -53,25 +53,30 @@ export const appendChunks = internalMutation({
     chunks: v.array(v.string()),
   },
   handler: async (ctx, args): Promise<Doc<"streams">> => {
+    let stream = await ctx.runQuery(api.streams.queries.get, {
+      streamId: args.streamId,
+    });
+    if (["done", "error", "cancelled"].includes(stream.status)) {
+      return stream;
+    }
+
     await ctx.runMutation(internal.streams.crud.update, {
       id: args.streamId,
       patch: {
         status: "streaming",
       },
     });
+    stream.status = "streaming";
     const chunkDocId = await ctx.db.insert("streamChunks", {
       streamId: args.streamId,
       chunks: args.chunks,
     });
-
     await ctx.db.insert("streamChunkRefs", {
       streamId: args.streamId,
       chunkId: chunkDocId,
     });
 
-    return await ctx.runQuery(api.streams.queries.get, {
-      streamId: args.streamId,
-    });
+    return stream;
   },
 });
 
@@ -168,17 +173,16 @@ export const cleanUp = internalMutation({
 export const updateState = internalMutation({
   args: {
     streamId: v.id("streams"),
-    updates: v.object(partial(schema.StreamState.withoutSystemFields)),
+    updates: v.object(partial(schema.StreamStates.withoutSystemFields)),
   },
   handler: async (ctx, args) => {
-    const state = await ctx.db.query("streamState").withIndex("by_stream", (q) => q.eq("streamId", args.streamId)).first();
+    const state = await ctx.db.query("streamStates").withIndex("by_stream", (q) => q.eq("streamId", args.streamId)).first();
     if (!state) {
-      await ctx.db.insert("streamState", {
+      await ctx.db.insert("streamStates", {
         streamId: args.streamId,
         sources: args.updates.sources ?? [],
         plan: args.updates.plan ?? [],
         pastSteps: args.updates.pastSteps ?? [],
-        currentStep: args.updates.currentStep ?? 0,
       });
     } else {
       await ctx.db.patch(state._id, {
@@ -193,7 +197,7 @@ export const deleteState = internalMutation({
     streamId: v.id("streams"),
   },
   handler: async (ctx, args) => {
-    const state = await ctx.db.query("streamState").withIndex("by_stream", (q) => q.eq("streamId", args.streamId)).first();
+    const state = await ctx.db.query("streamStates").withIndex("by_stream", (q) => q.eq("streamId", args.streamId)).first();
     if (state) {
       await ctx.db.delete(state._id);
     }

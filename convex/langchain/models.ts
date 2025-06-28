@@ -1,10 +1,18 @@
-import { createOpenAI } from "@ai-sdk/openai"
-import { createGoogleGenerativeAI } from "@ai-sdk/google"
-import { ActionCtx, GenericCtx, MutationCtx } from "../_generated/server";
-import { api, internal } from "../_generated/api";
+"use node";
+
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { ActionCtx } from "../_generated/server";
+import {
+  BaseMessage,
+  HumanMessage,
+  MessageContentComplex,
+  DataContentBlock,
+} from "@langchain/core/messages";
 import { Doc, Id } from "../_generated/dataModel";
-import { CoreMessage, TextPart, ImagePart, FilePart } from "ai"
-import mime from 'mime';
+import { api, internal } from "../_generated/api";
+import mime from "mime";
 
 export const models: {
   label: string;
@@ -79,7 +87,7 @@ export const models: {
   {
     label: "Worker",
     model_name: "worker",
-    model: "google/gemini-2.5-flash-preview-05-20",
+    model: "google/gemini-2.0-flash-001",
     isThinking: false,
     toolSupport: true,
     provider: "openai",
@@ -88,21 +96,6 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "The Worker model is designed for specialized tasks requiring high efficiency.",
-    usageRateMultiplier: 1.0,
-    hidden: true,
-  },
-  {
-    label: "Smart Worker",
-    model_name: "smart-worker",
-    model: "openai/gpt-4.1",
-    isThinking: false,
-    toolSupport: true,
-    provider: "openai",
-    modalities: ["text", "image"],
-    image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
-    description:
-      "The Smart Worker model is designed for specialized tasks requiring high accuracy.",
     usageRateMultiplier: 1.0,
     hidden: true,
   },
@@ -152,8 +145,9 @@ export const models: {
   },
 ];
 
-export async function getChatModel(ctx: GenericCtx, model: string) {
+export async function getModel(ctx: ActionCtx, model: string): Promise<BaseChatModel> {
   const modelConfig = models.find((m) => m.model_name === model);
+
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);
   }
@@ -165,21 +159,23 @@ export async function getChatModel(ctx: GenericCtx, model: string) {
     key: "OPENAI_BASE_URL",
   }))?.value ?? "https://openrouter.ai/api/v1";
 
-  if (!OPENAI_API_KEY) {
-    throw new Error(`API key not found for model ${model}`);
-  }
-
-  const openai = createOpenAI({
+  return new ChatOpenAI({
+    model: modelConfig.model,
     apiKey: OPENAI_API_KEY,
-    baseURL: OPENAI_BASE_URL,
+    temperature: 0.3,
+    reasoning: {
+      effort: "medium",
+    },
+    configuration: {
+      baseURL: OPENAI_BASE_URL,
+    },
   });
-
-  return openai(modelConfig.model);
 }
 
-export async function getEmbeddingModel(ctx: GenericCtx, model: string) {
+export async function getEmbeddingModel(ctx: ActionCtx, model: string) {
   const modelConfig = models.find((m) => m.model_name === model);
-  if (!modelConfig) {
+
+  if (!modelConfig || !modelConfig.modalities.includes("text")) {
     throw new Error(`Model ${model} not found in configuration`);
   }
 
@@ -188,122 +184,140 @@ export async function getEmbeddingModel(ctx: GenericCtx, model: string) {
   }))?.value ?? process.env[modelConfig.provider === "google" ? "GOOGLE_API_KEY" : "OPENAI_API_KEY"];
 
   if (modelConfig.provider === "google") {
-    const google = createGoogleGenerativeAI({
+    return new GoogleGenerativeAIEmbeddings({
+      model: modelConfig.model,
       apiKey: API_KEY,
     });
-
-    return google.textEmbeddingModel(modelConfig.model);
   } else {
     const OPENAI_BASE_URL = (await ctx.runQuery(api.apiKeys.queries.getFromKey, {
       key: "OPENAI_EMBEDDING_BASE_URL",
     }))?.value;
 
-    const openai = createOpenAI({
+    return new OpenAIEmbeddings({
+      model: modelConfig.model,
       apiKey: API_KEY,
-      baseURL: OPENAI_BASE_URL,
+      configuration: {
+        baseURL: OPENAI_BASE_URL,
+      },
     });
-
-    return openai.textEmbeddingModel(modelConfig.model);
   }
 }
 
-export async function formatMessages(ctx: ActionCtx, messages: Doc<"chatMessages">[], model: string): Promise<CoreMessage[]> {
+export async function formatMessages(
+  ctx: ActionCtx,
+  messages: BaseMessage[],
+  model: string,
+): Promise<BaseMessage[]> {
   const modelConfig = models.find((m) => m.model_name === model);
+
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);
   }
-  const supportedModalities = modelConfig.modalities;
 
-  const formattedMessages = await Promise.all(messages.map(async (message) => {
-    const msg = JSON.parse(message.message) as CoreMessage;
-    
-    if (msg.role === "user") {
-      const content: Array<TextPart | ImagePart | FilePart> = [];
-      
-      if (Array.isArray(msg.content)) {
-        for (const part of msg.content) {
-          if (part.type === "text") {
-            content.push(part as TextPart);
-          } else if (part.type === "file") {
-            const document = await ctx.runQuery(api.documents.queries.get, {
-              documentId: part.data as Id<"documents">,
-            });
-            
-            if (document.type === "file") {
-              const fileMimeType = mime.getType(document.name);
-              const fileType = fileMimeType === "application/pdf" ? "pdf" : fileMimeType?.split("/")[0] as "text" | "image" | "pdf";
-              
-              if (fileType && supportedModalities.includes(fileType as "text" | "image" | "pdf")) {
-                const url = await ctx.storage.getUrl(document.key);
-                
-                if (fileType === "image") {
-                  content.push({
-                    type: "image",
-                    image: url!,
-                    mimeType: fileMimeType ?? "",
-                    providerOptions: {
-                      openai: { imageDetail: "high" }
+  const supportedTags = modelConfig.modalities;
+
+  // Process all messages in parallel
+  const formattedMessages = await Promise.all(
+    messages.map(async (message) => {
+      if (message instanceof HumanMessage) {
+        const content = message.content;
+
+        // If content is a string, no processing needed
+        if (typeof content === "string") {
+          return message;
+        }
+
+        // If content is an array, check each item
+        if (Array.isArray(content)) {
+          // Process all content items in parallel
+          const processedContent = await Promise.all(
+            content.map(async (contentItem) => {
+              if (typeof contentItem === "string") {
+                return contentItem;
+              }
+
+              if (typeof contentItem === "object" && contentItem !== null) {
+                if (contentItem.type === "file" && "file" in contentItem) {
+                  const documentId = contentItem.file?.file_id;
+                  const document = await ctx.runQuery(
+                    api.documents.queries.get,
+                    {
+                      documentId,
+                    },
+                  );
+                  if (document.type === "file") {
+                    const mimeType =
+                      mime.getType(document.name) ?? "application/octet-stream";
+                    const fileType =
+                      mimeType === "application/pdf"
+                        ? "pdf"
+                        : mimeType.split("/")[0];
+                    if (
+                      supportedTags.includes(
+                        fileType as "text" | "image" | "pdf",
+                      )
+                    ) {
+                      const url = await ctx.storage.getUrl(document.key);
+                      if (fileType === "image") {
+                        return {
+                          type: "image_url",
+                          image_url: {
+                            url: url,
+                            format: mimeType,
+                            detail: "high",
+                          },
+                        };
+                      } else {
+                        return {
+                          type: "file",
+                          source_type: "id",
+                          id: url,
+                          metadata: {
+                            format: mimeType,
+                          },
+                        };
+                      }
+                    } else {
+                      return await getVectorText(ctx, document);
                     }
-                  } as ImagePart);
-                } else if (fileType === "pdf") {
-                  content.push({
-                    type: "file",
-                    data: url!,
-                    filename: document.name,
-                    mimeType: fileMimeType ?? "",
-                  } as FilePart);
-                } else if (fileType === "text") {
-                  const blob = await ctx.storage.get(document.key);
-                  content.push({
-                    type: "text",
-                    text: `# ${document.name}\n${await blob?.text()}\n`,
-                  } as TextPart);
+                  } else if (["text", "github"].includes(document.type)) {
+                    const blob = await ctx.storage.get(document.key);
+                    return {
+                      type: "text",
+                      text: `# ${document.name}\n${blob?.text()}\n`,
+                    };
+                  } else {
+                    return await getVectorText(ctx, document);
+                  }
                 } else {
-                  content.push({
-                    type: "file",
-                    data: url!,
-                    filename: document.name,
-                    mimeType: fileMimeType ?? "",
-                  } as FilePart);
+                  return contentItem;
                 }
               } else {
-                // Fall back to vector text for unsupported file types
-                const vectorText = await getVectorText(ctx, document);
-                content.push(vectorText);
+                return contentItem;
               }
-            } else if (["text", "github"].includes(document.type)) {
-              const blob = await ctx.storage.get(document.key);
-              content.push({
-                type: "text",
-                text: `# ${document.name}\n${await blob?.text()}\n`,
-              } as TextPart);
-            } else {
-              // Fall back to vector text for other document types
-              const vectorText = await getVectorText(ctx, document);
-              content.push(vectorText);
-            }
-          } else {
-            // Pass through other content types as-is
-            content.push(part as any);
-          }
+            }),
+          );
+
+          // Create new message with processed content
+          return new HumanMessage({ content: processedContent });
+        } else {
+          // Handle other content types
+          return message;
         }
-        
-        // Return message with processed content
-        return {
-          ...msg,
-          content: content.length > 0 ? content : msg.content
-        } as CoreMessage;
+      } else {
+        return message;
       }
-    }
-    
-    return msg;
-  }));
+    }),
+  );
 
   return formattedMessages;
 }
 
-async function getVectorText(ctx: ActionCtx, document: Doc<"documents">): Promise<TextPart> {
-  // Wait for document processing to complete
+export async function getVectorText(
+  ctx: ActionCtx,
+  document: Doc<"documents">,
+): Promise<MessageContentComplex | DataContentBlock> {
+  // Fall back to vector processing for unsupported file types
   let doc = document;
   let maxAttempts = 50;
   while (doc.status === "processing" && maxAttempts > 0) {
@@ -313,19 +327,27 @@ async function getVectorText(ctx: ActionCtx, document: Doc<"documents">): Promis
     });
     maxAttempts--;
   }
-  
-  // Get vectors for the document
   const vectors = await ctx.runQuery(internal.documents.queries.getAllVectors, {
     documentId: doc._id,
   });
+  const text =
+    vectors.length > 0
+      ? vectors.map((vector) => vector.text).join("\n")
+      : "No text found";
   
-  const text = vectors.length > 0
-    ? vectors.map((vector: any) => vector.text).join("\n")
-    : "No text found";
-  
-  const url = ["file", "text", "github"].includes(doc.type) ? await ctx.storage.getUrl(doc.key) : doc.key;
+    const url = await ctx.storage.getUrl(doc.key as Id<"_storage">) ?? doc.key;
   return {
     type: "text",
     text: `# [${doc.name}](${url})\n${text}\n`,
-  } as TextPart;
+  };
+}
+
+export function modelSupportsTools(model: string): boolean {
+  const modelConfig = models.find((m) => m.model_name === model);
+
+  if (!modelConfig) {
+    throw new Error(`Model ${model} not found in configuration`);
+  }
+
+  return modelConfig.toolSupport;
 }

@@ -1,25 +1,23 @@
-import { CoreSystemMessage } from "ai";
+"use node";
 
-export interface AgentConfig {
-  model: string;
-  taskDescription?: string;
-  customPrompt?: string;
-  baseAgentType?: boolean;
-  artifacts?: boolean;
-}
+import { SystemMessage } from "@langchain/core/messages";
+import {
+  ChatPromptTemplate,
+  MessagesPlaceholder,
+} from "@langchain/core/prompts";
+import { formatDocumentsAsString } from "langchain/util/document";
+import type { DocumentInterface } from "@langchain/core/documents";
+import { z } from "zod";
+import { planArray } from "./state";
 
-/**
- * Creates a system message for AI agents using AI SDK CoreSystemMessage format
- */
-export function createAgentSystemMessage(config: AgentConfig): CoreSystemMessage {
-  const {
-    model,
-    taskDescription,
-    customPrompt,
-    baseAgentType = true,
-    artifacts = true,
-  } = config;
-
+// Helper function to create system message for agents
+export function createAgentSystemMessage(
+  model: string,
+  taskDescription?: string,
+  customPrompt?: string,
+  baseAgentType: boolean = true,
+  artifacts: boolean = true,
+): SystemMessage {
   const baseIdentity = `You are 0bs Chat, an AI assistant powered by the ${model} model.`;
 
   const roleDescription = taskDescription
@@ -178,110 +176,121 @@ export function createAgentSystemMessage(config: AgentConfig): CoreSystemMessage
     `-   **Web Search:** Use the \`web_search\` tool for information beyond your knowledge cutoff (January 2025) or for rapidly changing topics. Follow all copyright and safety guidelines meticulously. Never reproduce large chunks of text. Cite sources appropriately.\n` +
     `-   **Citations:** When using search results, cite claims by wrapping them in tags with document and sentence indices.\n`;
 
-  const content = `${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`;
-
-  return {
-    role: "system",
-    content,
-  };
+  return new SystemMessage(
+    `${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`,
+  );
 }
 
-/**
- * Creates a simple system message for non-agent use cases
- */
-export function createSimpleSystemMessage(content: string): CoreSystemMessage {
-  return {
-    role: "system",
-    content,
-  };
+// Prompt template for generating queries for vector store or web search
+export function createGenerateQueriesPrompt(type: "vectorStore" | "webSearch") {
+  return ChatPromptTemplate.fromMessages([
+    [
+      "system",
+      "Based on the messages and the user's query, generate queries for the " +
+        type +
+        ". If the input contains multiple questions, identify which one fits the purpose of the query and only generate a query for those user queries.",
+    ],
+    new MessagesPlaceholder("messages"),
+  ]);
 }
 
-/**
- * Creates a planning system prompt for the planner agent
- */
-export function createPlannerSystemMessage(model: string, includeDocuments: boolean = false): CoreSystemMessage {
-  const basePrompt = `For the given objective, come up with a simple step by step plan.\n` +
-    `This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps.\n` +
-    `The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.\n\n` +
-    `You can structure the plan in two ways:\n` +
-    `1. Sequential steps: Use individual step objects for tasks that must be done one after another\n` +
-    `2. Parallel steps: Use parallel_steps arrays for tasks that can be executed simultaneously\n\n` +
-    `Example plan structure:\n` +
-    `- Step 1: Research topic A\n` +
-    `- Parallel steps: [Research topic B, Research topic C, Research topic D]\n` +
-    `- Step 2: Combine all research findings\n` +
-    `- Step 3: Generate final answer\n\n` +
-    `Use parallel execution when steps are independent and can benefit from simultaneous execution.`;
-
-  const documentContext = includeDocuments 
-    ? "\n\nYou have access to relevant documents that can help inform your planning."
-    : "";
-
-  return {
-    role: "system",
-    content: basePrompt + documentContext,
-  };
+// Prompt template for grading document relevance
+export function createGradeDocumentPrompt() {
+  return ChatPromptTemplate.fromMessages([
+    [
+      "system",
+      "You are a grader assessing relevance of a retrieved document to the user question (focus on the last message as the question).\n" +
+        "If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant.",
+    ],
+    new MessagesPlaceholder("document"),
+    new MessagesPlaceholder("input"),
+  ]);
 }
 
-/**
- * Creates a replanner system prompt
- */
-export function createReplannerSystemMessage(): CoreSystemMessage {
-  const content = `## Your Task: Reflect and Re-plan\n\n` +
-    `For the given objective, come up with a simple step by step plan.\n` +
-    `- This plan should involve individual tasks that, if executed correctly, will yield the correct answer. Do not add any superfluous steps.\n` +
-    `- The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.\n\n` +
-    `**Your objective was this:**\n` +
-    `{INPUT_PLACEHOLDER}\n\n` +
-    `**The original plan was:**\n{PLAN_PLACEHOLDER}\n\n` +
-    `**Completed steps so far:**\n{PAST_STEPS_PLACEHOLDER}\n\n` +
-    `Update your plan accordingly. If no more steps are needed and you can return to the user, set action to "respond_to_user" and provide the response. ` +
-    `Otherwise, set action to "continue_planning" and fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`;
+// Prompt template for planner
+export function createPlannerPrompt(documents?: DocumentInterface[]) {
+  const messages: any[] = [
+    [
+      "system",
+      `For the given objective, come up with a simple step by step plan.\n` +
+        `This plan should involve individual tasks, that if executed correctly will yield the correct answer. Do not add any superfluous steps.\n` +
+        `The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.\n\n` +
+        `You can structure the plan in two ways:\n` +
+        `1. Sequential steps: Use individual strings for tasks that must be done one after another\n` +
+        `2. Parallel steps: Use arrays of strings for tasks that can be executed simultaneously\n\n` +
+        `Example plan structure:\n` +
+        `- Single step: "Research topic A"\n` +
+        `- Parallel steps: ["Research topic B", "Research topic C", "Research topic D"]\n` +
+        `- Final step: "Combine all research findings"\n\n` +
+        `Use parallel execution when steps are independent and can benefit from simultaneous execution.`
+    ],
+  ];
 
-  return {
-    role: "system",
-    content,
-  };
+  if (documents && documents.length > 0) {
+    messages.push([
+      "human",
+      "Here are the documents that are relevant to the question: " +
+        formatDocumentsAsString(documents),
+    ]);
+  }
+
+  messages.push(new MessagesPlaceholder("messages"));
+
+  return ChatPromptTemplate.fromMessages(messages);
 }
 
-/**
- * Creates a query generation system prompt for search/retrieval
- */
-export function createQueryGenerationSystemMessage(type: "vectorStore" | "webSearch"): CoreSystemMessage {
-  const content = `Based on the messages and the user's query, generate queries for the ${type}. ` +
-    `If the input contains multiple questions, identify which one fits the purpose of the query and only generate a query for those user queries.`;
-
-  return {
-    role: "system",
-    content,
-  };
+// Prompt template for replanner
+export function createReplannerPrompt() {
+  return ChatPromptTemplate.fromMessages([
+    [
+      "system",
+      `## Your Task: Reflect and Re-plan\n\n` +
+        `For the given objective, come up with a simple step by step plan.\n` +
+        `- This plan should involve individual tasks that, if executed correctly, will yield the correct answer. Do not add any superfluous steps.\n` +
+        `- The result of the final step should be the final answer. Make sure that each step has all the information needed - do not skip steps.\n\n` +
+        `**Your objective was this:**\n`,
+    ],
+    new MessagesPlaceholder("input"),
+    [
+      "system",
+      `**The original plan was:**\n{plan}\n\n` +
+        `**Completed steps so far:**\n`,
+    ],
+    new MessagesPlaceholder("pastSteps"),
+    [
+      "system",
+      `Update your plan accordingly. If no more steps are needed and you can return to the user, set action to "respond_to_user" and provide the response. ` +
+      `Otherwise, set action to "continue_planning" and fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
+    ],
+  ]);
 }
 
-/**
- * Creates a document grading system prompt
- */
-export function createDocumentGraderSystemMessage(): CoreSystemMessage {
-  const content = `You are a grader assessing relevance of a retrieved document to the user question (focus on the last message as the question).\n` +
-    `If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant.`;
+// Zod schemas for structured outputs
+export const generateQueriesSchema = z.object({
+  queries: z
+    .array(z.string())
+    .describe("Queries for the vector store or web search.")
+    .max(3)
+    .min(1),
+});
 
-  return {
-    role: "system",
-    content,
-  };
-}
+export const gradeDocumentSchema = z.object({
+  relevant: z
+    .boolean()
+    .describe("Whether the document is relevant to the user question"),
+});
 
-/**
- * Creates a context message for document retrieval
- */
-export function createDocumentContextMessage(documents: string): CoreSystemMessage {
-  const content = `## Available Context\n` +
-    `You have been provided with the following documents relevant to the user's request. Use them to inform your response.\n` +
-    `<documents>\n` +
-    `${documents}\n` +
-    `</documents>\n\n`;
-
-  return {
-    role: "system",
-    content,
-  };
-}
+export const replannerOutputSchema = z.union([
+  z.object({
+    action: z.literal("continue_planning"),
+    plan: planArray,
+  }),
+  z.object({
+    action: z.literal("respond_to_user"),
+    response: z
+      .string()
+      .describe(
+        "A comprehensive, final response to the user. Synthesize the results of the completed steps into a single, coherent answer. This is the only thing the user will see, so it must be complete and detailed.",
+      ),
+  }),
+]);

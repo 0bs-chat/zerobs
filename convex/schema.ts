@@ -32,7 +32,7 @@ export const Documents = Table("documents", {
 export const DocumentVectors = Table("documentVectors", {
   embedding: v.array(v.number()),
   text: v.string(),
-  documentId: v.id("documents"),
+  metadata: v.any(),
 });
 
 export const Chats = Table("chats", {
@@ -43,7 +43,7 @@ export const Chats = Table("chats", {
   text: v.string(),
   model: v.string(),
   reasoningEffort: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
-  projectId: v.union(v.id("projects"), v.null()),
+  projectId: v.union(v.id("projects"), v.null()), // use null, because we don't want to confuse undefined when unsetting or just not updating rest of the chat doc
   agentMode: v.boolean(),
   plannerMode: v.boolean(),
   webSearch: v.boolean(),
@@ -79,19 +79,19 @@ export const StreamStates = Table("streamStates", {
   sources: v.array(v.object({
     type: v.union(v.literal("document"), v.literal("search")),
     searchResult: v.optional(v.object({
-      score: v.number(),
       title: v.string(),
-      url: v.string(),
-      content: v.string(),
+      source: v.string(),
+      publishedDate: v.optional(v.string()),
+      author: v.optional(v.string()),
+      image: v.optional(v.string()),
+      favicon: v.optional(v.string()),
     })),
-    searchResultImage: v.optional(v.string()),
     document: v.optional(v.object({
-      doc: Documents.table.validator,
+      document: Documents.table.validator,
       text: v.string(),
     })),
   })),
   plan: v.array(v.union(v.string(), v.array(v.string()))),
-  currentStep: v.number(),
   pastSteps: v.array(v.object({ step: v.string(), message: v.string() })),
 });
 
@@ -150,7 +150,7 @@ export default defineSchema({
   documentVectors: DocumentVectors.table.vectorIndex("byEmbedding", {
     vectorField: "embedding",
     dimensions: 768,
-    filterFields: ["documentId"],
+    filterFields: ["metadata"],
   }),
   chats: Chats.table
     .index("by_user", ["userId"])

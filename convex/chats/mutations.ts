@@ -9,6 +9,7 @@ export const create = mutation({
   args: {
     name: v.string(),
     model: v.string(),
+    reasoningEffort: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
     projectId: v.union(v.id("projects"), v.null()),
     agentMode: v.boolean(),
     plannerMode: v.boolean(),
@@ -23,6 +24,7 @@ export const create = mutation({
       pinned: false,
       documents: [],
       text: "",
+      reasoningEffort: args.reasoningEffort ?? "medium",
       updatedAt: Date.now(),
     });
     return chatId;

@@ -77,23 +77,6 @@ export const updateStatus = internalMutation({
   },
 });
 
-export const addVector = internalMutation({
-  args: {
-    documentId: v.id("documents"),
-    text: v.string(),
-    embedding: v.array(v.number()),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await ctx.db.insert("documentVectors", {
-      documentId: args.documentId,
-      text: args.text,
-      embedding: args.embedding,
-    });
-    return null;
-  },
-});
-
 export const removeVectorsPaginated = internalMutation({
   args: {
     documentId: v.id("documents"),
@@ -102,7 +85,7 @@ export const removeVectorsPaginated = internalMutation({
   handler: async (ctx, args) => {
     const vectors = await ctx.db
       .query("documentVectors")
-      .filter((q) => q.eq(q.field("documentId"), args.documentId))
+      .filter((q) => q.eq(q.field("metadata"), { source: args.documentId }))
       .order("asc")
       .paginate(args.paginationOpts);
 

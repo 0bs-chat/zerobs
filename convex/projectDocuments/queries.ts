@@ -186,7 +186,19 @@ export const getSelected = internalQuery({
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
       .filter((q) => q.eq(q.field("selected"), args.selected))
       .collect();
+    
+    const documents = await ctx.runQuery(api.documents.queries.getMultiple, {
+      documentIds: projectDocuments.map((projectDocument) => projectDocument.documentId),
+    });
 
-    return projectDocuments;
+    const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
+    documents.forEach((document) =>
+      documentsMap.set(document._id, document),
+    );
+
+    return projectDocuments.map((projectDocument) => ({
+      ...projectDocument,
+      document: documentsMap.get(projectDocument.documentId),
+    }));
   },
 });
