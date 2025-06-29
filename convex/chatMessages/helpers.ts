@@ -50,14 +50,26 @@ export function getCurrentThread(messages: Message[]): Message[] {
     return [];
   }
 
-  const { messageMap } = buildMessageLookups(messages);
+  const { messageMap, childrenMap } = buildMessageLookups(messages);
 
-  // Start from the last message in the list.
-  const lastMessage = messages[messages.length - 1];
+  // Find the most recent message (first in desc-ordered list)
+  const mostRecentMessage = messages[0];
+  
+  // Find the leaf node in the current thread by traversing down from the most recent message
+  // or finding the message with no children if it's already a leaf
+  let leafMessage = mostRecentMessage;
+  while (childrenMap.has(leafMessage._id) && childrenMap.get(leafMessage._id)!.length > 0) {
+    // Get the most recent child (they should be sorted by creation time)
+    const children = childrenMap.get(leafMessage._id)!;
+    leafMessage = children.reduce((latest, child) => 
+      child._creationTime > latest._creationTime ? child : latest
+    );
+  }
+
   const thread: Message[] = [];
 
-  // Traverse up the parent chain to the root.
-  let currentMessage: Message | undefined = lastMessage;
+  // Traverse up the parent chain from the leaf to the root
+  let currentMessage: Message | undefined = leafMessage;
   while (currentMessage) {
     thread.push(currentMessage);
     currentMessage = currentMessage.parentId
@@ -65,6 +77,6 @@ export function getCurrentThread(messages: Message[]): Message[] {
       : undefined;
   }
 
-  // The thread is built backwards, so reverse it for chronological order.
+  // The thread is built backwards, so reverse it for chronological order
   return thread.reverse();
 }

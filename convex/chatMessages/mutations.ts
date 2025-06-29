@@ -3,10 +3,10 @@ import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
 import schema from "../schema";
-import { partial } from "convex-helpers/validators";
 import { Doc, Id } from "../_generated/dataModel";
 import { buildMessageLookups } from "./helpers";
 import { mapChatMessagesToStoredMessages, HumanMessage } from "@langchain/core/messages";
+import { omit } from "convex-helpers";
 
 export const update = mutation({
   args: {
@@ -30,7 +30,7 @@ export const update = mutation({
 
 export const create = mutation({
   args: {
-    ...partial(schema.tables.chatMessages.validator.fields),
+    ...omit(schema.tables.chatMessages.validator.fields, ["message"]),
     text: v.string(),
     documents: v.array(v.id("documents")),
   },

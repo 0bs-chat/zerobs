@@ -13,17 +13,13 @@ import type { StructuredToolInterface, ToolSchemaBase } from "@langchain/core/to
 import type { Doc, Id } from "../_generated/dataModel";
 import { fly } from "../utils/flyio";
 import { getEmbeddingModel } from "./models";
-import type { RunnableConfig } from "@langchain/core/runnables";
 import type { GraphState } from "./state";
 import type { ExtendedRunnableConfig } from "./helpers";
 
 export const getRetrievalTools = async (
   _state: typeof GraphState.State,
-  config: RunnableConfig,
+  config: ExtendedRunnableConfig,
 ) => {
-  const formattedConfig = config.configurable as ExtendedRunnableConfig;
-  const ctx = formattedConfig.ctx;
-  const projectId = formattedConfig.chat.projectId;
 
   const vectorSearchTool = new DynamicStructuredTool({
     name: "searchProjectDocuments",
@@ -48,17 +44,17 @@ export const getRetrievalTools = async (
       limit?: number;
     }) => {
       // Initialize ConvexVectorStore with the embedding model
-      const embeddingModel = await getEmbeddingModel(ctx, "embeddings");
+      const embeddingModel = await getEmbeddingModel(config.ctx, "embeddings");
       const vectorStore = new ConvexVectorStore(embeddingModel, {
-        ctx,
+        ctx: config.ctx,
         table: "documentVectors",
       });
 
       // Get selected project documents to filter vector search results
-      const includedProjectDocuments = await ctx.runQuery(
+      const includedProjectDocuments = await config.ctx.runQuery(
         internal.projectDocuments.queries.getSelected,
         {
-          projectId: projectId!,
+          projectId: config.chat.projectId!,
           selected: true,
         },
       );
@@ -92,7 +88,7 @@ export const getRetrievalTools = async (
             return null;
           }
           const url =
-            (await ctx.storage.getUrl(
+            (await config.ctx.storage.getUrl(
               projectDocument.key as Id<"_storage">,
             )) ?? projectDocument.key;
           return new Document({
@@ -132,7 +128,7 @@ export const getRetrievalTools = async (
     }),
     func: async ({ query, topic }: { query: string; topic?: string | null }) => {
       const EXA_API_KEY =
-        (await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+        (await config.ctx.runQuery(api.apiKeys.queries.getFromKey, {
           key: "EXA_API_KEY",
         }))?.value ?? process.env.EXA_API_KEY;
 
@@ -148,7 +144,7 @@ export const getRetrievalTools = async (
         // Crawl each result URL to get more comprehensive content
         const urlMarkdownContents = await Promise.all(
           searchResultsArray.map(async (result) =>
-            await ctx.runAction(
+            await config.ctx.runAction(
               internal.utils.services.index.processUrlOrSite,
               {
                 url: result.url,
@@ -208,7 +204,6 @@ export const getRetrievalTools = async (
       }
     },
   });
-
   return {
     vectorSearch: vectorSearchTool,
     webSearch: webSearchTool,

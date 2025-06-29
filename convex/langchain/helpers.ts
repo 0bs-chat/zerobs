@@ -2,7 +2,7 @@
 
 import type { RunnableConfig } from "@langchain/core/runnables";
 import type { ActionCtx } from "../_generated/server";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import {
   BaseMessage,
   AIMessage,
@@ -58,7 +58,7 @@ export async function createAgentWithTools(
   const allTools = [
     ...(tools.tools.length > 0 ? tools.tools : []),
     ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
-    ...(chat.webSearch ? [retrievalTools.webSearch] : []),
+    retrievalTools.webSearch,
   ];
 
   if (!chat.agentMode) {
@@ -66,12 +66,11 @@ export async function createAgentWithTools(
     const promptTemplate = ChatPromptTemplate.fromMessages([
       createAgentSystemMessage(
         chat.model,
-        undefined,
+        taskDescription,
         config.customPrompt,
         true,
         chat.artifacts
       ),
-      new MessagesPlaceholder("documents"),
       new MessagesPlaceholder("messages"),
     ]);
 
@@ -100,7 +99,7 @@ export async function createAgentWithTools(
       llm: supervisorLlm,
       prompt: createAgentSystemMessage(
         chat.model,
-        undefined,
+        taskDescription,
         config.customPrompt,
         true,
         chat.artifacts
@@ -203,7 +202,7 @@ export function addDocumentsToMessage(message: BaseMessage, documents: Document[
   )[0];
 }
 
-export async function addDocumentsToMessageHistory(documents: Document[]): Promise<HumanMessage | null> {
+export async function getDocumentsMessage(documents: Document[]): Promise<HumanMessage | null> {
   if (!documents || documents.length === 0) {
     return null;
   }
@@ -223,7 +222,7 @@ export function parseStateToStreamStatesDoc(
   state: typeof GraphState.State,
 ): Omit<Doc<"streamStates">, "_id" | "_creationTime" | "streamId"> {
   // Convert documents to sources - these come from vector search or web search
-  const sources = state.documents.map(doc => {
+  const sources = state.documents && state.documents.length > 0 ? state.documents.map(doc => {
     return {
       type: doc.metadata.type,
       searchResult: {
@@ -239,16 +238,16 @@ export function parseStateToStreamStatesDoc(
         text: doc.pageContent,
       }
     }
-  });
+  }) : [];
 
-  const pastSteps = (state.pastSteps || []).map(([step, message]) => {
+  const pastSteps = state.pastSteps && state.pastSteps.length > 0 ? (state.pastSteps || []).map(([step, message]) => {
     const stepString = Array.isArray(step) ? step.join(", ") : step;
     const storedMessage = mapChatMessagesToStoredMessages([message])[0];
     return {
       step: stepString,
       message: storedMessage.data.content,
     };
-  });
+  }) : [];
 
   return {
     sources,

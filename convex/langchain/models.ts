@@ -220,7 +220,7 @@ export async function formatMessages(
   // Process all messages in parallel
   const formattedMessages = await Promise.all(
     messages.map(async (message) => {
-      if (message instanceof HumanMessage) {
+      if (typeof message === typeof HumanMessage) {
         const content = message.content;
 
         // If content is a string, no processing needed

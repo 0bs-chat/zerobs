@@ -6,8 +6,8 @@ import { ExtendedRunnableConfig, generateQueries, gradeDocument, createSimpleAge
 import { GraphState, planSchema } from "./state";
 import { getRetrievalTools } from "./tools";
 import { modelSupportsTools, formatMessages, getModel } from "./models";
-import { formatDocumentsToString, getLastMessage, addDocumentsToMessage, addDocumentsToMessageHistory } from "./helpers";
-import { BaseMessage, AIMessage } from "@langchain/core/messages";
+import { getLastMessage, addDocumentsToMessage, getDocumentsMessage } from "./helpers";
+import { BaseMessage, AIMessage, HumanMessage } from "@langchain/core/messages";
 import { createPlannerPrompt, createReplannerPrompt, replannerOutputSchema } from "./prompts";
 import { z } from "zod";
 import { END, START, StateGraph } from "@langchain/langgraph";
@@ -17,7 +17,6 @@ async function shouldRetrieve(
   config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
-
   if (
     formattedConfig.chat.projectId ||
     formattedConfig.chat.webSearch
@@ -33,7 +32,7 @@ async function retrieve(
   config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
-  const retrievalTools = await getRetrievalTools(state, config);
+  const retrievalTools = await getRetrievalTools(state, formattedConfig);
   
   if (!formattedConfig.chat.model) {
     throw new Error("Model is required");
@@ -132,8 +131,8 @@ async function simple(state: typeof GraphState.State, config: RunnableConfig) {
     state.messages,
     formattedConfig.chat.model!,
   );
-  const documentsMessage = await addDocumentsToMessageHistory(state.documents);
-  formattedMessages.splice(formattedMessages.length - 1, 0, documentsMessage!);
+  const documentsMessage = await getDocumentsMessage(state.documents);
+  if (documentsMessage) { formattedMessages.splice(formattedMessages.length - 1, 0, documentsMessage) }
 
   const response = await chain.invoke(
     {
@@ -159,8 +158,8 @@ async function baseAgent(state: typeof GraphState.State, config: RunnableConfig)
     state.messages,
     formattedConfig.chat.model!,
   );
-  const documentsMessage = await addDocumentsToMessageHistory(state.documents);
-  formattedMessages.splice(formattedMessages.length - 1, 0, documentsMessage!);  
+  const documentsMessage = await getDocumentsMessage(state.documents);
+  if (documentsMessage) { formattedMessages.splice(formattedMessages.length - 1, 0, documentsMessage) }
 
   const response = await chain.invoke(
     {
@@ -232,8 +231,8 @@ async function plannerAgent(
     state.messages,
     formattedConfig.chat.model!,
   );
-  const documentsMessage = await addDocumentsToMessageHistory(state.documents);
-  formattedMessages.splice(formattedMessages.length - 1, 0, documentsMessage!);
+  const documentsMessage = await getDocumentsMessage(state.documents);
+  if (documentsMessage) { formattedMessages.splice(formattedMessages.length - 1, 0, documentsMessage) }
 
 
   if (Array.isArray(currentPlanItem)) {

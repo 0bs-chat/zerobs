@@ -1,7 +1,7 @@
 "use node";
 
 import { z } from "zod";
-import { Annotation, messagesStateReducer } from "@langchain/langgraph/web";
+import { Annotation } from "@langchain/langgraph/web";
 import { BaseMessage } from "@langchain/core/messages";
 import { Document } from "@langchain/core/documents";
 
@@ -23,7 +23,7 @@ export type CompletedStep = [z.infer<typeof planStep>, BaseMessage];
 
 export const GraphState = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
-    reducer: messagesStateReducer,
+    reducer: (x, y) => y.concat(x),
     default: () => [],
   }),
   documents: Annotation<Document[]>({

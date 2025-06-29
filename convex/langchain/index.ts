@@ -15,7 +15,7 @@ export const chat = action({
     chatId: v.id("chats"),
   }),
   handler: async (ctx, args) => {
-    const chat = await ctx.runQuery(api.chats.queries.get, {
+    let chat = await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });
     const abortController = new AbortController();
@@ -32,7 +32,7 @@ export const chat = action({
       chatId: args.chatId,
       getCurrentThread: true,
     })).map((message) => mapStoredMessageToChatMessage(JSON.parse(message.message)));
-    
+
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
     const stream = agent.streamEvents(
@@ -55,10 +55,25 @@ export const chat = action({
     const buffer: string[] = [];
     let wasCancelled = false;
     let streamDoc: Doc<"streams"> | null = null;
+    
+    if (!chat.streamId) {
+      streamDoc = await ctx.runMutation(internal.streams.crud.create, {
+        userId: chat.userId,
+        status: "streaming",
+      });
+      await ctx.runMutation(api.chats.mutations.update, {
+        chatId: args.chatId,
+        updates: {
+          streamId: streamDoc._id!,
+        },
+      });
+      chat.streamId = streamDoc._id!;
+    }
 
     try {
       for await (const event of stream) {
         const state = parseStateToStreamStatesDoc((await agent.getState({ configurable: { thread_id: args.chatId } })).values as typeof GraphState.State);
+
         await ctx.runMutation(internal.streams.mutations.updateState, {
           streamId: chat.streamId!,
           updates: state,
@@ -87,13 +102,15 @@ export const chat = action({
         }
 
         if (now - lastFlush >= BUFFER) {
-          streamDoc = await ctx.runMutation(
-            internal.streams.mutations.appendChunks,
-            {
-              streamId: chat.streamId!,
-              chunks: buffer,
-            },
-          );
+          if (chat.streamId) {
+            streamDoc = await ctx.runMutation(
+              internal.streams.mutations.appendChunks,
+              {
+                streamId: chat.streamId,
+                chunks: buffer,
+              },
+            );
+          }
           lastFlush = now;
           buffer.length = 0;
         }
@@ -102,12 +119,14 @@ export const chat = action({
       if (wasCancelled) {
         return;
       }
-      await ctx.runMutation(internal.streams.mutations.update, {
-        streamId: chat.streamId!,
-        updates: {
-          status: "error",
-        },
-      });
+      if (chat.streamId) {
+        await ctx.runMutation(internal.streams.mutations.update, {
+          streamId: chat.streamId,
+          updates: {
+            status: "error",
+          },
+        });
+      }
       throw error;
     }
   }
