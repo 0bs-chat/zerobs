@@ -1,16 +1,9 @@
 import { requireAuth } from "../utils/helpers";
-import {
-  mutation,
-  internalMutation,
-} from "../_generated/server";
+import { mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
-import { internal } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
-
-// TODO: Optimization
-// - Instead of fetching the chat and checking if its new, check if before fetching
-//  but this will create a race condition requring additional type safety, annoying af
 
 export const create = mutation({
   args: {
@@ -19,16 +12,16 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
+    if (!args.chatId) {
+      throw new Error("Chat ID is required");
+    }
 
     // Check if chatInput already exists
-    const existingChatInput = await ctx.db
-      .query("chatInputs")
-      .withIndex("by_chat_user", (q) =>
-        q.eq("chatId", args.chatId ?? "new").eq("userId", userId),
-      )
-      .first();
+    const existingChatInput = await ctx.runQuery(api.chatInputs.queries.get, {
+      chatId: args.chatId,
+    });
 
-    if (existingChatInput && args.chatId !== "new") {
+    if (existingChatInput) {
       throw new Error("Chat input already exists");
     }
 
@@ -39,17 +32,23 @@ export const create = mutation({
       .filter((q) => q.eq(q.field("_id"), args.chatId))
       .first();
 
-    if (!chat && args.chatId !== "new") {
+    if (!chat) {
       throw new Error("Chat not found");
     }
 
     const newChatInputId = await ctx.db.insert("chatInputs", {
       ...args,
       text: "",
-      chatId: args.chatId ?? "new",
+      agentMode: args.agentMode ?? false,
+      plannerMode: args.plannerMode ?? false,
+      webSearch: args.webSearch ?? false,
+      artifacts: args.artifacts ?? false,
+      model: args.model ?? "gemini-2.5-flash",
+      chatId: args.chatId,
       userId,
       updatedAt: Date.now(),
     });
+
     const newChatInput = await ctx.db.get(newChatInputId);
 
     if (!newChatInput) {
@@ -70,7 +69,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
-    chatId: v.union(v.id("chats"), v.literal("new")),
+    chatId: v.id("chats"),
     updates: v.object(partial(schema.ChatInputs.withoutSystemFields)),
   },
   handler: async (ctx, args) => {
@@ -79,7 +78,7 @@ export const update = mutation({
     let existingChatInput = await ctx.db
       .query("chatInputs")
       .withIndex("by_chat_user", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
+        q.eq("chatId", args.chatId).eq("userId", userId)
       )
       .first();
 
@@ -94,7 +93,7 @@ export const update = mutation({
       .filter((q) => q.eq(q.field("_id"), args.chatId))
       .first();
 
-    if (!chat && args.chatId !== "new") {
+    if (!chat) {
       throw new Error("Chat not found");
     }
 
@@ -102,9 +101,11 @@ export const update = mutation({
     const { projectId, ...otherUpdates } = args.updates;
     const updates = {
       ...otherUpdates,
-      ...(projectId !== undefined && { projectId: projectId === null ? undefined : projectId }),
+      ...(projectId !== undefined && {
+        projectId: projectId === null ? undefined : projectId,
+      }),
     };
-    
+
     await ctx.db.patch(existingChatInput._id, {
       ...updates,
       updatedAt: Date.now(),
@@ -116,7 +117,7 @@ export const update = mutation({
 
 export const remove = internalMutation({
   args: {
-    chatId: v.union(v.id("chats"), v.literal("new")),
+    chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -124,11 +125,11 @@ export const remove = internalMutation({
     const existingChatInput = await ctx.db
       .query("chatInputs")
       .withIndex("by_chat_user", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
+        q.eq("chatId", args.chatId).eq("userId", userId)
       )
       .first();
 
-    if (!existingChatInput || args.chatId === "new") {
+    if (!existingChatInput) {
       throw new Error("Chat input not found");
     }
 
@@ -139,7 +140,7 @@ export const remove = internalMutation({
       .filter((q) => q.eq(q.field("_id"), args.chatId))
       .first();
 
-    if (!chat && args.chatId !== "new") {
+    if (!chat) {
       throw new Error("Chat not found");
     }
 

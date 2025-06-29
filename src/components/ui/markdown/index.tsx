@@ -64,7 +64,7 @@ export const Markdown = memo(
               />
             ) : language ? (
               <div className="flex flex-col overflow-hidden bg-card rounded-md max-w-full">
-                <div className="flex items-center justify-between rounded-t-md bg-accent px-2 py-1 text-secondary-foreground ">
+                <div className="flex items-center justify-between rounded-t-md bg-secondary px-2 py-1 text-secondary-foreground ">
                   <span className="text-sm text-muted-foreground">
                     {language}
                   </span>

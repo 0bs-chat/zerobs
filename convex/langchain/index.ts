@@ -1,6 +1,6 @@
 "use node";
 
-import { z } from "zod"
+import { z } from "zod";
 import { ActionCtx, internalAction } from "../_generated/server";
 import {
   RemoveMessage,
@@ -10,15 +10,22 @@ import {
 import { api, internal } from "../_generated/api";
 import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
 import { agentGraph } from "./agent";
-import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
+import {
+  ChatPromptTemplate,
+  MessagesPlaceholder,
+} from "@langchain/core/prompts";
 import { getModel } from "./models";
-import { createHumanMessage, processStreamWithBatching, streamHelper } from "./utils";
+import {
+  createHumanMessage,
+  processStreamWithBatching,
+  streamHelper,
+} from "./utils";
 import { Doc, Id } from "../_generated/dataModel";
 import * as schema from "../schema";
 
 export async function chat(
   ctx: ActionCtx,
-  args: Partial<Doc<"chatInputs">> & { chat: Doc<"chats"> | null },
+  args: Doc<"chatInputs"> & { chat: Doc<"chats"> }
 ) {
   const abortController = new AbortController();
   const stream = streamHelper(ctx, {
@@ -26,12 +33,7 @@ export async function chat(
     signal: abortController.signal,
     includeHumanMessage: true,
   });
-  await processStreamWithBatching(
-    ctx,
-    stream,
-    args.streamId!,
-    abortController,
-  );
+  await processStreamWithBatching(ctx, stream, args.streamId!, abortController);
 }
 
 export async function removeMessageGroup(
@@ -41,7 +43,7 @@ export async function removeMessageGroup(
     startIndex: number;
     count: number;
     cascade: boolean;
-  },
+  }
 ) {
   const checkpointer = new ConvexCheckpointSaver(ctx);
   const checkpoint = await checkpointer.get({
@@ -79,7 +81,7 @@ export async function removeMessageGroup(
     .compile({ checkpointer })
     .updateState(
       { configurable: { thread_id: args.chatId } },
-      { messages: updatedMessages },
+      { messages: updatedMessages }
     );
 }
 
@@ -87,13 +89,13 @@ export async function regenerateResponse(
   ctx: ActionCtx,
   args: {
     chatId: Id<"chats">;
-  },
+  }
 ) {
   const chatInput = await ctx.runQuery(
     internal.chatInputs.queries.getInternal,
     {
       chatId: args.chatId,
-    },
+    }
   );
 
   // Create AbortController for cancellation
@@ -108,7 +110,7 @@ export async function regenerateResponse(
     ctx,
     stream,
     chatInput.streamId!,
-    abortController,
+    abortController
   );
 }
 
@@ -116,7 +118,7 @@ export async function addMessage(
   ctx: ActionCtx,
   args: {
     chatInputDoc: Doc<"chatInputs">;
-  },
+  }
 ): Promise<Record<string, any>> {
   const checkpointer = new ConvexCheckpointSaver(ctx);
   const checkpoint = await checkpointer.get({
@@ -131,7 +133,7 @@ export async function addMessage(
   const humanMessage = await createHumanMessage(
     ctx,
     args.chatInputDoc.text!,
-    args.chatInputDoc.documents,
+    args.chatInputDoc.documents
   );
 
   await ctx.runMutation(api.chatInputs.mutations.update, {
@@ -143,7 +145,7 @@ export async function addMessage(
     .compile({ checkpointer })
     .updateState(
       { configurable: { thread_id: args.chatInputDoc.chatId } },
-      { messages: [...messages, humanMessage] },
+      { messages: [...messages, humanMessage] }
     );
 
   return response;
@@ -153,7 +155,7 @@ export async function getMessageCount(
   ctx: ActionCtx,
   args: {
     chatId: Id<"chats">;
-  },
+  }
 ) {
   const checkpointer = new ConvexCheckpointSaver(ctx);
   const checkpoint = await checkpointer.get({
@@ -170,32 +172,31 @@ export const generateTitle = internalAction({
   args: schema.ChatInputs.doc,
   handler: async (ctx, args) => {
     const prompt = ChatPromptTemplate.fromMessages([
-      ["system", "You are a helpful assistant that generates titles for chats."],
+      [
+        "system",
+        "You are a helpful assistant that generates titles for chats.",
+      ],
       new MessagesPlaceholder("input"),
     ]);
     const output = z.object({
       title: z.string(),
     });
 
-    const modelWithOutputParser = prompt
-      .pipe(await getModel("worker").withStructuredOutput(output));
+    const modelWithOutputParser = prompt.pipe(
+      getModel("worker").withStructuredOutput(output)
+    );
 
-    if (args.chatId !== "new") {
-      const response = await modelWithOutputParser.invoke({
-        input: [
-          await createHumanMessage(
-            ctx,
-            args.text!,
-            args.documents,
-          ),
-        ],
-      });
+    // chatid is never new now.
+    // if (args.chatId !== "new") {
+    //   const response = await modelWithOutputParser.invoke({
+    //     input: [await createHumanMessage(ctx, args.text!, args.documents)],
+    //   });
 
-      await ctx.runMutation(internal.chats.crud.update, {
-        id: args.chatId!,
-        patch: { name: response.title, updatedAt: Date.now() },
-      });
-    }
+    //   await ctx.runMutation(internal.chats.crud.update, {
+    //     id: args.chatId!,
+    //     patch: { name: response.title, updatedAt: Date.now() },
+    //   });
+    // }
   },
 });
 
@@ -206,7 +207,7 @@ export async function editMessage(
     messageIndex: number;
     newContent: string;
     documents?: Id<"documents">[];
-  },
+  }
 ) {
   const checkpointer = new ConvexCheckpointSaver(ctx);
   const checkpoint = await checkpointer.get({
@@ -214,7 +215,11 @@ export async function editMessage(
   });
   const messages = checkpoint?.channel_values.messages as BaseMessage[];
 
-  if (!messages || args.messageIndex < 0 || args.messageIndex >= messages.length) {
+  if (
+    !messages ||
+    args.messageIndex < 0 ||
+    args.messageIndex >= messages.length
+  ) {
     throw new Error("Invalid message index");
   }
 
@@ -228,7 +233,7 @@ export async function editMessage(
   const updatedMessage = await createHumanMessage(
     ctx,
     args.newContent,
-    args.documents,
+    args.documents
   );
   updatedMessage.id = messageToEdit.id; // Preserve the original ID
 
@@ -241,7 +246,7 @@ export async function editMessage(
     .compile({ checkpointer })
     .updateState(
       { configurable: { thread_id: args.chatId } },
-      { messages: updatedMessages },
+      { messages: updatedMessages }
     );
 
   return null;

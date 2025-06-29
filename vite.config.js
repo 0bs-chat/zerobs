@@ -1,16 +1,31 @@
 import { defineConfig } from "vite";
-import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import tsconfigPaths from "vite-tsconfig-paths";
 import { resolve } from "node:path";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    port: 3000,
+  },
+  prerender: {
+    routes: ["/", "/auth"],
+    crawlLinks: true,
+  },
+  ssr: {
+    noExternal: [
+      "react-syntax-highlighter",
+      "isomorphic-git",
+      "@isomorphic-git/lightning-fs",
+    ],
+  },
   plugins: [
-    TanStackRouterVite({ autoCodeSplitting: true }),
-    viteReact(),
     tailwindcss(),
+    tsconfigPaths({
+      project: "./tsconfig.json",
+    }),
+    tanstackStart(),
   ],
   test: {
     globals: true,
@@ -27,7 +42,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ["ssh2", "cpu-features"],
-    include: ["buffer"],
+    include: ["path-browserify", "buffer"],
   },
   build: {
     rollupOptions: {

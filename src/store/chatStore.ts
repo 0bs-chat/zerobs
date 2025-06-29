@@ -6,14 +6,15 @@ import { useStream } from "@/hooks/chats/use-stream";
 import { useCheckpointParser } from "@/hooks/chats/use-chats";
 import type { Artifact } from "@/components/chat/artifacts/utils";
 
-export const chatInputTextAtom = atom<string>("");
-
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
 
+export const selectedChatIdAtom = atomWithStorage<Id<"chats"> | null>(
+  "selectedChatId",
+  null
+);
 export const documentDialogOpenAtom = atom(false);
 export const documentDialogDocumentIdAtom = atom<Id<"documents"> | null>(null);
 export const projectDialogOpenAtom = atom(false);
-
 export const mcpEditDialogOpenAtom = atom(false);
 export const mcpAtom = atom<MCPData>({
   name: "",
@@ -51,3 +52,47 @@ export const selectedArtifactAtom = atom<Artifact | null>(null);
 export const selectedArtifactIdAtom = atom<string | null>(null);
 
 export const themeAtom = atomWithStorage("theme", "dark");
+
+export type ChatInputState = {
+  chatId: Id<"chats">;
+  text: string;
+  documents?: Id<"documents">[];
+  model: string;
+  projectId?: Id<"projects"> | null;
+  agentMode: boolean;
+  plannerMode: boolean;
+  webSearch: boolean;
+  artifacts?: boolean;
+  streamId?: Id<"streams">;
+};
+
+const initialChatInputState: ChatInputState = {
+  chatId: "" as Id<"chats">,
+  documents: [],
+  text: "",
+  projectId: null,
+  agentMode: false,
+  plannerMode: false,
+  webSearch: false,
+  artifacts: false,
+  model: "gemini-2.5-flash",
+  streamId: "" as Id<"streams">,
+};
+
+export const chatInputAtom = atom<ChatInputState>(initialChatInputState);
+
+export const updateChatInputAtom = atom(
+  null,
+  (get, set, update: Partial<ChatInputState>) => {
+    set(chatInputAtom, {
+      ...get(chatInputAtom),
+      ...update,
+    });
+  }
+);
+
+export const resetChatInputAtom = atom(null, (_, set) => {
+  set(chatInputAtom, initialChatInputState);
+});
+
+export const existingChatInputTextAtom = atom<string>("");

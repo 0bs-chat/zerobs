@@ -17,6 +17,7 @@
     "skipLibCheck": true,
     "strict": true,
     "noUnusedLocals": true,
+    "strictNullChecks": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,

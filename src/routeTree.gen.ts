@@ -8,150 +8,88 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-// Import Routes
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChatChatIdRouteImport } from './routes/chat.$chatId'
 
-import { Route as rootRoute } from "./routes/__root";
-import { Route as AuthImport } from "./routes/auth";
-import { Route as IndexImport } from "./routes/index";
-import { Route as LandingIndexImport } from "./routes/landing/index";
-import { Route as ChatChatIdIndexImport } from "./routes/chat_/$chatId/index";
-
-// Create/Update Routes
-
-const AuthRoute = AuthImport.update({
-  id: "/auth",
-  path: "/auth",
-  getParentRoute: () => rootRoute,
-} as any);
-
-const IndexRoute = IndexImport.update({
-  id: "/",
-  path: "/",
-  getParentRoute: () => rootRoute,
-} as any);
-
-const LandingIndexRoute = LandingIndexImport.update({
-  id: "/landing/",
-  path: "/landing/",
-  getParentRoute: () => rootRoute,
-} as any);
-
-const ChatChatIdIndexRoute = ChatChatIdIndexImport.update({
-  id: "/chat_/$chatId/",
-  path: "/chat/$chatId/",
-  getParentRoute: () => rootRoute,
-} as any);
-
-// Populate the FileRoutesByPath interface
-
-declare module "@tanstack/react-router" {
-  interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/auth": {
-      id: "/auth";
-      path: "/auth";
-      fullPath: "/auth";
-      preLoaderRoute: typeof AuthImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/landing/": {
-      id: "/landing/";
-      path: "/landing";
-      fullPath: "/landing";
-      preLoaderRoute: typeof LandingIndexImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/chat_/$chatId/": {
-      id: "/chat_/$chatId/";
-      path: "/chat/$chatId";
-      fullPath: "/chat/$chatId";
-      preLoaderRoute: typeof ChatChatIdIndexImport;
-      parentRoute: typeof rootRoute;
-    };
-  }
-}
-
-// Create and export the route tree
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatChatIdRoute = ChatChatIdRouteImport.update({
+  id: '/chat/$chatId',
+  path: '/chat/$chatId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/auth": typeof AuthRoute;
-  "/landing": typeof LandingIndexRoute;
-  "/chat/$chatId": typeof ChatChatIdIndexRoute;
+  '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/chat/$chatId': typeof ChatChatIdRoute
 }
-
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/auth": typeof AuthRoute;
-  "/landing": typeof LandingIndexRoute;
-  "/chat/$chatId": typeof ChatChatIdIndexRoute;
+  '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/chat/$chatId': typeof ChatChatIdRoute
 }
-
 export interface FileRoutesById {
-  __root__: typeof rootRoute;
-  "/": typeof IndexRoute;
-  "/auth": typeof AuthRoute;
-  "/landing/": typeof LandingIndexRoute;
-  "/chat_/$chatId/": typeof ChatChatIdIndexRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/chat/$chatId': typeof ChatChatIdRoute
 }
-
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/auth" | "/landing" | "/chat/$chatId";
-  fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/auth" | "/landing" | "/chat/$chatId";
-  id: "__root__" | "/" | "/auth" | "/landing/" | "/chat_/$chatId/";
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/auth' | '/chat/$chatId'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/auth' | '/chat/$chatId'
+  id: '__root__' | '/' | '/auth' | '/chat/$chatId'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
+  ChatChatIdRoute: typeof ChatChatIdRoute
 }
 
-export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AuthRoute: typeof AuthRoute;
-  LandingIndexRoute: typeof LandingIndexRoute;
-  ChatChatIdIndexRoute: typeof ChatChatIdIndexRoute;
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat/$chatId': {
+      id: '/chat/$chatId'
+      path: '/chat/$chatId'
+      fullPath: '/chat/$chatId'
+      preLoaderRoute: typeof ChatChatIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+  }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
-  LandingIndexRoute: LandingIndexRoute,
-  ChatChatIdIndexRoute: ChatChatIdIndexRoute,
-};
-
-export const routeTree = rootRoute
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
-
-/* ROUTE_MANIFEST_START
-{
-  "routes": {
-    "__root__": {
-      "filePath": "__root.tsx",
-      "children": [
-        "/",
-        "/auth",
-        "/landing/",
-        "/chat_/$chatId/"
-      ]
-    },
-    "/": {
-      "filePath": "index.tsx"
-    },
-    "/auth": {
-      "filePath": "auth.tsx"
-    },
-    "/landing/": {
-      "filePath": "landing/index.tsx"
-    },
-    "/chat_/$chatId/": {
-      "filePath": "chat_/$chatId/index.tsx"
-    }
-  }
+  ChatChatIdRoute: ChatChatIdRoute,
 }
-ROUTE_MANIFEST_END */
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()

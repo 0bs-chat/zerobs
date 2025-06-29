@@ -29,11 +29,11 @@ export const AddDocumentControls = ({
   });
   const createDocuments = useMutation(api.documents.mutations.createMultiple);
   const createProjectDocuments = useMutation(
-    api.projectDocuments.mutations.createMultiple,
+    api.projectDocuments.mutations.createMultiple
   );
   const updateChatInput = useMutation(api.chatInputs.mutations.update);
   const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats"> | "new";
+  const chatId = params.chatId as Id<"chats">;
 
   const handleFileUpload = async (files: FileList) => {
     const documentIds = await uploadDocuments(files);

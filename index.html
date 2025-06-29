@@ -7,11 +7,19 @@
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="the everything ai app" />
     <link rel="apple-touch-icon" href="/0bs.png" />
+    <link rel="stylesheet" href="/src/styles.css" />
     <link rel="manifest" href="/manifest.json" />
     <title>0bs</title>
   </head>
   <body>
-    <div id="app" class="font-sans"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div id="app" class="font-sans">
+      <div class="flex justify-center items-center h-screen">
+        <div class="animate-pulse">
+          <div class="w-12 h-12 bg-gray-200 rounded-lg mb-4"></div>
+          <div class="w-32 h-4 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/app/main.tsx"></script>
   </body>
 </html>

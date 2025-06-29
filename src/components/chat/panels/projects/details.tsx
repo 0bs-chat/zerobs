@@ -13,7 +13,7 @@ import type { Id } from "convex/_generated/dataModel";
 
 export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats"> | "new";
+  const chatId = params.chatId as Id<"chats">;
   const project = useQuery(
     api.projects.queries.get,
     projectId ? { projectId } : "skip"

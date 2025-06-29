@@ -5,13 +5,16 @@ import { useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 export const useRemoveDocument = () => {
-  const params = useParams({ from: "/chat_/$chatId/" });
-  const chatId = params.chatId as Id<"chats"> | "new";
-  const chatInputQuery = useQuery(api.chatInputs.queries.get, { chatId });
+  const params = useParams({ strict: false });
+  const chatId = params.chatId as Id<"chats">;
+  const chatInputQuery = useQuery(
+    api.chatInputs.queries.get,
+    chatId ? { chatId } : "skip"
+  );
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
 
   return (documentId: Id<"documents">) => {
-    if (!chatInputQuery?.documents) return;
+    if (!chatInputQuery?.documents || !chatId) return;
     updateChatInputMutation({
       chatId: chatId,
       updates: {
@@ -28,17 +31,20 @@ export const useUploadDocuments = (
   }: {
     type: "file" | "url" | "site" | "youtube" | "text" | "github";
     addToChatInput?: boolean;
-  } = { type: "file", addToChatInput: true },
+  } = { type: "file", addToChatInput: true }
 ) => {
-  const params = useParams({ from: "/chat_/$chatId/" });
-  const chatId = params.chatId as Id<"chats"> | "new";
-  const chatInputQuery = useQuery(api.chatInputs.queries.get, { chatId });
+  const params = useParams({ strict: false });
+  const chatId = params.chatId as Id<"chats">;
+  const chatInputQuery = useQuery(
+    api.chatInputs.queries.get,
+    chatId ? { chatId } : "skip"
+  );
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
   const generateUploadUrlMutation = useMutation(
-    api.documents.mutations.generateUploadUrl,
+    api.documents.mutations.generateUploadUrl
   );
   const createMultipleMutation = useMutation(
-    api.documents.mutations.createMultiple,
+    api.documents.mutations.createMultiple
   );
 
   return async (files: FileList) => {
@@ -79,7 +85,7 @@ export const useUploadDocuments = (
       });
 
       // Update chat input with new documents
-      if (addToChatInput) {
+      if (addToChatInput && chatId) {
         const existingDocuments = chatInputQuery?.documents || [];
         await updateChatInputMutation({
           chatId,
@@ -90,7 +96,7 @@ export const useUploadDocuments = (
       }
 
       toast(
-        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`,
+        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`
       );
 
       return documentIds;

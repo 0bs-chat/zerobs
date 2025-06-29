@@ -20,21 +20,21 @@ interface UserMessageProps {
   onCancelEdit?: () => void;
   onSaveEdit?: (content: string, regenerate?: boolean) => void;
   messageIndex?: number;
-  chatId?: Id<"chats"> | "new";
+  chatId?: Id<"chats">;
 }
 
 export const UserMessageComponent = React.memo(
-  ({ 
-    message, 
-    isEditing = false, 
-    onCancelEdit, 
+  ({
+    message,
+    isEditing = false,
+    onCancelEdit,
     onSaveEdit,
     messageIndex,
-    chatId
+    chatId,
   }: UserMessageProps) => {
     const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
     const setDocumentDialogDocumentId = useSetAtom(
-      documentDialogDocumentIdAtom,
+      documentDialogDocumentIdAtom
     );
     const editMessage = useAction(api.chats.actions.editMessage);
 
@@ -47,7 +47,7 @@ export const UserMessageComponent = React.memo(
     const fileIds = Array.isArray(message.content)
       ? message.content
           .map((item) =>
-            item.type === "file" && "file" in item ? item.file.file_id : null,
+            item.type === "file" && "file" in item ? item.file.file_id : null
           )
           .filter(Boolean)
       : [];
@@ -59,11 +59,11 @@ export const UserMessageComponent = React.memo(
     const [editContent, setEditContent] = useState(text);
 
     const handleSave = async (regenerate: boolean = false) => {
-      if (chatId === "new" || messageIndex === undefined) return;
-      
+      if (messageIndex === undefined) return;
+
       // Close edit state immediately
       onSaveEdit?.(editContent, regenerate);
-      
+
       try {
         await editMessage({
           chatId: chatId as Id<"chats">,
@@ -92,7 +92,7 @@ export const UserMessageComponent = React.memo(
             maxHeight={300}
             placeholder="Edit your message..."
           />
-          
+
           {documents?.map((document) => (
             <Badge
               className="text-xs font-bold p-4 w-full cursor-pointer shadow-sm"
@@ -158,7 +158,7 @@ export const UserMessageComponent = React.memo(
         ))}
       </div>
     );
-  },
+  }
 );
 
 UserMessageComponent.displayName = "UserMessageComponent";

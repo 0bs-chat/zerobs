@@ -6,7 +6,7 @@ import { api } from "../_generated/api";
 
 export const get = query({
   args: {
-    chatId: v.union(v.id("chats"), v.literal("new")),
+    chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -14,10 +14,10 @@ export const get = query({
     const chatInput = await ctx.db
       .query("chatInputs")
       .withIndex("by_chat_user", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
+        q.eq("chatId", args.chatId).eq("userId", userId)
       )
       .first();
-    if (!chatInput && args.chatId !== "new") {
+    if (!chatInput) {
       throw new Error("Chat input not found");
     }
 
@@ -28,7 +28,7 @@ export const get = query({
       .filter((q) => q.eq(q.field("_id"), args.chatId))
       .first();
 
-    if (!chat && args.chatId !== "new") {
+    if (!chat) {
       throw new Error("Chat not found");
     }
 
@@ -41,16 +41,14 @@ export const get = query({
 
 export const getInternal = internalQuery({
   args: {
-    chatId: v.union(v.id("chats"), v.literal("new")),
+    chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
     const chatInput = await ctx.db
       .query("chatInputs")
-      .withIndex("by_chat_user", (q) =>
-        q.eq("chatId", args.chatId),
-      )
+      .withIndex("by_chat_user", (q) => q.eq("chatId", args.chatId))
       .first();
-    if (!chatInput && args.chatId !== "new") {
+    if (!chatInput) {
       throw new Error("Chat input not found");
     }
 
@@ -61,7 +59,7 @@ export const getInternal = internalQuery({
       .filter((q) => q.eq(q.field("_id"), args.chatId))
       .first();
 
-    if (!chat && args.chatId !== "new") {
+    if (!chat) {
       throw new Error("Chat not found");
     }
 
@@ -74,12 +72,12 @@ export const getInternal = internalQuery({
 
 export const getModels = query({
   args: {
-    chatId: v.union(v.id("chats"), v.literal("new")),
+    chatId: v.id("chats"),
     showHidden: v.optional(v.boolean()),
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     selectedModel: (typeof models)[number];
     models: typeof models;
@@ -89,7 +87,7 @@ export const getModels = query({
     });
 
     let selectedModel = models.find(
-      (model) => model.model_name === chatInput.model,
+      (model) => model.model_name === chatInput.model
     );
     if (!selectedModel) {
       selectedModel = models[0];

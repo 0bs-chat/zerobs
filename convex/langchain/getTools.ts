@@ -18,24 +18,21 @@ import type { DocumentInterface } from "@langchain/core/documents";
 
 export const getRetrievalTools = (ctx: ActionCtx) => {
   const vectorSearchTool = tool(
-    async ({ 
-      query, 
-      projectId
-    }: { 
-      query: string; 
-      projectId: string;
-    }) => {
-      const vectorStore = new ConvexVectorStore(getEmbeddingModel("embeddings"), {
-        ctx,
-        table: "documentVectors",
-      });
+    async ({ query, projectId }: { query: string; projectId: string }) => {
+      const vectorStore = new ConvexVectorStore(
+        getEmbeddingModel("embeddings"),
+        {
+          ctx,
+          table: "documentVectors",
+        }
+      );
 
       const includedProjectDocuments = await ctx.runQuery(
         internal.projectDocuments.queries.getSelected,
         {
           projectId: projectId as Id<"projects">,
           selected: true,
-        },
+        }
       );
 
       if (includedProjectDocuments.length === 0) {
@@ -48,32 +45,33 @@ export const getRetrievalTools = (ctx: ActionCtx) => {
             ...includedProjectDocuments.map((document) =>
               q.eq("metadata", {
                 source: document.documentId,
-              }),
-            ),
+              })
+            )
           ),
       });
 
-      return JSON.stringify(results.map(doc => ({
-        content: doc.pageContent,
-        metadata: doc.metadata,
-      })));
+      return JSON.stringify(
+        results.map((doc) => ({
+          content: doc.pageContent,
+          metadata: doc.metadata,
+        }))
+      );
     },
     {
       name: "searchProjectDocuments",
-      description: "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents.",
+      description:
+        "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents.",
       schema: z.object({
-        query: z.string().describe("The search query to find relevant documents"),
+        query: z
+          .string()
+          .describe("The search query to find relevant documents"),
         projectId: z.string().describe("The project ID to search within"),
       }),
-    },
+    }
   );
 
   const webSearchTool = tool(
-    async ({ 
-      query
-    }: { 
-      query: string;
-    }) => {
+    async ({ query }: { query: string }) => {
       const searchTools = await getSearchTools(ctx);
       let documents: DocumentInterface[] = [];
 
@@ -104,8 +102,8 @@ export const getRetrievalTools = (ctx: ActionCtx) => {
         }[] = JSON.parse(searchResults);
         const urlMarkdownContents = await Promise.all(
           searchResultsArray.map((result) =>
-            searchTools.crawlWeb.invoke({ url: result.url }),
-          ),
+            searchTools.crawlWeb.invoke({ url: result.url })
+          )
         );
         const docs = searchResultsArray.map((result, index) => {
           return new Document({
@@ -118,18 +116,23 @@ export const getRetrievalTools = (ctx: ActionCtx) => {
         documents.push(...docs);
       }
 
-      return JSON.stringify(documents.map(doc => ({
-        content: doc.pageContent,
-        metadata: doc.metadata,
-      })));
+      return JSON.stringify(
+        documents.map((doc) => ({
+          content: doc.pageContent,
+          metadata: doc.metadata,
+        }))
+      );
     },
     {
       name: "searchWeb",
-      description: "Search the web for current information using Tavily or DuckDuckGo. Use this to find up-to-date information from the internet.",
+      description:
+        "Search the web for current information using Tavily or DuckDuckGo. Use this to find up-to-date information from the internet.",
       schema: z.object({
-        query: z.string().describe("The search query to find relevant web information"),
+        query: z
+          .string()
+          .describe("The search query to find relevant web information"),
       }),
-    },
+    }
   );
 
   return {
@@ -152,7 +155,7 @@ export const getSearchTools = (ctx: ActionCtx) => {
           {
             url,
             maxDepth: 0,
-          },
+          }
         );
         return res;
       },
@@ -162,7 +165,7 @@ export const getSearchTools = (ctx: ActionCtx) => {
         schema: z.object({
           url: z.string().describe("The url to crawl"),
         }),
-      },
+      }
     ),
   };
 
@@ -177,7 +180,18 @@ export const getSearchTools = (ctx: ActionCtx) => {
   return tools;
 };
 
-export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
+export const getMCPTools = async (
+  ctx: ActionCtx,
+  chatId: Id<"chats">,
+  agentMode: boolean
+) => {
+  if (agentMode === false) {
+    return {
+      tools: [],
+      groupedTools: {},
+    };
+  }
+
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
     paginationOpts: {
       numItems: 100,
@@ -201,7 +215,7 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
       if (mcp.restartOnNewChat) {
         return ctx.runAction(internal.mcps.actions.restart, { mcpId: mcp._id });
       }
-    }),
+    })
   );
 
   // Wait for all mcps to be created
@@ -239,7 +253,7 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
           delayMs: 15000,
         },
       },
-    ]),
+    ])
   );
 
   const client = new MultiServerMCPClient({
@@ -281,7 +295,7 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
           });
           if (["file"].includes(document.type)) {
             const url = await ctx.storage.getUrl(
-              document.key as Id<"_storage">,
+              document.key as Id<"_storage">
             );
             if (url) {
               return {
@@ -291,7 +305,7 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
             }
           }
           return null;
-        }) ?? [],
+        }) ?? []
       )
     ).filter((file) => file !== null);
 
@@ -300,8 +314,15 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
         if (mcp.type === "stdio" && files.length > 0) {
           await fly.uploadFileToAllMachines(mcp._id, files);
         }
-      }),
+      })
     );
+  }
+
+  if (agentMode === true) {
+    return {
+      tools: tools,
+      groupedTools,
+    };
   }
 
   return {

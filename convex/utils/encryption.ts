@@ -1,13 +1,12 @@
 import * as jose from "jose";
-import { Id } from "../_generated/dataModel";
 
 const JWT_PRIVATE_KEY_PEM = process.env.JWT_PRIVATE_KEY;
 const JWKS_URI = process.env.JWKS;
 
 export async function createJwt(
-  userId: Id<"users"> | null,
+  userId: string,
   key: string,
-  value: string,
+  value: string
 ): Promise<string> {
   if (!JWT_PRIVATE_KEY_PEM) {
     throw new Error("JWT_PRIVATE_KEY environment variable is not set.");
@@ -29,7 +28,7 @@ export async function createJwt(
 }
 
 export async function verifyJwt(
-  token: string,
+  token: string
 ): Promise<{ sub: string; key: string; value: string }> {
   if (!JWKS_URI) {
     throw new Error("JWKS_URI environment variable is not set.");

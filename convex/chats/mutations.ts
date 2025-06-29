@@ -67,7 +67,7 @@ export const remove = mutation({
     const chatInput = await ctx.db
       .query("chatInputs")
       .withIndex("by_chat_user", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
+        q.eq("chatId", args.chatId).eq("userId", userId)
       )
       .first();
 
@@ -81,5 +81,46 @@ export const remove = mutation({
     await ctx.db.delete(args.chatId);
 
     return null;
+  },
+});
+
+// for atomic chat and input creation of new chats.
+export const createWithInput = mutation({
+  args: {
+    name: v.string(),
+    chatInput: v.object({
+      model: v.string(),
+      agentMode: v.optional(v.boolean()),
+      plannerMode: v.optional(v.boolean()),
+      webSearch: v.optional(v.boolean()),
+      documents: v.optional(v.array(v.id("documents"))),
+      projectId: v.optional(v.union(v.id("projects"), v.null())),
+      artifacts: v.optional(v.boolean()),
+      text: v.string(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const chatId = await ctx.db.insert("chats", {
+      name: args.name,
+      userId,
+      pinned: false,
+      updatedAt: Date.now(),
+    });
+
+    await ctx.db.insert("chatInputs", {
+      ...args.chatInput,
+      chatId,
+      agentMode: args.chatInput.agentMode ?? false,
+      plannerMode: args.chatInput.plannerMode ?? false,
+      webSearch: args.chatInput.webSearch ?? false,
+      artifacts: args.chatInput.artifacts ?? false,
+      model: args.chatInput.model ?? "gemini-2.5-flash",
+      userId,
+      updatedAt: Date.now(),
+    });
+
+    return chatId;
   },
 });

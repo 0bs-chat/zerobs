@@ -1,9 +1,8 @@
-import React, { useState } from "react";
-import { useParams } from "@tanstack/react-router";
+import React, { Suspense, useState, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
-import { useQuery, useAction } from "convex/react";
+import { useAction } from "convex/react";
 import {
   HumanMessage,
   AIMessage,
@@ -21,6 +20,8 @@ import { useStream } from "@/hooks/chats/use-stream";
 import { AIToolUtilsBar, UserUtilsBar } from "./UtilsBar";
 import { useStreamAtom, useCheckpointParserAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 
 const groupMessages = (messages: BaseMessage[]): BaseMessage[][] => {
   if (messages.length === 0) return [];
@@ -242,102 +243,127 @@ const MessageGroup = React.memo(
 
 MessageGroup.displayName = "MessageGroup";
 
-export const ChatMessages = React.memo(() => {
-  const params = useParams({
-    from: "/chat_/$chatId/",
-  });
-  const chatId = params.chatId as Id<"chats"> | "new";
+export const ChatMessages = React.memo(
+  ({ chatId }: { chatId: Id<"chats"> }) => {
+    // now returns chunkGroups directly
+    const stream = useStream(chatId);
 
-  // now returns chunkGroups directly
-  const stream = useStream(chatId);
+    const checkpoint = useSuspenseQuery(
+      convexQuery(api.chats.queries.getCheckpoint, {
+        chatId,
+        paginationOpts: { numItems: 20, cursor: null },
+      })
+    );
 
-  const checkpoint = useQuery(api.chats.queries.getCheckpoint, {
-    chatId,
-    paginationOpts: { numItems: 20, cursor: null },
-  });
-  const parsedCheckpoint = useCheckpointParser({ checkpoint });
+    const parsedCheckpoint = useCheckpointParser({
+      checkpoint: checkpoint.data,
+    });
 
-  const setStream = useSetAtom(useStreamAtom);
-  const setCheckpointParser = useSetAtom(useCheckpointParserAtom);
+    const setStream = useSetAtom(useStreamAtom);
+    const setCheckpointParser = useSetAtom(useCheckpointParserAtom);
 
-  setStream(stream);
-  setCheckpointParser(parsedCheckpoint);
+    setStream(stream);
+    setCheckpointParser(parsedCheckpoint);
 
-  const messageGroups = parsedCheckpoint?.messages
-    ? groupMessages(parsedCheckpoint.messages)
-    : [];
+    const messageGroups = parsedCheckpoint?.messages
+      ? groupMessages(parsedCheckpoint.messages)
+      : [];
 
-  const lastMessage =
-    parsedCheckpoint?.messages?.[parsedCheckpoint.messages.length - 1];
+    const lastMessage =
+      parsedCheckpoint?.messages?.[parsedCheckpoint.messages.length - 1];
 
-  const lastMessageHasPastSteps =
-    lastMessage instanceof AIMessage &&
-    !!lastMessage.additional_kwargs?.past_steps;
+    const lastMessageHasPastSteps =
+      lastMessage instanceof AIMessage &&
+      !!lastMessage.additional_kwargs?.past_steps;
 
-  const messageGroupsWithIndices: {
-    group: BaseMessage[];
-    firstMessageIndex: number;
-  }[] = [];
-  let currentIndex = 0;
-  for (const group of messageGroups) {
-    messageGroupsWithIndices.push({ group, firstMessageIndex: currentIndex });
-    currentIndex += group.length;
+    const messageGroupsWithIndices: {
+      group: BaseMessage[];
+      firstMessageIndex: number;
+    }[] = [];
+    let currentIndex = 0;
+    for (const group of messageGroups) {
+      messageGroupsWithIndices.push({ group, firstMessageIndex: currentIndex });
+      currentIndex += group.length;
+    }
+
+    // Memoize streaming messages to prevent unnecessary re-renders
+    const streamingMessages = useMemo(() => {
+      if (!stream?.chunkGroups?.length) return [];
+
+      return stream.chunkGroups.map((cg, idx) => {
+        const key = `stream-${cg.type}-${idx}`;
+
+        if (cg.type === "ai") {
+          return {
+            key,
+            component: (
+              <AIMessageComponent
+                key={key}
+                message={
+                  new AIMessage({
+                    content: cg.content,
+                    additional_kwargs: cg.reasoning
+                      ? { reasoning_content: cg.reasoning }
+                      : {},
+                  })
+                }
+                messageIndex={parsedCheckpoint?.messages.length ?? -1}
+              />
+            ),
+          };
+        } else {
+          return {
+            key,
+            component: (
+              <ToolMessageComponent
+                key={key}
+                message={
+                  new ToolMessage({
+                    content: cg.output ? JSON.stringify(cg.output) : "",
+                    tool_call_id: `stream-tool-${idx}`,
+                    name: cg.toolName,
+                  })
+                }
+                isStreaming
+              />
+            ),
+          };
+        }
+      });
+    }, [stream?.chunkGroups, parsedCheckpoint?.messages.length]);
+
+    return (
+      <ScrollArea className="overflow-hidden w-full h-full">
+        <div className="flex flex-col max-w-4xl mx-auto p-1 gap-1 ">
+          {/* render existing message groups */}
+          {messageGroupsWithIndices.map(({ group, firstMessageIndex }, i) => (
+            <MessageGroup
+              key={i}
+              messages={group}
+              firstMessageIndex={firstMessageIndex}
+              chatId={chatId}
+            />
+          ))}
+
+          {/* render planning steps */}
+          <Suspense
+            fallback={<div className="animate-pulse h-4 bg-muted rounded" />}
+          >
+            {parsedCheckpoint?.pastSteps && !lastMessageHasPastSteps && (
+              <PlanningSteps pastSteps={parsedCheckpoint.pastSteps} />
+            )}
+          </Suspense>
+
+          {/* render live stream */}
+          {stream?.chunkGroups.length > 0 && (
+            <div className="flex flex-col w-full gap-1">
+              {streamingMessages.map(({ key, component }) => component)}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    );
   }
+);
 
-  return (
-    <ScrollArea className="overflow-hidden w-full h-full">
-      <div className="flex flex-col max-w-4xl mx-auto p-1 gap-1 ">
-        {/* render existing message groups */}
-        {messageGroupsWithIndices.map(({ group, firstMessageIndex }, i) => (
-          <MessageGroup
-            key={i}
-            messages={group}
-            firstMessageIndex={firstMessageIndex}
-            chatId={chatId}
-          />
-        ))}
-
-        {/* render planning steps */}
-        {parsedCheckpoint?.pastSteps && !lastMessageHasPastSteps && (
-          <PlanningSteps pastSteps={parsedCheckpoint.pastSteps} />
-        )}
-
-        {/* render live stream */}
-        {stream?.chunkGroups.length > 0 && (
-          <div className="flex flex-col w-full gap-1">
-            {stream?.chunkGroups.map((cg, idx) => {
-              if (cg.type === "ai") {
-                const msg = new AIMessage({
-                  content: cg.content,
-                  additional_kwargs: cg.reasoning
-                    ? { reasoning_content: cg.reasoning }
-                    : {},
-                });
-                return (
-                  <AIMessageComponent
-                    key={`stream-ai-${idx}`}
-                    message={msg}
-                    messageIndex={parsedCheckpoint?.messages.length ?? -1}
-                  />
-                );
-              } else {
-                const msg = new ToolMessage({
-                  content: cg.output ? JSON.stringify(cg.output) : "",
-                  tool_call_id: `stream-tool-${idx}`,
-                  name: cg.toolName,
-                });
-                return (
-                  <ToolMessageComponent
-                    key={`stream-tool-${idx}`}
-                    message={msg}
-                    isStreaming
-                  />
-                );
-              }
-            })}
-          </div>
-        )}
-      </div>
-    </ScrollArea>
-  );
-});
+export default ChatMessages;

@@ -26,7 +26,7 @@ export const get = query({
 
 export const getFromChatId = query({
   args: {
-    chatId: v.union(v.id("chats"), v.literal("new")),
+    chatId: v.id("chats"),
   },
   handler: async (ctx, args): Promise<Doc<"streams"> | null> => {
     await requireAuth(ctx);

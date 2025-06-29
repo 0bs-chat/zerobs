@@ -1,13 +1,6 @@
 import { defineSchema } from "convex/server";
 import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
 import { Table } from "convex-helpers/server";
-
-export const ApiKeys = Table("apiKeys", {
-  userId: v.optional(v.id("users")),
-  key: v.string(),
-  value: v.string(),
-});
 
 export const Documents = Table("documents", {
   name: v.string(),
@@ -17,16 +10,16 @@ export const Documents = Table("documents", {
     v.literal("site"),
     v.literal("youtube"),
     v.literal("text"),
-    v.literal("github"),
+    v.literal("github")
   ),
   size: v.number(),
   key: v.union(v.id("_storage"), v.string()),
   status: v.union(
     v.literal("processing"),
     v.literal("done"),
-    v.literal("error"),
+    v.literal("error")
   ),
-  userId: v.id("users"),
+  userId: v.string(),
 });
 
 export const DocumentVectors = Table("documentVectors", {
@@ -37,34 +30,34 @@ export const DocumentVectors = Table("documentVectors", {
 
 export const Chats = Table("chats", {
   name: v.string(),
-  userId: v.id("users"),
+  userId: v.string(),
   pinned: v.boolean(),
   updatedAt: v.number(),
 });
 
 export const ChatInputs = Table("chatInputs", {
-  chatId: v.union(v.id("chats"), v.literal("new")),
-  userId: v.id("users"),
+  chatId: v.id("chats"),
+  userId: v.string(),
   documents: v.optional(v.array(v.id("documents"))),
   text: v.optional(v.string()),
   projectId: v.optional(v.union(v.id("projects"), v.null())),
-  agentMode: v.optional(v.boolean()),
-  plannerMode: v.optional(v.boolean()),
-  webSearch: v.optional(v.boolean()),
+  agentMode: v.boolean(),
+  plannerMode: v.boolean(),
+  webSearch: v.boolean(),
   artifacts: v.optional(v.boolean()),
-  model: v.optional(v.string()),
+  model: v.string(),
   streamId: v.optional(v.id("streams")),
   updatedAt: v.number(),
 });
 
 export const Streams = Table("streams", {
-  userId: v.id("users"),
+  userId: v.string(),
   status: v.union(
     v.literal("pending"),
     v.literal("streaming"),
     v.literal("done"),
     v.literal("error"),
-    v.literal("cancelled"),
+    v.literal("cancelled")
   ),
 });
 
@@ -77,7 +70,7 @@ export const Projects = Table("projects", {
   name: v.string(),
   description: v.optional(v.string()),
   systemPrompt: v.optional(v.string()),
-  userId: v.id("users"),
+  userId: v.string(),
   updatedAt: v.number(),
 });
 
@@ -99,10 +92,10 @@ export const Mcps = Table("mcps", {
   status: v.union(
     v.literal("creating"),
     v.literal("created"),
-    v.literal("error"),
+    v.literal("error")
   ),
   restartOnNewChat: v.boolean(),
-  userId: v.id("users"),
+  userId: v.string(),
   updatedAt: v.number(),
 });
 
@@ -145,11 +138,6 @@ export const StreamChunkRefs = Table("streamChunkRefs", {
 });
 
 export default defineSchema({
-  ...authTables,
-  apiKeys: ApiKeys.table
-    .index("by_key", ["key"])
-    .index("by_user_key", ["userId", "key"])
-    .index("by_value_user", ["value", "userId"]),
   documents: Documents.table
     .index("by_key_user", ["key", "userId"])
     .index("by_user", ["userId"]),

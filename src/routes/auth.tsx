@@ -1,55 +1,41 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { Button } from "@/components/ui/button";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { toast } from "sonner";
+import { createFileRoute } from "@tanstack/react-router";
+import { SignInButton } from "@clerk/tanstack-react-start";
 
 export const Route = createFileRoute("/auth")({
-  component: RouteComponent,
+  component: AuthPage,
 });
 
-function RouteComponent() {
-  const { signIn } = useAuthActions();
-  const navigate = useNavigate();
-  const providers = ["github", "google"] as const;
-
+function AuthPage() {
   return (
-    <div className="flex flex-col items-center gap-2 justify-center h-screen w-screen">
-      <Button
-        variant="default"
-        className="px-4 text-lg py-6 cursor-pointer w-56"
-        onClick={async () => {
-          await signIn("anonymous");
-          toast.success("Signed in anonymously");
-          navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
-        }}
-      >
-        🥷 Anonymous Sign in
-      </Button>
-      {providers.map((provider) => {
-        const isProviderEnabled = useQuery(api.auth.isProviderEnabled, {
-          provider,
-        });
-        if (isProviderEnabled) {
-          return (
-            <Button
-              variant="default"
-              className="px-4 text-lg py-6 cursor-pointer w-56"
-              key={provider}
-              onClick={() => {
-                signIn(provider);
-                toast.success(`Signing in with ${provider}`);
-              }}
-            >
-              <div className="flex items-center gap-2 justify-center">
-                <span className="text-lg">Sign in with {provider}</span>
+    <main className="flex min-h-screen items-center justify-center font-mono">
+      <div className="flex flex-col text-center gap-2">
+        <a
+          href="https://github.com/0bs-chat"
+          className="flex items-center justify-between w-full"
+          style={{ pointerEvents: "auto" }}
+        >
+          <img
+            src="https://ypazyw0thq.ufs.sh/f/38t7p527clgqcnGaavggLnpFWuQyrejwqNAbak791G6l3HdE"
+            height={48}
+            width={48}
+            alt="zerobs logo"
+            loading="eager"
+            className="cursor-pointer"
+          />
+        </a>
+        <div className="w-auto text-foreground text-xl">
+          the ai chat app for power users.
+          <div className="font-semibold flex pt-2 w-full text-foreground text-lg justify-between">
+            <SignInButton>
+              <div className=" hover:cursor-pointer bg-accent hover:bg-accent-foreground text-accent-foreground hover:text-accent transition-all duration-300 px-4 py-2 w-full">
+                Sign in
               </div>
-            </Button>
-          );
-        }
-        return null;
-      })}
-    </div>
+            </SignInButton>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
+
+export default AuthPage;

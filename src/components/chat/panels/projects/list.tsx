@@ -11,7 +11,7 @@ import { projectDialogOpenAtom } from "@/store/chatStore";
 
 export const ProjectsList = () => {
   const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats"> | "new";
+  const chatId = params.chatId as Id<"chats">;
   const allProjects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 20, cursor: null },
   });

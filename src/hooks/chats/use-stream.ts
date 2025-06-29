@@ -1,5 +1,4 @@
 // hooks/useStream.ts
-"use client";
 
 import { useMemo } from "react";
 import { useQuery } from "convex/react";
@@ -21,13 +20,12 @@ export interface ToolChunkGroup {
   isComplete: boolean;
 }
 
-export function useStream(chatId: Id<"chats"> | "new") {
-  // Get stream metadata reactively
+export function useStream(chatId: Id<"chats">) {
   const stream = useQuery(api.streams.queries.getFromChatId, {
     chatId,
   });
 
-  // Get all chunks reactively - no polling needed!
+  // this requesting all of em. make it paginated.
   const rawChunkStrings = useQuery(
     api.streams.queries.getAllChunks,
     stream?._id ? { streamId: stream._id } : "skip"
