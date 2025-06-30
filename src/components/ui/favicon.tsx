@@ -8,31 +8,31 @@ interface FaviconProps {
   fallbackIcon?: React.ComponentType<{ className?: string }>;
 }
 
-export function Favicon({ 
-  url, 
-  className = "w-4 h-4", 
+export function Favicon({
+  url,
+  className = "w-4 h-4",
   size = 16,
-  fallbackIcon: FallbackIcon 
+  fallbackIcon: FallbackIcon,
 }: FaviconProps) {
   const [hasError, setHasError] = useState(false);
   const faviconUrl = size > 16 ? getHighResFaviconUrl(url) : getFaviconUrl(url);
-  
+
   if (hasError && FallbackIcon) {
     return <FallbackIcon className={className} />;
   }
-  
+
   return (
     <img
       src={faviconUrl}
       alt="Favicon"
       className={className}
       onError={() => setHasError(true)}
-      style={{ 
-        minWidth: size, 
+      style={{
+        minWidth: size,
         minHeight: size,
         maxWidth: size,
-        maxHeight: size
+        maxHeight: size,
       }}
     />
   );
-} 
+}

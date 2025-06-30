@@ -3,7 +3,8 @@
 import { api, internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
-import { fly, FlyApp, CreateMachineRequest } from "../utils/flyio";
+import { fly } from "../utils/flyio";
+import type { FlyApp, CreateMachineRequest } from "../utils/flyio";
 import { verifyEnv } from "./utils";
 
 export const create = internalAction({
@@ -107,17 +108,21 @@ export const restart = internalAction({
       if (app && app.name) {
         const machines = await fly.listMachines(app.name);
         if (machines && machines.length > 0) {
-          await Promise.all(machines.map((machine) => {
-            if (machine.id) {
-              return fly.stopMachine(app.name!, machine.id);
-            }
-          }));
-          
-          await Promise.all(machines.map((machine) => {
-            if (machine.id) {
-              return fly.startMachine(app.name!, machine.id);
-            }
-          }));
+          await Promise.all(
+            machines.map((machine) => {
+              if (machine.id) {
+                return fly.stopMachine(app.name!, machine.id);
+              }
+            }),
+          );
+
+          await Promise.all(
+            machines.map((machine) => {
+              if (machine.id) {
+                return fly.startMachine(app.name!, machine.id);
+              }
+            }),
+          );
         }
       }
 

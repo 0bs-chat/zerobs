@@ -13,6 +13,8 @@ import {
   ArrowUp,
   PaperclipIcon,
   GithubIcon,
+  FileIcon,
+  CircleStopIcon,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { Toggle } from "@/components/ui/toggle";
@@ -35,12 +37,12 @@ import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useParams } from "@tanstack/react-router";
 import type { Id } from "convex/_generated/dataModel";
 import { lazy, useRef, useState } from "react";
-import { getTagInfo } from "@/lib/helpers";
-import { useUser } from "@clerk/clerk-react";
-import type { ChatInputState } from "@/store/chatStore";
 import { useAtom } from "jotai";
 import { chatInputAtom } from "@/store/chatStore";
-const GitHubRepoLoader = lazy(() => import("../github"));
+import { getTagInfo } from "@/lib/helpers";
+import GitHubDialog from "../github";
+import type { ChatInputState } from "@/store/chatStore";
+import { useAuth } from "@clerk/clerk-react";
 
 const AgentToggle = ({
   chatId,
@@ -153,6 +155,35 @@ const WebSearchToggle = ({
   );
 };
 
+const ArtifactsToggle = ({
+  chatId,
+  artifacts,
+}: {
+  chatId: Id<"chats">;
+  artifacts?: boolean;
+}) => {
+  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+
+  return (
+    <Toggle
+      variant="outline"
+      className="hover:transition hover:duration-500"
+      pressed={artifacts ?? false}
+      onPressedChange={() => {
+        updateChatInputMutation({
+          chatId,
+          updates: {
+            artifacts: !artifacts,
+          },
+        });
+      }}
+    >
+      <FileIcon className="h-4 w-4" />
+      Artifacts
+    </Toggle>
+  );
+};
+
 export const ToolBar = ({
   isNewChat,
   chatInputData,
@@ -165,16 +196,15 @@ export const ToolBar = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-  const models = useQuery(
-    api.chatInputs.queries.getModels,
-    !isNewChat && chatId ? { chatId } : "skip"
-  );
-  const handleFileUpload = useUploadDocuments();
-  const handleSubmit = useHandleSubmit(isNewChat, chatId);
-  const [chatInput, setChatInput] = useAtom(chatInputAtom);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const { isSignedIn } = useUser();
+  const models = useQuery(api.chatInputs.queries.getModels, {
+    chatId,
+  });
+  const handleFileUpload = useUploadDocuments();
+  const handleSubmit = useHandleSubmit(isNewChat, chatId);
+
+  const { isSignedIn } = useAuth();
 
   return (
     <div className="flex flex-row justify-between items-center w-full p-1">
@@ -186,7 +216,7 @@ export const ToolBar = ({
         onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
       />
       {isSignedIn && (
-        <GitHubRepoLoader open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+        <GitHubDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
       )}
 
       <div className="flex flex-row items-center gap-1">
@@ -215,30 +245,24 @@ export const ToolBar = ({
             />
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <AgentToggle
-          chatId={chatId}
-          agentMode={chatInputData.agentMode}
-          isNewChat={isNewChat}
-        />
-        <PlannerToggle
-          chatId={chatId}
-          plannerMode={chatInputData.plannerMode}
-          isNewChat={isNewChat}
-        />
-        <WebSearchToggle
-          chatId={chatId}
-          webSearch={chatInputData.webSearch}
-          isNewChat={isNewChat}
-        />
       </div>
 
+      <AgentToggle
+        chatId={chatId}
+        agentMode={chatInputData?.agentMode}
+        isNewChat={isNewChat}
+      />
+      <PlannerToggle
+        chatId={chatId}
+        plannerMode={chatInputData?.plannerMode}
+        isNewChat={isNewChat}
+      />
       <div className="flex flex-row items-center gap-1">
         <Select
           value={models?.selectedModel.model_name}
           onValueChange={(value) => {
             if (isNewChat) {
-              setChatInput({ ...chatInput, model: value });
+              setChatInput({ ...chatInputData, model: value });
             } else {
               updateChatInputMutation({
                 chatId,
@@ -287,9 +311,19 @@ export const ToolBar = ({
         <Button
           variant="ghost"
           size="icon"
-          onClick={async () => await handleSubmit()}
+          onClick={async () => {
+            if (!["pending", "streaming"].includes(streamStatus ?? "")) {
+              await handleSubmit(chatId);
+            } else {
+              await cancelStreamMutation({ chatId });
+            }
+          }}
         >
-          <ArrowUp className="h-4 w-4" />
+          {["pending", "streaming"].includes(streamStatus ?? "") ? (
+            <CircleStopIcon className="h-4 w-4" />
+          ) : (
+            <ArrowUp className="h-4 w-4" />
+          )}
         </Button>
       </div>
     </div>

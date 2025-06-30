@@ -9,14 +9,8 @@ export const ProjectsPanel = () => {
   const showProjectList = !chatProjectId;
 
   if (showProjectList) {
-    return (
-      <ProjectsList />
-    );
+    return <ProjectsList />;
   }
 
-  return (
-    <ProjectDetails
-      projectId={chatProjectId!}
-    />
-  );
+  return <ProjectDetails projectId={chatProjectId!} />;
 };

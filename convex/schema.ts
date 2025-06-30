@@ -32,6 +32,20 @@ export const Chats = Table("chats", {
   name: v.string(),
   userId: v.string(),
   pinned: v.boolean(),
+  documents: v.array(v.id("documents")),
+  text: v.string(),
+  model: v.string(),
+  reasoningEffort: v.union(
+    v.literal("low"),
+    v.literal("medium"),
+    v.literal("high")
+  ),
+  projectId: v.union(v.id("projects"), v.null()), // use null, because we don't want to confuse undefined when unsetting or just not updating rest of the chat doc
+  agentMode: v.boolean(),
+  plannerMode: v.boolean(),
+  webSearch: v.boolean(),
+  artifacts: v.boolean(),
+  streamId: v.optional(v.id("streams")),
   updatedAt: v.number(),
 });
 
@@ -50,6 +64,12 @@ export const ChatInputs = Table("chatInputs", {
   updatedAt: v.number(),
 });
 
+export const ChatMessages = Table("chatMessages", {
+  chatId: v.id("chats"),
+  message: v.string(),
+  parentId: v.union(v.id("chatMessages"), v.null()),
+});
+
 export const Streams = Table("streams", {
   userId: v.string(),
   status: v.union(
@@ -66,11 +86,39 @@ export const StreamChunks = Table("streamChunks", {
   chunks: v.array(v.string()),
 });
 
+export const StreamStates = Table("streamStates", {
+  streamId: v.id("streams"),
+  sources: v.array(
+    v.object({
+      type: v.union(v.literal("document"), v.literal("search")),
+      searchResult: v.optional(
+        v.object({
+          title: v.string(),
+          source: v.string(),
+          publishedDate: v.optional(v.string()),
+          author: v.optional(v.string()),
+          image: v.optional(v.string()),
+          favicon: v.optional(v.string()),
+        })
+      ),
+      document: v.optional(
+        v.object({
+          document: Documents.table.validator,
+          text: v.string(),
+        })
+      ),
+    })
+  ),
+  plan: v.array(v.union(v.string(), v.array(v.string()))),
+  pastSteps: v.array(v.object({ step: v.string(), message: v.string() })),
+});
+
 export const Projects = Table("projects", {
   name: v.string(),
   description: v.optional(v.string()),
-  systemPrompt: v.optional(v.string()),
+
   userId: v.string(),
+  systemPrompt: v.string(),
   updatedAt: v.number(),
 });
 
@@ -78,6 +126,11 @@ export const ProjectDocuments = Table("projectDocuments", {
   projectId: v.id("projects"),
   documentId: v.id("documents"),
   selected: v.boolean(),
+});
+
+export const ProjectChats = Table("projectChats", {
+  projectId: v.id("projects"),
+  chatId: v.id("chats"),
 });
 
 export const Mcps = Table("mcps", {
@@ -95,41 +148,8 @@ export const Mcps = Table("mcps", {
     v.literal("error")
   ),
   restartOnNewChat: v.boolean(),
-  userId: v.string(),
   updatedAt: v.number(),
-});
-
-export const Checkpoints = Table("checkpoints", {
-  thread_id: v.string(),
-  checkpoint_ns: v.string(),
-  checkpoint_id: v.string(),
-  parent_checkpoint_id: v.optional(v.string()),
-  checkpoint: v.any(),
-  metadata: v.any(),
-  namespace: v.string(),
-  _creationTime: v.optional(v.number()),
-});
-
-export const CheckpointBlobs = Table("checkpoint_blobs", {
-  thread_id: v.string(),
-  checkpoint_ns: v.string(),
-  channel: v.string(),
-  version: v.string(),
-  type: v.string(),
-  blob: v.bytes(),
-  namespace: v.string(),
-});
-
-export const CheckpointWrites = Table("checkpoint_writes", {
-  thread_id: v.string(),
-  checkpoint_ns: v.string(),
-  checkpoint_id: v.string(),
-  task_id: v.string(),
-  idx: v.number(),
-  channel: v.string(),
-  type: v.string(),
-  blob: v.bytes(),
-  namespace: v.string(),
+  userId: v.optional(v.string()),
 });
 
 export const StreamChunkRefs = Table("streamChunkRefs", {
@@ -148,19 +168,20 @@ export default defineSchema({
   }),
   chats: Chats.table
     .index("by_user", ["userId"])
+    .index("by_user_project", ["userId", "projectId"])
     .index("by_user_updated", ["userId", "updatedAt"])
     .searchIndex("by_name", {
       searchField: "name",
       filterFields: ["userId"],
     }),
-  chatInputs: ChatInputs.table
-    .index("by_user", ["userId"])
-    .index("by_user_project", ["userId", "projectId"])
-    .index("by_chat_user", ["chatId", "userId"]),
+  chatMessages: ChatMessages.table
+    .index("by_chat", ["chatId"])
+    .index("by_parent", ["parentId"]),
   streams: Streams.table
     .index("by_user", ["userId"])
     .index("by_status_user", ["status", "userId"]),
   streamChunks: StreamChunks.table.index("by_stream", ["streamId"]),
+  streamStates: StreamStates.table.index("by_stream", ["streamId"]),
   projects: Projects.table.index("by_user_updated", ["userId", "updatedAt"]),
   projectDocuments: ProjectDocuments.table
     .index("by_project", ["projectId"])
@@ -169,35 +190,5 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_updated", ["userId", "updatedAt"])
     .index("by_enabled_user", ["enabled", "userId"]),
-  checkpoints: Checkpoints.table
-    .index("by_thread", ["namespace", "thread_id", "checkpoint_ns"])
-    .index("by_checkpoint", [
-      "namespace",
-      "thread_id",
-      "checkpoint_ns",
-      "checkpoint_id",
-    ]),
-  checkpoint_blobs: CheckpointBlobs.table.index("by_channel", [
-    "namespace",
-    "thread_id",
-    "checkpoint_ns",
-    "channel",
-    "version",
-  ]),
-  checkpoint_writes: CheckpointWrites.table
-    .index("by_checkpoint", [
-      "namespace",
-      "thread_id",
-      "checkpoint_ns",
-      "checkpoint_id",
-    ])
-    .index("by_task", [
-      "namespace",
-      "thread_id",
-      "checkpoint_ns",
-      "checkpoint_id",
-      "task_id",
-      "idx",
-    ]),
   streamChunkRefs: StreamChunkRefs.table.index("by_stream", ["streamId"]),
 });

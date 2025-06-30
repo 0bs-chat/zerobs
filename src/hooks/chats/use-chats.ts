@@ -88,6 +88,7 @@ export const useCheckpointParser = ({
     if (!checkpoint?.page) return null;
 
     const parsedState = JSON.parse(checkpoint.page) as typeof GraphState.State;
+    const parsedState = JSON.parse(checkpoint.page) as typeof GraphState.State;
 
     return {
       ...parsedState,

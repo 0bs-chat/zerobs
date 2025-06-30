@@ -32,6 +32,8 @@ export const AutosizeTextarea = React.forwardRef<
       // Reset height to auto to get the correct scrollHeight
       textArea.style.height = "auto";
 
+      textArea.style.height = "auto";
+
       // Calculate the desired height
       const scrollHeight = textArea.scrollHeight;
       const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
@@ -42,7 +44,9 @@ export const AutosizeTextarea = React.forwardRef<
       // Handle overflow - enable scrolling when content exceeds maxHeight
       if (scrollHeight > maxHeight) {
         textArea.style.overflowY = "auto";
+        textArea.style.overflowY = "auto";
       } else {
+        textArea.style.overflowY = "hidden";
         textArea.style.overflowY = "hidden";
       }
     }, [minHeight, maxHeight]);
@@ -74,4 +78,5 @@ export const AutosizeTextarea = React.forwardRef<
   }
 );
 
+AutosizeTextarea.displayName = "AutosizeTextarea";
 AutosizeTextarea.displayName = "AutosizeTextarea";

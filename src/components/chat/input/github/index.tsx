@@ -164,7 +164,10 @@ function RepoActions({
 }: {
   onCloseDialog: (open: boolean) => void;
 }) {
-  const uploadDocuments = useUploadDocuments({ type: "github" });
+  const uploadDocuments = useUploadDocuments({
+    type: "github",
+    addToChatInput: true,
+  });
   const { combineSelectedFilesForChat } = useGithub();
   const selectedFiles = useAtomValue(selectedFilesAtom);
 

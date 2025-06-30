@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 import type { Id } from "../../convex/_generated/dataModel";
-import { atomWithStorage } from "jotai/utils";
+import { atomWithStorage, selectAtom } from "jotai/utils";
 import type { MCPData } from "@/components/chat/panels/mcp/types";
 import { useStream } from "@/hooks/chats/use-stream";
 import { useCheckpointParser } from "@/hooks/chats/use-chats";
@@ -47,9 +47,7 @@ export const useStreamAtom = atom<ReturnType<typeof useStream> | null>(null);
 export const useCheckpointParserAtom = atom<ReturnType<
   typeof useCheckpointParser
 > | null>(null);
-
 export const selectedArtifactAtom = atom<Artifact | null>(null);
-export const selectedArtifactIdAtom = atom<string | null>(null);
 
 export const themeAtom = atomWithStorage("theme", "dark");
 
@@ -96,3 +94,7 @@ export const resetChatInputAtom = atom(null, (_, set) => {
 });
 
 export const existingChatInputTextAtom = atom<string>("");
+export const streamStatusAtom = selectAtom(
+  useStreamAtom,
+  (stream) => stream?.status
+);

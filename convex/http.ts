@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server";
-import { corsRouter } from "convex-helpers/server/cors";
+// import { corsRouter } from "convex-helpers/server/cors";
 import { handleCallback, handleRedirect } from "./utils/oauth/github_repo";
 import { httpAction } from "./_generated/server";
 
@@ -18,11 +18,12 @@ const handleOptions = httpAction(async () => {
 
 const http = httpRouter();
 
-const cors = corsRouter(http, {
-  allowedHeaders: ["*"],
-  allowedOrigins: ["*"],
-  allowCredentials: true,
-});
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// const cors = corsRouter(http, {
+//   allowedHeaders: ["*"],
+//   allowedOrigins: ["*"],
+//   allowCredentials: true,
+// });
 
 // GitHub OAuth routes for repository access
 http.route({

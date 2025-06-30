@@ -50,7 +50,10 @@ export function ProjectDocumentListItem({
           <p className="font-medium" style={{ wordBreak: "break-word" }}>
             {projectDocument.document.name}
           </p>
-          <p className="text-sm text-muted-foreground" style={{ wordBreak: "break-word" }}>
+          <p
+            className="text-sm text-muted-foreground"
+            style={{ wordBreak: "break-word" }}
+          >
             Size: {(projectDocument.document.size / 1024).toFixed(2)} KB
           </p>
         </div>

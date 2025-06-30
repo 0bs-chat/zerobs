@@ -3,9 +3,7 @@ import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { paginationOptsValidator } from "convex/server";
 import { api } from "../_generated/api";
-import { Doc } from "../_generated/dataModel";
-import { ConvexCheckpointSaver } from "../checkpointer/checkpointer";
-import { BaseMessage } from "@langchain/core/messages";
+import type { Doc } from "../_generated/dataModel";
 
 export const get = query({
   args: {
@@ -44,7 +42,7 @@ export const getAll = query({
           : q.eq(q.field("pinned"), args.filters.pinned)
       )
       .order("desc")
-      .paginate(args.paginationOpts ?? { numItems: 10, cursor: null });
+      .paginate(args.paginationOpts);
 
     return userChats;
   },
@@ -87,86 +85,89 @@ export const search = query({
   },
 });
 
-export const getCheckpoint = query({
-  args: {
-    paginationOpts: paginationOptsValidator,
-    chatId: v.id("chats"),
-  },
-  returns: v.object({
-    page: v.any(),
-    isDone: v.boolean(),
-    continueCursor: v.union(v.string(), v.null()),
-  }),
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
+// this has been moved :
+//   chat messages and stream state is the replacement for checkpointer
 
-    if (args.chatId === "new") {
-      return {
-        page: JSON.stringify(
-          {
-            messages: [],
-          },
-          null,
-          2
-        ),
-        isDone: true,
-        continueCursor: null,
-      };
-    }
+// export const getCheckpoint = query({
+//   args: {
+//     paginationOpts: paginationOptsValidator,
+//     chatId: v.id("chats"),
+//   },
+//   returns: v.object({
+//     page: v.any(),
+//     isDone: v.boolean(),
+//     continueCursor: v.union(v.string(), v.null()),
+//   }),
+//   handler: async (ctx, args) => {
+//     await requireAuth(ctx);
 
-    await ctx.runQuery(api.chats.queries.get, {
-      chatId: args.chatId,
-    });
+//     if (args.chatId === "new") {
+//       return {
+//         page: JSON.stringify(
+//           {
+//             messages: [],
+//           },
+//           null,
+//           2
+//         ),
+//         isDone: true,
+//         continueCursor: null,
+//       };
+//     }
 
-    const checkpointer = new ConvexCheckpointSaver(ctx);
+//     await ctx.runQuery(api.chats.queries.get, {
+//       chatId: args.chatId,
+//     });
 
-    const checkpoint = await checkpointer.get({
-      configurable: { thread_id: args.chatId },
-    });
-    const messages =
-      (checkpoint?.channel_values as { messages: BaseMessage[] } | undefined)
-        ?.messages || [];
+//     const checkpointer = new ConvexCheckpointSaver(ctx);
 
-    // Pagination options with defaults
-    const { numItems = 20, cursor = null } = args.paginationOpts || {};
+//     const checkpoint = await checkpointer.get({
+//       configurable: { thread_id: args.chatId },
+//     });
+//     const messages =
+//       (checkpoint?.channel_values as { messages: BaseMessage[] } | undefined)
+//         ?.messages || [];
 
-    // Start from the end (most recent messages) and work backwards
-    const totalMessages = messages.length;
-    let startIndex = 0;
-    let endIndex = totalMessages;
+//     // Pagination options with defaults
+//     const { numItems = 20, cursor = null } = args.paginationOpts || {};
 
-    if (cursor) {
-      // Parse cursor to get the starting position
-      try {
-        const cursorIndex = parseInt(cursor, 10);
-        if (cursorIndex >= 0 && cursorIndex < totalMessages) {
-          endIndex = cursorIndex;
-        }
-      } catch (error) {
-        // Invalid cursor, start from the end
-        endIndex = totalMessages;
-      }
-    }
+//     // Start from the end (most recent messages) and work backwards
+//     const totalMessages = messages.length;
+//     let startIndex = 0;
+//     let endIndex = totalMessages;
 
-    // Calculate the slice bounds
-    startIndex = Math.max(0, endIndex - numItems);
-    const paginatedMessages = messages.slice(startIndex, endIndex);
+//     if (cursor) {
+//       // Parse cursor to get the starting position
+//       try {
+//         const cursorIndex = parseInt(cursor, 10);
+//         if (cursorIndex >= 0 && cursorIndex < totalMessages) {
+//           endIndex = cursorIndex;
+//         }
+//       } catch (error) {
+//         // Invalid cursor, start from the end
+//         endIndex = totalMessages;
+//       }
+//     }
 
-    // Determine if there are more messages to load
-    const isDone = startIndex === 0;
-    const continueCursor = isDone ? null : startIndex.toString();
+//     // Calculate the slice bounds
+//     startIndex = Math.max(0, endIndex - numItems);
+//     const paginatedMessages = messages.slice(startIndex, endIndex);
 
-    return {
-      page: JSON.stringify(
-        {
-          ...checkpoint?.channel_values,
-          messages: paginatedMessages,
-        },
-        null,
-        2
-      ),
-      isDone,
-      continueCursor,
-    };
-  },
-});
+//     // Determine if there are more messages to load
+//     const isDone = startIndex === 0;
+//     const continueCursor = isDone ? null : startIndex.toString();
+
+//     return {
+//       page: JSON.stringify(
+//         {
+//           ...checkpoint?.channel_values,
+//           messages: paginatedMessages,
+//         },
+//         null,
+//         2
+//       ),
+//       isDone,
+//       continueCursor,
+//     };
+//   },
+// });

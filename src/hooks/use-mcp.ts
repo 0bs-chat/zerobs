@@ -69,7 +69,7 @@ export function useMCPs() {
         enabled: false,
         status: "creating",
       });
-      
+
       setMcpEditDialogOpen(false);
       toast.success("MCP created successfully");
     } catch (error) {
