@@ -1,7 +1,6 @@
 "use node";
 
 import { DynamicStructuredTool } from "@langchain/core/tools";
-import { DuckDuckGoSearch } from "@langchain/community/tools/duckduckgo_search";
 import { ConvexVectorStore } from "@langchain/community/vectorstores/convex";
 import { Document } from "@langchain/core/documents";
 import { MultiServerMCPClient, type Connection } from "@langchain/mcp-adapters";
@@ -19,6 +18,7 @@ import type { ExtendedRunnableConfig } from "./helpers";
 export const getRetrievalTools = async (
   _state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
+  returnString: boolean = false,
 ) => {
 
   const vectorSearchTool = new DynamicStructuredTool({
@@ -81,7 +81,7 @@ export const getRetrievalTools = async (
         documentsMap.set(projectDocument.documentId, projectDocument.document!),
       );
 
-      return await Promise.all(
+      const documents = await Promise.all(
         results.map(async (doc) => {
           const projectDocument = documentsMap.get(doc.metadata.source);
           if (!projectDocument) {
@@ -101,6 +101,12 @@ export const getRetrievalTools = async (
           });
         }),
       );
+
+      if (returnString) {
+        return JSON.stringify(documents, null, 0);
+      }
+
+      return documents;
     },
   });
 
@@ -130,45 +136,10 @@ export const getRetrievalTools = async (
       const EXA_API_KEY =
         (await config.ctx.runQuery(api.apiKeys.queries.getFromKey, {
           key: "EXA_API_KEY",
-        }))?.value ?? process.env.EXA_API_KEY;
-
-      if (!EXA_API_KEY) {
-        const duckduckgoSearch = new DuckDuckGoSearch({ maxResults: 5 });
-        const searchResults = await duckduckgoSearch._call(query);
-        const searchResultsArray: {
-          title: string;
-          url: string;
-          snippet: string;
-        }[] = JSON.parse(searchResults);
-
-        // Crawl each result URL to get more comprehensive content
-        const urlMarkdownContents = await Promise.all(
-          searchResultsArray.map(async (result) =>
-            await config.ctx.runAction(
-              internal.utils.services.index.processUrlOrSite,
-              {
-                url: result.url,
-                maxDepth: 0,
-              },
-            )
-          ),
-        );
-
-        // Create LangChain Document objects from search results and crawled content
-        return searchResultsArray.map((result, index) => {
-          return new Document({
-            pageContent: `${result.title}\n${result.url}\n${urlMarkdownContents[index]}`,
-            metadata: {
-              type: "search",
-              title: result.title,
-              source: result.url
-            },
-          });
-        });
-      }
+        }))?.value ?? process.env.EXA_API_KEY ?? "";
 
       try {
-        const exa = new Exa(EXA_API_KEY);
+        const exa = new Exa(EXA_API_KEY, undefined);
         
         const searchResponse = (await exa.searchAndContents(query, {
           numResults: 5,
@@ -183,9 +154,9 @@ export const getRetrievalTools = async (
         }
 
         // Create LangChain Document objects from Exa search results
-        return searchResponse.map((result) => {
+        const documents = searchResponse.map((result) => {
           return new Document({
-            pageContent: `${result.title}\n${result.url}\n${result.text}`,
+            pageContent: `${result.text}`,
             metadata: {
               type: "search",
               title: result.title,
@@ -197,6 +168,12 @@ export const getRetrievalTools = async (
             },
           });
         });
+
+        if (returnString) {
+          return JSON.stringify(documents, null, 0);
+        }
+
+        return documents;
       } catch (error) {
         return `Web search failed: ${
           error instanceof Error ? error.message : "Unknown error"
@@ -204,6 +181,7 @@ export const getRetrievalTools = async (
       }
     },
   });
+  
   return {
     vectorSearch: vectorSearchTool,
     webSearch: webSearchTool,

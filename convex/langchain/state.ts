@@ -23,7 +23,7 @@ export type CompletedStep = [z.infer<typeof planStep>, BaseMessage];
 
 export const GraphState = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
-    reducer: (x, y) => y.concat(x),
+    reducer: (x, y) => x.concat(y),
     default: () => [],
   }),
   documents: Annotation<Document[]>({

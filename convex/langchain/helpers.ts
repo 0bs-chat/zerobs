@@ -54,7 +54,7 @@ export async function createAgentWithTools(
 ) {
   const chat = config.chat;
   const tools = await getMCPTools(config.ctx);
-  const retrievalTools = await getRetrievalTools(state, config);
+  const retrievalTools = await getRetrievalTools(state, config, true);
   const allTools = [
     ...(tools.tools.length > 0 ? tools.tools : []),
     ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
@@ -131,14 +131,9 @@ export async function generateQueries(
   type: "vectorStore" | "webSearch" = "vectorStore"
 ) {
   const ctx = config.ctx;
-  const model = config.chat.model;
-  
-  if (!model) {
-    throw new Error("Model is required");
-  }
-  
+
   const queryModel = (createGenerateQueriesPrompt(type)).pipe(
-    (await getModel(ctx, model))
+    (await getModel(ctx, "worker"))
     .withStructuredOutput(generateQueriesSchema)
   );
   
@@ -154,7 +149,7 @@ export async function gradeDocument(
 ): Promise<boolean> {
   const promptTemplate = createGradeDocumentPrompt();
   const modelWithOutputParser = promptTemplate.pipe(
-    (await getModel(config.ctx, config.chat.model!)).withStructuredOutput(gradeDocumentSchema)
+    (await getModel(config.ctx, "worker")).withStructuredOutput(gradeDocumentSchema)
   );
 
   const result = await modelWithOutputParser.invoke({
@@ -223,7 +218,7 @@ export function parseStateToStreamStatesDoc(
 ): Omit<Doc<"streamStates">, "_id" | "_creationTime" | "streamId"> {
   // Convert documents to sources - these come from vector search or web search
   const sources = state.documents && state.documents.length > 0 ? state.documents.map(doc => {
-    return {
+    const source: Doc<"streamStates">["sources"][0] = {
       type: doc.metadata.type,
       searchResult: {
         title: doc.metadata.title,
@@ -233,11 +228,12 @@ export function parseStateToStreamStatesDoc(
         image: doc.metadata.image,
         favicon: doc.metadata.favicon,
       },
-      document: {
+      document: doc.metadata.document ? {
         document: doc.metadata.document,
         text: doc.pageContent,
-      }
-    }
+      } : undefined,
+    };
+    return source;
   }) : [];
 
   const pastSteps = state.pastSteps && state.pastSteps.length > 0 ? (state.pastSteps || []).map(([step, message]) => {

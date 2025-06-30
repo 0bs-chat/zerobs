@@ -7,7 +7,7 @@ import { GraphState, planSchema } from "./state";
 import { getRetrievalTools } from "./tools";
 import { modelSupportsTools, formatMessages, getModel } from "./models";
 import { getLastMessage, addDocumentsToMessage, getDocumentsMessage } from "./helpers";
-import { BaseMessage, AIMessage, HumanMessage } from "@langchain/core/messages";
+import { BaseMessage, AIMessage } from "@langchain/core/messages";
 import { createPlannerPrompt, createReplannerPrompt, replannerOutputSchema } from "./prompts";
 import { z } from "zod";
 import { END, START, StateGraph } from "@langchain/langgraph";
@@ -169,7 +169,7 @@ async function baseAgent(state: typeof GraphState.State, config: RunnableConfig)
   );
 
   let newMessages = response.messages.slice(
-    state.messages.length,
+    state.messages.length + 1,
     response.messages.length,
   ) as BaseMessage[];
 
