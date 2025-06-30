@@ -55,25 +55,21 @@ export const chat = action({
     let lastFlush = Date.now();
     const buffer: string[] = [];
     let wasCancelled = false;
-    let streamDoc: Doc<"streams"> | null = null;
+    let streamDoc = await ctx.runQuery(api.streams.queries.get, {
+      chatId: args.chatId,
+    });
     let checkpoint: typeof GraphState.State | null = null;
     
-    if (!chat.streamId) {
+    if (!streamDoc) {
       streamDoc = await ctx.runMutation(internal.streams.crud.create, {
         userId: chat.userId,
         status: "pending",
-      });
-      await ctx.runMutation(api.chats.mutations.update, {
         chatId: args.chatId,
-        updates: {
-          streamId: streamDoc._id!,
-        },
       });
-      chat.streamId = streamDoc._id!;
     }
 
     await ctx.runMutation(internal.streams.mutations.update, {
-      streamId: chat.streamId!,
+      chatId: args.chatId,
       updates: {
         status: "pending",
       },
@@ -85,7 +81,7 @@ export const chat = action({
         const state = parseStateToStreamStatesDoc(checkpoint);
 
         await ctx.runMutation(internal.streams.mutations.updateState, {
-          streamId: chat.streamId!,
+          chatId: args.chatId,
           updates: state,
         });
 
@@ -112,11 +108,11 @@ export const chat = action({
         }
 
         if (now - lastFlush >= BUFFER) {
-          if (chat.streamId) {
+          if (streamDoc) {
             streamDoc = await ctx.runMutation(
               internal.streams.mutations.appendChunks,
               {
-                streamId: chat.streamId,
+                chatId: args.chatId,
                 chunks: buffer,
               },
             );
@@ -129,9 +125,9 @@ export const chat = action({
       if (wasCancelled) {
         return;
       }
-      if (chat.streamId) {
+      if (streamDoc) {
         await ctx.runMutation(internal.streams.mutations.update, {
-          streamId: chat.streamId,
+          chatId: args.chatId,
           updates: {
             status: "error",
           },
@@ -154,7 +150,7 @@ export const chat = action({
     }
 
     await ctx.runMutation(internal.streams.mutations.update, {
-      streamId: chat.streamId!,
+      chatId: args.chatId,
       updates: {
         status: "done",
       },

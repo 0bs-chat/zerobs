@@ -7,11 +7,17 @@ import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
 
 export const removeStreamChunks = internalMutation({
-  args: { streamId: v.id("streams") },
-  handler: async (ctx, { streamId }) => {
+  args: { chatId: v.id("chats") },
+  handler: async (ctx, args): Promise<number> => {
+    const stream = await ctx.runQuery(api.streams.queries.get, {
+      chatId: args.chatId,
+    });
+    if (!stream) {
+      throw new Error("Stream not found");
+    }
     const refs = await ctx.db
       .query("streamChunkRefs")
-      .withIndex("by_stream", (q) => q.eq("streamId", streamId))
+      .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
       .collect();
 
     await Promise.all([
@@ -25,23 +31,23 @@ export const removeStreamChunks = internalMutation({
 
 export const update = internalMutation({
   args: {
-    streamId: v.id("streams"),
+    chatId: v.id("chats"),
     updates: v.object(partial(schema.Streams.withoutSystemFields)),
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    await ctx.runQuery(api.streams.queries.get, {
-      streamId: args.streamId,
+    const stream = await ctx.runQuery(api.streams.queries.get, {
+      chatId: args.chatId,
     });
 
     if (args.updates.status === "done" || args.updates.status === "cancelled") {
       await ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
-        streamId: args.streamId,
+        chatId: args.chatId,
       });
     }
 
-    await ctx.db.patch(args.streamId, {
+    await ctx.db.patch(stream?._id!, {
       ...args.updates,
     });
   },
@@ -49,30 +55,33 @@ export const update = internalMutation({
 
 export const appendChunks = internalMutation({
   args: {
-    streamId: v.id("streams"),
+    chatId: v.id("chats"),
     chunks: v.array(v.string()),
   },
   handler: async (ctx, args): Promise<Doc<"streams">> => {
     let stream = await ctx.runQuery(api.streams.queries.get, {
-      streamId: args.streamId,
+      chatId: args.chatId,
     });
+    if (!stream) {
+      throw new Error("Stream not found");
+    }
     if (["done", "error", "cancelled"].includes(stream.status)) {
       return stream;
     }
 
     await ctx.runMutation(internal.streams.crud.update, {
-      id: args.streamId,
+      id: stream._id,
       patch: {
         status: "streaming",
       },
     });
     stream.status = "streaming";
     const chunkDocId = await ctx.db.insert("streamChunks", {
-      streamId: args.streamId,
+      streamId: stream._id,
       chunks: args.chunks,
     });
     await ctx.db.insert("streamChunkRefs", {
-      streamId: args.streamId,
+      streamId: stream._id,
       chunkId: chunkDocId,
     });
 
@@ -91,15 +100,18 @@ export const cancel = mutation({
       chatId: args.chatId,
     });
     const stream = await ctx.runQuery(api.streams.queries.get, {
-      streamId: chatInput.streamId!,
+      chatId: args.chatId,
     });
+    if (!stream) {
+      throw new Error("Stream not found");
+    }
 
     if (stream.status === "done" || stream.status === "error") {
       throw new Error("Cannot cancel a stream that is already done or errored");
     }
 
     await ctx.runMutation(internal.streams.mutations.update, {
-      streamId: stream._id,
+      chatId: args.chatId,
       updates: { status: "cancelled" },
     });
   },
@@ -107,21 +119,27 @@ export const cancel = mutation({
 
 export const remove = internalMutation({
   args: {
-    streamId: v.id("streams"),
+    chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
+    const stream = await ctx.runQuery(api.streams.queries.get, {
+      chatId: args.chatId,
+    });
+    if (!stream) {
+      throw new Error("Stream not found");
+    }
     await ctx.runQuery(api.streams.queries.get, {
-      streamId: args.streamId,
+      chatId: args.chatId,
     });
 
     // Remove the stream document and its associated chunks.
-    await ctx.db.delete(args.streamId);
+    await ctx.db.delete(stream._id);
     await ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
-      streamId: args.streamId,
+      chatId: args.chatId,
     });
     await ctx.runMutation(internal.streams.mutations.deleteState, {
-      streamId: args.streamId,
+      chatId: args.chatId,
     });
   },
 });
@@ -159,7 +177,7 @@ export const cleanUp = internalMutation({
     const chunkCounts = await Promise.all(
       allStreamsToClean.map((stream) =>
         ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
-          streamId: stream._id,
+          chatId: stream.chatId,
         }),
       ),
     );
@@ -172,14 +190,20 @@ export const cleanUp = internalMutation({
 
 export const updateState = internalMutation({
   args: {
-    streamId: v.id("streams"),
+    chatId: v.id("chats"),
     updates: v.object(partial(schema.StreamStates.withoutSystemFields)),
   },
   handler: async (ctx, args) => {
-    const state = await ctx.db.query("streamStates").withIndex("by_stream", (q) => q.eq("streamId", args.streamId)).first();
+    const stream = await ctx.runQuery(api.streams.queries.get, {
+      chatId: args.chatId,
+    });
+    if (!stream) {
+      throw new Error("Stream not found");
+    }
+    const state = await ctx.db.query("streamStates").withIndex("by_stream", (q) => q.eq("streamId", stream._id)).first();
     if (!state) {
       await ctx.db.insert("streamStates", {
-        streamId: args.streamId,
+        streamId: stream._id,
         sources: args.updates.sources ?? [],
         plan: args.updates.plan ?? [],
         pastSteps: args.updates.pastSteps ?? [],
@@ -194,10 +218,16 @@ export const updateState = internalMutation({
 
 export const deleteState = internalMutation({
   args: {
-    streamId: v.id("streams"),
+    chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
-    const state = await ctx.db.query("streamStates").withIndex("by_stream", (q) => q.eq("streamId", args.streamId)).first();
+    const stream = await ctx.runQuery(api.streams.queries.get, {
+      chatId: args.chatId,
+    });
+    if (!stream) {
+      throw new Error("Stream not found");
+    }
+    const state = await ctx.db.query("streamStates").withIndex("by_stream", (q) => q.eq("streamId", stream._id)).first();
     if (state) {
       await ctx.db.delete(state._id);
     }
