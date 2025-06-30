@@ -16,12 +16,12 @@ export function createAgentSystemMessage(
   taskDescription?: string,
   customPrompt?: string,
   baseAgentType: boolean = true,
-  artifacts: boolean = true,
+  artifacts: boolean = true
 ): SystemMessage {
   const baseIdentity = `You are 0bs Chat, an AI assistant powered by the ${model} model.`;
 
   const roleDescription = taskDescription
-    ? `Your role is to complete the following specific task, you will be given the user input as well for context but focus on the given task:\n${taskDescription}.\n` + 
+    ? `Your role is to complete the following specific task, you will be given the user input as well for context but focus on the given task:\n${taskDescription}.\n` +
       `Once you have completed the task, always write a detailed response/answer for the provided task, above conversation will not be shared forward so be descriptive.` +
       `You are a single task agent do not ask for more information or context.`
     : `Your role is to assist and engage in conversation while being helpful, respectful, and engaging.\n`;
@@ -177,7 +177,7 @@ export function createAgentSystemMessage(
     `-   **Citations:** When using search results, cite claims by wrapping them in tags with document and sentence indices.\n`;
 
   return new SystemMessage(
-    `${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`,
+    `${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`
   );
 }
 
@@ -222,7 +222,7 @@ export function createPlannerPrompt(documents?: DocumentInterface[]) {
         `- Single step: "Research topic A"\n` +
         `- Parallel steps: ["Research topic B", "Research topic C", "Research topic D"]\n` +
         `- Final step: "Combine all research findings"\n\n` +
-        `Use parallel execution when steps are independent and can benefit from simultaneous execution.`
+        `Use parallel execution when steps are independent and can benefit from simultaneous execution.`,
     ],
   ];
 
@@ -260,7 +260,7 @@ export function createReplannerPrompt() {
     [
       "system",
       `Update your plan accordingly. If no more steps are needed and you can return to the user, set action to "respond_to_user" and provide the response. ` +
-      `Otherwise, set action to "continue_planning" and fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
+        `Otherwise, set action to "continue_planning" and fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
     ],
   ]);
 }
@@ -290,7 +290,7 @@ export const replannerOutputSchema = z.union([
     response: z
       .string()
       .describe(
-        "A comprehensive, final response to the user. Synthesize the results of the completed steps into a single, coherent answer. This is the only thing the user will see, so it must be complete and detailed.",
+        "A comprehensive, final response to the user. Synthesize the results of the completed steps into a single, coherent answer. This is the only thing the user will see, so it must be complete and detailed."
       ),
   }),
 ]);

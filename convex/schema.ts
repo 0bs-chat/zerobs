@@ -2,6 +2,12 @@ import { defineSchema } from "convex/server";
 import { v } from "convex/values";
 import { Table } from "convex-helpers/server";
 
+export const ApiKeys = Table("apiKeys", {
+  userId: v.string(),
+  key: v.string(),
+  value: v.string(),
+});
+
 export const Documents = Table("documents", {
   name: v.string(),
   type: v.union(
@@ -158,6 +164,7 @@ export const StreamChunkRefs = Table("streamChunkRefs", {
 });
 
 export default defineSchema({
+  apiKeys: ApiKeys.table.index("by_user_key", ["userId", "key"]),
   documents: Documents.table
     .index("by_key_user", ["key", "userId"])
     .index("by_user", ["userId"]),

@@ -11,7 +11,7 @@ export const get = query({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<
     Doc<"projectDocuments"> & {
       project: Doc<"projects">;
@@ -48,7 +48,7 @@ export const getAll = query({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<{
     projectDocuments: (Doc<"projectDocuments"> & {
       document: Doc<"documents">;
@@ -78,7 +78,7 @@ export const getAll = query({
 
     const documents = await ctx.runQuery(api.documents.queries.getMultiple, {
       documentIds: projectDocuments.page.map(
-        (projectDocument) => projectDocument.documentId,
+        (projectDocument) => projectDocument.documentId
       ),
     });
     if (!documents) {
@@ -87,7 +87,7 @@ export const getAll = query({
 
     const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
     documents.forEach((document: Doc<"documents">) =>
-      documentsMap.set(document._id, document),
+      documentsMap.set(document._id, document)
     );
 
     const projectDocumentsMap = new Map<
@@ -124,7 +124,7 @@ export const getByDocumentId = internalQuery({
     const projectDocument = await ctx.db
       .query("projectDocuments")
       .withIndex("by_document_project", (q) =>
-        q.eq("documentId", args.documentId),
+        q.eq("documentId", args.documentId)
       )
       .first();
 
@@ -146,7 +146,7 @@ export const getMultiple = query({
   },
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<
     (Doc<"projectDocuments"> & {
       project: Doc<"projects">;
@@ -161,14 +161,14 @@ export const getMultiple = query({
           api.projectDocuments.queries.get,
           {
             projectDocumentId,
-          },
+          }
         );
         if (!projectDocument) {
           throw new Error("Project document not found");
         }
 
         return projectDocument;
-      }),
+      })
     );
   },
 });
@@ -186,14 +186,16 @@ export const getSelected = internalQuery({
       .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
       .filter((q) => q.eq(q.field("selected"), args.selected))
       .collect();
-    
+
     const documents = await ctx.runQuery(api.documents.queries.getMultiple, {
-      documentIds: projectDocuments.map((projectDocument) => projectDocument.documentId),
+      documentIds: projectDocuments.map(
+        (projectDocument) => projectDocument.documentId
+      ),
     });
 
     const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
-    documents.forEach((document) =>
-      documentsMap.set(document._id, document),
+    documents.forEach((document: Doc<"documents">) =>
+      documentsMap.set(document._id, document)
     );
 
     return projectDocuments.map((projectDocument) => ({

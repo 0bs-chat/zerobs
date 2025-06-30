@@ -34,7 +34,7 @@ export const chat = action({
         chatId: args.chatId,
         getCurrentThread: true,
       })
-    ).map((message) =>
+    ).map((message: Doc<"chatMessages">) =>
       mapStoredMessageToChatMessage(JSON.parse(message.message))
     );
 
@@ -66,6 +66,9 @@ export const chat = action({
         userId: chat.userId,
         status: "streaming",
       });
+      if (!streamDoc) {
+        throw new Error("Failed to create stream, streamDoc is null.");
+      }
       await ctx.runMutation(api.chats.mutations.update, {
         chatId: args.chatId,
         updates: {

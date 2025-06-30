@@ -98,3 +98,5 @@ export const streamStatusAtom = selectAtom(
   useStreamAtom,
   (stream) => stream?.status
 );
+
+export const selectedArtifactIdAtom = atom<string | null>(null);

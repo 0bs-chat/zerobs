@@ -11,12 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
-<<<<<<< HEAD
 import { Route as ChatChatIdRouteImport } from './routes/chat.$chatId'
-=======
-import { Route as LandingIndexRouteImport } from './routes/landing/index'
-import { Route as ChatChatIdIndexRouteImport } from './routes/chat_/$chatId/index'
->>>>>>> main
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -28,48 +23,26 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-<<<<<<< HEAD
 const ChatChatIdRoute = ChatChatIdRouteImport.update({
   id: '/chat/$chatId',
   path: '/chat/$chatId',
-=======
-const LandingIndexRoute = LandingIndexRouteImport.update({
-  id: '/landing/',
-  path: '/landing/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChatChatIdIndexRoute = ChatChatIdIndexRouteImport.update({
-  id: '/chat_/$chatId/',
-  path: '/chat/$chatId/',
->>>>>>> main
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-<<<<<<< HEAD
   '/chat/$chatId': typeof ChatChatIdRoute
-=======
-  '/landing': typeof LandingIndexRoute
-  '/chat/$chatId': typeof ChatChatIdIndexRoute
->>>>>>> main
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-<<<<<<< HEAD
   '/chat/$chatId': typeof ChatChatIdRoute
-=======
-  '/landing': typeof LandingIndexRoute
-  '/chat/$chatId': typeof ChatChatIdIndexRoute
->>>>>>> main
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-<<<<<<< HEAD
   '/chat/$chatId': typeof ChatChatIdRoute
 }
 export interface FileRouteTypes {
@@ -78,28 +51,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/auth' | '/chat/$chatId'
   id: '__root__' | '/' | '/auth' | '/chat/$chatId'
-=======
-  '/landing/': typeof LandingIndexRoute
-  '/chat_/$chatId/': typeof ChatChatIdIndexRoute
-}
-export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/landing' | '/chat/$chatId'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/landing' | '/chat/$chatId'
-  id: '__root__' | '/' | '/auth' | '/landing/' | '/chat_/$chatId/'
->>>>>>> main
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
-<<<<<<< HEAD
   ChatChatIdRoute: typeof ChatChatIdRoute
-=======
-  LandingIndexRoute: typeof LandingIndexRoute
-  ChatChatIdIndexRoute: typeof ChatChatIdIndexRoute
->>>>>>> main
 }
 
 declare module '@tanstack/react-router' {
@@ -118,26 +75,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-<<<<<<< HEAD
     '/chat/$chatId': {
       id: '/chat/$chatId'
       path: '/chat/$chatId'
       fullPath: '/chat/$chatId'
       preLoaderRoute: typeof ChatChatIdRouteImport
-=======
-    '/landing/': {
-      id: '/landing/'
-      path: '/landing'
-      fullPath: '/landing'
-      preLoaderRoute: typeof LandingIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chat_/$chatId/': {
-      id: '/chat_/$chatId/'
-      path: '/chat/$chatId'
-      fullPath: '/chat/$chatId'
-      preLoaderRoute: typeof ChatChatIdIndexRouteImport
->>>>>>> main
       parentRoute: typeof rootRouteImport
     }
   }
@@ -146,12 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
-<<<<<<< HEAD
   ChatChatIdRoute: ChatChatIdRoute,
-=======
-  LandingIndexRoute: LandingIndexRoute,
-  ChatChatIdIndexRoute: ChatChatIdIndexRoute,
->>>>>>> main
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -9,7 +9,10 @@ import { z } from "zod";
 import Exa from "exa-js";
 import { api, internal } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
-import type { StructuredToolInterface, ToolSchemaBase } from "@langchain/core/tools";
+import type {
+  StructuredToolInterface,
+  ToolSchemaBase,
+} from "@langchain/core/tools";
 import type { Doc, Id } from "../_generated/dataModel";
 import { fly } from "../utils/flyio";
 import { getEmbeddingModel } from "./models";
@@ -18,17 +21,14 @@ import type { ExtendedRunnableConfig } from "./helpers";
 
 export const getRetrievalTools = async (
   _state: typeof GraphState.State,
-  config: ExtendedRunnableConfig,
+  config: ExtendedRunnableConfig
 ) => {
-
   const vectorSearchTool = new DynamicStructuredTool({
     name: "searchProjectDocuments",
     description:
       "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents.",
     schema: z.object({
-      query: z
-        .string()
-        .describe("The search query to find relevant documents"),
+      query: z.string().describe("The search query to find relevant documents"),
       limit: z
         .number()
         .min(1)
@@ -36,13 +36,7 @@ export const getRetrievalTools = async (
         .describe("Number of results to return")
         .default(10),
     }),
-    func: async ({
-      query,
-      limit = 10,
-    }: {
-      query: string;
-      limit?: number;
-    }) => {
+    func: async ({ query, limit = 10 }: { query: string; limit?: number }) => {
       // Initialize ConvexVectorStore with the embedding model
       const embeddingModel = await getEmbeddingModel(config.ctx, "embeddings");
       const vectorStore = new ConvexVectorStore(embeddingModel, {
@@ -56,7 +50,7 @@ export const getRetrievalTools = async (
         {
           projectId: config.chat.projectId!,
           selected: true,
-        },
+        }
       );
 
       if (includedProjectDocuments.length === 0) {
@@ -68,17 +62,18 @@ export const getRetrievalTools = async (
         filter: (q) =>
           q.or(
             // Assuming documentId is stored in the `source` field of metadata
-            ...includedProjectDocuments.map((document) =>
-              q.eq("metadata", {
-                source: document.documentId,
-              }),
-            ),
+            ...includedProjectDocuments.map(
+              (document: Doc<"projectDocuments">) =>
+                q.eq("metadata", {
+                  source: document.documentId,
+                })
+            )
           ),
       });
 
       const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
       includedProjectDocuments.forEach((projectDocument) =>
-        documentsMap.set(projectDocument.documentId, projectDocument.document!),
+        documentsMap.set(projectDocument.documentId, projectDocument.document!)
       );
 
       return await Promise.all(
@@ -89,7 +84,7 @@ export const getRetrievalTools = async (
           }
           const url =
             (await config.ctx.storage.getUrl(
-              projectDocument.key as Id<"_storage">,
+              projectDocument.key as Id<"_storage">
             )) ?? projectDocument.key;
           return new Document({
             pageContent: doc.pageContent,
@@ -99,7 +94,7 @@ export const getRetrievalTools = async (
               type: "document",
             },
           });
-        }),
+        })
       );
     },
   });
@@ -112,25 +107,34 @@ export const getRetrievalTools = async (
       query: z
         .string()
         .describe("The search query to find relevant web information"),
-      topic: z.union([
-        z.literal("company"),
-        z.literal("research paper"),
-        z.literal("news"),
-        z.literal("pdf"),
-        z.literal("github"),
-        z.literal("personal site"),
-        z.literal("linkedin profile"),
-        z.literal("financial report")
-      ])
+      topic: z
+        .union([
+          z.literal("company"),
+          z.literal("research paper"),
+          z.literal("news"),
+          z.literal("pdf"),
+          z.literal("github"),
+          z.literal("personal site"),
+          z.literal("linkedin profile"),
+          z.literal("financial report"),
+        ])
         .describe("The topic of the search query (e.g., 'news', 'finance').")
         .nullable()
         .optional(),
     }),
-    func: async ({ query, topic }: { query: string; topic?: string | null }) => {
+    func: async ({
+      query,
+      topic,
+    }: {
+      query: string;
+      topic?: string | null;
+    }) => {
       const EXA_API_KEY =
-        (await config.ctx.runQuery(api.apiKeys.queries.getFromKey, {
-          key: "EXA_API_KEY",
-        }))?.value ?? process.env.EXA_API_KEY;
+        (
+          await config.ctx.runQuery(api.apiKeys.queries.getFromKey, {
+            key: "EXA_API_KEY",
+          })
+        )?.value ?? process.env.EXA_API_KEY;
 
       if (!EXA_API_KEY) {
         const duckduckgoSearch = new DuckDuckGoSearch({ maxResults: 5 });
@@ -143,15 +147,16 @@ export const getRetrievalTools = async (
 
         // Crawl each result URL to get more comprehensive content
         const urlMarkdownContents = await Promise.all(
-          searchResultsArray.map(async (result) =>
-            await config.ctx.runAction(
-              internal.utils.services.index.processUrlOrSite,
-              {
-                url: result.url,
-                maxDepth: 0,
-              },
-            )
-          ),
+          searchResultsArray.map(
+            async (result) =>
+              await config.ctx.runAction(
+                internal.utils.services.index.processUrlOrSite,
+                {
+                  url: result.url,
+                  maxDepth: 0,
+                }
+              )
+          )
         );
 
         // Create LangChain Document objects from search results and crawled content
@@ -161,7 +166,7 @@ export const getRetrievalTools = async (
             metadata: {
               type: "search",
               title: result.title,
-              source: result.url
+              source: result.url,
             },
           });
         });
@@ -169,14 +174,16 @@ export const getRetrievalTools = async (
 
       try {
         const exa = new Exa(EXA_API_KEY);
-        
-        const searchResponse = (await exa.searchAndContents(query, {
-          numResults: 5,
-          type: "auto",
-          useAutoprompt: false,
-          topic: topic,
-          text: true,
-        })).results;
+
+        const searchResponse = (
+          await exa.searchAndContents(query, {
+            numResults: 5,
+            type: "auto",
+            useAutoprompt: false,
+            topic: topic,
+            text: true,
+          })
+        ).results;
 
         if (searchResponse.length === 0) {
           return "No results found.";
@@ -230,20 +237,20 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
 
   // Reset all MCPs that have `restartOnNewChat` set to true
   await Promise.all(
-    mcps.page.map((mcp) => {
+    mcps.page.map((mcp: Doc<"mcps">) => {
       if (mcp.restartOnNewChat) {
         return ctx.runAction(internal.mcps.actions.restart, {
           mcpId: mcp._id,
         });
       }
-    }),
+    })
   );
 
   // Wait for all MCPs to transition from 'creating' status to 'running'
   let currentMcps = mcps.page;
   let maxAttempts = 10;
   while (
-    currentMcps.some((mcp) => mcp.status === "creating") &&
+    currentMcps.some((mcp: Doc<"mcps">) => mcp.status === "creating") &&
     maxAttempts > 0
   ) {
     await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
@@ -262,12 +269,12 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
 
   // Filter for MCPs that are successfully running and have a URL
   const readyMcps = currentMcps.filter(
-    (mcp) => mcp.status === "created" && mcp.url,
+    (mcp: Doc<"mcps">) => mcp.status === "created" && mcp.url
   );
 
   // Construct connection objects for MultiServerMCPClient
   const mcpServers: Record<string, Connection> = Object.fromEntries(
-    readyMcps.map((mcp) => [
+    readyMcps.map((mcp: Doc<"mcps">) => [
       mcp.name,
       {
         transport: "sse",
@@ -280,7 +287,7 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
           delayMs: 15000,
         },
       },
-    ]),
+    ])
   );
 
   // Initialize the MultiServerMCPClient
@@ -293,7 +300,8 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
 
   const tools = await client.getTools();
 
-  const groupedTools: Map<string, StructuredToolInterface<ToolSchemaBase>[]> = new Map();
+  const groupedTools: Map<string, StructuredToolInterface<ToolSchemaBase>[]> =
+    new Map();
 
   for (const tool of tools) {
     const parts = tool.name.split("__");
@@ -313,28 +321,33 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
 
     const files: { name: string; url: string }[] = (
       await Promise.all(
-        chat.documents?.map(async (documentId, index) => {
-          const document = await ctx.runQuery(api.documents.queries.get, {
-            documentId,
-          });
-          // Include various document types for upload (file, image, github, text)
-          const url = await ctx.storage.getUrl(document.key as Id<"_storage">) ?? document.key;
-          return {
-            name: `${index + 1}_${document.name}`,
-            url,
-          };
-        }) ?? [],
+        chat.documents?.map(
+          async (documentId: Id<"documents">, index: number) => {
+            const document = await ctx.runQuery(api.documents.queries.get, {
+              documentId,
+            });
+            // Include various document types for upload (file, image, github, text)
+            const url =
+              (await ctx.storage.getUrl(document.key as Id<"_storage">)) ??
+              document.key;
+            return {
+              name: `${index + 1}_${document.name}`,
+              url,
+            };
+          }
+        ) ?? []
       )
+    )
       // Filter out any null results from documents without URLs
-    ).filter((file): file is { name: string; url: string } => file !== null);
+      .filter((file): file is { name: string; url: string } => file !== null);
 
     // Upload files to all stdio-type MCPs
     await Promise.all(
-      mcps.page.map(async (mcp) => {
+      mcps.page.map(async (mcp: Doc<"mcps">) => {
         if (mcp.type === "stdio" && files.length > 0) {
           await fly.uploadFileToAllMachines(mcp._id, files);
         }
-      }),
+      })
     );
   }
 

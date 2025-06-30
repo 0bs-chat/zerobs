@@ -8,15 +8,24 @@ import {
   AIMessage,
   HumanMessage,
   mapChatMessagesToStoredMessages,
-  mapStoredMessagesToChatMessages
+  mapStoredMessagesToChatMessages,
 } from "@langchain/core/messages";
-import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
+import {
+  ChatPromptTemplate,
+  MessagesPlaceholder,
+} from "@langchain/core/prompts";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { getMCPTools, getRetrievalTools } from "./tools";
 import type { Tool } from "@langchain/core/tools";
 import { getModel } from "./models";
-import { createAgentSystemMessage, createGenerateQueriesPrompt, createGradeDocumentPrompt, generateQueriesSchema, gradeDocumentSchema } from "./prompts";
+import {
+  createAgentSystemMessage,
+  createGenerateQueriesPrompt,
+  createGradeDocumentPrompt,
+  generateQueriesSchema,
+  gradeDocumentSchema,
+} from "./prompts";
 import { Document } from "@langchain/core/documents";
 import { GraphState } from "./state";
 import { z } from "zod";
@@ -29,7 +38,7 @@ export type ExtendedRunnableConfig = RunnableConfig & {
 
 export async function createSimpleAgent(
   _state: typeof GraphState.State,
-  config: ExtendedRunnableConfig,
+  config: ExtendedRunnableConfig
 ) {
   const chat = config.chat;
   const model = await getModel(config.ctx, chat.model);
@@ -50,7 +59,7 @@ export async function createSimpleAgent(
 export async function createAgentWithTools(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
-  taskDescription?: string,
+  taskDescription?: string
 ) {
   const chat = config.chat;
   const tools = await getMCPTools(config.ctx);
@@ -108,21 +117,23 @@ export async function createAgentWithTools(
   }
 }
 
-export function getPlannerAgentResponse(
-  messages: BaseMessage[],
-): BaseMessage {
+export function getPlannerAgentResponse(messages: BaseMessage[]): BaseMessage {
   // filter and concat all ai messages
   const aiResponses = messages.filter(
-    (message) => typeof message === typeof AIMessage,
+    (message) => typeof message === typeof AIMessage
   );
   const storedAIResponses = mapChatMessagesToStoredMessages(aiResponses);
-  return mapStoredMessagesToChatMessages([{
-    ...storedAIResponses[storedAIResponses.length - 1],
-    data: {
-      ...storedAIResponses[storedAIResponses.length - 1].data,
-      content: storedAIResponses.map((response) => response.data.content).join("\n\n"),
-    }
-  }])[0];
+  return mapStoredMessagesToChatMessages([
+    {
+      ...storedAIResponses[storedAIResponses.length - 1],
+      data: {
+        ...storedAIResponses[storedAIResponses.length - 1].data,
+        content: storedAIResponses
+          .map((response) => response.data.content)
+          .join("\n\n"),
+      },
+    },
+  ])[0];
 }
 
 export async function generateQueries(
@@ -132,46 +143,53 @@ export async function generateQueries(
 ) {
   const ctx = config.ctx;
   const model = config.chat.model;
-  
+
   if (!model) {
     throw new Error("Model is required");
   }
-  
-  const queryModel = (createGenerateQueriesPrompt(type)).pipe(
-    (await getModel(ctx, model))
-    .withStructuredOutput(generateQueriesSchema)
+
+  const queryModel = createGenerateQueriesPrompt(type).pipe(
+    (await getModel(ctx, model)).withStructuredOutput(generateQueriesSchema)
   );
-  
-  return await queryModel.invoke({
-    messages: state.messages.slice(-5)
-  }) as z.infer<typeof generateQueriesSchema>;
+
+  return (await queryModel.invoke({
+    messages: state.messages.slice(-5),
+  })) as z.infer<typeof generateQueriesSchema>;
 }
 
 export async function gradeDocument(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
-  document: Document,
+  document: Document
 ): Promise<boolean> {
   const promptTemplate = createGradeDocumentPrompt();
   const modelWithOutputParser = promptTemplate.pipe(
-    (await getModel(config.ctx, config.chat.model!)).withStructuredOutput(gradeDocumentSchema)
+    (await getModel(config.ctx, config.chat.model!)).withStructuredOutput(
+      gradeDocumentSchema
+    )
   );
 
-  const result = await modelWithOutputParser.invoke({
+  const result = (await modelWithOutputParser.invoke({
     document: document.pageContent,
     input: state.messages.slice(-1),
-  }) as z.infer<typeof gradeDocumentSchema>;
+  })) as z.infer<typeof gradeDocumentSchema>;
 
   return result.relevant;
 }
 
 export async function formatDocumentsToString(documents: Document[]) {
-  return documents.map(doc =>
-    `<document metadata="${JSON.stringify(doc.metadata)}">${doc.pageContent}</document>`
-  ).join("\n\n");
+  return documents
+    .map(
+      (doc) =>
+        `<document metadata="${JSON.stringify(doc.metadata)}">${doc.pageContent}</document>`
+    )
+    .join("\n\n");
 }
 
-export function getLastMessage(messages: BaseMessage[], type: "ai" | "human"): { message: BaseMessage; index: number } | null {
+export function getLastMessage(
+  messages: BaseMessage[],
+  type: "ai" | "human"
+): { message: BaseMessage; index: number } | null {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (message instanceof AIMessage && type === "ai") {
@@ -184,70 +202,81 @@ export function getLastMessage(messages: BaseMessage[], type: "ai" | "human"): {
   return null;
 }
 
-export function addDocumentsToMessage(message: BaseMessage, documents: Document[]): BaseMessage {
+export function addDocumentsToMessage(
+  message: BaseMessage,
+  documents: Document[]
+): BaseMessage {
   return mapStoredMessagesToChatMessages(
-    mapChatMessagesToStoredMessages([message]).map(msg => ({
+    mapChatMessagesToStoredMessages([message]).map((msg) => ({
       ...msg,
       data: {
         ...msg.data,
         additional_kwargs: {
           ...msg.data.additional_kwargs,
-          documents: documents.map(doc => ({
+          documents: documents.map((doc) => ({
             pageContent: doc.pageContent,
             metadata: doc.metadata,
           })),
-        }
-      }
+        },
+      },
     }))
   )[0];
 }
 
-export async function getDocumentsMessage(documents: Document[]): Promise<HumanMessage | null> {
+export async function getDocumentsMessage(
+  documents: Document[]
+): Promise<HumanMessage | null> {
   if (!documents || documents.length === 0) {
     return null;
   }
-  
+
   const documentsContent = await formatDocumentsToString(documents);
-  
+
   return new HumanMessage(
     "## Available Context\n" +
-    "You have been provided with the following documents relevant to the user's request. Use them to inform your response.\n" +
-    "<documents>\n" +
-    documentsContent +
-    "</documents>\n\n"
+      "You have been provided with the following documents relevant to the user's request. Use them to inform your response.\n" +
+      "<documents>\n" +
+      documentsContent +
+      "</documents>\n\n"
   );
 }
 
 export function parseStateToStreamStatesDoc(
-  state: typeof GraphState.State,
+  state: typeof GraphState.State
 ): Omit<Doc<"streamStates">, "_id" | "_creationTime" | "streamId"> {
   // Convert documents to sources - these come from vector search or web search
-  const sources = state.documents && state.documents.length > 0 ? state.documents.map(doc => {
-    return {
-      type: doc.metadata.type,
-      searchResult: {
-        title: doc.metadata.title,
-        source: doc.metadata.source,
-        publishedDate: doc.metadata.publishedDate,
-        author: doc.metadata.author,
-        image: doc.metadata.image,
-        favicon: doc.metadata.favicon,
-      },
-      document: {
-        document: doc.metadata.document,
-        text: doc.pageContent,
-      }
-    }
-  }) : [];
+  const sources =
+    state.documents && state.documents.length > 0
+      ? state.documents.map((doc) => {
+          return {
+            type: doc.metadata.type,
+            searchResult: {
+              title: doc.metadata.title,
+              source: doc.metadata.source,
+              publishedDate: doc.metadata.publishedDate,
+              author: doc.metadata.author,
+              image: doc.metadata.image,
+              favicon: doc.metadata.favicon,
+            },
+            document: {
+              document: doc.metadata.document,
+              text: doc.pageContent,
+            },
+          };
+        })
+      : [];
 
-  const pastSteps = state.pastSteps && state.pastSteps.length > 0 ? (state.pastSteps || []).map(([step, message]) => {
-    const stepString = Array.isArray(step) ? step.join(", ") : step;
-    const storedMessage = mapChatMessagesToStoredMessages([message])[0];
-    return {
-      step: stepString,
-      message: storedMessage.data.content,
-    };
-  }) : [];
+  const pastSteps =
+    state.pastSteps && state.pastSteps.length > 0
+      ? (state.pastSteps || []).map(([step, message]) => {
+          const stepString = Array.isArray(step) ? step.join(", ") : step;
+          const storedMessage = mapChatMessagesToStoredMessages([message])[0];
+          return {
+            step: stepString,
+            message: storedMessage.data.content,
+          };
+        })
+      : [];
 
   return {
     sources,

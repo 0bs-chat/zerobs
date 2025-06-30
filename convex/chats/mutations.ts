@@ -4,6 +4,7 @@ import { requireAuth } from "../utils/helpers";
 import { api } from "../_generated/api";
 import { partial } from "convex-helpers/validators";
 import * as schema from "../schema";
+import { internal } from "../_generated/api";
 
 export const create = mutation({
   args: {
@@ -55,7 +56,11 @@ export const remove = mutation({
     chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const { userId } = await requireAuth(ctx);
+
+    if (!userId) {
+      throw new Error("User not found, userId is null.");
+    }
 
     await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
@@ -73,29 +78,14 @@ export const remove = mutation({
       });
     }
 
-    // Delete associated chat input
-    const chatInput = await ctx.db
-      .query("chatInputs")
-      .withIndex("by_chat_user", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId)
-      )
-      .first();
-
-    if (chatInput) {
-      await ctx.runMutation(internal.chatInputs.mutations.remove, {
-        chatId: args.chatId,
-      });
-    }
-
-    // Finally delete the chat itself
-
+    // delete the chat itself
     await ctx.db.delete(args.chatId);
 
     return null;
   },
 });
 
-// // for atomic chat and input creation of new chats.
+// // for atomic chat and input creation for new new chats.
 // export const createWithInput = mutation({
 //   args: {
 //     name: v.string(),
