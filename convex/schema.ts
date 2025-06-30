@@ -51,8 +51,8 @@ export const Chats = Table("chats", {
   plannerMode: v.boolean(),
   webSearch: v.boolean(),
   artifacts: v.boolean(),
-  streamId: v.optional(v.id("streams")),
   updatedAt: v.number(),
+  public: v.boolean(),
 });
 
 export const ChatInputs = Table("chatInputs", {
@@ -78,6 +78,7 @@ export const ChatMessages = Table("chatMessages", {
 
 export const Streams = Table("streams", {
   userId: v.string(),
+  chatId: v.id("chats"),
   status: v.union(
     v.literal("pending"),
     v.literal("streaming"),
@@ -186,6 +187,7 @@ export default defineSchema({
     .index("by_parent", ["parentId"]),
   streams: Streams.table
     .index("by_user", ["userId"])
+    .index("by_chat_user", ["chatId", "userId"])
     .index("by_status_user", ["status", "userId"]),
   streamChunks: StreamChunks.table.index("by_stream", ["streamId"]),
   streamStates: StreamStates.table.index("by_stream", ["streamId"]),

@@ -18,7 +18,7 @@ import {
   addDocumentsToMessage,
   getDocumentsMessage,
 } from "./helpers";
-import { BaseMessage, AIMessage, HumanMessage } from "@langchain/core/messages";
+import { BaseMessage, AIMessage } from "@langchain/core/messages";
 import {
   createPlannerPrompt,
   createReplannerPrompt,
@@ -196,7 +196,7 @@ async function baseAgent(
   );
 
   let newMessages = response.messages.slice(
-    state.messages.length,
+    state.messages.length + 1,
     response.messages.length
   ) as BaseMessage[];
 

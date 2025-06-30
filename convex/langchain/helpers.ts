@@ -149,7 +149,7 @@ export async function generateQueries(
   }
 
   const queryModel = createGenerateQueriesPrompt(type).pipe(
-    (await getModel(ctx, model)).withStructuredOutput(generateQueriesSchema)
+    (await getModel(ctx, "worker")).withStructuredOutput(generateQueriesSchema)
   );
 
   return (await queryModel.invoke({
@@ -164,7 +164,7 @@ export async function gradeDocument(
 ): Promise<boolean> {
   const promptTemplate = createGradeDocumentPrompt();
   const modelWithOutputParser = promptTemplate.pipe(
-    (await getModel(config.ctx, config.chat.model!)).withStructuredOutput(
+    (await getModel(config.ctx, "worker")).withStructuredOutput(
       gradeDocumentSchema
     )
   );
@@ -248,7 +248,7 @@ export function parseStateToStreamStatesDoc(
   const sources =
     state.documents && state.documents.length > 0
       ? state.documents.map((doc) => {
-          return {
+          const source: Doc<"streamStates">["sources"][0] = {
             type: doc.metadata.type,
             searchResult: {
               title: doc.metadata.title,
@@ -258,11 +258,14 @@ export function parseStateToStreamStatesDoc(
               image: doc.metadata.image,
               favicon: doc.metadata.favicon,
             },
-            document: {
-              document: doc.metadata.document,
-              text: doc.pageContent,
-            },
+            document: doc.metadata.document
+              ? {
+                  document: doc.metadata.document,
+                  text: doc.pageContent,
+                }
+              : undefined,
           };
+          return source;
         })
       : [];
 

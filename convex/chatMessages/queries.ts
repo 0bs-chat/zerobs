@@ -19,7 +19,7 @@ export const get = query({
     const messages = await ctx.db
       .query("chatMessages")
       .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
-      .order("desc")
+      .order("asc")
       .collect();
 
     if (args.getCurrentThread) {

@@ -29,6 +29,7 @@ export const create = mutation({
       text: "",
       reasoningEffort: args.reasoningEffort ?? "medium",
       updatedAt: Date.now(),
+      public: false,
     });
     return chatId;
   },
