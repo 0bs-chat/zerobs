@@ -49,6 +49,7 @@ export const Chats = Table("chats", {
   webSearch: v.boolean(),
   artifacts: v.boolean(),
   updatedAt: v.number(),
+  public: v.boolean(),
 });
 
 export const ChatMessages = Table("chatMessages", {
