@@ -9,6 +9,7 @@ import { chatHandlers } from "@/hooks/chats/use-chats";
 import { cn } from "@/lib/utils";
 import { useAtomValue } from "jotai";
 import { selectedChatIdAtom } from "@/store/chatStore";
+import type { BaseMessage } from "@langchain/core/messages";
 
 export function InfiniteScrollArea({
   data,
@@ -189,3 +190,21 @@ const ChatItem = React.forwardRef<
     </div>
   );
 });
+
+// export const MessageItem = React.forwardRef<
+//   HTMLDivElement,
+//   {
+//     message: BaseMessage;
+//     className?: string;
+//   }
+// >(function MessageItem({ message, className }, ref) {
+//   return (
+//     <div ref={ref} className={className}>
+//       {message.content.map((content) => {
+//         if (content.type === "text") {
+//           return <div key={content.text}>{content.text}</div>;
+//         }
+//       })}
+//     </div>
+//   );
+// });

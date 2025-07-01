@@ -2,8 +2,11 @@ import { atom } from "jotai";
 import type { Id } from "../../convex/_generated/dataModel";
 import { atomWithStorage, selectAtom } from "jotai/utils";
 import type { MCPData } from "@/components/chat/panels/mcp/types";
-import { useStream } from "@/hooks/chats/use-stream";
-import { useCheckpointParser } from "@/hooks/chats/use-chats";
+import {
+  type AIChunkGroup,
+  type ToolChunkGroup,
+  useStream,
+} from "@/hooks/chats/use-stream";
 import type { Artifact } from "@/components/chat/artifacts/utils";
 
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
@@ -44,18 +47,18 @@ export const rightPanelWidthAtom = atomWithStorage("rightPanelWidth", 40);
 
 export const chatProjectIdAtom = atom<Id<"projects"> | undefined>(undefined);
 export const useStreamAtom = atom<ReturnType<typeof useStream> | null>(null);
-export const useCheckpointParserAtom = atom<ReturnType<
-  typeof useCheckpointParser
-> | null>(null);
 export const selectedArtifactAtom = atom<Artifact | null>(null);
 
 export const themeAtom = atomWithStorage("theme", "dark");
 
-export type ChatInputState = {
+export type ChatState = {
   chatId: Id<"chats">;
   text: string;
   documents?: Id<"documents">[];
+  public: boolean;
   model: string;
+  updatedAt: number;
+  reasoningEffort: "low" | "medium" | "high";
   projectId?: Id<"projects"> | null;
   agentMode: boolean;
   plannerMode: boolean;
@@ -64,11 +67,14 @@ export type ChatInputState = {
   streamId?: Id<"streams">;
 };
 
-const initialChatInputState: ChatInputState = {
-  chatId: "" as Id<"chats">,
+const initialChatState: ChatState = {
+  chatId: "new" as Id<"chats">,
   documents: [],
   text: "",
+  public: false,
   projectId: null,
+  updatedAt: 0,
+  reasoningEffort: "low",
   agentMode: false,
   plannerMode: false,
   webSearch: false,
@@ -77,26 +83,34 @@ const initialChatInputState: ChatInputState = {
   streamId: "" as Id<"streams">,
 };
 
-export const chatInputAtom = atom<ChatInputState>(initialChatInputState);
+export const chatAtom = atom<ChatState>(initialChatState);
 
-export const updateChatInputAtom = atom(
+export const updateChatAtom = atom(
   null,
-  (get, set, update: Partial<ChatInputState>) => {
-    set(chatInputAtom, {
-      ...get(chatInputAtom),
+  (get, set, update: Partial<ChatState>) => {
+    set(chatAtom, {
+      ...get(chatAtom),
       ...update,
     });
   }
 );
 
-export const resetChatInputAtom = atom(null, (_, set) => {
-  set(chatInputAtom, initialChatInputState);
+export const resetChatAtom = atom(null, (_, set) => {
+  set(chatAtom, initialChatState);
 });
 
-export const existingChatInputTextAtom = atom<string>("");
-export const streamStatusAtom = selectAtom(
+export const existingChatTextAtom = atom<string>("");
+export const StatusAtom = selectAtom(
   useStreamAtom,
-  (stream) => stream?.status
+  (stream) => stream?.streamStatus
 );
 
 export const selectedArtifactIdAtom = atom<string | null>(null);
+
+export const processedChunksAtom = atom<
+  (AIChunkGroup | ToolChunkGroup)[] | null
+>(null);
+
+export const currentCursorAtom = atom<string | null>(null);
+
+export const streamStatusAtom = atom<string | null>(null);

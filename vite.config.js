@@ -45,7 +45,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ["ssh2", "cpu-features"],
-    include: ["path-browserify", "buffer"],
+    include: ["buffer"],
   },
   build: {
     rollupOptions: {

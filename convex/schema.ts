@@ -55,21 +55,6 @@ export const Chats = Table("chats", {
   public: v.boolean(),
 });
 
-export const ChatInputs = Table("chatInputs", {
-  chatId: v.id("chats"),
-  userId: v.string(),
-  documents: v.optional(v.array(v.id("documents"))),
-  text: v.optional(v.string()),
-  projectId: v.optional(v.union(v.id("projects"), v.null())),
-  agentMode: v.boolean(),
-  plannerMode: v.boolean(),
-  webSearch: v.boolean(),
-  artifacts: v.optional(v.boolean()),
-  model: v.string(),
-  streamId: v.optional(v.id("streams")),
-  updatedAt: v.number(),
-});
-
 export const ChatMessages = Table("chatMessages", {
   chatId: v.id("chats"),
   message: v.string(),

@@ -12,7 +12,7 @@ interface QueryUsage {
 
 async function findAllFiles(
   dir: string,
-  extensions: string[] = [".ts", ".tsx", ".js", ".jsx"],
+  extensions: string[] = [".ts", ".tsx", ".js", ".jsx"]
 ): Promise<string[]> {
   const files: string[] = [];
 
@@ -27,7 +27,7 @@ async function findAllFiles(
           // Skip node_modules and other common directories
           if (
             !["node_modules", ".git", "dist", "build", ".next"].includes(
-              entry.name,
+              entry.name
             )
           ) {
             await scan(fullPath);
@@ -46,7 +46,7 @@ async function findAllFiles(
 }
 
 async function findQueriesInFile(
-  filePath: string,
+  filePath: string
 ): Promise<{ query: string; file: string }[]> {
   try {
     const content = await readFile(filePath, "utf-8");
@@ -71,7 +71,7 @@ async function findQueriesInFile(
 }
 
 function aggregateQueries(
-  allQueries: { query: string; file: string }[],
+  allQueries: { query: string; file: string }[]
 ): QueryUsage[] {
   const queryMap = new Map<string, { count: number; files: Set<string> }>();
 

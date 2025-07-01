@@ -12,11 +12,12 @@ export const get = query({
   handler: async (ctx, args): Promise<Doc<"streams"> | null> => {
     const { userId } = await requireAuth(ctx);
 
-    return await ctx.db.query("streams")
-      .withIndex("by_chat_user", (q) => q
-        .eq("chatId", args.chatId)
-        .eq("userId", userId)
-      ).first();
+    return await ctx.db
+      .query("streams")
+      .withIndex("by_chat_user", (q) =>
+        q.eq("chatId", args.chatId).eq("userId", userId)
+      )
+      .first();
   },
 });
 
@@ -26,7 +27,10 @@ export const getChunks = query({
     paginationOpts: paginationOptsValidator,
     lastChunkTime: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
     stream: Doc<"streams">;
     chunks: PaginationResult<Doc<"streamChunks">>;
   }> => {
@@ -55,6 +59,36 @@ export const getChunks = query({
   },
 });
 
+export const getChunksOnly = query({
+  args: {
+    chatId: v.id("chats"),
+    paginationOpts: paginationOptsValidator,
+    lastChunkTime: v.optional(v.number()),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<PaginationResult<Doc<"streamChunks">>> => {
+    const stream = await ctx.runQuery(api.streams.queries.get, {
+      chatId: args.chatId,
+    });
+
+    return await ctx.db
+      .query("streamChunks")
+      .withIndex("by_stream", (q) => q.eq("streamId", stream?._id!))
+      .order("asc")
+      .filter((q) =>
+        args.lastChunkTime
+          ? q.gt(q.field("_creationTime"), args.lastChunkTime)
+          : true
+      )
+      .paginate({
+        cursor: args.paginationOpts.cursor,
+        numItems: args.paginationOpts.numItems,
+      });
+  },
+});
+
 export const getState = query({
   args: {
     chatId: v.id("chats"),
@@ -68,7 +102,10 @@ export const getState = query({
       return null;
     }
 
-    return await ctx.db.query("streamStates").withIndex("by_stream", (q) => q.eq("streamId", stream._id)).first();
+    return await ctx.db
+      .query("streamStates")
+      .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
+      .first();
   },
 });
 

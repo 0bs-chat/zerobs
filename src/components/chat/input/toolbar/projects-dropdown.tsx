@@ -25,11 +25,11 @@ export const ProjectsDropdown = ({
   onCloseDropdown,
 }: ProjectsDropdownProps) => {
   const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats"> | "new";
+  const chatId = params.chatId as Id<"chats">;
   const projects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 3, cursor: null },
   });
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
   const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
   const setRightPanelVisible = useSetAtom(rightPanelVisibilityAtom);
   const setRightPanelActiveTab = useSetAtom(rightPanelActiveTabAtom);
@@ -47,7 +47,7 @@ export const ProjectsDropdown = ({
           <DropdownMenuItem
             key={project._id}
             onSelect={() => {
-              updateChatInputMutation({
+              updateChatMutation({
                 chatId,
                 updates: {
                   projectId: project._id,

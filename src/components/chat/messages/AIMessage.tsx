@@ -50,9 +50,9 @@ export const AIMessageComponent = memo(
           : String(message.content);
     }, [message.content]);
 
-    const contentParts = React.useMemo(
+    const contentParts = useMemo(
       () => parseContent(rawContent, messageIndex),
-      [rawContent, messageIndex],
+      [rawContent, messageIndex]
     );
 
     const reasoning = message.additional_kwargs?.reasoning_content as

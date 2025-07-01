@@ -1,9 +1,7 @@
 import React, { Suspense, useState, useMemo } from "react";
-import { useParams, useNavigate } from "@tanstack/react-router";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
-import { useAction, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import {
   HumanMessage,
   AIMessage,
@@ -16,18 +14,13 @@ import {
   ToolMessageComponent,
   PlanningSteps,
 } from ".";
-import { useCheckpointParser } from "@/hooks/chats/use-chats";
 import { useStream } from "@/hooks/chats/use-stream";
 import { AIToolUtilsBar, UserUtilsBar } from "./UtilsBar";
 import {
-  useStreamAtom,
-  useCheckpointParserAtom,
   documentDialogOpenAtom,
   documentDialogDocumentIdAtom,
 } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { convexQuery } from "@convex-dev/react-query";
 import { Document, type DocumentInterface } from "@langchain/core/documents";
 import {
   Accordion,
@@ -35,7 +28,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { BanIcon, CircleXIcon, ExternalLinkIcon, FileIcon } from "lucide-react";
+import { ExternalLinkIcon, FileIcon } from "lucide-react";
 import { Favicon } from "@/components/ui/favicon";
 import { Markdown } from "@/components/ui/markdown";
 import {
@@ -43,18 +36,23 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { getTagInfo } from "@/lib/helpers";
+import {
+  getTagInfo,
+  convexMessagesToLangChain,
+  groupLangChainMessages,
+} from "@/lib/helpers";
+import {
+  extractUrlFromTavilyContent,
+  useMessageHandlers,
+} from "@/hooks/chats/use-message";
+import { ScrollArea } from "@/components/ui/scroll-area";
+// import { InfiniteScrollArea } from "@/components/ui/infinite-scroll-area";
 
 const MessageSources = ({ documents }: { documents: Document[] }) => {
   if (!documents || documents.length === 0) return null;
 
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
   const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
-
-  const extractUrlFromTavilyContent = (content: string): string | null => {
-    const urlMatch = content.match(/https?:\/\/[^\s\n]+/);
-    return urlMatch ? urlMatch[0] : null;
-  };
 
   const MemoizedConvexDocument = React.memo(({ doc }: { doc: Document }) => {
     const docId = doc.metadata.source as Id<"documents">;
@@ -64,7 +62,7 @@ const MessageSources = ({ documents }: { documents: Document[] }) => {
 
     const tagInfo = getTagInfo(
       documentData?.type || "file",
-      documentData?.status,
+      documentData?.status
     );
     const IconComponent = tagInfo.icon;
 
@@ -168,7 +166,7 @@ const ConvexDocumentChip = React.memo(
 
     const tagInfo = getTagInfo(
       documentData?.type || "file",
-      documentData?.status,
+      documentData?.status
     );
     const IconComponent = tagInfo.icon;
 
@@ -190,7 +188,7 @@ const ConvexDocumentChip = React.memo(
         </TooltipContent>
       </Tooltip>
     );
-  },
+  }
 );
 ConvexDocumentChip.displayName = "ConvexDocumentChip";
 
@@ -199,11 +197,6 @@ const DocumentDisplay = ({ documents }: { documents: DocumentInterface[] }) => {
 
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
   const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
-
-  const extractUrlFromTavilyContent = (content: string): string | null => {
-    const urlMatch = content.match(/https?:\/\/[^\s\n]+/);
-    return urlMatch ? urlMatch[0] : null;
-  };
 
   const MemoizedConvexDocument = React.memo(
     ({ doc }: { doc: DocumentInterface }) => {
@@ -214,7 +207,7 @@ const DocumentDisplay = ({ documents }: { documents: DocumentInterface[] }) => {
 
       const tagInfo = getTagInfo(
         documentData?.type || "file",
-        documentData?.status,
+        documentData?.status
       );
       const IconComponent = tagInfo.icon;
 
@@ -251,15 +244,15 @@ const DocumentDisplay = ({ documents }: { documents: DocumentInterface[] }) => {
           </div>
         </div>
       );
-    },
+    }
   );
   MemoizedConvexDocument.displayName = "MemoizedConvexDocument";
 
   const webDocuments = documents.filter(
-    (doc) => doc.metadata?.source === "tavily",
+    (doc) => doc.metadata?.source === "tavily"
   );
   const convexDocuments = documents.filter(
-    (doc) => doc.metadata?.source !== "tavily",
+    (doc) => doc.metadata?.source !== "tavily"
   );
 
   return (
@@ -317,46 +310,6 @@ const DocumentDisplay = ({ documents }: { documents: DocumentInterface[] }) => {
   );
 };
 
-const groupMessages = (messages: BaseMessage[]): BaseMessage[][] => {
-  if (messages.length === 0) return [];
-
-  const grouped: BaseMessage[][] = [];
-  let currentGroup: BaseMessage[] = [];
-
-  const getGroupType = (message: BaseMessage) => {
-    if (message instanceof HumanMessage) return "user";
-    if (message instanceof AIMessage || message instanceof ToolMessage)
-      return "ai/tool";
-    return "other";
-  };
-
-  const validMessages = messages.filter(
-    (message) => getGroupType(message) !== "other"
-  );
-
-  for (const message of validMessages) {
-    const messageType = getGroupType(message);
-
-    if (currentGroup.length === 0) {
-      currentGroup.push(message);
-    } else {
-      const currentGroupType = getGroupType(currentGroup[0]);
-      if (messageType === currentGroupType) {
-        currentGroup.push(message);
-      } else {
-        grouped.push(currentGroup);
-        currentGroup = [message];
-      }
-    }
-  }
-
-  if (currentGroup.length > 0) {
-    grouped.push(currentGroup);
-  }
-
-  return grouped;
-};
-
 const MessageGroup = ({
   messages,
   firstMessageIndex,
@@ -367,17 +320,22 @@ const MessageGroup = ({
   chatId: Id<"chats">;
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(
-    null,
-  );
-  const removeMessageGroup = useAction(api.chats.actions.removeMessageGroup);
-  const regenerate = useAction(api.chats.actions.regenerate);
-  const regenerateFromUser = useAction(api.chats.actions.regenerateFromUser);
-  const branchChatAction = useAction(api.chats.actions.branchChat);
-  const navigate = useNavigate();
+  const [copied, _setCopied] = useState(false);
+  const [editingMessageIndex, _setEditingMessageIndex] = useState<
+    number | null
+  >(null);
+  if (messages.length === 0) return null;
 
-    if (messages.length === 0) return null;
+  const {
+    handleCopyText,
+    handleDeleteMessage,
+    handleDeleteCascading,
+    handleRegenerate,
+    handleUserRegenerate,
+    handleEditMessage,
+    handleCancelEdit,
+    handleSaveEdit,
+  } = useMessageHandlers(chatId, messages)!;
 
   const firstMessage = messages[0];
   const isUserGroup = firstMessage instanceof HumanMessage;
@@ -390,113 +348,10 @@ const MessageGroup = ({
     return acc;
   }, []);
 
-  const handleBranch = async () => {
-    if (chatId === "new") return;
-    const newChatId = await branchChatAction({
-      chatId: chatId as Id<"chats">,
-      messageIndex: firstMessageIndex + messages.length,
-    });
-    await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
-  };
-
-  // Helper function to extract text content from message
-  const extractTextFromContent = (content: any): string => {
-    if (typeof content === "string") {
-      return content;
-    }
-    if (Array.isArray(content)) {
-      return content
-        .map((item) => (item.type === "text" ? item.text : ""))
-        .filter(Boolean)
-        .join("");
-    }
-    return String(content);
-  };
-
-  const handleCopyText = () => {
-    const textToCopy = messages
-      .map((m) => extractTextFromContent(m.content))
-      .filter(Boolean)
-      .join("\n\n");
-    navigator.clipboard.writeText(textToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleDeleteMessage = async () => {
-    if (chatId === "new") return;
-
-    try {
-      await removeMessageGroup({
-        chatId: chatId as Id<"chats">,
-        startIndex: firstMessageIndex,
-        count: messages.length,
-        cascade: false,
-      });
-    } catch (error) {
-      console.error("Failed to delete message group:", error);
-    }
-  };
-
-  const handleDeleteCascading = async () => {
-    if (chatId === "new") return;
-
-    try {
-      await removeMessageGroup({
-        chatId: chatId as Id<"chats">,
-        startIndex: firstMessageIndex,
-        count: messages.length,
-        cascade: true,
-      });
-    } catch (error) {
-      console.error("Failed to delete cascading messages:", error);
-    }
-  };
-
-  const handleRegenerate = async () => {
-    if (chatId === "new" || isUserGroup) return;
-
-    try {
-      await regenerate({
-        chatId: chatId as Id<"chats">,
-        startIndex: firstMessageIndex,
-        count: messages.length,
-      });
-    } catch (error) {
-      console.error("Failed to regenerate message:", error);
-    }
-  };
-
-  const handleUserRegenerate = async () => {
-    if (chatId === "new" || !isUserGroup) return;
-
-    try {
-      await regenerateFromUser({
-        chatId: chatId as Id<"chats">,
-        startIndex: firstMessageIndex,
-        count: messages.length,
-      });
-    } catch (error) {
-      console.error("Failed to regenerate from user message:", error);
-    }
-  };
-
-    const handleEditMessage = (messageIndex: number) => {
-      setEditingMessageIndex(messageIndex);
-    };
-
-    const handleCancelEdit = () => {
-      setEditingMessageIndex(null);
-    };
-
-    const handleSaveEdit = () => {
-      setEditingMessageIndex(null);
-    };
-
-    const renderMessage = (message: BaseMessage, index: number) => {
-      const messageId = message.id ?? `msg-${index}`;
-      const absoluteMessageIndex = firstMessageIndex + index;
-      const isEditing = editingMessageIndex === absoluteMessageIndex;
+  const renderMessage = (message: BaseMessage, index: number) => {
+    const messageId = message.id ?? `msg-${index}`;
+    const absoluteMessageIndex = firstMessageIndex + index;
+    const isEditing = editingMessageIndex === absoluteMessageIndex;
 
     if (message instanceof HumanMessage) {
       return (
@@ -553,7 +408,6 @@ const MessageGroup = ({
             onDeleteMessage={handleDeleteMessage}
             onDeleteCascading={handleDeleteCascading}
             onRegenerate={handleRegenerate}
-            onBranch={handleBranch}
           />
         )}
       </div>
@@ -565,53 +419,41 @@ MessageGroup.displayName = "MessageGroup";
 
 export const ChatMessages = React.memo(
   ({ chatId }: { chatId: Id<"chats"> }) => {
-    // now returns chunkGroups directly
-    const stream = useStream(chatId);
+    const { chunkGroups, steps, messages: convexMessages } = useStream(chatId);
 
-    const checkpoint = useSuspenseQuery(
-      convexQuery(api.chats.queries.getCheckpoint, {
-        chatId,
-        paginationOpts: { numItems: 20, cursor: null },
-      })
-    );
+    if (!convexMessages) return null;
 
-    const parsedCheckpoint = useCheckpointParser({
-      checkpoint: checkpoint.data,
-    });
+    // Convert Convex messages to LangChain messages and group them
+    const langchainMessages = useMemo(() => {
+      return convexMessagesToLangChain(convexMessages);
+    }, [convexMessages]);
 
-    const setStream = useSetAtom(useStreamAtom);
-    const setCheckpointParser = useSetAtom(useCheckpointParserAtom);
+    const messageGroups = useMemo(() => {
+      return groupLangChainMessages(langchainMessages);
+    }, [langchainMessages]);
 
-    setStream(stream);
-    setCheckpointParser(parsedCheckpoint);
+    // Create groups with indices for rendering
+    const messageGroupsWithIndices = useMemo(() => {
+      const groups: {
+        group: BaseMessage[];
+        firstMessageIndex: number;
+      }[] = [];
 
-    const messageGroups = parsedCheckpoint?.messages
-      ? groupMessages(parsedCheckpoint.messages)
-      : [];
+      let currentIndex = 0;
+      for (const group of messageGroups) {
+        groups.push({
+          group,
+          firstMessageIndex: currentIndex,
+        });
+        currentIndex += group.length;
+      }
 
-    const lastMessage =
-      parsedCheckpoint?.messages?.[parsedCheckpoint.messages.length - 1];
-
-    const lastMessageHasPastSteps =
-      lastMessage instanceof AIMessage &&
-      !!lastMessage.additional_kwargs?.past_steps;
-
-
-    const messageGroupsWithIndices: {
-      group: BaseMessage[];
-      firstMessageIndex: number;
-    }[] = [];
-    let currentIndex = 0;
-    for (const group of messageGroups) {
-      messageGroupsWithIndices.push({ group, firstMessageIndex: currentIndex });
-      currentIndex += group.length;
-    }
+      return groups;
+    }, [messageGroups]);
 
     // Memoize streaming messages to prevent unnecessary re-renders
     const streamingMessages = useMemo(() => {
-      if (!stream?.chunkGroups?.length) return [];
-
-      return stream.chunkGroups.map((cg, idx) => {
+      return chunkGroups.map((cg, idx) => {
         const key = `stream-${cg.type}-${idx}`;
 
         if (cg.type === "ai") {
@@ -628,7 +470,7 @@ export const ChatMessages = React.memo(
                       : {},
                   })
                 }
-                messageIndex={parsedCheckpoint?.messages.length ?? -1}
+                messageIndex={langchainMessages.length}
               />
             ),
           };
@@ -651,10 +493,10 @@ export const ChatMessages = React.memo(
           };
         }
       });
-    }, [stream?.chunkGroups, parsedCheckpoint?.messages.length]);
+    }, [chunkGroups, langchainMessages.length]);
 
     return (
-      <ScrollArea className="overflow-hidden w-full h-full">
+      <ScrollArea>
         <div className="flex flex-col max-w-4xl mx-auto p-1 gap-1 ">
           {/* render existing message groups */}
           {messageGroupsWithIndices.map(({ group, firstMessageIndex }, i) => (
@@ -670,13 +512,13 @@ export const ChatMessages = React.memo(
           <Suspense
             fallback={<div className="animate-pulse h-4 bg-muted rounded" />}
           >
-            {parsedCheckpoint?.pastSteps && !lastMessageHasPastSteps && (
-              <PlanningSteps pastSteps={parsedCheckpoint.pastSteps} />
+            {steps && steps.pastSteps && (
+              <PlanningSteps pastSteps={steps.pastSteps} />
             )}
           </Suspense>
 
           {/* render live stream */}
-          {stream?.chunkGroups.length > 0 && (
+          {chunkGroups?.length > 0 && (
             <div className="flex flex-col w-full gap-1">
               {streamingMessages.map(({ key, component }) => component)}
             </div>
@@ -684,119 +526,7 @@ export const ChatMessages = React.memo(
         </div>
       </ScrollArea>
     );
-  });
-
-  const lastMessageHasDocuments =
-    lastMessage instanceof AIMessage &&
-    !!lastMessage.additional_kwargs?.documents;
-
-  const messageGroupsWithIndices: {
-    group: BaseMessage[];
-    firstMessageIndex: number;
-  }[] = [];
-  let currentIndex = 0;
-  for (const group of messageGroups) {
-    messageGroupsWithIndices.push({ group, firstMessageIndex: currentIndex });
-    currentIndex += group.length;
   }
+);
 
 export default ChatMessages;
-  return (
-    <ScrollArea className="overflow-hidden w-full h-full">
-      <div className="flex flex-col max-w-4xl mx-auto p-1 gap-1 ">
-        {/* render existing message groups */}
-        {messageGroupsWithIndices.map(({ group, firstMessageIndex }, i) => (
-          <MessageGroup
-            key={i}
-            messages={group}
-            firstMessageIndex={firstMessageIndex}
-            chatId={chatId}
-          />
-        ))}
-
-
-
-
-
-        {/* render planning steps */}
-        {parsedCheckpoint?.pastSteps && !lastMessageHasPastSteps && (
-          <PlanningSteps pastSteps={parsedCheckpoint.pastSteps} />
-        )}
-
-        {/* render documents during streaming */}
-        {parsedCheckpoint?.documents &&
-          parsedCheckpoint.documents.length > 0 &&
-          !lastMessageHasDocuments && (
-            <DocumentDisplay documents={parsedCheckpoint.documents} />
-          )}
-
-
-        {/* render live stream */}
-        {stream?.chunkGroups.length > 0 && (
-          <div className="flex flex-col w-full gap-1">
-            {stream?.chunkGroups.map((cg, idx) => {
-              if (cg.type === "ai") {
-                const msg = new AIMessage({
-                  content: cg.content,
-                  additional_kwargs: cg.reasoning
-                    ? { reasoning_content: cg.reasoning }
-                    : {},
-                });
-                return (
-                  <AIMessageComponent
-                    key={`stream-ai-${idx}`}
-                    message={msg}
-                    messageIndex={parsedCheckpoint?.messages.length ?? -1}
-                  />
-                );
-              } else {
-                const msg = new ToolMessage({
-                  content: cg.output ? JSON.stringify(cg.output) : "",
-                  tool_call_id: `stream-tool-${idx}`,
-                  name: cg.toolName,
-                });
-                return (
-                  <ToolMessageComponent
-                    key={`stream-tool-${idx}`}
-                    message={msg}
-                    isStreaming
-                  />
-                );
-              }
-            })}
-          </div>
-        )}
-
-        {stream?.status === "pending" && (
-          <div className="flex flex-row items-center justify-start w-full">
-            <div className="w-2 h-2 mx-0.5 rounded-full bg-gray-400 opacity-100 animate-bounce-loader"></div>
-            <div className="w-2 h-2 mx-0.5 rounded-full bg-gray-400 opacity-100 animate-bounce-loader animation-delay-200"></div>
-            <div className="w-2 h-2 mx-0.5 rounded-full bg-gray-400 opacity-100 animate-bounce-loader animation-delay-400"></div>
-          </div>
-        )}
-        {stream?.status === "error" && (
-          <div className="flex flex-col w-full gap-1">
-            <div className="flex items-center gap-2 p-3 rounded-md bg-red-400/20">
-              <CircleXIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                An error occurred while processing your request
-              </span>
-            </div>
-          </div>
-        )}
-        {/* cancelled stream bar */}
-        {stream?.status === "cancelled" && (
-          <div className="flex flex-col w-full gap-1">
-            <div className="flex items-center gap-2 p-3 rounded-md bg-yellow-400/20">
-              <BanIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                The stream was cancelled
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-    </ScrollArea>
-  );
-});
-

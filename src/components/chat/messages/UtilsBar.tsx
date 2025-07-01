@@ -14,7 +14,6 @@ import {
   RefreshCcwIcon,
   TrashIcon,
 } from "lucide-react";
-import { memo } from "react";
 
 export const AIToolUtilsBar = ({
   isDropdownOpen,
@@ -62,12 +61,12 @@ export const AIToolUtilsBar = ({
         <RefreshCcwIcon className="w-4 h-4" />
       </Button>
 
-        <DropdownMenu onOpenChange={setIsDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontalIcon className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
+      <DropdownMenu onOpenChange={setIsDropdownOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MoreHorizontalIcon className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className="w-56">
           <DropdownMenuItem
@@ -124,25 +123,25 @@ export const UserUtilsBar = ({
         <PencilIcon className="w-4 h-4" />
       </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleCopyText}
-          className={copied ? "text-green-500" : ""}
-        >
-          {copied ? (
-            <CheckIcon className="w-4 h-4" />
-          ) : (
-            <CopyIcon className="w-4 h-4" />
-          )}
-        </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleCopyText}
+        className={copied ? "text-green-500" : ""}
+      >
+        {copied ? (
+          <CheckIcon className="w-4 h-4" />
+        ) : (
+          <CopyIcon className="w-4 h-4" />
+        )}
+      </Button>
 
-        <DropdownMenu onOpenChange={setIsDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontalIcon className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
+      <DropdownMenu onOpenChange={setIsDropdownOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MoreHorizontalIcon className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className="w-56">
           <DropdownMenuItem

@@ -13,6 +13,7 @@ import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 import { CheckIcon, XIcon } from "lucide-react";
+import { useMutation } from "convex/react";
 
 interface UserMessageProps {
   message: HumanMessage;
@@ -36,7 +37,10 @@ export const UserMessageComponent = React.memo(
     const setDocumentDialogDocumentId = useSetAtom(
       documentDialogDocumentIdAtom
     );
-    const editMessage = useAction(api.chats.actions.editMessage);
+
+    // update chat message and then regenerate the message
+    const updateMessage = useMutation(api.chatMessages.mutations.update);
+    const regenerateMessage = useAction(api.chatMessages.mutations.regenerate);
 
     const text = Array.isArray(message.content)
       ? message.content
@@ -65,11 +69,15 @@ export const UserMessageComponent = React.memo(
       onSaveEdit?.(editContent, regenerate);
 
       try {
-        await editMessage({
+        await updateMessage({
+          id: message.id as Id<"chatMessages">,
+          updates: {
+            message: editContent,
+          },
+        });
+        await regenerateMessage({
+          id: message.id as Id<"chatMessages">,
           chatId: chatId as Id<"chats">,
-          messageIndex,
-          newContent: editContent,
-          regenerateAfterEdit: regenerate,
         });
       } catch (error) {
         console.error("Failed to edit message:", error);

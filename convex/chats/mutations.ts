@@ -75,7 +75,7 @@ export const remove = mutation({
 
     if (chatStream) {
       await ctx.runMutation(internal.streams.mutations.remove, {
-        streamId: chatStream._id,
+        chatId: args.chatId,
       });
     }
 

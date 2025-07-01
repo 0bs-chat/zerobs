@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "b": "npx convex dev",
+    "odev": "vite --port 3000",
     "dev": "vite --port 3000 & bun b",
     "setup": "bun setup.mjs",
     "start": "vite --port 3000",
@@ -88,6 +89,7 @@
     "mermaid": "^11.6.0",
     "mime": "^4.0.7",
     "next-themes": "^0.4.6",
+    "path-browserify": "^1.0.1",
     "postcss": "^8.5.6",
     "react": "^19.1.0",
     "react-day-picker": "8.10.1",

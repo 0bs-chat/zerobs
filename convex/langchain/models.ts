@@ -15,7 +15,7 @@ import { api, internal } from "../_generated/api";
 import mime from "mime";
 import { Base64 } from "convex/values";
 
-export const models: {
+export type modelsInterface = {
   label: string;
   model_name: string;
   model: string;
@@ -28,7 +28,9 @@ export const models: {
   usageRateMultiplier: number;
   hidden?: boolean;
   type?: "chat" | "embeddings";
-}[] = [
+};
+
+export const models: modelsInterface[] = [
   {
     label: "Gemini 2.5 Flash",
     model_name: "gemini-2.5-flash",

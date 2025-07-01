@@ -1,10 +1,6 @@
 import React from "react";
 import { useAtom, useAtomValue } from "jotai";
-import {
-  selectedArtifactAtom,
-  useCheckpointParserAtom,
-  useStreamAtom,
-} from "@/store/chatStore";
+import { selectedArtifactAtom, useStreamAtom } from "@/store/chatStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 // import { Badge } from "@/components/ui/badge";
 // import { Separator } from "@/components/ui/separator";
@@ -62,32 +58,11 @@ const ArtifactsList = ({
 
 export const ArtifactsPanel = () => {
   const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
-  const parsedCheckpoint = useAtomValue(useCheckpointParserAtom);
   const stream = useAtomValue(useStreamAtom);
-  const setSelectedArtifactId = useSetAtom(selectedArtifactIdAtom);
   const allArtifacts = React.useMemo(() => {
     const artifactMap = new Map<string, Artifact>();
 
     // 1. Get artifacts from completed messages
-    if (parsedCheckpoint?.messages) {
-      parsedCheckpoint.messages.forEach((message, index) => {
-        if (message.content) {
-          const content =
-            typeof message.content === "string"
-              ? message.content
-              : Array.isArray(message.content)
-                ? message.content
-                    .map((item: any) => (item.type === "text" ? item.text : ""))
-                    .join("")
-                : String(message.content);
-
-          const messageArtifacts = parseArtifacts(content, index);
-          messageArtifacts.forEach((artifact) => {
-            artifactMap.set(artifact.id, artifact);
-          });
-        }
-      });
-    }
 
     // 2. Get artifacts from stream and overwrite
     const streamingContent =
@@ -99,7 +74,7 @@ export const ArtifactsPanel = () => {
     if (streamingContent) {
       const streamingArtifacts = parseArtifacts(
         streamingContent,
-        parsedCheckpoint?.messages.length ?? 0
+        stream?.messages?.length ?? 0
       );
       streamingArtifacts.forEach((artifact) => {
         artifactMap.set(artifact.id, artifact);
@@ -108,7 +83,7 @@ export const ArtifactsPanel = () => {
 
     const allArtifacts = Array.from(artifactMap.values());
     return allArtifacts.sort((a, b) => b.messageIndex - a.messageIndex);
-  }, [parsedCheckpoint?.messages, stream]);
+  }, [stream]);
 
   const artifactToView = React.useMemo(() => {
     if (!selectedArtifact) return null;
@@ -119,7 +94,6 @@ export const ArtifactsPanel = () => {
 
   const handleCloseViewer = () => {
     setSelectedArtifact(null);
-    setSelectedArtifactId(null);
   };
 
   if (artifactToView) {

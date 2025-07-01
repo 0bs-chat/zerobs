@@ -60,7 +60,7 @@ export const ChatInterface = ({ isNewChat, chatId }: ChatInterfaceProps) => {
               >
                 <ResizablePanel className="flex flex-col gap-1 p-2 pt-4 overflow-hidden justify-between">
                   <div className="flex flex-col items-center justify-center overflow-hidden">
-                    {chatId && <ChatMessages chatId={chatId} />}
+                    {chatId !== "new" && <ChatMessages chatId={chatId} />}
                   </div>
                   <ChatInput isNewChat={isNewChat} chatId={chatId} />
                 </ResizablePanel>

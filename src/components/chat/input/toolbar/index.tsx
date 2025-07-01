@@ -7,25 +7,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   PlusIcon,
-  BotIcon,
-  BrainIcon,
-  Globe2Icon,
   ArrowUp,
   PaperclipIcon,
   GithubIcon,
-  FileIcon,
   CircleStopIcon,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
-import { Toggle } from "@/components/ui/toggle";
 import { useUploadDocuments } from "@/hooks/use-documents";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -36,171 +26,40 @@ import { Badge } from "@/components/ui/badge";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useParams } from "@tanstack/react-router";
 import type { Id } from "convex/_generated/dataModel";
-import { lazy, useRef, useState } from "react";
-import { useAtom } from "jotai";
-import { chatInputAtom } from "@/store/chatStore";
+import { useRef, useState } from "react";
 import { getTagInfo } from "@/lib/helpers";
 import GitHubDialog from "../github";
-import type { ChatInputState } from "@/store/chatStore";
+import type { ChatState } from "@/store/chatStore";
 import { useAuth } from "@clerk/clerk-react";
-
-const AgentToggle = ({
-  chatId,
-  agentMode,
-  isNewChat,
-}: {
-  chatId: Id<"chats">;
-  agentMode: boolean;
-  isNewChat: boolean;
-}) => {
-  const [chatInput, setChatInput] = useAtom(chatInputAtom);
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-
-  return (
-    <Toggle
-      variant="outline"
-      className="hover:transition hover:duration-500"
-      pressed={agentMode}
-      onPressedChange={() => {
-        if (isNewChat) {
-          setChatInput({ ...chatInput, agentMode: !chatInput.agentMode });
-        } else {
-          updateChatInputMutation({
-            chatId,
-            updates: { agentMode: !agentMode },
-          });
-        }
-      }}
-    >
-      <BotIcon className="h-4 w-4" />
-      Agent
-    </Toggle>
-  );
-};
-
-const PlannerToggle = ({
-  chatId,
-  plannerMode,
-  isNewChat,
-}: {
-  chatId: Id<"chats">;
-  plannerMode?: boolean;
-  isNewChat: boolean;
-}) => {
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-  const [chatInput, setChatInput] = useAtom(chatInputAtom);
-  return (
-    <Toggle
-      variant="outline"
-      className="hover:transition hover:duration-500"
-      pressed={plannerMode}
-      onPressedChange={() => {
-        if (isNewChat) {
-          setChatInput({ ...chatInput, plannerMode: !chatInput.plannerMode });
-        } else {
-          updateChatInputMutation({
-            chatId,
-            updates: {
-              plannerMode: !plannerMode,
-            },
-          });
-        }
-      }}
-    >
-      <BrainIcon className="h-4 w-4" />
-      Smort
-    </Toggle>
-  );
-};
-
-const WebSearchToggle = ({
-  chatId,
-  webSearch,
-  isNewChat,
-}: {
-  chatId: Id<"chats">;
-  webSearch?: boolean;
-  isNewChat: boolean;
-}) => {
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-  const [chatInput, setChatInput] = useAtom(chatInputAtom);
-  return (
-    <Tooltip delayDuration={300}>
-      <TooltipTrigger asChild>
-        <Toggle
-          variant="outline"
-          className={`hover:transition hover:duration-500 ${webSearch ? "bg-accent text-accent-foreground" : ""}`}
-          aria-pressed={webSearch ?? false}
-          pressed={webSearch ?? false}
-          onPressedChange={() => {
-            if (isNewChat) {
-              setChatInput({ ...chatInput, webSearch: !chatInput.webSearch });
-            } else {
-              updateChatInputMutation({
-                chatId,
-                updates: {
-                  webSearch: !webSearch,
-                },
-              });
-            }
-          }}
-        >
-          <Globe2Icon className="h-4 w-4" />
-        </Toggle>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>Search the web</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-};
-
-const ArtifactsToggle = ({
-  chatId,
-  artifacts,
-}: {
-  chatId: Id<"chats">;
-  artifacts?: boolean;
-}) => {
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-
-  return (
-    <Toggle
-      variant="outline"
-      className="hover:transition hover:duration-500"
-      pressed={artifacts ?? false}
-      onPressedChange={() => {
-        updateChatInputMutation({
-          chatId,
-          updates: {
-            artifacts: !artifacts,
-          },
-        });
-      }}
-    >
-      <FileIcon className="h-4 w-4" />
-      Artifacts
-    </Toggle>
-  );
-};
+import { AgentToggle } from "./agentToggle";
+import { PlannerToggle } from "./plannerToggle";
+import { useAtom } from "jotai";
+import { chatAtom, streamStatusAtom } from "@/store/chatStore";
 
 export const ToolBar = ({
   isNewChat,
   chatInputData,
 }: {
   isNewChat: boolean;
-  chatInputData: ChatInputState;
+  chatInputData: ChatState;
 }) => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [chat, setChat] = useAtom(chatAtom);
+  const [streamStatus] = useAtom(streamStatusAtom);
+  const cancelStreamMutation = useMutation(api.streams.mutations.cancel);
 
-  const models = useQuery(api.chatInputs.queries.getModels, {
+  const models = useQuery(api.models.getModels);
+
+  const getModelFromChat = useQuery(api.chats.queries.get, {
     chatId,
   });
+  const selectedModel = getModelFromChat?.model;
+
   const handleFileUpload = useUploadDocuments();
   const handleSubmit = useHandleSubmit(isNewChat, chatId);
 
@@ -259,28 +118,26 @@ export const ToolBar = ({
       />
       <div className="flex flex-row items-center gap-1">
         <Select
-          value={models?.selectedModel.model_name}
+          value={selectedModel}
           onValueChange={(value) => {
             if (isNewChat) {
-              setChatInput({ ...chatInputData, model: value });
+              setChat({ ...chat, model: value });
             } else {
-              updateChatInputMutation({
+              updateChatMutation({
                 chatId,
                 updates: { model: value },
               });
             }
           }}
         >
-          <SelectTrigger>{models?.selectedModel.label}</SelectTrigger>
+          <SelectTrigger>{selectedModel}</SelectTrigger>
           <SelectContent>
-            {models?.models.map((model, index) => (
+            {models?.map((model, index) => (
               <SelectItem
                 key={model.model}
                 value={model.model_name}
                 className={`${
-                  model.model_name === models?.selectedModel.model_name
-                    ? "bg-accent"
-                    : ""
+                  model.model_name === selectedModel ? "bg-accent" : ""
                 } ${index > 0 ? "mt-1" : ""}`}
               >
                 <div className="flex flex-col w-full gap-2">

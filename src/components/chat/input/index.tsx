@@ -3,49 +3,46 @@ import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useAtom } from "jotai";
-import { chatInputAtom, type ChatInputState } from "@/store/chatStore";
+import { chatAtom, type ChatState } from "@/store/chatStore";
 import { api } from "convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import type { Id } from "convex/_generated/dataModel";
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
 
-type ChatInputProps = {
+type ChatProps = {
   isNewChat: boolean;
   chatId: Id<"chats">;
 };
 
-export const ChatInput = ({ isNewChat, chatId }: ChatInputProps) => {
-  const [chatInput] = useAtom(chatInputAtom);
+export const ChatInput = ({ isNewChat, chatId }: ChatProps) => {
+  const [chatInput] = useAtom(chatAtom);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
 
-  const existingChatInput = useQuery(
-    api.chatInputs.queries.get,
-    !isNewChat && chatId ? { chatId } : "skip"
+  const existingChat = useQuery(
+    api.chats.queries.get,
+    !isNewChat && chatId !== "new" ? { chatId } : "skip"
   );
 
-  const chatInputData: ChatInputState =
-    isNewChat || !existingChatInput
-      ? chatInput
-      : (existingChatInput as ChatInputState);
+  const chatInputData = isNewChat || !existingChat ? chatInput : existingChat;
 
   // Load initial text including any saved draft
   useEffect(() => {
     if (textareaRef.current) {
       const newText =
-        isNewChat || !existingChatInput
+        isNewChat || !existingChat
           ? chatInput.text
-          : (existingChatInput?.text ?? "");
+          : (existingChat?.text ?? "");
       textareaRef.current.value = newText;
     }
-  }, [chatId, isNewChat, chatInput.text, existingChatInput?.text]);
+  }, [chatId, isNewChat, chatInput.text, existingChat?.text]);
 
   // Debounced draft saving (separate from UI updates)
   const debouncedSaveDraft = useDebouncedCallback((text: string) => {
     if (!isNewChat && chatId) {
-      updateChatInputMutation({
+      updateChatMutation({
         chatId,
         updates: { text },
       });
@@ -85,9 +82,9 @@ export const ChatInput = ({ isNewChat, chatId }: ChatInputProps) => {
       {/* Document List */}
       <DocumentList
         documentIds={
-          isNewChat ? chatInput.documents : (existingChatInput?.documents ?? [])
+          isNewChat ? chatInput.documents : (existingChat?.documents ?? [])
         }
-        model={isNewChat ? chatInput.model : (existingChatInput?.model ?? "")}
+        model={isNewChat ? chatInput.model : (existingChat?.model ?? "")}
       />
 
       {/* Input */}
@@ -95,9 +92,7 @@ export const ChatInput = ({ isNewChat, chatId }: ChatInputProps) => {
         id="chatInputText"
         maxHeight={192}
         minHeight={56}
-        defaultValue={
-          isNewChat ? chatInput.text : (existingChatInput?.text ?? "")
-        }
+        defaultValue={isNewChat ? chatInput.text : (existingChat?.text ?? "")}
         ref={textareaRef}
         className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
         onChange={handleTextChange}
@@ -105,7 +100,10 @@ export const ChatInput = ({ isNewChat, chatId }: ChatInputProps) => {
         placeholder="Type a message..."
       />
 
-      <ToolBar isNewChat={isNewChat} chatInputData={chatInputData} />
+      <ToolBar
+        isNewChat={isNewChat}
+        chatInputData={chatInputData as ChatState}
+      />
     </div>
   );
 };

@@ -7,13 +7,9 @@ import { useCallback, useState } from "react";
 import React from "react";
 import { coerceMessageLikeToMessage } from "@langchain/core/messages";
 import { GraphState } from "convex/langchain/state";
-import {
-  chatInputAtom,
-  resetChatInputAtom,
-  selectedChatIdAtom,
-} from "@/store/chatStore";
+import { chatAtom, resetChatAtom, selectedChatIdAtom } from "@/store/chatStore";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { useAtom, useSetAtom, useAtomValue } from "jotai";
 import { useAuth } from "@clerk/tanstack-react-start";
@@ -24,12 +20,10 @@ export const useHandleSubmit = (
 ) => {
   const { userId } = useAuth();
   const navigate = useNavigate();
-  const createChatWithInputMutation = useMutation(
-    api.chats.mutations.createWithInput
-  );
+  const createChat = useMutation(api.chats.mutations.create);
   const sendAction = useAction(api.chats.actions.send);
-  const [chatInput] = useAtom(chatInputAtom);
-  const resetChatInput = useSetAtom(resetChatInputAtom);
+  const [chatInput] = useAtom(chatAtom);
+  const resetChatInput = useSetAtom(resetChatAtom);
   const setSelectedChatId = useSetAtom(selectedChatIdAtom);
   const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
 
@@ -79,25 +73,7 @@ export const useHandleSubmit = (
   return handleSubmit;
 };
 
-export const useCheckpointParser = ({
-  checkpoint,
-}: {
-  checkpoint?: { page?: string } | null;
-}) => {
-  return React.useMemo(() => {
-    if (!checkpoint?.page) return null;
-
-    const parsedState = JSON.parse(checkpoint.page) as typeof GraphState.State;
-    const parsedState = JSON.parse(checkpoint.page) as typeof GraphState.State;
-
-    return {
-      ...parsedState,
-      messages: parsedState.messages.map((msg) =>
-        coerceMessageLikeToMessage(msg)
-      ),
-    };
-  }, [checkpoint?.page]);
-};
+// direct quereis to chatmessages and streams ()
 
 export const useInfiniteChats = () => {
   const { results, status, loadMore } = usePaginatedQuery(
