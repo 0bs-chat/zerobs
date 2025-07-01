@@ -13,10 +13,9 @@ import { Panel } from "@/components/chat/panels";
 import { DocumentDialog } from "@/components/document-dialog";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
 import { useAtomValue, useSetAtom } from "jotai";
-import { rightPanelVisibilityAtom, sidebarOpenAtom } from "@/store/chatStore";
-import { selectedArtifactAtom } from "@/store/chatStore";
+import { resizePanelOpenAtom, selectedArtifactAtom, sidebarOpenAtom } from "@/store/chatStore";
 import { useEffect } from "react";
-import type { Id } from "convex/_generated/dataModel";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/chat_/$chatId/")({
@@ -28,10 +27,11 @@ function RouteComponent() {
     from: "/chat_/$chatId/",
   });
   const chatId = params.chatId as Id<"chats"> | "new";
-  const rightPanelVisible = useAtomValue(rightPanelVisibilityAtom);
+  const resizePanelOpen = useAtomValue(resizePanelOpenAtom);
   const sidebarOpen = useAtomValue(sidebarOpenAtom);
   const setSidebarOpen = useSetAtom(sidebarOpenAtom);
   const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
+
   useEffect(() => {
     setSelectedArtifact(null);
   }, [chatId, setSelectedArtifact]);
@@ -52,7 +52,7 @@ function RouteComponent() {
             <ChatMessages />
             <ChatInput />
           </ResizablePanel>
-          {rightPanelVisible && (
+          {resizePanelOpen && (
             <>
               <ResizableHandle />
               <ResizablePanel defaultSize={40} minSize={25} maxSize={50}>

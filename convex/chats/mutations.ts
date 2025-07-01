@@ -22,8 +22,6 @@ export const create = mutation({
       ...args,
       userId,
       pinned: false,
-      documents: [],
-      text: "",
       reasoningEffort: args.reasoningEffort ?? "medium",
       updatedAt: Date.now(),
       public: false,

@@ -11,8 +11,9 @@ import {
 } from "@/store/chatStore";
 import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import type { Id } from "convex/_generated/dataModel";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import { CheckIcon, XIcon } from "lucide-react";
+import { useMutation } from "convex/react";
 
 interface UserMessageProps {
   message: HumanMessage;
@@ -20,7 +21,7 @@ interface UserMessageProps {
   onCancelEdit?: () => void;
   onSaveEdit?: (content: string, regenerate?: boolean) => void;
   messageIndex?: number;
-  chatId?: Id<"chats"> | "new";
+  chatId?: Id<"chats">;
 }
 
 export const UserMessageComponent = React.memo(
@@ -34,9 +35,12 @@ export const UserMessageComponent = React.memo(
   }: UserMessageProps) => {
     const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
     const setDocumentDialogDocumentId = useSetAtom(
-      documentDialogDocumentIdAtom,
+      documentDialogDocumentIdAtom
     );
-    const editMessage = useAction(api.chats.actions.editMessage);
+
+    // update chat message and then regenerate the message
+    const updateMessage = useMutation(api.chatMessages.mutations.update);
+    const regenerateMessage = useAction(api.chatMessages.mutations.regenerate);
 
     const text = Array.isArray(message.content)
       ? message.content
@@ -47,7 +51,7 @@ export const UserMessageComponent = React.memo(
     const fileIds = Array.isArray(message.content)
       ? message.content
           .map((item) =>
-            item.type === "file" && "file" in item ? item.file.file_id : null,
+            item.type === "file" && "file" in item ? item.file.file_id : null
           )
           .filter(Boolean)
       : [];
@@ -59,17 +63,21 @@ export const UserMessageComponent = React.memo(
     const [editContent, setEditContent] = useState(text);
 
     const handleSave = async (regenerate: boolean = false) => {
-      if (chatId === "new" || messageIndex === undefined) return;
+      if (messageIndex === undefined) return;
 
       // Close edit state immediately
       onSaveEdit?.(editContent, regenerate);
 
       try {
-        await editMessage({
+        await updateMessage({
+          id: message.id as Id<"chatMessages">,
+          updates: {
+            message: editContent,
+          },
+        });
+        await regenerateMessage({
+          id: message.id as Id<"chatMessages">,
           chatId: chatId as Id<"chats">,
-          messageIndex,
-          newContent: editContent,
-          regenerateAfterEdit: regenerate,
         });
       } catch (error) {
         console.error("Failed to edit message:", error);
@@ -158,7 +166,7 @@ export const UserMessageComponent = React.memo(
         ))}
       </div>
     );
-  },
+  }
 );
 
 UserMessageComponent.displayName = "UserMessageComponent";

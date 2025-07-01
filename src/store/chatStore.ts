@@ -1,54 +1,44 @@
 import { atom } from "jotai";
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { atomWithStorage, selectAtom } from "jotai/utils";
-import type { MCPData } from "@/components/chat/panels/mcp/types";
 import { useStream } from "@/hooks/chats/use-stream";
-import { useCheckpointParser } from "@/hooks/chats/use-chats";
 import type { Artifact } from "@/components/chat/artifacts/utils";
 
-export const chatInputTextAtom = atom<string>("");
+export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
+  _id: "new" as Id<"chats">,
+  _creationTime: 0,
+  userId: "",
+  name: "New Chat",
+  pinned: false,
+  documents: [],
+  text: "",
+  model: "gemini-2.5-flash",
+  reasoningEffort: "low",
+  projectId: null,
+  agentMode: false,
+  plannerMode: false,
+  webSearch: false,
+  artifacts: false,
+  updatedAt: 0,
+  public: false,
+});
 
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
+export const resizePanelOpenAtom = atomWithStorage("resizePanelOpen", false);
+export const selectedPanelTabAtom = atomWithStorage("selectedPanelTab", "projects");
+export const resizePanelWidthAtom = atomWithStorage("resizePanelWidth", 40);
 
 export const documentDialogOpenAtom = atom(false);
 export const documentDialogDocumentIdAtom = atom<Id<"documents"> | null>(null);
-export const projectDialogOpenAtom = atom(false);
-
-export const mcpEditDialogOpenAtom = atom(false);
-export const mcpAtom = atom<MCPData>({
-  name: "",
-  type: "sse",
-  command: "",
-  dockerImage: "",
-  dockerPort: 8000,
-  status: "creating",
-  envVars: [{ key: "", value: "" }],
-  url: "",
-  enabled: true,
-  restartOnNewChat: false,
-});
+export const createProjectDialogOpenAtom = atom(false);
+export const createMCPServerDialogOpenAtom = atom(false);
 
 export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", false);
 
-export const rightPanelVisibilityAtom = atomWithStorage(
-  "rightPanelVisibility",
-  true
-);
-export const rightPanelActiveTabAtom = atomWithStorage(
-  "rightPanelActiveTab",
-  "projects"
-);
-
-export const rightPanelWidthAtom = atomWithStorage("rightPanelWidth", 40);
-
-export const chatProjectIdAtom = atom<Id<"projects"> | undefined>(undefined);
-export const useStreamAtom = atom<ReturnType<typeof useStream> | null>(null);
-export const useCheckpointParserAtom = atom<ReturnType<
-  typeof useCheckpointParser
-> | null>(null);
-
+export const selectedProjectIdAtom = atom<Id<"projects"> | null>(null);
 export const selectedArtifactAtom = atom<Artifact | null>(null);
 
+export const useStreamAtom = atom<ReturnType<typeof useStream> | null>(null);
 export const streamStatusAtom = selectAtom(
   useStreamAtom,
   (stream) => stream?.status,

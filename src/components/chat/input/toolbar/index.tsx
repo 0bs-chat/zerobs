@@ -7,25 +7,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   PlusIcon,
-  BotIcon,
-  BrainIcon,
-  Globe2Icon,
   ArrowUp,
   PaperclipIcon,
   GithubIcon,
-  FileIcon,
   CircleStopIcon,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
-import { Toggle } from "@/components/ui/toggle";
 import { useUploadDocuments } from "@/hooks/use-documents";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -35,154 +25,40 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useParams } from "@tanstack/react-router";
-import type { Id } from "convex/_generated/dataModel";
+import type { Doc, Id } from "../../../../../convex/_generated/dataModel";
 import { useRef, useState } from "react";
 import { getTagInfo } from "@/lib/helpers";
-import { GitHubDialog } from "../github";
-import { streamStatusAtom } from "@/store/chatStore";
-import { useAtomValue } from "jotai";
-
-const AgentToggle = ({
-  chatId,
-  agentMode,
-}: {
-  chatId: Id<"chats">;
-  agentMode?: boolean;
-}) => {
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-
-  return (
-    <Toggle
-      variant="outline"
-      className="hover:transition hover:duration-500"
-      pressed={agentMode ?? false}
-      onPressedChange={() => {
-        updateChatInputMutation({
-          chatId,
-          updates: {
-            agentMode: !agentMode,
-          },
-        });
-      }}
-    >
-      <BotIcon className="h-4 w-4" />
-      Agent
-    </Toggle>
-  );
-};
-
-const PlannerToggle = ({
-  chatId,
-  plannerMode,
-}: {
-  chatId: Id<"chats">;
-  plannerMode?: boolean;
-}) => {
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-
-  return (
-    <Toggle
-      variant="outline"
-      className="hover:transition hover:duration-500"
-      pressed={plannerMode ?? false}
-      onPressedChange={() => {
-        updateChatInputMutation({
-          chatId,
-          updates: {
-            plannerMode: !plannerMode,
-          },
-        });
-      }}
-    >
-      <BrainIcon className="h-4 w-4" />
-      Smort
-    </Toggle>
-  );
-};
-
-const WebSearchToggle = ({
-  chatId,
-  webSearch,
-}: {
-  chatId: Id<"chats">;
-  webSearch?: boolean;
-}) => {
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-
-  return (
-    <Tooltip delayDuration={300}>
-      <TooltipTrigger asChild>
-        <Toggle
-          variant="outline"
-          className={`hover:transition hover:duration-500 ${webSearch ? "bg-accent text-accent-foreground" : ""}`}
-          aria-pressed={webSearch ?? false}
-          pressed={webSearch ?? false}
-          onPressedChange={() => {
-            updateChatInputMutation({
-              chatId,
-              updates: {
-                webSearch: !webSearch,
-              },
-            });
-          }}
-        >
-          <Globe2Icon className="h-4 w-4" />
-        </Toggle>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>Search the web</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-};
-
-const ArtifactsToggle = ({
-  chatId,
-  artifacts,
-}: {
-  chatId: Id<"chats">;
-  artifacts?: boolean;
-}) => {
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-
-  return (
-    <Toggle
-      variant="outline"
-      className="hover:transition hover:duration-500"
-      pressed={artifacts ?? false}
-      onPressedChange={() => {
-        updateChatInputMutation({
-          chatId,
-          updates: {
-            artifacts: !artifacts,
-          },
-        });
-      }}
-    >
-      <FileIcon className="h-4 w-4" />
-      Artifacts
-    </Toggle>
-  );
-};
+import GitHubDialog from "../github";
+import { useAuth } from "@clerk/clerk-react";
+import { AgentToggle } from "./agentToggle";
+import { PlannerToggle } from "./plannerToggle";
+import { useSetAtom, useAtomValue } from "jotai";
+import { streamStatusAtom, newChatAtom } from "@/store/chatStore";
+import { models } from "../../../../../convex/langchain/models";
 
 export const ToolBar = ({
-  chatInput,
+  chat,
 }: {
-  chatInput: ReturnType<typeof useQuery<typeof api.chatInputs.queries.get>>;
+  chat: Doc<"chats">;
 }) => {
   const params = useParams({ strict: false });
-  const chatId: Id<"chats"> = params.chatId as Id<"chats">;
+  const chatId = params.chatId as Id<"chats">;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const streamStatus = useAtomValue(streamStatusAtom);
   const cancelStreamMutation = useMutation(api.streams.mutations.cancel);
-  const models = useQuery(api.chatInputs.queries.getModels, {
+  const setNewChat = useSetAtom(newChatAtom);
+
+  const getModelFromChat = useQuery(api.chats.queries.get, {
     chatId,
   });
+  const selectedModel = getModelFromChat?.model;
+
   const handleFileUpload = useUploadDocuments();
-  const handleSubmit = useHandleSubmit();
-  const streamStatus = useAtomValue(streamStatusAtom);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const { isSignedIn } = useAuth();
 
   return (
     <div className="flex flex-row justify-between items-center w-full p-1">
@@ -193,7 +69,10 @@ export const ToolBar = ({
         multiple
         onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
       />
-      <GitHubDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+      {isSignedIn && (
+        <GitHubDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+      )}
+
       <div className="flex flex-row items-center gap-1">
         <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
@@ -220,35 +99,38 @@ export const ToolBar = ({
             />
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <AgentToggle chatId={chatId} agentMode={chatInput?.agentMode} />
-        <PlannerToggle chatId={chatId} plannerMode={chatInput?.plannerMode} />
-        <ArtifactsToggle chatId={chatId} artifacts={chatInput?.artifacts} />
-        <WebSearchToggle chatId={chatId} webSearch={chatInput?.webSearch} />
       </div>
 
+      <AgentToggle
+        chatId={chatId}
+        agentMode={chat.agentMode}
+      />
+      <PlannerToggle
+        chatId={chatId}
+        plannerMode={chat.plannerMode}
+      />
       <div className="flex flex-row items-center gap-1">
         <Select
-          value={models?.selectedModel.model_name}
-          onValueChange={(value) =>
-            updateChatInputMutation({
-              chatId: chatId,
-              updates: {
-                model: value,
-              },
-            })
-          }
+          value={selectedModel}
+          onValueChange={(value) => {
+            if (chatId === "new") {
+              setNewChat((prev) => ({ ...prev, model: value }));
+            } else {
+              updateChatMutation({
+                chatId,
+                updates: { model: value },
+              });
+            }
+          }}
         >
-          <SelectTrigger>{models?.selectedModel.label}</SelectTrigger>
+          <SelectTrigger>{selectedModel}</SelectTrigger>
           <SelectContent>
-            {models?.models.map((model, index) => (
+            {models?.map((model, index) => (
               <SelectItem
                 key={model.model}
                 value={model.model_name}
                 className={`${
-                  model.model_name === models?.selectedModel.model_name
-                    ? "bg-accent"
-                    : ""
+                  model.model_name === selectedModel ? "bg-accent" : ""
                 } ${index > 0 ? "mt-1" : ""}`}
               >
                 <div className="flex flex-col w-full gap-2">
@@ -281,7 +163,7 @@ export const ToolBar = ({
           size="icon"
           onClick={async () => {
             if (!["pending", "streaming"].includes(streamStatus ?? "")) {
-              await handleSubmit();
+              await useHandleSubmit(chatId);
             } else {
               await cancelStreamMutation({ chatId });
             }

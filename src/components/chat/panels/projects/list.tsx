@@ -4,14 +4,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlusIcon, TrashIcon } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "convex/_generated/dataModel";
+import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
 import { useSetAtom } from "jotai";
 import { projectDialogOpenAtom } from "@/store/chatStore";
 
 export const ProjectsList = () => {
   const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats"> | "new";
+  const chatId = params.chatId as Id<"chats">;
   const allProjects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 20, cursor: null },
   });

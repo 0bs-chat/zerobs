@@ -49,7 +49,7 @@ export const AIMessageComponent = memo(
 
     const contentParts = useMemo(
       () => parseContent(rawContent, messageIndex),
-      [rawContent, messageIndex],
+      [rawContent, messageIndex]
     );
 
     const reasoning = message.additional_kwargs?.reasoning_content as

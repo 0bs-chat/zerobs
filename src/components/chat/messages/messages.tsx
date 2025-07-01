@@ -1,14 +1,13 @@
-import React, { useState } from "react";
-import { useParams, useNavigate } from "@tanstack/react-router";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import React, { Suspense, useState, useMemo } from "react";
 import { api } from "../../../../convex/_generated/api";
-import type { Id } from "convex/_generated/dataModel";
-import { useQuery, useAction } from "convex/react";
+import type { Id } from "../../../../convex/_generated/dataModel";
+import { useQuery } from "convex/react";
 import {
   HumanMessage,
   AIMessage,
   ToolMessage,
   BaseMessage,
+  type StoredMessage,
 } from "@langchain/core/messages";
 import {
   UserMessageComponent,
@@ -16,12 +15,9 @@ import {
   ToolMessageComponent,
   PlanningSteps,
 } from ".";
-import { useCheckpointParser } from "@/hooks/chats/use-chats";
 import { useStream } from "@/hooks/chats/use-stream";
 import { AIToolUtilsBar, UserUtilsBar } from "./UtilsBar";
 import {
-  useStreamAtom,
-  useCheckpointParserAtom,
   documentDialogOpenAtom,
   documentDialogDocumentIdAtom,
 } from "@/store/chatStore";
@@ -33,7 +29,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { BanIcon, CircleXIcon, ExternalLinkIcon, FileIcon } from "lucide-react";
+import { ExternalLinkIcon, FileIcon } from "lucide-react";
 import { Favicon } from "@/components/ui/favicon";
 import { Markdown } from "@/components/ui/markdown";
 import {
@@ -42,17 +38,47 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getTagInfo } from "@/lib/helpers";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import type { MessageNode } from "../../../../convex/chatMessages/helpers";
+import { useParams } from "@tanstack/react-router";
+import { mapStoredMessageToChatMessage } from "@langchain/core/messages";
+
+// Type for MessageNode with converted LangChain messages
+type ConvertedMessageNode = Omit<MessageNode, 'message' | 'children'> & {
+  message: BaseMessage;
+  children: ConvertedMessageNode[];
+};
+
+// Utility function to extract URL from Tavily content
+const extractUrlFromTavilyContent = (content: string): string | null => {
+  try {
+    const lines = content.split('\n');
+    const urlLine = lines.find(line => line.startsWith('URL: '));
+    return urlLine ? urlLine.replace('URL: ', '').trim() : null;
+  } catch {
+    return null;
+  }
+};
+
+// Mock implementation of useMessageHandlers
+const useMessageHandlers = (chatId: Id<"chats">, messages: BaseMessage[]) => {
+  return {
+    handleCopyText: () => {},
+    handleDeleteMessage: () => {},
+    handleDeleteCascading: () => {},
+    handleRegenerate: () => {},
+    handleUserRegenerate: () => {},
+    handleEditMessage: (_index: number) => {},
+    handleCancelEdit: () => {},
+    handleSaveEdit: (_content: string, _regenerate?: boolean) => {},
+  };
+};
 
 const MessageSources = ({ documents }: { documents: Document[] }) => {
   if (!documents || documents.length === 0) return null;
 
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
   const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
-
-  const extractUrlFromTavilyContent = (content: string): string | null => {
-    const urlMatch = content.match(/https?:\/\/[^\s\n]+/);
-    return urlMatch ? urlMatch[0] : null;
-  };
 
   const MemoizedConvexDocument = React.memo(({ doc }: { doc: Document }) => {
     const docId = doc.metadata.source as Id<"documents">;
@@ -62,7 +88,7 @@ const MessageSources = ({ documents }: { documents: Document[] }) => {
 
     const tagInfo = getTagInfo(
       documentData?.type || "file",
-      documentData?.status,
+      documentData?.status
     );
     const IconComponent = tagInfo.icon;
 
@@ -166,7 +192,7 @@ const ConvexDocumentChip = React.memo(
 
     const tagInfo = getTagInfo(
       documentData?.type || "file",
-      documentData?.status,
+      documentData?.status
     );
     const IconComponent = tagInfo.icon;
 
@@ -188,7 +214,7 @@ const ConvexDocumentChip = React.memo(
         </TooltipContent>
       </Tooltip>
     );
-  },
+  }
 );
 ConvexDocumentChip.displayName = "ConvexDocumentChip";
 
@@ -197,11 +223,6 @@ const DocumentDisplay = ({ documents }: { documents: DocumentInterface[] }) => {
 
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
   const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
-
-  const extractUrlFromTavilyContent = (content: string): string | null => {
-    const urlMatch = content.match(/https?:\/\/[^\s\n]+/);
-    return urlMatch ? urlMatch[0] : null;
-  };
 
   const MemoizedConvexDocument = React.memo(
     ({ doc }: { doc: DocumentInterface }) => {
@@ -212,7 +233,7 @@ const DocumentDisplay = ({ documents }: { documents: DocumentInterface[] }) => {
 
       const tagInfo = getTagInfo(
         documentData?.type || "file",
-        documentData?.status,
+        documentData?.status
       );
       const IconComponent = tagInfo.icon;
 
@@ -249,15 +270,15 @@ const DocumentDisplay = ({ documents }: { documents: DocumentInterface[] }) => {
           </div>
         </div>
       );
-    },
+    }
   );
   MemoizedConvexDocument.displayName = "MemoizedConvexDocument";
 
   const webDocuments = documents.filter(
-    (doc) => doc.metadata?.source === "tavily",
+    (doc) => doc.metadata?.source === "tavily"
   );
   const convexDocuments = documents.filter(
-    (doc) => doc.metadata?.source !== "tavily",
+    (doc) => doc.metadata?.source !== "tavily"
   );
 
   return (
@@ -315,67 +336,38 @@ const DocumentDisplay = ({ documents }: { documents: DocumentInterface[] }) => {
   );
 };
 
-const groupMessages = (messages: BaseMessage[]): BaseMessage[][] => {
-  if (messages.length === 0) return [];
-
-  const grouped: BaseMessage[][] = [];
-  let currentGroup: BaseMessage[] = [];
-
-  const getGroupType = (message: BaseMessage) => {
-    if (message instanceof HumanMessage) return "user";
-    if (message instanceof AIMessage || message instanceof ToolMessage)
-      return "ai/tool";
-    return "other";
-  };
-
-  const validMessages = messages.filter(
-    (message) => getGroupType(message) !== "other"
-  );
-
-  for (const message of validMessages) {
-    const messageType = getGroupType(message);
-
-    if (currentGroup.length === 0) {
-      currentGroup.push(message);
-    } else {
-      const currentGroupType = getGroupType(currentGroup[0]);
-      if (messageType === currentGroupType) {
-        currentGroup.push(message);
-      } else {
-        grouped.push(currentGroup);
-        currentGroup = [message];
-      }
-    }
-  }
-
-  if (currentGroup.length > 0) {
-    grouped.push(currentGroup);
-  }
-
-  return grouped;
-};
-
 const MessageGroup = ({
   messages,
   firstMessageIndex,
   chatId,
+  nodeInfo,
+  onBranchNavigate,
+  branchSelections,
 }: {
   messages: BaseMessage[];
   firstMessageIndex: number;
-  chatId: Id<"chats"> | "new";
+  chatId: Id<"chats">;
+  nodeInfo?: Array<{ node: ConvertedMessageNode, groupIndex: number, messageIndex: number }>;
+  onBranchNavigate?: (messageId: string, direction: 'prev' | 'next', totalBranches: number) => void;
+  branchSelections?: Map<string, number>;
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(
-    null,
-  );
-  const removeMessageGroup = useAction(api.chats.actions.removeMessageGroup);
-  const regenerate = useAction(api.chats.actions.regenerate);
-  const regenerateFromUser = useAction(api.chats.actions.regenerateFromUser);
-  const branchChatAction = useAction(api.chats.actions.branchChat);
-  const navigate = useNavigate();
+  const [copied, _setCopied] = useState(false);
+  const [editingMessageIndex, _setEditingMessageIndex] = useState<
+    number | null
+  >(null);
+  if (messages.length === 0) return null;
 
-    if (messages.length === 0) return null;
+  const {
+    handleCopyText,
+    handleDeleteMessage,
+    handleDeleteCascading,
+    handleRegenerate,
+    handleUserRegenerate,
+    handleEditMessage,
+    handleCancelEdit,
+    handleSaveEdit,
+  } = useMessageHandlers(chatId, messages)!;
 
   const firstMessage = messages[0];
   const isUserGroup = firstMessage instanceof HumanMessage;
@@ -388,113 +380,10 @@ const MessageGroup = ({
     return acc;
   }, []);
 
-  const handleBranch = async () => {
-    if (chatId === "new") return;
-    const newChatId = await branchChatAction({
-      chatId: chatId as Id<"chats">,
-      messageIndex: firstMessageIndex + messages.length,
-    });
-    await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
-  };
-
-  // Helper function to extract text content from message
-  const extractTextFromContent = (content: any): string => {
-    if (typeof content === "string") {
-      return content;
-    }
-    if (Array.isArray(content)) {
-      return content
-        .map((item) => (item.type === "text" ? item.text : ""))
-        .filter(Boolean)
-        .join("");
-    }
-    return String(content);
-  };
-
-  const handleCopyText = () => {
-    const textToCopy = messages
-      .map((m) => extractTextFromContent(m.content))
-      .filter(Boolean)
-      .join("\n\n");
-    navigator.clipboard.writeText(textToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleDeleteMessage = async () => {
-    if (chatId === "new") return;
-
-    try {
-      await removeMessageGroup({
-        chatId: chatId as Id<"chats">,
-        startIndex: firstMessageIndex,
-        count: messages.length,
-        cascade: false,
-      });
-    } catch (error) {
-      console.error("Failed to delete message group:", error);
-    }
-  };
-
-  const handleDeleteCascading = async () => {
-    if (chatId === "new") return;
-
-    try {
-      await removeMessageGroup({
-        chatId: chatId as Id<"chats">,
-        startIndex: firstMessageIndex,
-        count: messages.length,
-        cascade: true,
-      });
-    } catch (error) {
-      console.error("Failed to delete cascading messages:", error);
-    }
-  };
-
-  const handleRegenerate = async () => {
-    if (chatId === "new" || isUserGroup) return;
-
-    try {
-      await regenerate({
-        chatId: chatId as Id<"chats">,
-        startIndex: firstMessageIndex,
-        count: messages.length,
-      });
-    } catch (error) {
-      console.error("Failed to regenerate message:", error);
-    }
-  };
-
-  const handleUserRegenerate = async () => {
-    if (chatId === "new" || !isUserGroup) return;
-
-    try {
-      await regenerateFromUser({
-        chatId: chatId as Id<"chats">,
-        startIndex: firstMessageIndex,
-        count: messages.length,
-      });
-    } catch (error) {
-      console.error("Failed to regenerate from user message:", error);
-    }
-  };
-
-    const handleEditMessage = (messageIndex: number) => {
-      setEditingMessageIndex(messageIndex);
-    };
-
-    const handleCancelEdit = () => {
-      setEditingMessageIndex(null);
-    };
-
-    const handleSaveEdit = () => {
-      setEditingMessageIndex(null);
-    };
-
-    const renderMessage = (message: BaseMessage, index: number) => {
-      const messageId = message.id ?? `msg-${index}`;
-      const absoluteMessageIndex = firstMessageIndex + index;
-      const isEditing = editingMessageIndex === absoluteMessageIndex;
+  const renderMessage = (message: BaseMessage, index: number) => {
+    const messageId = message.id ?? `msg-${index}`;
+    const absoluteMessageIndex = firstMessageIndex + index;
+    const isEditing = editingMessageIndex === absoluteMessageIndex;
 
     if (message instanceof HumanMessage) {
       return (
@@ -551,7 +440,34 @@ const MessageGroup = ({
             onDeleteMessage={handleDeleteMessage}
             onDeleteCascading={handleDeleteCascading}
             onRegenerate={handleRegenerate}
-            onBranch={handleBranch}
+            branchInfo={(() => {
+              // Find the node info for the last message in this group
+              const lastMessageIndexInGroup = firstMessageIndex + messages.length - 1;
+              const relevantNodeInfo = nodeInfo?.find(info => 
+                info.groupIndex === Math.floor(lastMessageIndexInGroup / messages.length) && 
+                info.messageIndex === messages.length - 1
+              );
+              
+              if (relevantNodeInfo?.node.children && relevantNodeInfo.node.children.length > 0 && branchSelections) {
+                const currentBranch = branchSelections.get(relevantNodeInfo.node._id) || 0;
+                return {
+                  currentBranch: currentBranch + 1, // 1-indexed for display
+                  totalBranches: relevantNodeInfo.node.children.length
+                };
+              }
+              return undefined;
+            })()}
+            onBranchNavigate={(direction) => {
+              const lastMessageIndexInGroup = firstMessageIndex + messages.length - 1;
+              const relevantNodeInfo = nodeInfo?.find(info => 
+                info.groupIndex === Math.floor(lastMessageIndexInGroup / messages.length) && 
+                info.messageIndex === messages.length - 1
+              );
+              
+              if (relevantNodeInfo?.node.children && relevantNodeInfo.node.children.length > 0) {
+                onBranchNavigate?.(relevantNodeInfo.node._id, direction, relevantNodeInfo.node.children.length);
+              }
+            }}
           />
         )}
       </div>
@@ -561,142 +477,229 @@ const MessageGroup = ({
 
 MessageGroup.displayName = "MessageGroup";
 
-export const ChatMessages = React.memo(() => {
-  const params = useParams({
-    from: "/chat_/$chatId/",
-  });
-  const chatId = params.chatId as Id<"chats"> | "new";
+export const ChatMessages = React.memo(
+  () => {
+    const params = useParams({
+      from: "/chat_/$chatId/",
+    });
+    const chatId = params.chatId as Id<"chats">;
+    const { chunkGroups, streamState } = useStream(chatId);
 
-  // now returns chunkGroups directly
-  const stream = useStream(chatId);
+    const messages = useQuery(
+      api.chatMessages.queries.get,
+      { chatId, getCurrentThread: false }
+    ) as MessageNode[];
 
-  const checkpoint = useQuery(api.chats.queries.getCheckpoint, {
-    chatId,
-    paginationOpts: { numItems: 20, cursor: null },
-  });
-  const parsedCheckpoint = useCheckpointParser({ checkpoint });
 
-  const setStream = useSetAtom(useStreamAtom);
-  const setCheckpointParser = useSetAtom(useCheckpointParserAtom);
 
-  setStream(stream);
-  setCheckpointParser(parsedCheckpoint);
+    // State to track current branch selections for each message with children
+    const [branchSelections, setBranchSelections] = useState<Map<string, number>>(new Map());
 
-  const messageGroups = parsedCheckpoint?.messages
-    ? groupMessages(parsedCheckpoint.messages)
-    : [];
+    // Recursive function to convert MessageNode tree while preserving structure
+    const convertMessageNode = (node: MessageNode): ConvertedMessageNode => {
+      return {
+        ...node,
+        message: mapStoredMessageToChatMessage(
+          JSON.parse(node.message) as StoredMessage
+        ),
+        children: node.children.map(convertMessageNode),
+      };
+    };
 
-  const lastMessage =
-    parsedCheckpoint?.messages?.[parsedCheckpoint.messages.length - 1];
+    const langchainMessages = messages?.map(convertMessageNode);
 
-  const lastMessageHasPastSteps =
-    lastMessage instanceof AIMessage &&
-    !!lastMessage.additional_kwargs?.past_steps;
+    // Function to get the current path through the message tree based on branch selections
+    const getCurrentMessagePath = (nodes: ConvertedMessageNode[]): ConvertedMessageNode[] => {
+      const path: ConvertedMessageNode[] = [];
+      
+      const traverseNode = (node: ConvertedMessageNode) => {
+        path.push(node);
+        
+        if (node.children.length > 0) {
+          // Get the selected branch for this node (default to 0)
+          const selectedBranch = branchSelections.get(node._id) || 0;
+          const validBranchIndex = Math.min(selectedBranch, node.children.length - 1);
+          
+          if (node.children[validBranchIndex]) {
+            traverseNode(node.children[validBranchIndex]);
+          }
+        }
+      };
+      
+      // Process each root node
+      for (const rootNode of nodes) {
+        traverseNode(rootNode);
+      }
+      
+      return path;
+    };
 
-  const lastMessageHasDocuments =
-    lastMessage instanceof AIMessage &&
-    !!lastMessage.additional_kwargs?.documents;
+    // Function to handle branch navigation
+    const handleBranchNavigate = (messageId: string, direction: 'prev' | 'next', totalBranches: number) => {
+      setBranchSelections(prev => {
+        const newSelections = new Map(prev);
+        const currentBranch = newSelections.get(messageId) || 0;
+        
+        if (direction === 'prev' && currentBranch > 0) {
+          newSelections.set(messageId, currentBranch - 1);
+        } else if (direction === 'next' && currentBranch < totalBranches - 1) {
+          newSelections.set(messageId, currentBranch + 1);
+        }
+        
+        return newSelections;
+      });
+    };
 
-  const messageGroupsWithIndices: {
-    group: BaseMessage[];
-    firstMessageIndex: number;
-  }[] = [];
-  let currentIndex = 0;
-  for (const group of messageGroups) {
-    messageGroupsWithIndices.push({ group, firstMessageIndex: currentIndex });
-    currentIndex += group.length;
-  }
+    // Get the current message path (based on branch selections)
+    const currentMessagePath = useMemo(() => {
+      return getCurrentMessagePath(langchainMessages || []);
+    }, [langchainMessages, branchSelections]);
 
-  return (
-    <ScrollArea className="overflow-hidden w-full h-full">
-      <div className="flex flex-col max-w-4xl mx-auto p-1 gap-1 ">
-        {/* render existing message groups */}
-        {messageGroupsWithIndices.map(({ group, firstMessageIndex }, i) => (
-          <MessageGroup
-            key={i}
-            messages={group}
-            firstMessageIndex={firstMessageIndex}
-            chatId={chatId}
-          />
-        ))}
+    // Group consecutive messages by type (user vs AI/tool) from the current path
+    const groupMessagesFromPath = (pathNodes: ConvertedMessageNode[]): { 
+      groups: BaseMessage[][], 
+      nodeInfo: Array<{ node: ConvertedMessageNode, groupIndex: number, messageIndex: number }> 
+    } => {
+      if (!pathNodes || pathNodes.length === 0) return { groups: [], nodeInfo: [] };
+      
+      const groups: BaseMessage[][] = [];
+      const nodeInfo: Array<{ node: ConvertedMessageNode, groupIndex: number, messageIndex: number }> = [];
+      let currentGroup: BaseMessage[] = [];
+      let currentIsUserGroup = pathNodes[0].message instanceof HumanMessage;
+      
+      for (const node of pathNodes) {
+        const isUserMessage = node.message instanceof HumanMessage;
+        
+        if (isUserMessage === currentIsUserGroup) {
+          currentGroup.push(node.message);
+          nodeInfo.push({ 
+            node, 
+            groupIndex: groups.length, 
+            messageIndex: currentGroup.length - 1 
+          });
+        } else {
+          if (currentGroup.length > 0) {
+            groups.push(currentGroup);
+          }
+          currentGroup = [node.message];
+          nodeInfo.push({ 
+            node, 
+            groupIndex: groups.length, 
+            messageIndex: 0 
+          });
+          currentIsUserGroup = isUserMessage;
+        }
+      }
+      
+      if (currentGroup.length > 0) {
+        groups.push(currentGroup);
+      }
+      
+      return { groups, nodeInfo };
+    };
 
-        {/* render planning steps */}
-        {parsedCheckpoint?.pastSteps && !lastMessageHasPastSteps && (
-          <PlanningSteps pastSteps={parsedCheckpoint.pastSteps} />
-        )}
+    const { groups: messageGroups, nodeInfo } = useMemo(() => {
+      return groupMessagesFromPath(currentMessagePath);
+    }, [currentMessagePath]);
 
-        {/* render documents during streaming */}
-        {parsedCheckpoint?.documents &&
-          parsedCheckpoint.documents.length > 0 &&
-          !lastMessageHasDocuments && (
-            <DocumentDisplay documents={parsedCheckpoint.documents} />
+    // Create groups with indices for rendering
+    const messageGroupsWithIndices = useMemo(() => {
+      const groups: {
+        group: BaseMessage[];
+        firstMessageIndex: number;
+      }[] = [];
+
+      let currentIndex = 0;
+      for (const group of messageGroups) {
+        groups.push({
+          group,
+          firstMessageIndex: currentIndex,
+        });
+        currentIndex += group.length;
+      }
+
+      return groups;
+    }, [messageGroups]);
+
+    // Memoize streaming messages to prevent unnecessary re-renders
+    const streamingMessages = useMemo(() => {
+      return chunkGroups.map((cg, idx) => {
+        const key = `stream-${cg.type}-${idx}`;
+
+        if (cg.type === "ai") {
+          return {
+            key,
+            component: (
+              <AIMessageComponent
+                key={key}
+                message={
+                  new AIMessage({
+                    content: cg.content,
+                    additional_kwargs: cg.reasoning
+                      ? { reasoning_content: cg.reasoning }
+                      : {},
+                  })
+                }
+                messageIndex={langchainMessages.length}
+              />
+            ),
+          };
+        } else {
+          return {
+            key,
+            component: (
+              <ToolMessageComponent
+                key={key}
+                message={
+                  new ToolMessage({
+                    content: cg.output ? JSON.stringify(cg.output) : "",
+                    tool_call_id: `stream-tool-${idx}`,
+                    name: cg.toolName,
+                  })
+                }
+                isStreaming
+              />
+            ),
+          };
+        }
+      });
+    }, [chunkGroups, langchainMessages.length]);
+
+    return (
+      <ScrollArea>
+        <div className="flex flex-col max-w-4xl mx-auto p-1 gap-1 ">
+          {/* render existing message groups */}
+          {messageGroupsWithIndices.map(({ group, firstMessageIndex }, i) => (
+            <MessageGroup
+              key={i}
+              messages={group}
+              firstMessageIndex={firstMessageIndex}
+              chatId={chatId}
+              nodeInfo={nodeInfo}
+              onBranchNavigate={handleBranchNavigate}
+              branchSelections={branchSelections}
+            />
+          ))}
+
+          {/* render planning steps */}
+          <Suspense
+            fallback={<div className="animate-pulse h-4 bg-muted rounded" />}
+          >
+            {streamState?.pastSteps && (
+              <PlanningSteps pastSteps={streamState.pastSteps} />
+            )}
+          </Suspense>
+
+          {/* render live stream */}
+          {chunkGroups?.length > 0 && (
+            <div className="flex flex-col w-full gap-1">
+              {streamingMessages.map(({ key, component }) => component)}
+            </div>
           )}
+        </div>
+      </ScrollArea>
+    );
+  }
+);
 
-        {/* render live stream */}
-        {stream?.chunkGroups.length > 0 && (
-          <div className="flex flex-col w-full gap-1">
-            {stream?.chunkGroups.map((cg, idx) => {
-              if (cg.type === "ai") {
-                const msg = new AIMessage({
-                  content: cg.content,
-                  additional_kwargs: cg.reasoning
-                    ? { reasoning_content: cg.reasoning }
-                    : {},
-                });
-                return (
-                  <AIMessageComponent
-                    key={`stream-ai-${idx}`}
-                    message={msg}
-                    messageIndex={parsedCheckpoint?.messages.length ?? -1}
-                  />
-                );
-              } else {
-                const msg = new ToolMessage({
-                  content: cg.output ? JSON.stringify(cg.output) : "",
-                  tool_call_id: `stream-tool-${idx}`,
-                  name: cg.toolName,
-                });
-                return (
-                  <ToolMessageComponent
-                    key={`stream-tool-${idx}`}
-                    message={msg}
-                    isStreaming
-                  />
-                );
-              }
-            })}
-          </div>
-        )}
-
-        {stream?.status === "pending" && (
-          <div className="flex flex-row items-center justify-start w-full">
-            <div className="w-2 h-2 mx-0.5 rounded-full bg-gray-400 opacity-100 animate-bounce-loader"></div>
-            <div className="w-2 h-2 mx-0.5 rounded-full bg-gray-400 opacity-100 animate-bounce-loader animation-delay-200"></div>
-            <div className="w-2 h-2 mx-0.5 rounded-full bg-gray-400 opacity-100 animate-bounce-loader animation-delay-400"></div>
-          </div>
-        )}
-        {stream?.status === "error" && (
-          <div className="flex flex-col w-full gap-1">
-            <div className="flex items-center gap-2 p-3 rounded-md bg-red-400/20">
-              <CircleXIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                An error occurred while processing your request
-              </span>
-            </div>
-          </div>
-        )}
-        {/* cancelled stream bar */}
-        {stream?.status === "cancelled" && (
-          <div className="flex flex-col w-full gap-1">
-            <div className="flex items-center gap-2 p-3 rounded-md bg-yellow-400/20">
-              <BanIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                The stream was cancelled
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-    </ScrollArea>
-  );
-});
+export default ChatMessages;

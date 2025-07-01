@@ -7,14 +7,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   CopyIcon,
-  GitBranchIcon,
   MoreHorizontalIcon,
   PencilIcon,
   RefreshCcwIcon,
   TrashIcon,
 } from "lucide-react";
-import { memo } from "react";
 
 export const AIToolUtilsBar = ({
   isDropdownOpen,
@@ -24,7 +24,8 @@ export const AIToolUtilsBar = ({
   onDeleteMessage,
   onDeleteCascading,
   onRegenerate,
-  onBranch,
+  branchInfo,
+  onBranchNavigate,
 }: {
   isDropdownOpen: boolean;
   setIsDropdownOpen: (open: boolean) => void;
@@ -33,7 +34,11 @@ export const AIToolUtilsBar = ({
   onDeleteMessage?: () => void;
   onDeleteCascading?: () => void;
   onRegenerate?: () => void;
-  onBranch?: () => void;
+  branchInfo?: {
+    currentBranch: number;
+    totalBranches: number;
+  };
+  onBranchNavigate?: (direction: 'prev' | 'next') => void;
 }) => {
   return (
     <div
@@ -54,20 +59,40 @@ export const AIToolUtilsBar = ({
         )}
       </Button>
 
-      <Button variant="ghost" size="icon" onClick={onBranch}>
-        <GitBranchIcon className="w-4 h-4" />
-      </Button>
+      {branchInfo && branchInfo.totalBranches > 1 && (
+        <div className="flex items-center gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => onBranchNavigate?.('prev')}
+            disabled={branchInfo.currentBranch === 1}
+          >
+            <ChevronLeftIcon className="w-4 h-4" />
+          </Button>
+          <span className="text-xs text-muted-foreground min-w-[2rem] text-center">
+            {branchInfo.currentBranch}/{branchInfo.totalBranches}
+          </span>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => onBranchNavigate?.('next')}
+            disabled={branchInfo.currentBranch === branchInfo.totalBranches}
+          >
+            <ChevronRightIcon className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
 
       <Button variant="ghost" size="icon" onClick={onRegenerate}>
         <RefreshCcwIcon className="w-4 h-4" />
       </Button>
 
-        <DropdownMenu onOpenChange={setIsDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontalIcon className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
+      <DropdownMenu onOpenChange={setIsDropdownOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MoreHorizontalIcon className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className="w-56">
           <DropdownMenuItem
@@ -124,25 +149,25 @@ export const UserUtilsBar = ({
         <PencilIcon className="w-4 h-4" />
       </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleCopyText}
-          className={copied ? "text-green-500" : ""}
-        >
-          {copied ? (
-            <CheckIcon className="w-4 h-4" />
-          ) : (
-            <CopyIcon className="w-4 h-4" />
-          )}
-        </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleCopyText}
+        className={copied ? "text-green-500" : ""}
+      >
+        {copied ? (
+          <CheckIcon className="w-4 h-4" />
+        ) : (
+          <CopyIcon className="w-4 h-4" />
+        )}
+      </Button>
 
-        <DropdownMenu onOpenChange={setIsDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontalIcon className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
+      <DropdownMenu onOpenChange={setIsDropdownOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <MoreHorizontalIcon className="w-4 h-4" />
+          </Button>
+        </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className="w-56">
           <DropdownMenuItem

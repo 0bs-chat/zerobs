@@ -1,53 +1,59 @@
 import { DocumentList } from "./document-list";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
-import { api } from "../../../../convex/_generated/api";
-import { useParams } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
-import type { Id } from "convex/_generated/dataModel";
-import { useDebouncedCallback } from "use-debounce";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useAtom, useSetAtom } from "jotai";
-import { chatInputTextAtom } from "@/store/chatStore";
+import { useAtom } from "jotai";
+import { newChatAtom } from "@/store/chatStore";
+import { api } from "../../../../convex/_generated/api";
+import { useQuery, useMutation } from "convex/react";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import { useEffect, useRef } from "react";
-import { chatProjectIdAtom } from "@/store/chatStore";
+import { useDebouncedCallback } from "use-debounce";
+import { toast } from "sonner";
 
-export const ChatInput = () => {
-  const params = useParams({ from: "/chat_/$chatId/" });
-  const chatId = params.chatId as Id<"chats"> | "new";
-  const chatInput = useQuery(api.chatInputs.queries.get, { chatId });
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-  const handleSubmit = useHandleSubmit();
-  const [chatInputText, setChatInputText] = useAtom(chatInputTextAtom);
-  const loadedChatId = useRef<string | undefined>(undefined);
-  const setChatProjectId = useSetAtom(chatProjectIdAtom);
+type ChatProps = {
+  chatId?: Id<"chats">;
+};
 
-  const debouncedUpdateChatInput = useDebouncedCallback(
-    (text: string) => {
-      updateChatInputMutation({ chatId, updates: { text } });
-    },
-    300,
-    { leading: false }
-  );
+export const ChatInput = ({ chatId }: ChatProps) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const [newChat, setNewChat] = useAtom(newChatAtom);
 
+  const chat = useQuery(
+    api.chats.queries.get,
+    chatId ? { chatId } : "skip"
+  ) ?? newChat;
+
+  // Load initial text including any saved draft
   useEffect(() => {
-    if (
-      (chatInput && loadedChatId.current !== chatId) ||
-      chatInput?.text === ""
-    ) {
-      setChatInputText(chatInput.text ?? "");
-      loadedChatId.current = chatId;
+    if (textareaRef.current) {
+      textareaRef.current.value = chat.text;
     }
-  }, [chatId, chatInput, setChatInputText]);
+  }, [chatId, chat.text]);
 
-  setChatProjectId(chatInput?.projectId ?? undefined);
+  // Debounced draft saving (separate from UI updates)
+  const debouncedSaveDraft = useDebouncedCallback((text: string) => {
+    if (chatId) {
+      updateChatMutation({
+        chatId,
+        updates: { text },
+      });
+    } else {
+      setNewChat((prev) => ({
+        ...prev,
+        text,
+      }));
+    }
+  }, 300);
+
 
   return (
     <div className="flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">
       {/* Document List */}
       <DocumentList
-        documentIds={chatInput?.documents}
-        model={chatInput?.model ?? ""}
+        documentIds={chat.documents}
+        model={chat.model}
       />
 
       {/* Input */}
@@ -55,22 +61,34 @@ export const ChatInput = () => {
         id="chatInputText"
         maxHeight={192}
         minHeight={56}
-        value={chatInputText}
+        defaultValue={chat.text}
+        ref={textareaRef}
         className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
-        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-          setChatInputText(e.target.value);
-          debouncedUpdateChatInput(e.target.value);
-        }}
-        onKeyDown={async (e) => {
+        onChange={(e) => debouncedSaveDraft(e.target.value)}
+        onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            await handleSubmit();
+    
+            const enteredText = textareaRef.current?.value;
+    
+            if (!enteredText || enteredText.trim() === "") {
+              toast.error("Please enter a message");
+              return;
+            }
+    
+            useHandleSubmit(chatId!);
+    
+            if (textareaRef.current) {
+              textareaRef.current.value = "";
+            }
           }
         }}
         placeholder="Type a message..."
       />
 
-      <ToolBar chatInput={chatInput} />
+      <ToolBar
+        chat={chat}
+      />
     </div>
   );
 };

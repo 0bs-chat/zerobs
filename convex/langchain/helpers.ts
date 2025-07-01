@@ -53,7 +53,7 @@ export async function createAgentWithTools(
   taskDescription?: string,
 ) {
   const chat = config.chat;
-  const tools = await getMCPTools(config.ctx);
+  const tools = await getMCPTools(config.ctx, state);
   const retrievalTools = await getRetrievalTools(state, config, true);
   const allTools = [
     ...(tools.tools.length > 0 ? tools.tools : []),

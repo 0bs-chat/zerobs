@@ -16,19 +16,19 @@ import {
   rightPanelActiveTabAtom,
 } from "@/store/chatStore";
 import { useAtom, useSetAtom } from "jotai";
-import type { Id } from "convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
 
 export const CreateProjectDialog = () => {
   const [projectDialogOpen, setProjectDialogOpen] = useAtom(
-    projectDialogOpenAtom,
+    projectDialogOpenAtom
   );
   const setRightPanelVisible = useSetAtom(rightPanelVisibilityAtom);
   const setRightPanelActiveTab = useSetAtom(rightPanelActiveTabAtom);
   const createProject = useMutation(api.projects.mutations.create);
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
   const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats"> | "new";
+  const chatId = params.chatId as Id<"chats">;
 
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -44,7 +44,7 @@ export const CreateProjectDialog = () => {
     });
 
     setProjectDialogOpen(false);
-    await updateChatInputMutation({
+    await updateChatMutation({
       chatId,
       updates: {
         projectId: project._id,
