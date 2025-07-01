@@ -9,7 +9,8 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
 import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
@@ -46,11 +47,13 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ConvexAuthProvider client={convex}>
-        <ConvexQueryCacheProvider>
-          <RouterProvider router={router} />
-        </ConvexQueryCacheProvider>
-      </ConvexAuthProvider>
+      <ClerkProvider publishableKey={import.meta.env.VITE_PUBLIC_CLERK_PUBLISHABLE_KEY}>
+        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+          <ConvexQueryCacheProvider>
+            <RouterProvider router={router} />
+          </ConvexQueryCacheProvider>
+        </ConvexProviderWithClerk>
+      </ClerkProvider>
     </StrictMode>,
   );
 }

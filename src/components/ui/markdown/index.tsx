@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useCallback } from "react";
+import React, { memo, useMemo, useCallback, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -8,22 +8,13 @@ import "katex/dist/katex.min.css";
 import { MermaidChart } from "./mermaid";
 import { Button } from "../button";
 import { CopyIcon, TextIcon, WrapTextIcon, CheckIcon } from "lucide-react";
-import { PrismAsyncLight as SyntaxHighlighter } from "react-syntax-highlighter";
-
-import {
-  oneDark,
-  oneLight,
-} from "react-syntax-highlighter/dist/esm/styles/prism";
+import { createHighlighter, bundledLanguages, type Highlighter } from "shiki";
 import { useCopy } from "@/hooks/use-copy";
-import { themeAtom, wrapLongLinesAtom } from "@/store/chatStore";
+import { wrapLongLinesAtom } from "@/store/chatStore";
 import { useAtom } from "jotai";
+import { themeAtom } from "@/store/settings";
 
 // Memoized constants to prevent recreation on every render
-const CUSTOM_STYLE = {
-  backgroundColor: "transparent",
-  background: "transparent",
-} as const;
-
 const REMARK_PLUGINS = [remarkMath, remarkGfm, remarkBreaks];
 const REHYPE_PLUGINS = [rehypeKatex];
 
@@ -31,11 +22,24 @@ const PROSE_STYLE = {
   fontFamily: "Rubik, sans-serif",
 } as React.CSSProperties;
 
+// Create a singleton highlighter instance
+let highlighterInstance: Highlighter | null = null;
+const getHighlighterInstance = async (): Promise<Highlighter> => {
+  if (!highlighterInstance) {
+    highlighterInstance = await createHighlighter({
+      themes: ['catppuccin-mocha'],
+      langs: Object.keys(bundledLanguages) // Load all bundled languages
+    });
+  }
+  return highlighterInstance;
+};
+
 export const Markdown = memo(
   ({ content, className }: { content: string; className?: string }) => {
     const mermaidChartId = React.useRef(0);
     const { copy, copied } = useCopy({ duration: 500 });
     const [wrapLongLines, setWrapLongLines] = useAtom(wrapLongLinesAtom);
+    const [theme] = useAtom(themeAtom);
 
     const handleCopy = useCallback(
       (text: string) => {
@@ -96,14 +100,11 @@ export const Markdown = memo(
                 </div>
                 <CodeBlock
                   language={language}
-                  style={atomDark}
-                  lineProps={{
-                    style: { wordBreak: "break-all", whiteSpace: "pre-wrap" },
-                  }}
-                  wrapLines={wrapLongLines}
+                  wrapLongLines={wrapLongLines}
+                  theme={theme}
                 >
-                  {children}
-                </SyntaxHighlighter>
+                  {codeText}
+                </CodeBlock>
               </div>
             ) : (
               <span className="bg-muted p-1 font-mono font-medium rounded-md text-sm">
@@ -115,17 +116,13 @@ export const Markdown = memo(
           );
         },
       }),
-      [copied, wrapLongLines, handleCopy, handleToggleWrap]
+      [copied, wrapLongLines, handleCopy, handleToggleWrap, theme]
     );
 
     return (
       <div
         className={`prose font-normal max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 ${className || ""}`}
-        style={
-          {
-            fontFamily: "Rubik, sans-serif",
-          } as React.CSSProperties
-        }
+        style={PROSE_STYLE}
       >
         <ReactMarkdown
           remarkPlugins={REMARK_PLUGINS}
@@ -146,13 +143,55 @@ const CodeBlock = memo(
     children,
     language,
     wrapLongLines,
+    theme,
   }: {
     children: string;
     language: string;
     wrapLongLines: boolean;
+    theme: string;
   }) => {
-    const [theme] = useAtom(themeAtom);
-    const codeTheme = theme === "dark" ? oneDark : oneLight;
+    const [highlightedCode, setHighlightedCode] = useState<string>("");
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+      const highlightCode = async () => {
+        try {
+          const highlighter = await getHighlighterInstance();
+          const shikiTheme = theme === "dark" ? "github-dark" : "github-light";
+          
+          // Try to use the specified language, fallback to 'text' if not supported
+          let lang = language;
+          const loadedLanguages = highlighter.getLoadedLanguages();
+          if (!loadedLanguages.includes(language as any)) {
+            lang = 'text';
+          }
+          
+          const html = highlighter.codeToHtml(children, {
+            lang: lang as any,
+            theme: shikiTheme,
+            transformers: []
+          });
+          
+          setHighlightedCode(html);
+        } catch (error) {
+          console.error('Error highlighting code:', error);
+          // Fallback to plain text
+          setHighlightedCode(`<pre><code>${children}</code></pre>`);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      highlightCode();
+    }, [children, language, theme]);
+
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center p-4">
+          <div className="text-sm text-muted-foreground">Loading...</div>
+        </div>
+      );
+    }
 
     return (
       <div
@@ -162,20 +201,18 @@ const CodeBlock = memo(
             : "syntax-highlighter-nowrap"
         }`}
       >
-        <SyntaxHighlighter
-          PreTag="div"
-          customStyle={CUSTOM_STYLE}
-          language={language}
-          style={codeTheme}
-          lineProps={{
-            className: "bg-card",
+        <div 
+          className="p-0 m-0 [&>pre]:p-4 [&>pre]:m-0 [&>pre]:bg-transparent [&>pre]:overflow-x-auto"
+          style={{
+            whiteSpace: wrapLongLines ? 'pre-wrap' : 'pre',
+            wordBreak: wrapLongLines ? 'break-word' : 'normal',
+            overflowWrap: wrapLongLines ? 'break-word' : 'normal'
           }}
-          wrapLines={true}
-          wrapLongLines={true}
-        >
-          {children}
-        </SyntaxHighlighter>
+          dangerouslySetInnerHTML={{ __html: highlightedCode }}
+        />
       </div>
     );
   }
 );
+
+CodeBlock.displayName = "CodeBlock";

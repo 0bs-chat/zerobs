@@ -9,16 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LandingIndexRouteImport } from './routes/landing/index'
 import { Route as ChatChatIdIndexRouteImport } from './routes/chat_/$chatId/index'
 
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,47 +31,36 @@ const ChatChatIdIndexRoute = ChatChatIdIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/landing': typeof LandingIndexRoute
   '/chat/$chatId': typeof ChatChatIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/landing': typeof LandingIndexRoute
   '/chat/$chatId': typeof ChatChatIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/landing/': typeof LandingIndexRoute
   '/chat_/$chatId/': typeof ChatChatIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/landing' | '/chat/$chatId'
+  fullPaths: '/' | '/landing' | '/chat/$chatId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/landing' | '/chat/$chatId'
-  id: '__root__' | '/' | '/auth' | '/landing/' | '/chat_/$chatId/'
+  to: '/' | '/landing' | '/chat/$chatId'
+  id: '__root__' | '/' | '/landing/' | '/chat_/$chatId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
   LandingIndexRoute: typeof LandingIndexRoute
   ChatChatIdIndexRoute: typeof ChatChatIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -104,7 +87,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
   LandingIndexRoute: LandingIndexRoute,
   ChatChatIdIndexRoute: ChatChatIdIndexRoute,
 }

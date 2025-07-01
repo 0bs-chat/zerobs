@@ -3,12 +3,11 @@ import { ModeToggle } from "@/components/theme-switcher";
 import {
   rightPanelVisibilityAtom,
   selectedArtifactAtom,
-  selectedArtifactIdAtom,
 } from "@/store/chatStore";
 import { LogOutIcon, PanelRightCloseIcon } from "lucide-react";
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
@@ -16,8 +15,10 @@ export function TopNav() {
   const [rightPanelVisible, setRightPanelVisible] = useAtom(
     rightPanelVisibilityAtom,
   );
-  const { signOut } = useAuthActions();
+  const { signOut } = useAuth();
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
+  const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
+  
   return (
     <div className="fixed right-0 py-2.5 px-4 flex items-center gap-4 w-full bg-transparent justify-between pointer-events-none z-50">
       <div className="flex items-center gap-2 justify-center top-0 left-0 pointer-events-auto">
@@ -44,7 +45,7 @@ export function TopNav() {
           className={`${rightPanelVisible ? "bg-muted-foreground/30 dark:bg-accent" : "bg-background"} ${selectedArtifact ? "hidden" : ""}`}
           onClick={() => {
             setRightPanelVisible(!rightPanelVisible);
-            setSelectedArtifactId(null);
+            setSelectedArtifact(null);
           }}
         >
           {rightPanelVisible ? (

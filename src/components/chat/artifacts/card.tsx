@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCopy } from "@/hooks/use-copy";
 import type { Artifact } from "./utils";
 import { useAtomValue } from "jotai";
-import { selectedArtifactIdAtom } from "@/store/chatStore";
+import { selectedArtifactAtom } from "@/store/chatStore";
 
 // Get appropriate icon for artifact type
 const getArtifactIcon = (type: string, _language?: string) => {
@@ -65,7 +65,7 @@ interface ArtifactCardProps {
 
 export const ArtifactCard = React.memo(
   ({ artifact, onView }: ArtifactCardProps) => {
-    const selectedArtifactId = useAtomValue(selectedArtifactIdAtom);
+    const selectedArtifact = useAtomValue(selectedArtifactAtom);
     const { Icon, className } = getArtifactIcon(
       artifact.type,
       artifact.language,
@@ -83,7 +83,7 @@ export const ArtifactCard = React.memo(
     return (
       <Card
         className={`hover:shadow-md transition-shadow border-3 border-transparent ${
-          selectedArtifactId === artifact.id
+          selectedArtifact?.id === artifact.id
             ? "border-2  border-primary/50 "
             : "border-2 border-transparent"
         }`}

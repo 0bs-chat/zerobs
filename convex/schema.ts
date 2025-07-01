@@ -1,10 +1,9 @@
 import { defineSchema } from "convex/server";
 import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
 import { Table } from "convex-helpers/server";
 
 export const ApiKeys = Table("apiKeys", {
-  userId: v.id("users"),
+  userId: v.string(),
   key: v.string(),
   value: v.string(),
 });
@@ -26,7 +25,7 @@ export const Documents = Table("documents", {
     v.literal("done"),
     v.literal("error"),
   ),
-  userId: v.id("users"),
+  userId: v.string(),
 });
 
 export const DocumentVectors = Table("documentVectors", {
@@ -36,7 +35,7 @@ export const DocumentVectors = Table("documentVectors", {
 });
 
 export const Chats = Table("chats", {
-  userId: v.id("users"),
+  userId: v.string(),
   name: v.string(),
   pinned: v.boolean(),
   documents: v.array(v.id("documents")),
@@ -59,7 +58,7 @@ export const ChatMessages = Table("chatMessages", {
 });
 
 export const Streams = Table("streams", {
-  userId: v.id("users"),
+  userId: v.string(),
   chatId: v.id("chats"),
   status: v.union(
     v.literal("pending"),
@@ -100,7 +99,7 @@ export const Projects = Table("projects", {
   name: v.string(),
   description: v.optional(v.string()),
   systemPrompt: v.string(),
-  userId: v.id("users"),
+  userId: v.string(),
   updatedAt: v.number(),
 });
 
@@ -130,7 +129,7 @@ export const Mcps = Table("mcps", {
     v.literal("error"),
   ),
   restartOnNewChat: v.boolean(),
-  userId: v.optional(v.id("users")),
+  userId: v.optional(v.string()),
   updatedAt: v.number(),
 });
 
@@ -140,7 +139,6 @@ export const StreamChunkRefs = Table("streamChunkRefs", {
 });
 
 export default defineSchema({
-  ...authTables,
   apiKeys: ApiKeys.table
     .index("by_key", ["key"])
     .index("by_user_key", ["userId", "key"])

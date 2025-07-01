@@ -1,5 +1,6 @@
 import { ThemeProvider } from "@/components/theme-provider";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { SignInButton } from "@clerk/clerk-react";
 
 export const Route = createFileRoute("/landing/")({
   component: RouteComponent,
@@ -30,14 +31,13 @@ function RouteComponent() {
               >
                 github
               </a>
-              <Link
-                to="/auth"
-                className="hover:cursor-pointer dark:text-black 
+              <SignInButton mode="modal">
+                <button className="hover:cursor-pointer dark:text-black 
                 text-black hover:text-white dark:bg-white 
-                px-2 transition duration-500 font-medium"
-              >
-                try now
-              </Link>
+                px-2 transition duration-500 font-medium">
+                  try now
+                </button>
+              </SignInButton>
             </div>
           </div>
         </div>

@@ -1,19 +1,18 @@
 import { Navigate, Outlet, createRootRoute } from "@tanstack/react-router";
-// import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { useConvexAuth } from "convex/react";
 import { Loader2 } from "lucide-react";
+import { useAuth, RedirectToSignIn } from "@clerk/clerk-react";
+
 export const Route = createRootRoute({
   component: () => {
-    const { isLoading, isAuthenticated } = useConvexAuth();
     const urlPath = location.pathname;
+    const { isLoaded, isSignedIn } = useAuth();
 
-    const privateRoutes = ["/chat", "/"];
+    const publicRoutes = ["/landing", "/"];
 
-    const publicRoutes = ["/landing", "/auth"];
-
-    if (isLoading && !isAuthenticated) {
+    // Show loading spinner while Clerk is initializing
+    if (!isLoaded) {
       return (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <div className="flex justify-center items-center h-screen font-sans bg-background">
@@ -23,31 +22,31 @@ export const Route = createRootRoute({
       );
     }
 
+    if (urlPath === "/" && !isSignedIn) {
+      return <Navigate to="/landing" />;
+    }
+
+    // Show sign-in page for unauthenticated users on private routes
+    if (!isSignedIn && !publicRoutes.includes(urlPath)) {
+      return (
+        <RedirectToSignIn />
+      );
+    }
+
     return (
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        {/* landing route */}
-        {!isAuthenticated && !publicRoutes.includes(urlPath) && (
-          <Navigate
-            to="/landing"
-            viewTransition={true}
-            reloadDocument={true}
-            replace
-          />
-        )}
-
-        {isAuthenticated && publicRoutes.includes(urlPath) && (
+        {/* Redirect authenticated users away from public routes */}
+        {isSignedIn && publicRoutes.includes(urlPath) && (
           <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
         )}
 
-        {/* auth routes */}
-        {!isAuthenticated && publicRoutes.includes(urlPath) && <Outlet />}
-
-        {isAuthenticated && privateRoutes.includes(urlPath) && (
+        {/* Redirect authenticated users from root to chat */}
+        {isSignedIn && urlPath === "/" && (
           <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
         )}
 
-        {/* authenticated route */}
-        {isAuthenticated && <Outlet />}
+        {/* Render the appropriate outlet */}
+        <Outlet />
         <Toaster />
       </ThemeProvider>
     );

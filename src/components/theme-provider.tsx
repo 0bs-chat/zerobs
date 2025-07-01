@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect } from "react";
 import { useAtom } from "jotai";
-import { themeAtom } from "@/store/chatStore";
+import { themeAtom } from "@/store/settings";
 
 type Theme = "dark" | "light" | "system";
 

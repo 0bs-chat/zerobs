@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-// import { Separator } from "@/components/ui/separator";
+import { Separator } from "@/components/ui/separator";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -226,61 +226,26 @@ const renderArtifactContent = (artifact: Artifact) => {
     case "application/vnd.ant.react":
       return <ReactComponentRenderer content={artifact.content} />;
     case "text/html":
-      return {
-        language: "html",
-        preview: (
-          <iframe
-            srcDoc={artifact.content}
-            className="w-full h-full border-0 flex-1"
-            sandbox="allow-scripts allow-same-origin"
-          />
-        ),
-        source: codeBlock("html"),
-      };
+      return <HTMLRenderer content={artifact.content} />;
     case "application/vnd.ant.code":
       return (
         <CodeRenderer content={artifact.content} language={artifact.language} />
       );
     case "text/markdown":
-      return {
-        language: "markdown",
-        preview: <Markdown content={artifact.content} />,
-        source: codeBlock("markdown"),
-      };
+      return <MarkdownRenderer content={artifact.content} />;
     case "image/svg+xml":
-      return {
-        language: "xml",
-        preview: (
-          <div
-            className="w-full h-full"
-            dangerouslySetInnerHTML={{ __html: artifact.content }}
-          />
-        ),
-        source: codeBlock("xml"),
-      };
+      return <SVGRenderer content={artifact.content} />;
     case "application/vnd.ant.mermaid":
-      return {
-        language: "mermaid",
-        preview: (
-          <MermaidChart
-            chart={artifact.content}
-            id={`artifact-${Date.now()}`}
-          />
-        ),
-        source: codeBlock("mermaid"),
-      };
+      return <MermaidRenderer content={artifact.content} />;
     default:
-      return {
-        language: "text",
-        preview: codeBlock("text"),
-        source: codeBlock("text"),
-      };
+      return (
+        <CodeRenderer content={artifact.content} language="text" />
+      );
   }
 };
 
 export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
   const { copy, copied } = useCopy({ duration: 500 });
-  const { preview, source } = buildContent(artifact);
 
   const handleCopy = () => {
     copy(artifact.content);
@@ -297,9 +262,9 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
   };
 
   return (
-    <Tabs defaultValue="preview" className="w-full h-full flex">
+    <div className="w-full h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between p-4">
         <h2 className="text-lg font-semibold">{artifact.title}</h2>
 
         <div className="flex items-center gap-2">
@@ -324,7 +289,7 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
       <Separator />
 
       {/* Content */}
-      <ScrollArea className="h-[calc(100vh-7.5rem)] pr-3">
+      <ScrollArea className="flex-1 p-4">
         {renderArtifactContent(artifact)}
       </ScrollArea>
     </div>

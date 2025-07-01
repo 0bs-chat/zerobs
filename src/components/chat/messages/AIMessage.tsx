@@ -14,7 +14,6 @@ import {
   rightPanelActiveTabAtom,
   rightPanelVisibilityAtom,
   selectedArtifactAtom,
-  selectedArtifactIdAtom,
 } from "@/store/chatStore";
 import { PlanningSteps } from "./PlanningSteps";
 import type { Artifact } from "@/components/chat/artifacts/utils";
@@ -31,11 +30,9 @@ export const AIMessageComponent = memo(
     const setRightPanelVisible = useSetAtom(rightPanelVisibilityAtom);
     const setActiveTab = useSetAtom(rightPanelActiveTabAtom);
     const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
-    const setSelectedArtifactId = useSetAtom(selectedArtifactIdAtom);
 
     const handleViewArtifact = (artifact: Artifact) => {
       setSelectedArtifact(artifact);
-      setSelectedArtifactId(artifact.id);
       setActiveTab("artifacts");
       setRightPanelVisible(true);
     };
@@ -50,7 +47,7 @@ export const AIMessageComponent = memo(
           : String(message.content);
     }, [message.content]);
 
-    const contentParts = React.useMemo(
+    const contentParts = useMemo(
       () => parseContent(rawContent, messageIndex),
       [rawContent, messageIndex],
     );
