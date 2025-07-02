@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useState, useRef } from "react";
-import { ConvexReactClient } from "convex/react";
+import { useMemo, useEffect, useRef, useState } from "react";
+import { useQuery, useConvex } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import type { Id } from "../../../convex/_generated/dataModel";
 import type { StreamEvent } from "@langchain/core/tracers/log_stream";
-import type { PaginationResult } from "convex/server";
-import { useQuery } from "convex/react";
 
 // Define proper types based on LangChain StreamEvent structure
 interface AIChunkGroup {
@@ -16,74 +14,52 @@ interface AIChunkGroup {
 interface ToolChunkGroup {
   type: "tool";
   toolName: string;
-  input?: any;
-  output?: any;
+  input?: unknown;
+  output?: unknown;
   isComplete: boolean;
 }
 
-export function useStream(chatId: Id<"chats">) {
-  const lastTimeRef = useRef<number | undefined>(undefined);
-  const [chunks, setChunks] = useState<StreamEvent[]>([]);
-
-  const convex = new ConvexReactClient(
-    import.meta.env.VITE_CONVEX_URL
-  );
-  
-  // Get stream metadata reactively using Convex useQuery hook
+export function useStream(chatId: Id<"chats"> | "new") {
+  // Get reactive data – Convex will push updates automatically
   const stream = useQuery(
     api.streams.queries.get,
-    chatId !== "new" ? { chatId } : "skip"
+    chatId !== "new" ? { chatId } : "skip",
   );
+
   const streamState = useQuery(
     api.streams.queries.getState,
-    chatId !== "new" ? { chatId } : "skip"
+    chatId !== "new" ? { chatId } : "skip",
   );
 
-  // Reset chunks when chatId changes
+  const convex = useConvex();
+
+  const [chunks, setChunks] = useState<StreamEvent[]>([]);
+  const lastTimeRef = useRef<number | undefined>(undefined);
+
   useEffect(() => {
     lastTimeRef.current = undefined;
     setChunks([]);
-  }, [chatId]);
+  }, [chatId, stream?._id]);
 
-  // polling for new chunks
   useEffect(() => {
-    if (!stream) return;
-    
-    const streamId = stream._id;
-    const streamStatus = stream.status;
-    
-    // Reset state when stream changes
-    lastTimeRef.current = undefined;
-    setChunks([]);
+    if (!stream || stream.status !== "streaming") return;
 
-    async function pollChunks() {
-      if (streamStatus !== "streaming") return;
+    let cancelled = false;
 
-      let cursor: string | null = null;
-      let hasMore = true;
-
-      while (hasMore) {
+    async function poll() {
+      while (!cancelled && stream?.status === "streaming") {
         try {
-          const result: {
-            stream: Doc<"streams">;
-            chunks: PaginationResult<Doc<"streamChunks">>;
-          } = await convex.query(api.streams.queries.getChunks, {
+          const result = await convex.query(api.streams.queries.getChunks, {
             chatId: stream.chatId,
             lastChunkTime: lastTimeRef.current,
-            paginationOpts: { numItems: 50, cursor },
+            paginationOpts: { numItems: 50, cursor: null },
           });
 
           if (result.chunks.page.length > 0) {
-            // Parse the chunks from strings to StreamEvent objects
             const newEvents: StreamEvent[] = [];
             result.chunks.page.forEach((chunkDoc) => {
               chunkDoc.chunks.forEach((chunkStr) => {
-                try {
-                  const event = JSON.parse(chunkStr) as StreamEvent;
-                  newEvents.push(event);
-                } catch (error) {
-                  console.error("Failed to parse chunk:", chunkStr, error);
-                }
+                newEvents.push(JSON.parse(chunkStr) as StreamEvent);
               });
             });
 
@@ -91,20 +67,24 @@ export function useStream(chatId: Id<"chats">) {
             lastTimeRef.current =
               result.chunks.page[result.chunks.page.length - 1]._creationTime;
           }
-
-          hasMore = !result.chunks.isDone;
-          cursor = result.chunks.continueCursor;
-        } catch (error) {
-          console.error("Error polling chunks:", error);
+        } catch (err) {
+          console.error("Polling error", err);
           break;
         }
+
+        // Wait 300ms before next poll
+        await new Promise((res) => setTimeout(res, 300));
       }
     }
 
-    pollChunks();
-  }, [convex, stream?._id, stream?.status]);
+    poll();
 
-  // Process chunks into grouped AI/tool events
+    return () => {
+      cancelled = true;
+    };
+  }, [convex, stream?.status, stream?._id]);
+
+  // Group consecutive chunks into AI / Tool blocks
   const chunkGroups = useMemo(() => {
     const groups: (AIChunkGroup | ToolChunkGroup)[] = [];
     let aiBuffer: AIChunkGroup | null = null;
@@ -118,23 +98,21 @@ export function useStream(chatId: Id<"chats">) {
     };
 
     for (const chunk of chunks) {
-      const id = chunk.run_id ?? String(chunk.name);
+      const id = chunk.run_id;
       switch (chunk.event) {
         case "on_chat_model_stream": {
-          // Handle chat model streaming events
-          const content = chunk.data?.chunk?.content || "";
-          const reasoningPart = chunk.data?.chunk?.additional_kwargs?.reasoning_content;
-            
+          const content = chunk.data?.chunk?.content ?? "";
+          const reasoning =
+            chunk.data?.chunk?.additional_kwargs?.reasoning_content ?? "";
           if (!aiBuffer) aiBuffer = { type: "ai", content: "" };
           aiBuffer.content += content;
-          if (reasoningPart) {
-            aiBuffer.reasoning = (aiBuffer.reasoning ?? "") + reasoningPart;
+          if (reasoning) {
+            aiBuffer.reasoning = (aiBuffer.reasoning ?? "") + reasoning;
           }
           break;
         }
         case "on_llm_stream": {
-          // Handle LLM streaming events (for compatibility)
-          const content = chunk.data?.chunk || "";
+          const content = chunk.data?.chunk ?? "";
           if (!aiBuffer) aiBuffer = { type: "ai", content: "" };
           aiBuffer.content += content;
           break;
@@ -143,7 +121,7 @@ export function useStream(chatId: Id<"chats">) {
           flushAI();
           const tool: ToolChunkGroup = {
             type: "tool",
-            toolName: chunk.name || "Tool",
+            toolName: chunk.name ?? "Tool",
             input: chunk.data?.input,
             isComplete: false,
           };
@@ -161,16 +139,14 @@ export function useStream(chatId: Id<"chats">) {
           } else {
             groups.push({
               type: "tool",
-              toolName: chunk.name || "Tool",
+              toolName: chunk.name ?? "Tool",
               output: chunk.data?.output,
               isComplete: true,
             });
           }
           break;
         }
-        // Handle other event types as needed
         default:
-          // You can add more event types here as needed
           break;
       }
     }

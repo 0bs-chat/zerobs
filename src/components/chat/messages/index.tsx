@@ -1,128 +1,131 @@
-import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { useQuery } from "convex/react";
 import { useParams } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
-import type { ParsedMessageNode } from "../../../../convex/chatMessages/helpers";
-
-interface MessageWithBranchInfo {
-  message: ParsedMessageNode;
-  branchIndex: number;
-  totalBranches: number;
-}
+import { useMessages } from "../../../hooks/chats/use-messages";
+import { useStream } from "../../../hooks/chats/use-stream";
+import { useStreamAtom } from "@/store/chatStore";
+import { useSetAtom } from "jotai";
+import { useEffect, useRef } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const ChatMessages = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const chatId = params.chatId as Id<"chats">;
-  const messageTree = useQuery(
-    api.chatMessages.queries.get,
-    chatId !== "new" ? { chatId, getCurrentThread: false } : "skip"
-  );
+  const setStreamAtom = useSetAtom(useStreamAtom);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const {
+    currentThread,
+    navigateBranch,
+    isLoading,
+    isEmpty
+  } = useMessages({ chatId });
 
-  // State to track selected branch at each depth level
-  const [selectedBranches, setSelectedBranches] = useState<Map<number, number>>(new Map());
+  const stream = useStream(chatId);
 
-  // Calculate the current thread with branch information
-  const currentThread = useMemo((): MessageWithBranchInfo[] => {
-    if (!messageTree || messageTree.length === 0) {
-      return [];
+  useEffect(() => {
+    setStreamAtom(stream);
+  }, [stream]);
+
+  // Auto-scroll to bottom when new messages arrive or when streaming
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
+  }, [currentThread.length, stream?.status]);
 
-    const thread: MessageWithBranchInfo[] = [];
-    let currentNodes: ParsedMessageNode[] = messageTree;
-    let depth = 0;
-
-    while (currentNodes.length > 0) {
-      // Determine which branch to follow at this depth
-      const selectedBranchIndex = selectedBranches.get(depth) ?? (currentNodes.length - 1); // Default to most recent (last)
-      const actualIndex = Math.min(selectedBranchIndex, currentNodes.length - 1);
-      
-      const selectedNode = currentNodes[actualIndex];
-      
-      thread.push({
-        message: selectedNode,
-        branchIndex: actualIndex + 1, // 1-indexed for display
-        totalBranches: currentNodes.length
-      });
-
-      // Move to children for next iteration
-      currentNodes = selectedNode.children || [];
-      depth++;
+  // Auto-scroll to bottom when component first loads with messages
+  useEffect(() => {
+    if (!isEmpty && !isLoading && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
     }
+  }, [isEmpty, isLoading]);
 
-    return thread;
-  }, [messageTree, selectedBranches]);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-muted-foreground">Loading messages...</div>
+      </div>
+    );
+  }
 
-  // Function to change branch at a specific depth
-  const changeBranch = (depth: number, newBranchIndex: number) => {
-    const newSelectedBranches = new Map(selectedBranches);
-    newSelectedBranches.set(depth, newBranchIndex);
-    
-    // Clear any deeper selections since changing a branch invalidates deeper choices
-    for (let i = depth + 1; i < currentThread.length; i++) {
-      newSelectedBranches.delete(i);
-    }
-    
-    setSelectedBranches(newSelectedBranches);
-  };
-
-  // Function to navigate branches (prev/next)
-  const navigateBranch = (depth: number, direction: 'prev' | 'next') => {
-    const currentBranchIndex = selectedBranches.get(depth) ?? (currentThread[depth]?.totalBranches - 1) ?? 0;
-    let newIndex;
-    
-    if (direction === 'prev') {
-      newIndex = currentBranchIndex > 0 ? currentBranchIndex - 1 : currentThread[depth]?.totalBranches - 1;
-    } else {
-      newIndex = currentBranchIndex < (currentThread[depth]?.totalBranches - 1) ? currentBranchIndex + 1 : 0;
-    }
-    
-    changeBranch(depth, newIndex);
-  };
+  if (isEmpty) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-muted-foreground">No messages</div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      {currentThread.length > 0 ? (
-        <div>
-          {currentThread.map((item, depth) => (
-            <div key={item.message._id} style={{ marginBottom: '20px', border: '1px solid #ccc', padding: '10px' }}>
-              {/* Branch navigation info */}
-              {item.totalBranches > 1 && (
-                <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
-                  Branch: {item.branchIndex}/{item.totalBranches}
-                  <button 
-                    onClick={() => navigateBranch(depth, 'prev')}
-                    style={{ marginLeft: '10px', fontSize: '12px' }}
-                  >
-                    ←
-                  </button>
-                  <button 
-                    onClick={() => navigateBranch(depth, 'next')}
-                    style={{ marginLeft: '5px', fontSize: '12px' }}
-                  >
-                    →
-                  </button>
+    <ScrollArea 
+        ref={scrollAreaRef}
+        className="overflow-hidden h-full w-full"
+      >
+        <div className="flex flex-col gap-1 p-1 max-w-4xl mx-auto">
+          {currentThread.length > 0 ? (
+            <>
+              {currentThread.map((item) => (
+                <div 
+                  key={item.message._id}
+                >
+                  {/* Branch navigation info */}
+                  {item.totalBranches > 1 && (
+                    <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+                      <span>Branch: {item.branchIndex}/{item.totalBranches}</span>
+                      <button 
+                        onClick={() => navigateBranch(item.depth, 'prev')}
+                        className="px-2 py-1 rounded border hover:bg-accent transition-colors"
+                        aria-label="Previous branch"
+                      >
+                        ←
+                      </button>
+                      <button 
+                        onClick={() => navigateBranch(item.depth, 'next')}
+                        className="px-2 py-1 rounded border hover:bg-accent transition-colors"
+                        aria-label="Next branch"
+                      >
+                        →
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Message content */}
+                  <div className="bg-red-500">
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(item.message._creationTime).toLocaleString()}
+                    </div>
+                    <pre className="text-sm whitespace-pre-wrap font-mono bg-muted p-3 rounded">
+                      {JSON.stringify({
+                        id: item.message._id,
+                        hasChildren: (item.message.children?.length || 0) > 0,
+                        childrenCount: item.message.children?.length || 0,
+                        parentId: item.message.parentId,
+                        branchInfo: `${item.branchIndex}/${item.totalBranches}`,
+                        depth: item.depth,
+                        message: item.message.message
+                      }, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              ))}
+              {/* Stream status display */}
+              {stream && (
+                <div className="rounded-lg border bg-muted/50 p-3">
+                  <div className="text-xs text-muted-foreground">
+                    Stream Status: {stream.status}
+                  </div>
+                  <pre className="text-xs mt-2 whitespace-pre-wrap">
+                    {JSON.stringify(stream, null, 2)}
+                  </pre>
                 </div>
               )}
-              
-              {/* Message content (stringified for now) */}
-              <pre style={{ fontSize: '12px', whiteSpace: 'pre-wrap' }}>
-                {JSON.stringify({
-                  id: item.message._id,
-                  creationTime: new Date(item.message._creationTime).toLocaleString(),
-                  hasChildren: (item.message.children?.length || 0) > 0,
-                  childrenCount: item.message.children?.length || 0,
-                  parentId: item.message.parentId,
-                  branchInfo: `${item.branchIndex}/${item.totalBranches}`,
-                  message: item.message.message
-                }, null, 2)}
-              </pre>
-            </div>
-          ))}
+            </>
+          ) : (
+            <div className="text-center text-muted-foreground">No messages</div>
+          )}
+          {/* Invisible element to scroll to */}
+          <div ref={messagesEndRef} />
         </div>
-      ) : (
-        <div>No messages</div>
-      )}
-    </div>
-  )
-}
+      </ScrollArea>
+  );
+};

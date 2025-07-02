@@ -2,12 +2,10 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api } from "../_generated/api";
-import { buildMessageTree, getCurrentThread } from "./helpers";
 
 export const get = query({
   args: {
     chatId: v.id("chats"),
-    getCurrentThread: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
@@ -22,6 +20,7 @@ export const get = query({
       .order("asc")
       .collect();
 
-    return args.getCurrentThread ? getCurrentThread(messages) : buildMessageTree(messages)
+    // return args.getCurrentThread ? getCurrentThread(messages) : buildMessageTree(messages)
+    return messages
   },
 });

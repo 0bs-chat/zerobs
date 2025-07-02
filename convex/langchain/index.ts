@@ -31,12 +31,12 @@ export const chat = action({
     
     const messages = await ctx.runQuery(api.chatMessages.queries.get, {
       chatId: args.chatId,
-      getCurrentThread: true,
     })
+    const currentThread = getCurrentThread(messages);
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
     const stream = agent.streamEvents(
-      { messages: messages.map((message) => message.message) },
+      { messages: currentThread.map((message) => message.message) },
       { 
         version: "v2",
         configurable: { 
@@ -151,7 +151,7 @@ export const chat = action({
     await ctx.runMutation(internal.streams.mutations.update, {
       chatId: args.chatId,
       updates: {
-        status: "done",
+        status: wasCancelled ? "cancelled" : "done",
       },
     });
   }

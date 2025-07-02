@@ -113,38 +113,38 @@ export const remove = mutation({
   },
 });
 
-export const regenerate = action({
-  args: {
-    chatId: v.id("chats"),
-    id: v.id("chatMessages"),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
+// export const regenerate = action({
+//   args: {
+//     chatId: v.id("chats"),
+//     id: v.id("chatMessages"),
+//   },
+//   handler: async (ctx, args) => {
+//     await requireAuth(ctx);
 
-    const messages = await ctx.runQuery(api.chatMessages.queries.get, {
-      chatId: args.chatId,
-      getCurrentThread: true,
-    });
+//     const messages = await ctx.runQuery(api.chatMessages.queries.get, {
+//       chatId: args.chatId,
+//       getCurrentThread: true,
+//     });
 
-    if (!messages.length) {
-      return;
-    }
+//     if (!messages.length) {
+//       return;
+//     }
 
-    const messageMap = new Map<Id<"chatMessages">, Doc<"chatMessages">>();
-    for (const message of messages) {
-      messageMap.set(message._id, message);
-    }
+//     const messageMap = new Map<Id<"chatMessages">, Doc<"chatMessages">>();
+//     for (const message of messages) {
+//       messageMap.set(message._id, message);
+//     }
 
-    const messageIndex = messages.findIndex((message) => message._id === args.id);
-    const messagesToDelete = messages.slice(-(messageIndex-1));
-    const prevFirstMessage = messages[0];
-    await Promise.all(messagesToDelete.map((message) => ctx.runMutation(internal.chatMessages.crud.destroy, {
-      id: message._id,
-    })));
-    await ctx.runMutation(internal.chatMessages.crud.create, { ...prevFirstMessage });
+//     const messageIndex = messages.findIndex((message) => message._id === args.id);
+//     const messagesToDelete = messages.slice(-(messageIndex-1));
+//     const prevFirstMessage = messages[0];
+//     await Promise.all(messagesToDelete.map((message) => ctx.runMutation(internal.chatMessages.crud.destroy, {
+//       id: message._id,
+//     })));
+//     await ctx.runMutation(internal.chatMessages.crud.create, { ...prevFirstMessage });
 
-    await ctx.runAction(api.langchain.index.chat, {
-      chatId: args.chatId,
-    });
-  },
-});
+//     await ctx.runAction(api.langchain.index.chat, {
+//       chatId: args.chatId,
+//     });
+//   },
+// });
