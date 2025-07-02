@@ -1,8 +1,6 @@
 import { useAtom, useSetAtom } from "jotai";
-import { useCallback } from "react";
-import git from "isomorphic-git";
-import http from "isomorphic-git/http/web";
-import FS from "@isomorphic-git/lightning-fs";
+import { useCallback, useRef } from "react";
+
 import type {
   RepoItem,
   ParsedRepoUrl,
@@ -19,11 +17,38 @@ import {
   githubAvailableBranchesAtom,
   clearAllSelectionsAtom,
 } from "@/store/github";
+import { createGitService } from "./git-service";
 
-// Initialize the file system
-const fs = new FS("github-repos");
+// ---------------------------------------------------------------------------
+//  Runtime helpers
+// ---------------------------------------------------------------------------
+const isClient = typeof window !== "undefined";
 
+type GitService = Awaited<ReturnType<typeof createGitService>>;
+
+async function getFs() {
+  if (!isClient) throw new Error("Filesystem unavailable on the server");
+  // Memoise the Lightning-FS instance
+  const globalAny = globalThis as any;
+  if (!globalAny.__githubFs) {
+    const { default: LightningFS } = await import(
+      /* webpackChunkName: "lightning-fs" */ "@isomorphic-git/lightning-fs"
+    );
+    globalAny.__githubFs = new LightningFS("github-repos");
+  }
+  return globalAny.__githubFs as any;
+}
+
+async function getGitService(ref: React.MutableRefObject<GitService | null>) {
+  if (!ref.current) ref.current = await createGitService();
+  return ref.current!;
+}
+
+// ---------------------------------------------------------------------------
+//  Main hook
+// ---------------------------------------------------------------------------
 const useGithub = () => {
+  // --------------------- Jotai state --------------------------------------
   const [combinedItems, setCombinedItems] = useAtom(githubCombinedItemsAtom);
   const [isLoading, setIsLoading] = useAtom(githubIsLoadingAtom);
   const [hasError, setHasError] = useAtom(githubHasErrorAtom);
@@ -35,49 +60,50 @@ const useGithub = () => {
   const setErrorMessage = useSetAtom(githubErrorMessageAtom);
   const clearSelections = useSetAtom(clearAllSelectionsAtom);
 
-  // Parse GitHub URL to extract owner, repo, and branch
+  // --------------------- Git / FS refs ------------------------------------
+  const gitServiceRef = useRef<GitService | null>(null);
+
+  // ------------------------------------------------------------------------
+  //  Helpers – signatures are unchanged from the original file
+  // ------------------------------------------------------------------------
+
+  /** Parse GitHub URL to extract owner, repo and branch. */
   const parseGitHubUrl = useCallback((url: string): ParsedRepoUrl | null => {
     try {
       const patterns = [
-        // Full GitHub URLs with optional branch
         /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+?)(?:\.git)?(?:\/tree\/([^\/]+))?(?:\/.*)?$/,
-        // Simple GitHub URLs
         /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)$/,
-        // SSH format
         /^git@github\.com:([^\/]+)\/([^\/]+?)(?:\.git)?$/,
-        // Shorthand format: owner/repo
-        /^([^\/\s]+)\/([^\/\s]+)$/,
+        /^([^\/\s]+)\/([^\/\s]+)$/, // owner/repo
       ];
-
-      for (const pattern of patterns) {
-        const match = url.trim().match(pattern);
+      for (const p of patterns) {
+        const match = url.trim().match(p);
         if (match) {
           const [, owner, repo, branch] = match;
-          return {
-            owner: owner.trim(),
-            repo: repo.trim(),
-            branch: branch?.trim(),
-          };
+          return { owner: owner.trim(), repo: repo.trim(), branch };
         }
       }
       return null;
-    } catch (error) {
-      console.error("Error parsing GitHub URL:", error);
+    } catch (err) {
+      console.error("Error parsing GitHub URL:", err);
       return null;
     }
   }, []);
 
-  // Get repository directory path
-  const getRepoPath = useCallback((owner: string, repo: string) => {
-    return `/${owner}/${repo}`;
-  }, []);
+  /** Convert `<owner>/<repo>` to a local FS directory. */
+  const getRepoPath = useCallback(
+    (owner: string, repo: string) => `/${owner}/${repo}`,
+    []
+  );
 
-  // Check if repository is already cloned
+  /** Check whether the repo has already been cloned locally. */
   const isRepoCloned = useCallback(
     async (owner: string, repo: string): Promise<boolean> => {
       try {
-        const repoPath = getRepoPath(owner, repo);
-        const stats = await fs.promises.stat(repoPath + "/.git");
+        const fs = await getFs();
+        const stats = await fs.promises.stat(
+          `${getRepoPath(owner, repo)}/.git`
+        );
         return stats.isDirectory();
       } catch {
         return false;
@@ -86,30 +112,27 @@ const useGithub = () => {
     [getRepoPath]
   );
 
-  // Helper to recursively delete a directory and its contents
+  /** Recursively delete a directory tree (used when switching repos). */
   const deleteDirectoryRecursive = async (dirPath: string) => {
     try {
+      const fs = await getFs();
       const entries = await fs.promises.readdir(dirPath);
       for (const entry of entries) {
-        const fullPath = `${dirPath}/${entry}`;
-        try {
-          const stat = await fs.promises.stat(fullPath);
-          if (stat.isDirectory()) {
-            await deleteDirectoryRecursive(fullPath);
-          } else {
-            await fs.promises.unlink(fullPath);
-          }
-        } catch (err) {
-          // Ignore errors for missing files
+        const full = `${dirPath}/${entry}`;
+        const stat = await fs.promises.stat(full).catch(() => null);
+        if (stat?.isDirectory()) {
+          await deleteDirectoryRecursive(full);
+        } else {
+          await fs.promises.unlink(full).catch(() => void 0);
         }
       }
-      await fs.promises.rmdir(dirPath);
-    } catch (err) {
-      // Ignore errors for missing directories
+      await fs.promises.rmdir(dirPath).catch(() => void 0);
+    } catch {
+      /* ignore */
     }
   };
 
-  // Clone repository
+  /** Clone a repo (depth-1, single branch) via the GitService wrapper. */
   const cloneRepository = useCallback(
     async (
       _url: string,
@@ -118,70 +141,47 @@ const useGithub = () => {
       branch: string = currentBranch
     ): Promise<void> => {
       const repoPath = getRepoPath(owner, repo);
-
       try {
-        // Check if Buffer is available
-        if (typeof globalThis.Buffer === "undefined") {
-          throw new Error(
-            "Buffer is not available. Please ensure the Buffer polyfill is loaded."
-          );
+        if (!isClient) {
+          throw new Error("cloneRepository can only run in the browser");
         }
 
-        // Ensure parent directory exists
-        try {
-          await fs.promises.mkdir(`/${owner}`);
-        } catch {
-          // Directory might already exist, ignore
-        }
+        // Ensure parent dir exists
+        const fs = await getFs();
+        await fs.promises.mkdir(`/${owner}`).catch(() => void 0);
 
-        await git.clone({
-          fs,
-          http,
+        // Use the abstraction so we stay server-safe.
+        const gitService = await getGitService(gitServiceRef);
+        await gitService.clone({
           dir: repoPath,
-          corsProxy: "https://cors.isomorphic-git.org",
           url: `https://github.com/${owner}/${repo}.git`,
-          ref: branch,
-          singleBranch: true,
-          depth: 1,
         });
-      } catch (error) {
-        console.error(`Error cloning repository ${owner}/${repo}:`, error);
 
-        // Provide more specific error messages
-        if (error instanceof Error) {
-          if (error.message.includes("Buffer")) {
-            throw new Error(
-              "Missing Buffer dependency. Please ensure the application is properly configured with Buffer polyfill."
-            );
-          } else if (error.message.includes("CORS")) {
-            throw new Error(
-              "CORS error when cloning repository. Please check the repository URL and your internet connection."
-            );
-          } else if (error.message.includes("404")) {
-            throw new Error(
-              "Repository not found. Please check if the repository exists and is public."
-            );
-          }
+        // Checkout the desired branch (if not main)
+        if (branch && branch !== "main") {
+          const git = await import("isomorphic-git");
+          await git.checkout({ fs, dir: repoPath, ref: branch });
         }
-
-        throw error;
+      } catch (error) {
+        console.error(`Error cloning ${owner}/${repo}:`, error);
+        throw error instanceof Error ? error : new Error(String(error));
       }
     },
-    [getRepoPath]
+    [currentBranch, getRepoPath]
   );
 
-  // Get file/directory stats
+  /** Return basic stats for a file / dir. */
   const getFileStats = useCallback(
     async (
       repoPath: string,
       filePath: string
     ): Promise<{ isFile: boolean; size?: number }> => {
       try {
-        const fullPath = `${repoPath}/${filePath}`;
-        const stats = await fs.promises.stat(fullPath);
+        const fs = await getFs();
+        const stats = await fs.promises.stat(`${repoPath}/${filePath}`);
         return {
           isFile: stats.isFile(),
-          size: stats.isFile() ? stats.size : undefined,
+          size: stats.isFile() ? stats.size : 0,
         };
       } catch {
         return { isFile: false };
@@ -190,131 +190,102 @@ const useGithub = () => {
     []
   );
 
-  // Calculate token count for a file
+  /** Estimate token count (4 chars ≈ 1 token). */
   const calculateTokenCount = useCallback(
-    async (repoPath: string, filePath: string): Promise<number> => {
+    async (repoPath: string, filePath: string) => {
       try {
-        const fullPath = `${repoPath}/${filePath}`;
-        const content = await fs.promises.readFile(fullPath, "utf8");
-        // Rough estimate: 4 characters per token
+        const fs = await getFs();
+        const content = await fs.promises.readFile(
+          `${repoPath}/${filePath}`,
+          "utf8"
+        );
         return Math.ceil(content.length / 4);
-      } catch (error) {
-        console.error(`Error calculating tokens for ${filePath}:`, error);
+      } catch {
         return 0;
       }
     },
     []
   );
 
-  // Walk directory tree and build file list
+  /** Walk the repo tree (skips .git, node_modules, dot-files). */
   const walkDirectory = useCallback(
-    async (
-      repoPath: string,
-      dirPath: string = "",
-      depth: number = 0
-    ): Promise<RepoItem[]> => {
+    async (repoPath: string, dirPath = "", depth = 0): Promise<RepoItem[]> => {
+      const fs = await getFs();
       const items: RepoItem[] = [];
-      const fullDirPath = dirPath ? `${repoPath}/${dirPath}` : repoPath;
+      const full = dirPath ? `${repoPath}/${dirPath}` : repoPath;
 
-      try {
-        const entries = await fs.promises.readdir(fullDirPath);
-        for (const entry of entries) {
-          // Skip .git directory and other common ignore patterns
-          if (
-            entry === ".git" ||
-            entry === "node_modules" ||
-            entry.startsWith(".")
-          ) {
-            continue;
-          }
+      const entries = await fs.promises.readdir(full).catch(() => []);
+      for (const entry of entries) {
+        if (
+          entry === ".git" ||
+          entry === "node_modules" ||
+          entry.startsWith(".")
+        )
+          continue;
 
-          const entryPath = dirPath ? `${dirPath}/${entry}` : entry;
-          const { isFile, size } = await getFileStats(repoPath, entryPath);
+        const entryPath = dirPath ? `${dirPath}/${entry}` : entry;
+        const { isFile, size } = await getFileStats(repoPath, entryPath);
 
-          const item: RepoItem = {
-            name: entry,
-            path: entryPath,
-            type: isFile ? "file" : "dir",
-            size,
-          };
+        const item: RepoItem = {
+          name: entry,
+          path: entryPath,
+          type: isFile ? "file" : "dir",
+          size,
+        };
 
-          // Calculate token count for files
-          if (isFile) {
-            item.tokenCount = await calculateTokenCount(repoPath, entryPath);
-          }
-
-          items.push(item);
-
-          // Recursively walk subdirectories
-          if (!isFile) {
-            const subItems = await walkDirectory(
-              repoPath,
-              entryPath,
-              depth + 1
-            );
-            items.push(...subItems);
-          }
+        if (isFile) {
+          item.tokenCount = await calculateTokenCount(repoPath, entryPath);
         }
-      } catch (error) {
-        console.error(`Error walking directory ${fullDirPath}:`, error);
-      }
+        items.push(item);
 
+        if (!isFile) {
+          items.push(...(await walkDirectory(repoPath, entryPath, depth + 1)));
+        }
+      }
       return items;
     },
     [getFileStats, calculateTokenCount]
   );
 
-  // Enhance items with depth information
-  const enhanceItemsWithDepth = useCallback((items: RepoItem[]): RepoItem[] => {
-    return items.map((item) => ({
-      ...item,
-      depth: item.path.split("/").length - 1,
-    }));
-  }, []);
+  const enhanceItemsWithDepth = useCallback(
+    (items: RepoItem[]) =>
+      items.map((i) => ({ ...i, depth: i.path.split("/").length - 1 })),
+    []
+  );
 
-  // Calculate repository statistics
   const calculateStats = useCallback((items: RepoItem[]): RepoStats => {
-    let totalFiles = 0;
-    let totalDirectories = 0;
-    let maxDepth = 0;
-
-    for (const item of items) {
-      if (item.type === "file") {
-        totalFiles++;
-      } else {
-        totalDirectories++;
-      }
-
-      const depth = item.path.split("/").length - 1;
-      maxDepth = Math.max(maxDepth, depth);
+    let files = 0,
+      dirs = 0,
+      maxDepth = 0;
+    for (const i of items) {
+      i.type === "file" ? files++ : dirs++;
+      maxDepth = Math.max(maxDepth, i.path.split("/").length - 1);
     }
-
     return {
-      totalFiles,
-      totalDirectories,
+      totalFiles: files,
+      totalDirectories: dirs,
       maxDepth,
-      truncated: false, // We're not implementing truncation for now
+      truncated: false,
     };
   }, []);
 
   const getFileContent = useCallback(
-    async (owner: string, repo: string, filePath: string): Promise<string> => {
-      try {
-        const repoPath = getRepoPath(owner, repo);
-        const fullPath = `${repoPath}/${filePath}`;
-        const content = await fs.promises.readFile(fullPath, "utf8");
-        return content;
-      } catch (error) {
-        console.error(`Error reading file ${filePath}:`, error);
-        throw error;
-      }
+    async (owner: string, repo: string, filePath: string) => {
+      const fs = await getFs();
+      return fs.promises.readFile(
+        `${getRepoPath(owner, repo)}/${filePath}`,
+        "utf8"
+      );
     },
     [getRepoPath]
   );
 
-  // Main function to load repository
+  // ------------------------------------------------------------------------
+  //  High-level public API
+  // ------------------------------------------------------------------------
+
   const loadRepository = useCallback(
-    async (url: string): Promise<void> => {
+    async (url: string) => {
       setIsLoading(true);
       setHasError(false);
       setErrorMessage(null);
@@ -322,63 +293,49 @@ const useGithub = () => {
 
       try {
         const parsed = parseGitHubUrl(url);
-        if (!parsed) {
-          throw new Error("Invalid GitHub URL format");
-        }
+        if (!parsed) throw new Error("Invalid GitHub URL format");
 
         const { owner, repo } = parsed;
-        const targetBranch = parsed.branch || "main";
+        const targetBranch = parsed.branch ?? "main";
 
-        // If we currently have a repo and are fetching another one, delete all contents of the previous one
+        // Clean previous repo if we are switching
         if (currentRepo && currentRepo !== url) {
-          const prevParsed = parseGitHubUrl(currentRepo);
-          if (prevParsed) {
-            const prevRepoPath = getRepoPath(prevParsed.owner, prevParsed.repo);
-            await deleteDirectoryRecursive(prevRepoPath);
+          const prev = parseGitHubUrl(currentRepo);
+          if (prev) {
+            await deleteDirectoryRecursive(getRepoPath(prev.owner, prev.repo));
           }
         }
 
         setCurrentRepo(url);
         setCurrentBranch(targetBranch);
 
-        // Check if repo is already cloned
         const alreadyCloned = await isRepoCloned(owner, repo);
-
         if (!alreadyCloned) {
           await cloneRepository(url, owner, repo, targetBranch);
         } else {
-          // For cached repos, make sure we're on the right branch
-          try {
-            await git.checkout({
-              fs,
+          // Make sure we are on the right branch
+          const git = await import("isomorphic-git");
+          await git
+            .checkout({
+              fs: await getFs(),
               dir: getRepoPath(owner, repo),
               ref: targetBranch,
-            });
-          } catch (error) {
-            console.warn(error);
-          }
+            })
+            .catch(() => void 0);
         }
 
-        // Walk the repository directory
         const repoPath = getRepoPath(owner, repo);
-
         const items = await walkDirectory(repoPath);
-        const enhancedItems = enhanceItemsWithDepth(items);
-        const stats = calculateStats(items);
-
-        const combinedData: GitHubCombinedItems = {
-          items: enhancedItems,
+        const combined: GitHubCombinedItems = {
+          items: enhanceItemsWithDepth(items),
           isUsingFullDepth: true,
           isLoadingFullDepth: false,
-          stats,
+          stats: calculateStats(items),
         };
-
-        setCombinedItems(combinedData);
-      } catch (error) {
+        setCombinedItems(combined);
+      } catch (err) {
         setHasError(true);
-        setErrorMessage(
-          error instanceof Error ? error.message : "Unknown error occurred"
-        );
+        setErrorMessage(err instanceof Error ? err.message : "Unknown error");
       } finally {
         setIsLoading(false);
       }
@@ -391,6 +348,7 @@ const useGithub = () => {
       enhanceItemsWithDepth,
       calculateStats,
       getRepoPath,
+      // atoms
       setIsLoading,
       setHasError,
       setErrorMessage,
@@ -398,65 +356,59 @@ const useGithub = () => {
       setCurrentBranch,
       setCombinedItems,
       clearSelections,
-      currentRepo, // add currentRepo as dependency
+      currentRepo,
     ]
   );
 
   const getBranches = useCallback(
     async (owner: string, repo: string): Promise<string[]> => {
       try {
-        const repoPath = getRepoPath(owner, repo);
-        const branches = await git.listBranches({ fs, dir: repoPath });
-        return branches;
-      } catch (error) {
-        console.error("Error getting branches:", error);
+        const git = await import("isomorphic-git");
+        return await git.listBranches({
+          fs: await getFs(),
+          dir: getRepoPath(owner, repo),
+        });
+      } catch {
         return ["main"];
       }
     },
     [getRepoPath]
   );
 
-  // Fetch remote branches for a repository using isomorphic-git
   const getRepoBranches = useCallback(
     async (url?: string): Promise<string[]> => {
-      const repoUrl = url || currentRepo;
-      if (!repoUrl) {
-        return availableBranches;
-      }
+      const repoUrl = url ?? currentRepo;
+      if (!repoUrl) return availableBranches;
 
       const parsed = parseGitHubUrl(repoUrl);
-      if (!parsed) {
-        return availableBranches;
-      }
+      if (!parsed) return availableBranches;
 
       const { owner, repo } = parsed;
-
       try {
-        // Use isomorphic-git to fetch remote branches
-        const remoteRefs = await git.listServerRefs({
-          http,
+        const git = await import("isomorphic-git");
+        const httpMod = await import("isomorphic-git/http/web");
+        const refs = await git.listServerRefs({
+          http: httpMod,
           corsProxy: "https://cors.isomorphic-git.org",
           url: `https://github.com/${owner}/${repo}.git`,
         });
 
-        // Filter to get only branch refs and extract branch names
-        const branches = remoteRefs
-          .filter((ref) => ref.ref.startsWith("refs/heads/"))
-          .map((ref) => ref.ref.replace("refs/heads/", ""))
-          .sort(); // Sort alphabetically
+        const branches = refs
+          .filter((r: any) => r.ref.startsWith("refs/heads/"))
+          .map((r: any) => r.ref.replace("refs/heads/", ""))
+          .sort();
 
-        const finalBranches = branches.length > 0 ? branches : ["main"];
-        setAvailableBranches(finalBranches);
-        return finalBranches;
-      } catch (error) {
-        console.error("Error fetching branches with isomorphic-git:", error);
+        const result = branches.length ? branches : ["main"];
+        setAvailableBranches(result);
+        return result;
+      } catch (err) {
+        console.error("Error fetching branches:", err);
         return availableBranches;
       }
     },
     [parseGitHubUrl, currentRepo, availableBranches, setAvailableBranches]
   );
 
-  // Clear repository data
   const clearRepository = useCallback(() => {
     setCombinedItems({
       items: [],
@@ -479,68 +431,72 @@ const useGithub = () => {
   ]);
 
   const combineSelectedFilesForChat = useCallback(
-    async (selectedFilePaths: string[]): Promise<File> => {
+    async (selectedFilePaths: string[]) => {
       if (!currentRepo) throw new Error("No repository loaded");
 
       const parsed = parseGitHubUrl(currentRepo);
       if (!parsed) throw new Error("Invalid repository URL");
 
       const repoPath = getRepoPath(parsed.owner, parsed.repo);
+      const fs = await getFs();
 
-      // Header: Describe the repository, branch, and source URL
-      let combinedContent = `# Combined Files from GitHub Repository\n`;
-      combinedContent += `Repository: ${parsed.owner}/${parsed.repo}\n`;
-      if (parsed.branch) {
-        combinedContent += `Branch: ${parsed.branch}\n`;
-      }
-      combinedContent += `Source URL: ${currentRepo}\n`;
-      combinedContent += `\nYou can check the repository and these files at the above URL for more details.\n`;
+      let combined = `# Combined Files from GitHub Repository
+Repository: ${parsed.owner}/${parsed.repo}
+${parsed.branch ? `Branch: ${parsed.branch}\n` : ""}Source URL: ${currentRepo}
 
-      // List all file paths to be included
-      combinedContent += `\n## Files Included\n`;
-      selectedFilePaths.forEach((filePath, idx) => {
-        combinedContent += `  ${idx + 1}. ${filePath}\n`;
-      });
+You can check the repository and these files at the above URL for more details.
 
-      combinedContent += `\n---\n\n`;
+## Files Included
+${selectedFilePaths.map((p, i) => `  ${i + 1}. ${p}`).join("\n")}
 
-      // For each file, add a pretty section with filename, path, and content
+---
+
+`;
       for (const filePath of selectedFilePaths) {
         try {
-          const fullPath = `${repoPath}/${filePath}`;
-          const content = await fs.promises.readFile(fullPath, "utf8");
-
-          combinedContent += `\n============================================================\n`;
-          combinedContent += `File: ${filePath}\n`;
-          combinedContent += `Path in repo: ${fullPath}\n`;
-          combinedContent += `GitHub URL: https://github.com/${parsed.owner}/${parsed.repo}/blob/${parsed.branch || "main"}/${filePath}\n`;
-          combinedContent += `------------------------------------------------------------\n`;
-          combinedContent += content;
-          combinedContent += `\n============================================================\n`;
-        } catch (error) {
-          console.error(`Error reading file ${filePath}:`, error);
-          combinedContent += `\n============================================================\n`;
-          combinedContent += `File: ${filePath}\n`;
-          combinedContent += `GitHub URL: https://github.com/${parsed.owner}/${parsed.repo}/blob/${parsed.branch || "main"}/${filePath}\n`;
-          combinedContent += `[Error reading file]\n`;
-          combinedContent += `============================================================\n`;
+          const content = await fs.promises.readFile(
+            `${repoPath}/${filePath}`,
+            "utf8"
+          );
+          combined += `
+============================================================
+File: ${filePath}
+GitHub URL: https://github.com/${parsed.owner}/${parsed.repo}/blob/${
+            parsed.branch ?? "main"
+          }/${filePath}
+------------------------------------------------------------
+${content}
+============================================================
+`;
+        } catch {
+          combined += `
+============================================================
+File: ${filePath}
+[Error reading file]
+============================================================
+`;
         }
       }
 
-      // Add a summary at the end
-      combinedContent += `\n---\nEnd of combined file. Total files included: ${selectedFilePaths.length}\n`;
-      combinedContent += `\nFor more information, visit the repository: ${currentRepo}\n`;
+      combined += `
+---
+End of combined file. Total files included: ${selectedFilePaths.length}
 
-      const fileName = `${parsed.owner}-${parsed.repo}-combined-${selectedFilePaths.length}-files.txt`;
-      const file = new File([combinedContent], fileName, {
-        type: "text/plain",
-      });
+For more information, visit the repository: ${currentRepo}
+`;
 
-      return file;
+      return new File(
+        [combined],
+        `${parsed.owner}-${parsed.repo}-combined-${selectedFilePaths.length}-files.txt`,
+        { type: "text/plain" }
+      );
     },
     [currentRepo, parseGitHubUrl, getRepoPath]
   );
 
+  // ------------------------------------------------------------------------
+  //  Public API surface (unchanged)
+  // ------------------------------------------------------------------------
   return {
     // State
     combinedItems,

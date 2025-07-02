@@ -1,3 +1,4 @@
+import type { Id } from "../_generated/dataModel";
 import {
   type QueryCtx,
   type MutationCtx,
@@ -17,12 +18,11 @@ import { NoOp } from "convex-helpers/server/customFunctions";
 
 export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
   const user = await ctx.auth.getUserIdentity();
-
   if (!user) {
     throw new ConvexError("Unauthorized");
   }
-  const userId = user.subject.split("|")[0];
-  return { user, userId };
+  const userId = user.subject;
+  return { userId, user };
 }
 
 export const zodQuery = zCustomQuery(query, NoOp);

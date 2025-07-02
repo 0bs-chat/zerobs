@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-// import { Separator } from "@/components/ui/separator";
+import { Separator } from "@/components/ui/separator";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -51,7 +51,7 @@ const TabbedRenderer = ({
 const prepareReactCode = (code: string): string => {
   const withoutImports = code.replace(
     /import\s+(?:React(?:,\s*)?)?(?:\{[^}]*\})?\s+from\s+['"]react['"];?/g,
-    "",
+    ""
   );
   const withoutExports = withoutImports.replace(/export\s+default\s+App;?/, "");
   return withoutExports;
@@ -327,6 +327,6 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
       <ScrollArea className="h-[calc(100vh-7.5rem)] pr-3">
         {renderArtifactContent(artifact)}
       </ScrollArea>
-    </div>
+    </Tabs>
   );
 };

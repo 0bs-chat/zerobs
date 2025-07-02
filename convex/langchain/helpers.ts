@@ -41,7 +41,7 @@ export async function createSimpleAgent(
   config: ExtendedRunnableConfig
 ) {
   const chat = config.chat;
-  const model = await getModel(config.ctx, chat.model);
+  const model = await getModel(config.ctx, chat.model, chat.reasoningEffort);
   const promptTemplate = ChatPromptTemplate.fromMessages([
     createAgentSystemMessage(
       chat.model,
@@ -62,16 +62,16 @@ export async function createAgentWithTools(
   taskDescription?: string
 ) {
   const chat = config.chat;
-  const tools = await getMCPTools(config.ctx);
-  const retrievalTools = await getRetrievalTools(state, config);
+  const tools = await getMCPTools(config.ctx, chat._id);
+  const retrievalTools = await getRetrievalTools(state, config, true);
   const allTools = [
     ...(tools.tools.length > 0 ? tools.tools : []),
     ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
     retrievalTools.webSearch,
   ];
 
-  if (!chat.agentMode) {
-    const model = await getModel(config.ctx, chat.model);
+  if (!chat.conductorMode) {
+    const model = await getModel(config.ctx, chat.model, chat.reasoningEffort);
     const promptTemplate = ChatPromptTemplate.fromMessages([
       createAgentSystemMessage(
         chat.model,
@@ -90,10 +90,14 @@ export async function createAgentWithTools(
     });
   } else {
     if (Object.keys(tools.groupedTools).length === 0) {
-      throw new Error("Need atleast 1 mcp enabled to use planner mode");
+      throw new Error("Need atleast 1 mcp enabled to use conductor mode");
     }
-    const llm = await getModel(config.ctx, "worker");
-    const supervisorLlm = await getModel(config.ctx, chat.model!);
+    const llm = await getModel(config.ctx, "worker", undefined);
+    const supervisorLlm = await getModel(
+      config.ctx,
+      chat.model!,
+      chat.reasoningEffort
+    );
     const agents = Object.entries(tools.groupedTools).map(
       ([groupName, tools]: [string, Tool[]]) =>
         createReactAgent({
@@ -142,14 +146,11 @@ export async function generateQueries(
   type: "vectorStore" | "webSearch" = "vectorStore"
 ) {
   const ctx = config.ctx;
-  const model = config.chat.model;
-
-  if (!model) {
-    throw new Error("Model is required");
-  }
 
   const queryModel = createGenerateQueriesPrompt(type).pipe(
-    (await getModel(ctx, "worker")).withStructuredOutput(generateQueriesSchema)
+    (await getModel(ctx, "worker", undefined)).withStructuredOutput(
+      generateQueriesSchema
+    )
   );
 
   return (await queryModel.invoke({
@@ -164,7 +165,7 @@ export async function gradeDocument(
 ): Promise<boolean> {
   const promptTemplate = createGradeDocumentPrompt();
   const modelWithOutputParser = promptTemplate.pipe(
-    (await getModel(config.ctx, "worker")).withStructuredOutput(
+    (await getModel(config.ctx, "worker", undefined)).withStructuredOutput(
       gradeDocumentSchema
     )
   );

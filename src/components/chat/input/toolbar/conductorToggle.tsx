@@ -1,41 +1,44 @@
 import { Toggle } from "@/components/ui/toggle";
-import { BotIcon } from "lucide-react";
+import { Network } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
-import { useAtom } from "jotai";
+import { useSetAtom } from "jotai";
 import { chatAtom } from "@/store/chatStore";
 
-export const AgentToggle = ({
-  chatId,
-  agentMode,
+export const ConductorToggle = ({
   isNewChat,
+  chatId,
+  conductorMode,
 }: {
   chatId: Id<"chats">;
-  agentMode: boolean;
   isNewChat: boolean;
+  conductorMode: boolean;
 }) => {
-  const [chatInput, setChatInput] = useAtom(chatAtom);
+  const setNewChat = useSetAtom(chatAtom);
   const updateChatMutation = useMutation(api.chats.mutations.update);
 
   return (
     <Toggle
       variant="outline"
       className="hover:transition hover:duration-500"
-      pressed={agentMode}
+      pressed={conductorMode}
       onPressedChange={() => {
-        if (isNewChat) {
-          setChatInput({ ...chatInput, agentMode: !chatInput.agentMode });
+        if (chatId === "new") {
+          setNewChat((prev: any) => ({
+            ...prev,
+            conductorMode: !prev.conductorMode,
+          }));
         } else {
           updateChatMutation({
             chatId,
-            updates: { agentMode: !agentMode },
+            updates: { conductorMode: !conductorMode },
           });
         }
       }}
     >
-      <BotIcon className="h-4 w-4" />
-      Agent
+      <Network className="h-4 w-4" />
+      Conductor
     </Toggle>
   );
 };

@@ -31,38 +31,46 @@ const PROSE_STYLE = {
   fontFamily: "Rubik, sans-serif",
 } as React.CSSProperties;
 
-export const Markdown = memo(
-  ({ content, className }: { content: string; className?: string }) => {
-    const mermaidChartId = React.useRef(0);
-    const { copy, copied } = useCopy({ duration: 500 });
-    const [wrapLongLines, setWrapLongLines] = useAtom(wrapLongLinesAtom);
+export const Markdown = memo(function Markdown({
+  content,
+  className,
+}: {
+  content: string;
+  className?: string;
+}) {
+  const mermaidChartId = React.useRef(0);
+  const { copy, copied } = useCopy({ duration: 500 });
+  const [wrapLongLines, setWrapLongLines] = useAtom(wrapLongLinesAtom);
 
-    const handleCopy = useCallback(
-      (text: string) => {
-        copy(text);
-      },
-      [copy]
-    );
+  const handleCopy = useCallback(
+    (text: string) => {
+      copy(text);
+    },
+    [copy]
+  );
 
-    const handleToggleWrap = useCallback(() => {
-      setWrapLongLines(!wrapLongLines);
-    }, [wrapLongLines, setWrapLongLines]);
+  const handleToggleWrap = useCallback(() => {
+    setWrapLongLines((prev) => !prev);
+  }, [setWrapLongLines]);
 
-    const components = useMemo(
-      () => ({
-        code({ inline, className, children }: any) {
-          const match = /language-(\w+)/.exec(className || "");
-          const isCodeBlock = String(children).split("\n").length > 1;
-          const language = match ? match[1] : isCodeBlock ? "text" : null;
-          const codeText = String(children).replace(/\n$/, "");
+  const components = useMemo(
+    () => ({
+      code({ inline, className, children }: any) {
+        const match = /language-(\w+)/.exec(className || "");
+        const isCodeBlock = String(children).split("\n").length > 1;
+        const language = match ? match[1] : isCodeBlock ? "text" : null;
+        const codeText = String(children).replace(/\n$/, "");
 
-          return !inline ? (
-            language === "mermaid" ? (
+        if (!inline) {
+          if (language === "mermaid") {
+            return (
               <MermaidChart
                 chart={codeText}
                 id={`chart-${++mermaidChartId.current}`}
               />
-            ) : language ? (
+            );
+          } else if (language) {
+            return (
               <div className="flex flex-col overflow-hidden bg-card rounded-md max-w-full">
                 <div className="flex items-center justify-between rounded-t-md bg-secondary px-2 py-1 text-secondary-foreground ">
                   <span className="text-sm text-muted-foreground">
@@ -94,50 +102,45 @@ export const Markdown = memo(
                     </Button>
                   </div>
                 </div>
-                <CodeBlock
-                  language={language}
-                  style={atomDark}
-                  lineProps={{
-                    style: { wordBreak: "break-all", whiteSpace: "pre-wrap" },
-                  }}
-                  wrapLines={wrapLongLines}
-                >
-                  {children}
-                </SyntaxHighlighter>
+                <CodeBlock language={language} wrapLongLines={wrapLongLines}>
+                  {codeText}
+                </CodeBlock>
               </div>
-            ) : (
+            );
+          } else {
+            return (
               <span className="bg-muted p-1 font-mono font-medium rounded-md text-sm">
                 {children}
               </span>
-            )
-          ) : (
-            <code className={className} />
-          );
-        },
-      }),
-      [copied, wrapLongLines, handleCopy, handleToggleWrap]
-    );
-
-    return (
-      <div
-        className={`prose font-normal max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 ${className || ""}`}
-        style={
-          {
-            fontFamily: "Rubik, sans-serif",
-          } as React.CSSProperties
+            );
+          }
+        } else {
+          return <code className={className}>{children}</code>;
         }
+      },
+    }),
+    [copied, wrapLongLines, handleCopy, handleToggleWrap]
+  );
+
+  return (
+    <div
+      className={`prose font-normal max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 ${className || ""}`}
+      style={
+        {
+          fontFamily: "Rubik, sans-serif",
+        } as React.CSSProperties
+      }
+    >
+      <ReactMarkdown
+        remarkPlugins={REMARK_PLUGINS}
+        rehypePlugins={REHYPE_PLUGINS}
+        components={components}
       >
-        <ReactMarkdown
-          remarkPlugins={REMARK_PLUGINS}
-          rehypePlugins={REHYPE_PLUGINS}
-          components={components}
-        >
-          {content}
-        </ReactMarkdown>
-      </div>
-    );
-  }
-);
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+});
 
 Markdown.displayName = "Markdown";
 

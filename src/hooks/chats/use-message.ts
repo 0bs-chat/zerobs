@@ -1,171 +1,150 @@
-import { useAction, useMutation } from "convex/react";
+import { useState, useMemo, useCallback } from "react";
+import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
-  AIMessage,
-  BaseMessage,
-  HumanMessage,
-  ToolMessage,
-} from "@langchain/core/messages";
-import { useState } from "react";
+  buildMessageTree,
+  type ParsedMessageNode,
+} from "../../../convex/chatMessages/helpers";
 
-export const useMessageHandlers = (
-  chatId: Id<"chats">,
-  messages: BaseMessage[]
-) => {
-  const removeMessageGroup = useMutation(api.chatMessages.mutations.remove);
-  const regenerate = useAction(api.chatMessages.mutations.regenerate);
-  const regenerateFromUser = useAction(api.chatMessages.mutations.regenerate);
+interface MessageWithBranchInfo {
+  message: ParsedMessageNode;
+  branchIndex: number;
+  totalBranches: number;
+  depth: number;
+}
 
-  const [_copied, setCopied] = useState(false);
-  const [_editingMessageIndex, setEditingMessageIndex] = useState<
-    number | null
-  >(null);
+interface UseMessagesOptions {
+  chatId: Id<"chats"> | "new";
+}
 
-  if (messages.length === 0) return null;
+type BranchPath = number[]; // index per depth, empty = default path
 
-  const firstMessage = messages[0];
-  const isUserGroup = firstMessage instanceof HumanMessage;
+// Recursive helper to build the current thread
+const buildThread = (
+  nodes: ParsedMessageNode[] | undefined,
+  path: BranchPath,
+  depth = 0
+): MessageWithBranchInfo[] => {
+  if (!nodes || nodes.length === 0) return [];
 
-  // Helper function to extract text content from message
-  const extractTextFromContent = (content: any): string => {
-    if (typeof content === "string") {
-      return content;
-    }
-    if (Array.isArray(content)) {
-      return content
-        .map((item) => (item.type === "text" ? item.text : ""))
-        .filter(Boolean)
-        .join("");
-    }
-    return String(content);
-  };
+  const idx = Math.min(path[depth] ?? nodes.length - 1, nodes.length - 1);
+  const node = nodes[idx];
 
-  const handleCopyText = () => {
-    const textToCopy = messages
-      .map((m) => extractTextFromContent(m.content))
-      .filter(Boolean)
-      .join("\n\n");
-    navigator.clipboard.writeText(textToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleDeleteMessage = async () => {
-    if (chatId === "new") return;
-
-    try {
-      await removeMessageGroup({
-        id: messages[0].id as Id<"chatMessages">,
-        cascade: false,
-      });
-    } catch (error) {
-      console.error("Failed to delete message group:", error);
-    }
-  };
-
-  const handleDeleteCascading = async () => {
-    if (chatId === "new") return;
-
-    try {
-      await removeMessageGroup({
-        id: messages[0].id as Id<"chatMessages">,
-        cascade: true,
-      });
-    } catch (error) {
-      console.error("Failed to delete cascading messages:", error);
-    }
-  };
-
-  const handleRegenerate = async () => {
-    if (chatId === "new" || isUserGroup) return;
-
-    try {
-      await regenerate({
-        id: messages[0].id as Id<"chatMessages">,
-        chatId: chatId as Id<"chats">,
-      });
-    } catch (error) {
-      console.error("Failed to regenerate message:", error);
-    }
-  };
-
-  const handleUserRegenerate = async () => {
-    if (chatId === "new" || !isUserGroup) return;
-
-    try {
-      await regenerateFromUser({
-        id: messages[0].id as Id<"chatMessages">,
-        chatId: chatId as Id<"chats">,
-      });
-    } catch (error) {
-      console.error("Failed to regenerate from user message:", error);
-    }
-  };
-
-  const handleEditMessage = (messageIndex: number) => {
-    setEditingMessageIndex(messageIndex);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingMessageIndex(null);
-  };
-
-  const handleSaveEdit = () => {
-    setEditingMessageIndex(null);
-  };
-
-  return {
-    handleCopyText,
-    handleDeleteMessage,
-    handleDeleteCascading,
-    handleRegenerate,
-    handleUserRegenerate,
-    handleEditMessage,
-    handleCancelEdit,
-    handleSaveEdit,
-  };
+  return [
+    {
+      message: node,
+      branchIndex: idx + 1, // 1-indexed for display
+      totalBranches: nodes.length,
+      depth,
+    },
+    ...buildThread(node.children, path, depth + 1),
+  ];
 };
 
-export const groupMessages = (messages: BaseMessage[]): BaseMessage[][] => {
-  if (messages.length === 0) return [];
-
-  const grouped: BaseMessage[][] = [];
-  let currentGroup: BaseMessage[] = [];
-
-  const getGroupType = (message: BaseMessage) => {
-    if (message instanceof HumanMessage) return "user";
-    if (message instanceof AIMessage || message instanceof ToolMessage)
-      return "ai/tool";
-    return "other";
-  };
-
-  const validMessages = messages.filter(
-    (message) => getGroupType(message) !== "other"
+export const useMessages = ({ chatId }: UseMessagesOptions) => {
+  // Fetch message tree from Convex
+  const messages = useQuery(
+    api.chatMessages.queries.get,
+    chatId !== "new" ? { chatId } : "skip"
+  );
+  const messageTree = useMemo(
+    () => (messages ? buildMessageTree(messages) : []),
+    [messages]
   );
 
-  for (const message of validMessages) {
-    const messageType = getGroupType(message);
+  // State to track selected branch path (array of indices, one per depth)
+  const [branchPath, setBranchPath] = useState<BranchPath>([]);
 
-    if (currentGroup.length === 0) {
-      currentGroup.push(message);
-    } else {
-      const currentGroupType = getGroupType(currentGroup[0]);
-      if (messageType === currentGroupType) {
-        currentGroup.push(message);
-      } else {
-        grouped.push(currentGroup);
-        currentGroup = [message];
-      }
-    }
-  }
+  // Calculate the current thread with branch information
+  const currentThread = useMemo(
+    () => buildThread(messageTree, branchPath),
+    [messageTree, branchPath]
+  );
 
-  if (currentGroup.length > 0) {
-    grouped.push(currentGroup);
-  }
+  // Function to change branch at a specific depth
+  const changeBranch = useCallback((depth: number, newBranchIndex: number) => {
+    setBranchPath((prev) => {
+      const newPath = prev.slice(0, depth); // Clear deeper selections
+      newPath[depth] = newBranchIndex;
+      return newPath;
+    });
+  }, []);
 
-  return grouped;
+  // Function to navigate branches (prev/next)
+  const navigateBranch = useCallback(
+    (depth: number, direction: "prev" | "next") => {
+      const threadItem = currentThread[depth];
+      if (!threadItem) return;
+
+      const currentBranchIndex =
+        branchPath[depth] ?? threadItem.totalBranches - 1;
+      const totalBranches = threadItem.totalBranches;
+
+      const newIndex =
+        direction === "prev"
+          ? (currentBranchIndex - 1 + totalBranches) % totalBranches
+          : (currentBranchIndex + 1) % totalBranches;
+
+      changeBranch(depth, newIndex);
+    },
+    [currentThread, branchPath, changeBranch]
+  );
+
+  // Function to reset all branch selections (go back to default - most recent path)
+  const resetBranches = useCallback(() => {
+    setBranchPath([]);
+  }, []);
+
+  // Function to get branch info for a specific depth
+  const getBranchInfo = useCallback(
+    (depth: number) => {
+      const threadItem = currentThread[depth];
+      if (!threadItem) return null;
+
+      return {
+        current: threadItem.branchIndex,
+        total: threadItem.totalBranches,
+        hasBranches: threadItem.totalBranches > 1,
+      };
+    },
+    [currentThread]
+  );
+
+  // Check if currently on the default (most recent) path
+  const isOnDefaultPath = branchPath.length === 0;
+
+  // Get total number of alternative branches across all levels
+  const totalBranches = useMemo(() => {
+    return currentThread.reduce(
+      (sum, item) => sum + (item.totalBranches - 1),
+      0
+    );
+  }, [currentThread]);
+
+  return {
+    // Data
+    messageTree,
+    currentThread,
+    selectedBranches: branchPath, // Keep for compatibility, but now it's an array
+
+    // Actions
+    changeBranch,
+    navigateBranch,
+    resetBranches,
+
+    // Utilities
+    getBranchInfo,
+    isOnDefaultPath,
+    totalBranches,
+
+    // Loading state
+    isLoading: messageTree === undefined && chatId !== "new",
+    isEmpty: currentThread.length === 0 && chatId !== "new",
+  };
 };
+
+export const groupMessages = (messages: ParsedMessageNode[]) => {};
 
 export const extractUrlFromTavilyContent = (content: string): string | null => {
   const urlMatch = content.match(/https?:\/\/[^\s\n]+/);

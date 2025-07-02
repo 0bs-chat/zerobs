@@ -1,12 +1,12 @@
 import React from "react";
-import { useAtom, useAtomValue } from "jotai";
-import { selectedArtifactAtom, useStreamAtom } from "@/store/chatStore";
+import { useAtom } from "jotai";
+import { selectedArtifactAtom } from "@/store/chatStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 // import { Badge } from "@/components/ui/badge";
 // import { Separator } from "@/components/ui/separator";
 import { ArtifactViewer } from "./viewer";
 import type { Artifact } from "../../artifacts/utils";
-import { parseArtifacts } from "../../artifacts/utils";
+// import { parseArtifacts } from "../../artifacts/utils";
 import { ArtifactCard } from "../../artifacts/card";
 
 const ArtifactsList = ({
@@ -58,37 +58,35 @@ const ArtifactsList = ({
 
 export const ArtifactsPanel = () => {
   const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
-  const stream = useAtomValue(useStreamAtom);
+  // const stream = useAtomValue(useStreamAtom);
   const allArtifacts = React.useMemo(() => {
-    const artifactMap = new Map<string, Artifact>();
-
+    // const artifactMap = new Map<string, Artifact>();
     // 1. Get artifacts from completed messages
-
     // 2. Get artifacts from stream and overwrite
-    const streamingContent =
-      stream?.chunkGroups
-        .filter((cg) => cg.type === "ai")
-        .map((cg) => cg.content)
-        .join("") ?? "";
-
-    if (streamingContent) {
-      const streamingArtifacts = parseArtifacts(
-        streamingContent,
-        stream?.messages?.length ?? 0
-      );
-      streamingArtifacts.forEach((artifact) => {
-        artifactMap.set(artifact.id, artifact);
-      });
-    }
-
-    const allArtifacts = Array.from(artifactMap.values());
-    return allArtifacts.sort((a, b) => b.messageIndex - a.messageIndex);
-  }, [stream]);
+    // const streamingContent =
+    //   stream?.chunkGroups
+    //     .filter((cg) => cg.type === "ai")
+    //     .map((cg) => cg.content)
+    //     .join("") ?? "";
+    // if (streamingContent) {
+    //   const streamingArtifacts = parseArtifacts(
+    //     streamingContent,
+    //     stream?.messages?.length ?? 0
+    //   );
+    //   streamingArtifacts.forEach((artifact) => {
+    //     artifactMap.set(artifact.id, artifact);
+    //   });
+    // }
+    //   const allArtifacts = Array.from(artifactMap.values());
+    //   return allArtifacts.sort((a, b) => b.messageIndex - a.messageIndex);
+    // }, [stream]);
+  }, []);
 
   const artifactToView = React.useMemo(() => {
     if (!selectedArtifact) return null;
     return (
-      allArtifacts.find((a) => a.id === selectedArtifact.id) || selectedArtifact
+      // allArtifacts.find((a) => a.id === selectedArtifact.id) || selectedArtifact
+      allArtifacts
     );
   }, [selectedArtifact, allArtifacts]);
 
@@ -103,9 +101,6 @@ export const ArtifactsPanel = () => {
   }
 
   return (
-    <ArtifactsList
-      artifacts={allArtifacts}
-      onSelectArtifact={setSelectedArtifact}
-    />
+    <ArtifactsList artifacts={[]} onSelectArtifact={setSelectedArtifact} />
   );
 };

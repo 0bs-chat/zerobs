@@ -15,7 +15,7 @@ import { api, internal } from "../_generated/api";
 import mime from "mime";
 import { Base64 } from "convex/values";
 
-export type modelsInterface = {
+export const models: {
   label: string;
   model_name: string;
   model: string;
@@ -28,9 +28,7 @@ export type modelsInterface = {
   usageRateMultiplier: number;
   hidden?: boolean;
   type?: "chat" | "embeddings";
-};
-
-export const models: modelsInterface[] = [
+}[] = [
   {
     label: "Gemini 2.5 Flash",
     model_name: "gemini-2.5-flash",
@@ -150,7 +148,8 @@ export const models: modelsInterface[] = [
 
 export async function getModel(
   ctx: ActionCtx,
-  model: string
+  model: string,
+  reasoningEffort: "low" | "medium" | "high" | undefined
 ): Promise<BaseChatModel> {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -176,7 +175,7 @@ export async function getModel(
     apiKey: OPENAI_API_KEY,
     temperature: 0.3,
     reasoning: {
-      effort: "medium",
+      effort: reasoningEffort,
     },
     configuration: {
       baseURL: OPENAI_BASE_URL,

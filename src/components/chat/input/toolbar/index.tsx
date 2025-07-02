@@ -24,17 +24,17 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useParams } from "@tanstack/react-router";
-import type { Id } from "convex/_generated/dataModel";
+import { ClientOnly, useParams } from "@tanstack/react-router";
+import type { Doc, Id } from "convex/_generated/dataModel";
 import { useRef, useState } from "react";
 import { getTagInfo } from "@/lib/helpers";
-import GitHubDialog from "../github";
 import type { ChatState } from "@/store/chatStore";
 import { useAuth } from "@clerk/clerk-react";
-import { AgentToggle } from "./agentToggle";
-import { PlannerToggle } from "./plannerToggle";
+import { ConductorToggle } from "./conductorToggle";
+import { DeepSearchToggle } from "./deepSearchToggle";
 import { useAtom } from "jotai";
 import { chatAtom, streamStatusAtom } from "@/store/chatStore";
+import GitHubDialog from "../github";
 
 export const ToolBar = ({
   isNewChat,
@@ -55,13 +55,14 @@ export const ToolBar = ({
 
   const models = useQuery(api.models.getModels);
 
-  const getModelFromChat = useQuery(api.chats.queries.get, {
-    chatId,
-  });
+  const getModelFromChat = useQuery(
+    api.chats.queries.get,
+    !chatId || chatId === "new" ? "skip" : { chatId }
+  );
   const selectedModel = getModelFromChat?.model;
 
   const handleFileUpload = useUploadDocuments();
-  const handleSubmit = useHandleSubmit(isNewChat, chatId);
+  const handleSubmit = useHandleSubmit();
 
   const { isSignedIn } = useAuth();
 
@@ -74,10 +75,11 @@ export const ToolBar = ({
         multiple
         onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
       />
-      {isSignedIn && (
-        <GitHubDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
-      )}
-
+      <ClientOnly fallback={<div>Loading....</div>}>
+        {isSignedIn && (
+          <GitHubDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+        )}
+      </ClientOnly>
       <div className="flex flex-row items-center gap-1">
         <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
@@ -106,14 +108,14 @@ export const ToolBar = ({
         </DropdownMenu>
       </div>
 
-      <AgentToggle
+      <ConductorToggle
         chatId={chatId}
-        agentMode={chatInputData?.agentMode}
+        conductorMode={chatInputData?.conductorMode}
         isNewChat={isNewChat}
       />
-      <PlannerToggle
+      <DeepSearchToggle
         chatId={chatId}
-        plannerMode={chatInputData?.plannerMode}
+        deepSearchMode={chatInputData?.deepSearchMode}
         isNewChat={isNewChat}
       />
       <div className="flex flex-row items-center gap-1">
@@ -170,7 +172,7 @@ export const ToolBar = ({
           size="icon"
           onClick={async () => {
             if (!["pending", "streaming"].includes(streamStatus ?? "")) {
-              await handleSubmit(chatId);
+              await handleSubmit(chat as Doc<"chats">);
             } else {
               await cancelStreamMutation({ chatId });
             }

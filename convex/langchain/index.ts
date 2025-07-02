@@ -12,6 +12,7 @@ import { MemorySaver } from "@langchain/langgraph";
 import { parseStateToStreamStatesDoc } from "./helpers";
 import { GraphState } from "./state";
 import { v } from "convex/values";
+import { getCurrentThread } from "../chatMessages/helpers";
 
 export const chat = action({
   args: v.object({
@@ -34,16 +35,12 @@ export const chat = action({
 
     const messages = await ctx.runQuery(api.chatMessages.queries.get, {
       chatId: args.chatId,
-      getCurrentThread: true,
     });
-    const previousMessages = messages.map((message) =>
-      mapStoredMessageToChatMessage(JSON.parse(message.message))
-    );
-
+    const currentThread = getCurrentThread(messages);
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
     const stream = agent.streamEvents(
-      { messages: previousMessages },
+      { messages: currentThread.map((message) => message.message) },
       {
         version: "v2",
         configurable: {
@@ -145,7 +142,7 @@ export const chat = action({
     }
 
     const newMessages = checkpoint?.messages?.slice(
-      previousMessages.length,
+      messages.length,
       checkpoint.messages.length
     );
     if (newMessages) {
@@ -169,7 +166,7 @@ export const chat = action({
     await ctx.runMutation(internal.streams.mutations.update, {
       chatId: args.chatId,
       updates: {
-        status: "done",
+        status: wasCancelled ? "cancelled" : "done",
       },
     });
   },

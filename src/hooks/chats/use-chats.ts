@@ -1,79 +1,66 @@
-import { useMutation, usePaginatedQuery } from "convex/react";
-import { api } from "convex/_generated/api";
-import { useAction } from "convex/react";
-import type { Id } from "convex/_generated/dataModel";
-import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
-import React from "react";
-import { coerceMessageLikeToMessage } from "@langchain/core/messages";
-import { GraphState } from "convex/langchain/state";
-import { chatAtom, resetChatAtom, selectedChatIdAtom } from "@/store/chatStore";
+import {
+  useAction,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { convexQuery } from "@convex-dev/react-query";
-import { useAtom, useSetAtom, useAtomValue } from "jotai";
-import { useAuth } from "@clerk/tanstack-react-start";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { useAtom, useAtomValue } from "jotai";
+import { lastChatMessageAtom, chatAtom } from "@/store/chatStore";
 
-export const useHandleSubmit = (
-  isNewChat: boolean,
-  chatId: Id<"chats"> | null
-) => {
-  const { userId } = useAuth();
+export const useHandleSubmit = () => {
+  const createMessageMutation = useMutation(api.chatMessages.mutations.create);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const createChatMutation = useMutation(api.chats.mutations.create);
+  const [newChat, setNewChat] = useAtom(chatAtom);
+  const sendAction = useAction(api.langchain.index.chat);
   const navigate = useNavigate();
-  const createChat = useMutation(api.chats.mutations.create);
-  const sendAction = useAction(api.chats.actions.send);
-  const [chatInput] = useAtom(chatAtom);
-  const resetChatInput = useSetAtom(resetChatAtom);
-  const setSelectedChatId = useSetAtom(selectedChatIdAtom);
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const lastChatMessage = useAtomValue(lastChatMessageAtom);
 
-  const handleSubmit = useCallback(
-    async (currentText: string) => {
-      // this is for the time being, we'll remove this so user can also send anonymous messsages. will add the limits and stuff later, ones it becomes usable.
-      if (!userId) {
-        toast.error("Please sign in to send a message");
-        return;
-      }
-
-      if (isNewChat || !chatId || chatId === null) {
-        const newChatId = await createChatWithInputMutation({
-          name: "new chat",
-          chatInput: {
-            model: chatInput.model,
-            agentMode: chatInput.agentMode,
-            plannerMode: chatInput.plannerMode,
-            webSearch: chatInput.webSearch,
-            documents: chatInput.documents,
-            projectId: chatInput.projectId,
-            artifacts: chatInput.artifacts,
-            text: currentText,
-          },
-        });
-        setSelectedChatId(newChatId);
-        await navigate({ to: "/chat/$chatId", params: { chatId: newChatId } });
-        await sendAction({ text: currentText, chatId: newChatId });
-      } else {
-        await sendAction({ text: currentText, chatId: chatId });
-        setSelectedChatId(chatId);
-      }
-      resetChatInput();
-    },
-    [
-      chatId,
-      createChatWithInputMutation,
-      sendAction,
-      navigate,
-      chatInput,
-      resetChatInput,
-      updateChatInputMutation,
-      setSelectedChatId,
-    ]
-  );
+  const handleSubmit = async (chat: Doc<"chats">) => {
+    if (chat._id === "new") {
+      setNewChat((prev: any) => ({ ...prev, text: "", documents: [] }));
+      chat._id = await createChatMutation({
+        name: newChat.name,
+        model: newChat.model,
+        reasoningEffort: newChat.reasoningEffort,
+        projectId: newChat.projectId,
+        conductorMode: newChat.conductorMode,
+        deepSearchMode: newChat.deepSearchMode,
+        webSearch: newChat.webSearch,
+        artifacts: newChat.artifacts,
+      });
+      await createMessageMutation({
+        chatId: chat._id,
+        documents: chat.documents,
+        text: chat.text,
+        parentId: null,
+      });
+      navigate({
+        to: "/chat/$chatId",
+        params: { chatId: chat._id },
+      });
+    } else {
+      await updateChatMutation({
+        chatId: chat._id,
+        updates: { text: "", documents: [] },
+      });
+      await createMessageMutation({
+        chatId: chat._id,
+        documents: chat.documents,
+        text: chat.text,
+        parentId: lastChatMessage?._id ?? null,
+      });
+    }
+    await sendAction({ chatId: chat._id });
+  };
 
   return handleSubmit;
 };
-
-// direct quereis to chatmessages and streams ()
 
 export const useInfiniteChats = () => {
   const { results, status, loadMore } = usePaginatedQuery(
@@ -98,16 +85,13 @@ export const useSearchChats = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  const searchResults = useQuery({
-    queryKey: ["chats", debouncedQuery],
-    queryFn: () =>
-      convexQuery(api.chats.queries.search, {
-        query: debouncedQuery.trim(),
-      }),
-  });
+  const searchResults = useQuery(
+    api.chats.queries.search,
+    debouncedQuery.trim() ? { query: debouncedQuery } : "skip"
+  );
 
   // Debounce search query
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
     }, 300);
@@ -127,8 +111,6 @@ export const chatHandlers = () => {
   const navigate = useNavigate();
   const updateChat = useMutation(api.chats.mutations.update);
   const removeChat = useMutation(api.chats.mutations.remove);
-  const setSelectedChatId = useSetAtom(selectedChatIdAtom);
-  const selectedChatId = useAtomValue(selectedChatIdAtom);
 
   const handleNavigate = (chatId: string) => {
     navigate({
@@ -154,16 +136,18 @@ export const chatHandlers = () => {
   };
 
   const handleSelect = (chatId: string) => {
-    setSelectedChatId(chatId as Id<"chats">);
+    navigate({
+      to: "/chat/$chatId",
+      params: { chatId },
+    });
   };
 
   const handleDelete = async (chatId: string) => {
     await removeChat({ chatId: chatId as Id<"chats"> });
-    if (selectedChatId === chatId) {
-      setSelectedChatId(null);
-      navigate({ to: "/" });
+    const params = useParams({ from: "/chat/$chatId" });
+    if (params.chatId === chatId) {
+      navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
     }
-
     toast.success("Chat deleted");
   };
 

@@ -1,12 +1,8 @@
 import { atom } from "jotai";
-import type { Id } from "../../convex/_generated/dataModel";
-import { atomWithStorage, selectAtom } from "jotai/utils";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
+import { atomWithStorage } from "jotai/utils";
 import type { MCPData } from "@/components/chat/panels/mcp/types";
-import {
-  type AIChunkGroup,
-  type ToolChunkGroup,
-  useStream,
-} from "@/hooks/chats/use-stream";
+import type { AIChunkGroup, ToolChunkGroup } from "@/hooks/chats/use-stream";
 import type { Artifact } from "@/components/chat/artifacts/utils";
 
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
@@ -46,41 +42,34 @@ export const rightPanelActiveTabAtom = atomWithStorage(
 export const rightPanelWidthAtom = atomWithStorage("rightPanelWidth", 40);
 
 export const chatProjectIdAtom = atom<Id<"projects"> | undefined>(undefined);
-export const useStreamAtom = atom<ReturnType<typeof useStream> | null>(null);
 export const selectedArtifactAtom = atom<Artifact | null>(null);
 
 export const themeAtom = atomWithStorage("theme", "dark");
 
 export type ChatState = {
-  chatId: Id<"chats">;
-  text: string;
-  documents?: Id<"documents">[];
-  public: boolean;
+  name: string;
   model: string;
-  updatedAt: number;
   reasoningEffort: "low" | "medium" | "high";
-  projectId?: Id<"projects"> | null;
-  agentMode: boolean;
-  plannerMode: boolean;
+  projectId: Id<"projects"> | null;
+  conductorMode: boolean;
+  deepSearchMode: boolean;
   webSearch: boolean;
-  artifacts?: boolean;
-  streamId?: Id<"streams">;
+  artifacts: boolean;
+  text: string;
+  documents: Id<"documents">[];
 };
 
 const initialChatState: ChatState = {
-  chatId: "new" as Id<"chats">,
-  documents: [],
-  text: "",
-  public: false,
+  name: "",
+  model: "",
+  reasoningEffort: "medium",
   projectId: null,
-  updatedAt: 0,
-  reasoningEffort: "low",
-  agentMode: false,
-  plannerMode: false,
+  conductorMode: false,
+  deepSearchMode: false,
   webSearch: false,
   artifacts: false,
-  model: "gemini-2.5-flash",
-  streamId: "" as Id<"streams">,
+  text: "",
+  documents: [],
 };
 
 export const chatAtom = atom<ChatState>(initialChatState);
@@ -100,11 +89,6 @@ export const resetChatAtom = atom(null, (_, set) => {
 });
 
 export const existingChatTextAtom = atom<string>("");
-export const StatusAtom = selectAtom(
-  useStreamAtom,
-  (stream) => stream?.streamStatus
-);
-
 export const selectedArtifactIdAtom = atom<string | null>(null);
 
 export const processedChunksAtom = atom<
@@ -114,3 +98,5 @@ export const processedChunksAtom = atom<
 export const currentCursorAtom = atom<string | null>(null);
 
 export const streamStatusAtom = atom<string | null>(null);
+
+export const lastChatMessageAtom = atom<Doc<"chatMessages"> | null>(null);

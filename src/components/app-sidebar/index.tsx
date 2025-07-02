@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/sidebar";
 import { useNavigate } from "@tanstack/react-router";
 import { SearchIcon, XIcon, PlusIcon } from "lucide-react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { InfiniteScrollArea } from "./ui/infinite-scroll-area";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { InfiniteScrollArea } from "../ui/infinite-scroll-area";
 import { useInfiniteChats, useSearchChats } from "@/hooks/chats/use-chats";
 
 export function AppSidebar() {

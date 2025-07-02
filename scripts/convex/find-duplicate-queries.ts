@@ -1,8 +1,9 @@
 #!/usr/bin/env bun
 
 import { readdir, readFile } from "fs/promises";
-import { join, extname } from "path";
 import { parseArgs } from "util";
+import path from "pathe";
+const { join, extname } = path;
 
 interface QueryUsage {
   query: string;

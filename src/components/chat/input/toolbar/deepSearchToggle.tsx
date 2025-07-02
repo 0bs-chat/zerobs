@@ -6,13 +6,13 @@ import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useAtom } from "jotai";
 import { chatAtom } from "@/store/chatStore";
 
-export const PlannerToggle = ({
+export const DeepSearchToggle = ({
   chatId,
-  plannerMode,
+  deepSearchMode,
   isNewChat,
 }: {
   chatId: Id<"chats">;
-  plannerMode?: boolean;
+  deepSearchMode?: boolean;
   isNewChat: boolean;
 }) => {
   const updateChatMutation = useMutation(api.chats.mutations.update);
@@ -21,15 +21,18 @@ export const PlannerToggle = ({
     <Toggle
       variant="outline"
       className="hover:transition hover:duration-500"
-      pressed={plannerMode}
+      pressed={deepSearchMode}
       onPressedChange={() => {
         if (isNewChat) {
-          setChatInput({ ...chatInput, plannerMode: !chatInput.plannerMode });
+          setChatInput({
+            ...chatInput,
+            deepSearchMode: !chatInput.deepSearchMode,
+          });
         } else {
           updateChatMutation({
             chatId,
             updates: {
-              plannerMode: !plannerMode,
+              deepSearchMode: !deepSearchMode,
             },
           });
         }

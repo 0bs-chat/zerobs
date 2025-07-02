@@ -14,7 +14,7 @@ import { DocumentDialog } from "@/components/document-dialog";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
 import { Panel } from "@/components/chat/panels";
 import { useHydrateAtoms } from "jotai/utils";
-import { ChatMessages } from "@/components/chat/messages/messages";
+import { ChatMessages } from "@/components/chat/messages";
 import type { Id } from "convex/_generated/dataModel";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
@@ -24,7 +24,7 @@ interface ChatInterfaceProps {
   chatId: Id<"chats">;
 }
 
-export const ChatInterface = ({ isNewChat, chatId }: ChatInterfaceProps) => {
+export const ChatInterface = ({ chatId }: ChatInterfaceProps) => {
   const sidebarOpen = useAtomValue(sidebarOpenAtom);
   const setSidebarOpen = useSetAtom(sidebarOpenAtom);
   const rightPanelVisible = useAtomValue(rightPanelVisibilityAtom);
@@ -62,7 +62,7 @@ export const ChatInterface = ({ isNewChat, chatId }: ChatInterfaceProps) => {
                   <div className="flex flex-col items-center justify-center overflow-hidden">
                     {chatId !== "new" && <ChatMessages chatId={chatId} />}
                   </div>
-                  <ChatInput isNewChat={isNewChat} chatId={chatId} />
+                  <ChatInput chatId={chatId} />
                 </ResizablePanel>
                 {rightPanelVisible && (
                   <>

@@ -1,10 +1,10 @@
-import { useQuery } from "convex/react";
+import { useMemo, useEffect, useRef, useState } from "react";
+import { useQuery, useConvex } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { useMemo, useEffect } from "react";
-import { currentCursorAtom, processedChunksAtom } from "@/store/chatStore";
-import { useAtom } from "jotai";
+import type { StreamEvent } from "@langchain/core/tracers/log_stream";
 
+// Define proper types based on LangChain StreamEvent structure
 export interface AIChunkGroup {
   type: "ai";
   content: string;
@@ -19,95 +19,141 @@ export interface ToolChunkGroup {
   isComplete: boolean;
 }
 
-const flushAI = (
-  groups: (AIChunkGroup | ToolChunkGroup)[],
-  aiBuffer: AIChunkGroup | null
-): AIChunkGroup | null => {
-  if (aiBuffer) {
-    groups.push(aiBuffer);
-    return null;
-  }
-  return aiBuffer;
-};
-
-export function useStream(chatId: Id<"chats">) {
-  const [cursor, setCursor] = useAtom(currentCursorAtom);
-  const [processedChunks, setProcessedChunks] = useAtom(processedChunksAtom);
-
-  const streamData = useQuery(api.streams.queries.getChunks, {
-    chatId,
-    paginationOpts: { numItems: 10, cursor },
-  });
-
-  const steps = useQuery(api.streams.queries.getState, { chatId });
-  const messages = useQuery(api.chatMessages.queries.get, {
-    chatId,
-    getCurrentThread: true,
-  });
-
-  if (!streamData) throw new Error("Stream data not found");
-
-  const parsedChunks = useMemo(
-    () =>
-      streamData.chunks.page.flatMap((chunkDoc) =>
-        chunkDoc.chunks.map((chunkString) => JSON.parse(chunkString))
-      ),
-    [streamData.chunks.page]
+export function useStream(chatId: Id<"chats"> | "new") {
+  // Get reactive data – Convex will push updates automatically
+  const stream = useQuery(
+    api.streams.queries.get,
+    chatId !== "new" ? { chatId } : "skip"
   );
 
-  // accumulate processed chunks on the load and not
+  const streamState = useQuery(
+    api.streams.queries.getState,
+    chatId !== "new" ? { chatId } : "skip"
+  );
+
+  const convex = useConvex();
+
+  const [chunks, setChunks] = useState<StreamEvent[]>([]);
+  const lastTimeRef = useRef<number | undefined>(undefined);
+
   useEffect(() => {
-    if (parsedChunks.length > 0) {
-      setProcessedChunks((prev) => [...(prev ?? []), ...parsedChunks]);
-    }
-  }, [parsedChunks]);
+    lastTimeRef.current = undefined;
+    setChunks([]);
+  }, [chatId, stream?._id]);
 
-  const loadMore = () => {
-    if (streamData?.chunks.continueCursor) {
-      setCursor(streamData.chunks.continueCursor);
-    }
-  };
+  useEffect(() => {
+    if (!stream || stream.status !== "streaming") return;
 
-  const chunkGroups = useMemo(() => {
-    const groups: (AIChunkGroup | ToolChunkGroup)[] = [];
-    let aiBuffer: AIChunkGroup | null = null;
+    let cancelled = false;
 
-    if (!processedChunks)
-      throw new Error(`Processed chunks: ${JSON.stringify(processedChunks)}`);
+    async function poll() {
+      while (!cancelled && stream?.status === "streaming") {
+        try {
+          const result = await convex.query(api.streams.queries.getChunks, {
+            chatId: stream.chatId,
+            lastChunkTime: lastTimeRef.current,
+            paginationOpts: { numItems: 50, cursor: null },
+          });
 
-    for (const chunk of processedChunks) {
-      switch (chunk.type) {
-        case "ai": {
-          const { content = "", reasoning = "" } = chunk;
-          if (!aiBuffer) aiBuffer = { type: "ai", content: "" };
-          aiBuffer.content += content;
-          if (reasoning) aiBuffer.reasoning = reasoning;
+          if (result.chunks.page.length > 0) {
+            const newEvents: StreamEvent[] = [];
+            result.chunks.page.forEach((chunkDoc) => {
+              chunkDoc.chunks.forEach((chunkStr) => {
+                newEvents.push(JSON.parse(chunkStr) as StreamEvent);
+              });
+            });
+
+            setChunks((prev) => [...prev, ...newEvents]);
+            lastTimeRef.current =
+              result.chunks.page[result.chunks.page.length - 1]._creationTime;
+          }
+        } catch (err) {
+          console.error("Polling error", err);
           break;
         }
-        case "tool": {
-          aiBuffer = flushAI(groups, aiBuffer);
-          const tool: ToolChunkGroup = {
-            type: "tool",
-            toolName: chunk.toolName || "Tool",
-            input: chunk.input,
-            isComplete: chunk.isComplete,
-          };
-          groups.push(tool);
-          break;
-        }
+
+        // Wait 300ms before next poll
+        await new Promise((res) => setTimeout(res, 300));
       }
     }
 
-    aiBuffer = flushAI(groups, aiBuffer);
-    return groups;
-  }, [processedChunks]);
+    poll();
 
-  return {
-    chunkGroups,
-    loadMore,
-    hasMore: streamData.chunks.continueCursor !== null,
-    streamStatus: streamData.chunks.continueCursor ? "loading" : "complete",
-    steps,
-    messages,
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [convex, stream?.status, stream?._id]);
+
+  // Group consecutive chunks into AI / Tool blocks
+  const chunkGroups = useMemo(() => {
+    const groups: (AIChunkGroup | ToolChunkGroup)[] = [];
+    let aiBuffer: AIChunkGroup | null = null;
+    const toolMap = new Map<string, ToolChunkGroup>();
+
+    const flushAI = () => {
+      if (aiBuffer) {
+        groups.push(aiBuffer);
+        aiBuffer = null;
+      }
+    };
+
+    for (const chunk of chunks) {
+      const id = chunk.run_id;
+      switch (chunk.event) {
+        case "on_chat_model_stream": {
+          const content = chunk.data?.chunk?.content ?? "";
+          const reasoning =
+            chunk.data?.chunk?.additional_kwargs?.reasoning_content ?? "";
+          if (!aiBuffer) aiBuffer = { type: "ai", content: "" };
+          aiBuffer.content += content;
+          if (reasoning) {
+            aiBuffer.reasoning = (aiBuffer.reasoning ?? "") + reasoning;
+          }
+          break;
+        }
+        case "on_llm_stream": {
+          const content = chunk.data?.chunk ?? "";
+          if (!aiBuffer) aiBuffer = { type: "ai", content: "" };
+          aiBuffer.content += content;
+          break;
+        }
+        case "on_tool_start": {
+          flushAI();
+          const tool: ToolChunkGroup = {
+            type: "tool",
+            toolName: chunk.name ?? "Tool",
+            input: chunk.data?.input,
+            isComplete: false,
+          };
+          groups.push(tool);
+          toolMap.set(id, tool);
+          break;
+        }
+        case "on_tool_end": {
+          flushAI();
+          const tool = toolMap.get(id);
+          if (tool) {
+            tool.output = chunk.data?.output;
+            tool.isComplete = true;
+            toolMap.delete(id);
+          } else {
+            groups.push({
+              type: "tool",
+              toolName: chunk.name ?? "Tool",
+              output: chunk.data?.output,
+              isComplete: true,
+            });
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    }
+
+    flushAI();
+    return groups;
+  }, [chunks]);
+
+  return { chunkGroups, status: stream?.status, streamState };
 }

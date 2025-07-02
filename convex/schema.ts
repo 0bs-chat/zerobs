@@ -35,8 +35,8 @@ export const DocumentVectors = Table("documentVectors", {
 });
 
 export const Chats = Table("chats", {
-  name: v.string(),
   userId: v.string(),
+  name: v.string(),
   pinned: v.boolean(),
   documents: v.array(v.id("documents")),
   text: v.string(),
@@ -47,8 +47,8 @@ export const Chats = Table("chats", {
     v.literal("high")
   ),
   projectId: v.union(v.id("projects"), v.null()), // use null, because we don't want to confuse undefined when unsetting or just not updating rest of the chat doc
-  agentMode: v.boolean(),
-  plannerMode: v.boolean(),
+  conductorMode: v.boolean(),
+  deepSearchMode: v.boolean(),
   webSearch: v.boolean(),
   artifacts: v.boolean(),
   updatedAt: v.number(),
@@ -108,9 +108,8 @@ export const StreamStates = Table("streamStates", {
 export const Projects = Table("projects", {
   name: v.string(),
   description: v.optional(v.string()),
-
-  userId: v.string(),
   systemPrompt: v.string(),
+  userId: v.string(),
   updatedAt: v.number(),
 });
 
@@ -140,8 +139,8 @@ export const Mcps = Table("mcps", {
     v.literal("error")
   ),
   restartOnNewChat: v.boolean(),
-  updatedAt: v.number(),
   userId: v.optional(v.string()),
+  updatedAt: v.number(),
 });
 
 export const StreamChunkRefs = Table("streamChunkRefs", {
@@ -150,7 +149,10 @@ export const StreamChunkRefs = Table("streamChunkRefs", {
 });
 
 export default defineSchema({
-  apiKeys: ApiKeys.table.index("by_user_key", ["userId", "key"]),
+  apiKeys: ApiKeys.table
+    .index("by_key", ["key"])
+    .index("by_user_key", ["userId", "key"])
+    .index("by_value_user", ["value", "userId"]),
   documents: Documents.table
     .index("by_key_user", ["key", "userId"])
     .index("by_user", ["userId"]),
