@@ -1,20 +1,48 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X } from "lucide-react";
-import type { EnvVar } from "./types";
 
 interface EnvVarInputProps {
-  envVars: EnvVar[];
-  onUpdate: (envVars: EnvVar[]) => void;
+  envVars: Record<string, string>;
+  onUpdate: (envVars: Record<string, string>) => void;
+}
+
+interface EnvVar {
+  key: string;
+  value: string;
 }
 
 export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
+  // Convert Record to array for easier manipulation
+  const envVarArray: EnvVar[] = Object.entries(envVars).map(([key, value]) => ({
+    key,
+    value,
+  }));
+
+  // Ensure there's always at least one empty row
+  const displayEnvVars = envVarArray.length === 0 
+    ? [{ key: "", value: "" }] 
+    : [...envVarArray, { key: "", value: "" }];
+
+  const convertToRecord = (envArray: EnvVar[]): Record<string, string> => {
+    const result: Record<string, string> = {};
+    envArray.forEach(({ key, value }) => {
+      if (key.trim() !== "") {
+        result[key.trim()] = value;
+      }
+    });
+    return result;
+  };
+
   const addEnvVar = () => {
-    onUpdate([...envVars, { key: "", value: "" }]);
+    // This will be handled by the display logic automatically
+    const newEnvVars = [...envVarArray, { key: "", value: "" }];
+    onUpdate(convertToRecord(newEnvVars));
   };
 
   const removeEnvVar = (index: number) => {
-    onUpdate(envVars.filter((_, i) => i !== index));
+    const newEnvVars = envVarArray.filter((_, i) => i !== index);
+    onUpdate(convertToRecord(newEnvVars));
   };
 
   const updateEnvVar = (
@@ -22,9 +50,9 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
     field: "key" | "value",
     value: string,
   ) => {
-    onUpdate(
-      envVars.map((env, i) => (i === index ? { ...env, [field]: value } : env)),
-    );
+    const newEnvVars = [...displayEnvVars];
+    newEnvVars[index] = { ...newEnvVars[index], [field]: value };
+    onUpdate(convertToRecord(newEnvVars));
   };
 
   const handlePaste = (
@@ -32,7 +60,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
     index: number,
   ) => {
     // Only process paste if the input is empty
-    const currentEnvVar = envVars[index];
+    const currentEnvVar = displayEnvVars[index];
     if (currentEnvVar.key !== "" || currentEnvVar.value !== "") {
       return;
     }
@@ -51,11 +79,11 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
     if (parsedEnvVars.length > 0) {
       // Replace the current empty env var with the parsed ones
       const newEnvVars = [
-        ...envVars.slice(0, index),
+        ...displayEnvVars.slice(0, index),
         ...parsedEnvVars,
-        ...envVars.slice(index + 1),
+        ...displayEnvVars.slice(index + 1),
       ];
-      onUpdate(newEnvVars);
+      onUpdate(convertToRecord(newEnvVars));
     }
   };
 
@@ -86,7 +114,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
 
   return (
     <div className="space-y-2">
-      {envVars.map((env, index) => (
+      {displayEnvVars.map((env, index) => (
         <div key={index} className="flex gap-2">
           <Input
             placeholder="Key"
@@ -101,7 +129,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
             onChange={(e) => updateEnvVar(index, "value", e.target.value)}
             onPaste={(e) => handlePaste(e, index)}
           />
-          {index === envVars.length - 1 ? (
+          {index === displayEnvVars.length - 1 ? (
             <Button
               type="button"
               variant="outline"

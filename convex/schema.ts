@@ -43,8 +43,8 @@ export const Chats = Table("chats", {
   model: v.string(),
   reasoningEffort: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
   projectId: v.union(v.id("projects"), v.null()), // use null, because we don't want to confuse undefined when unsetting or just not updating rest of the chat doc
-  agentMode: v.boolean(),
-  plannerMode: v.boolean(),
+  conductorMode: v.boolean(),
+  deepSearchMode: v.boolean(),
   webSearch: v.boolean(),
   artifacts: v.boolean(),
   updatedAt: v.number(),

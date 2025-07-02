@@ -31,7 +31,10 @@ export function AppSidebar() {
 
   const handleNewChat = () => {
     navigate({
-      to: "/",
+      to: "/chat/$chatId",
+      params: {
+        chatId: "new",
+      },
       replace: true,
     });
   };

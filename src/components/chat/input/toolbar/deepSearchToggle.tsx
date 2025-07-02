@@ -1,17 +1,17 @@
 import { Toggle } from "@/components/ui/toggle";
-import { BrainIcon } from "lucide-react";
+import { Binoculars } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useSetAtom } from "jotai";
 import { newChatAtom } from "@/store/chatStore";
 
-export const PlannerToggle = ({
+export const DeepSearchToggle = ({
   chatId,
-  plannerMode,
+  deepSearchMode,
 }: {
   chatId: Id<"chats">;
-  plannerMode?: boolean;
+  deepSearchMode?: boolean;
 }) => {
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const setNewChat = useSetAtom(newChatAtom);
@@ -19,22 +19,22 @@ export const PlannerToggle = ({
     <Toggle
       variant="outline"
       className="hover:transition hover:duration-500"
-      pressed={plannerMode}
+      pressed={deepSearchMode}
       onPressedChange={() => {
         if (chatId === "new") {
-          setNewChat((prev) => ({ ...prev, plannerMode: !prev.plannerMode }));
+          setNewChat((prev) => ({ ...prev, deepSearchMode: !prev.deepSearchMode }));
         } else {
           updateChatMutation({
             chatId,
             updates: {
-              plannerMode: !plannerMode,
+              deepSearchMode: !deepSearchMode,
             },
           });
         }
       }}
     >
-      <BrainIcon className="h-4 w-4" />
-      Smort
+      <Binoculars className="h-4 w-4" />
+      DeepSearch
     </Toggle>
   );
-};
+}; 

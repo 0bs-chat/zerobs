@@ -11,8 +11,8 @@ export const create = mutation({
     model: v.string(),
     reasoningEffort: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
     projectId: v.union(v.id("projects"), v.null()),
-    agentMode: v.boolean(),
-    plannerMode: v.boolean(),
+    conductorMode: v.boolean(),
+    deepSearchMode: v.boolean(),
     webSearch: v.boolean(),
     artifacts: v.boolean(),
   },
@@ -25,6 +25,8 @@ export const create = mutation({
       reasoningEffort: args.reasoningEffort ?? "medium",
       updatedAt: Date.now(),
       public: false,
+      documents: [],
+      text: "",
     });
     return chatId;
   },

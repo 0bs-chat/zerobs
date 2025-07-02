@@ -115,7 +115,7 @@ async function shouldPlanOrAgentOrSimple(
     return "simple";
   }
 
-  if (formattedConfig.chat.plannerMode) {
+  if (formattedConfig.chat.deepSearchMode) {
     return "planner";
   }
 
@@ -159,7 +159,11 @@ async function baseAgent(state: typeof GraphState.State, config: RunnableConfig)
     formattedConfig.chat.model!,
   );
   const documentsMessage = await getDocumentsMessage(state.documents);
-  if (documentsMessage) { formattedMessages.splice(formattedMessages.length - 1, 0, documentsMessage) }
+  let inputMessagesCount = formattedMessages.length;
+  if (documentsMessage) { 
+    formattedMessages.splice(formattedMessages.length - 1, 0, documentsMessage);
+    inputMessagesCount = formattedMessages.length;
+  }
 
   const response = await chain.invoke(
     {
@@ -168,10 +172,7 @@ async function baseAgent(state: typeof GraphState.State, config: RunnableConfig)
     config,
   );
 
-  let newMessages = response.messages.slice(
-    state.messages.length + 1,
-    response.messages.length,
-  ) as BaseMessage[];
+  let newMessages = response.messages.slice(inputMessagesCount) as BaseMessage[];
 
   // append documents to last ai message
   const lastAIMessageResult = getLastMessage(newMessages, "ai");
@@ -191,7 +192,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
   const promptTemplate = createPlannerPrompt(state.documents);
   const modelWithOutputParser = promptTemplate.pipe(
-    (await getModel(formattedConfig.ctx, formattedConfig.chat.model)).withStructuredOutput(planSchema)
+    (await getModel(formattedConfig.ctx, formattedConfig.chat.model, formattedConfig.chat.reasoningEffort)).withStructuredOutput(planSchema)
   );
 
   const formattedMessages = await formatMessages(
@@ -282,7 +283,7 @@ async function replanner(
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
   const promptTemplate = createReplannerPrompt();
   const modelWithOutputParser = promptTemplate.pipe(
-    (await getModel(formattedConfig.ctx, formattedConfig.chat.model)).withStructuredOutput(replannerOutputSchema)
+    (await getModel(formattedConfig.ctx, formattedConfig.chat.model, formattedConfig.chat.reasoningEffort)).withStructuredOutput(replannerOutputSchema)
   );
 
   const inputMessage = getLastMessage(state.messages, "human")?.message;

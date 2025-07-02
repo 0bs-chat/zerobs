@@ -1,9 +1,8 @@
 import { Globe, Terminal, Container } from "lucide-react";
-import type { MCPType } from "./types";
 
 interface TypeSelectorProps {
-  type: MCPType;
-  onTypeChange: (type: MCPType) => void;
+  type: "sse" | "stdio" | "docker";
+  onTypeChange: (type: "sse" | "stdio" | "docker") => void;
 }
 
 export const TypeSelector = ({ type, onTypeChange }: TypeSelectorProps) => {

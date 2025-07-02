@@ -9,9 +9,9 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { FoldersIcon, PlusIcon } from "lucide-react";
 import {
-  projectDialogOpenAtom,
-  rightPanelVisibilityAtom,
-  rightPanelActiveTabAtom,
+  createProjectDialogOpenAtom,
+  resizePanelOpenAtom,
+  selectedPanelTabAtom,
 } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import type { Id } from "../../../../../convex/_generated/dataModel";
@@ -30,9 +30,9 @@ export const ProjectsDropdown = ({
     paginationOpts: { numItems: 3, cursor: null },
   });
   const updateChatMutation = useMutation(api.chats.mutations.update);
-  const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
-  const setRightPanelVisible = useSetAtom(rightPanelVisibilityAtom);
-  const setRightPanelActiveTab = useSetAtom(rightPanelActiveTabAtom);
+  const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
+  const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
+  const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
 
   return (
     <DropdownMenuSub>
@@ -54,8 +54,8 @@ export const ProjectsDropdown = ({
                 },
               });
               onCloseDropdown();
-              setRightPanelVisible(true);
-              setRightPanelActiveTab("projects");
+              setResizePanelOpen(true);
+              setSelectedPanelTab("projects");
             }}
           >
             {project.name}

@@ -27,21 +27,29 @@ export const AddDocumentControls = ({
     type: "file",
     addToChatInput: false,
   });
-  const createDocuments = useMutation(api.documents.mutations.createMultiple);
+  const createDocuments = useMutation(api.documents.mutations.create);
   const createProjectDocuments = useMutation(
-    api.projectDocuments.mutations.createMultiple
+    api.projectDocuments.mutations.create
   );
-  const updateChatInput = useMutation(api.chatInputs.mutations.update);
+  const updateChatInput = useMutation(api.chats.mutations.update);
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
 
   const handleFileUpload = async (files: FileList) => {
     const documentIds = await uploadDocuments(files);
 
-    await createProjectDocuments({
-      projectId,
-      documentIds: documentIds || [],
-    });
+    if (documentIds) {
+      await Promise.all(
+        documentIds
+          .filter((documentId) => documentId !== undefined)
+          .map((documentId) =>
+            createProjectDocuments({
+              projectId,
+              documentId,
+            })
+          )
+      );
+    }
 
     await updateChatInput({
       chatId,
@@ -55,20 +63,16 @@ export const AddDocumentControls = ({
     const url = prompt("Enter URL:");
     if (!url) return;
 
-    const documentIds = await createDocuments({
-      documents: [
-        {
-          name: url,
-          type: "url",
-          size: 0,
-          key: url,
-        },
-      ],
+    const documentId = await createDocuments({
+      name: url,
+      type: "url",
+      size: 0,
+      key: url,
     });
 
     await createProjectDocuments({
       projectId,
-      documentIds: documentIds || [],
+      documentId,
     });
   };
 
@@ -76,20 +80,16 @@ export const AddDocumentControls = ({
     const url = prompt("Enter website URL to crawl:");
     if (!url) return;
 
-    const documentIds = await createDocuments({
-      documents: [
-        {
-          name: url,
-          type: "site",
-          size: 0,
-          key: url,
-        },
-      ],
+    const documentId = await createDocuments({
+      name: url,
+      type: "site",
+      size: 0,
+      key: url,
     });
 
     await createProjectDocuments({
       projectId,
-      documentIds: documentIds || [],
+      documentId,
     });
   };
 
@@ -97,20 +97,16 @@ export const AddDocumentControls = ({
     const url = prompt("Enter YouTube URL:");
     if (!url) return;
 
-    const documentIds = await createDocuments({
-      documents: [
-        {
-          name: url,
-          type: "youtube",
-          size: 0,
-          key: url,
-        },
-      ],
+    const documentId = await createDocuments({
+      name: url,
+      type: "youtube",
+      size: 0,
+      key: url,
     });
 
     await createProjectDocuments({
       projectId,
-      documentIds: documentIds || [],
+      documentId,
     });
   };
 

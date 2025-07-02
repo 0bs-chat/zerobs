@@ -7,7 +7,7 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
 import { useSetAtom } from "jotai";
-import { projectDialogOpenAtom } from "@/store/chatStore";
+import { createProjectDialogOpenAtom } from "@/store/chatStore";
 
 export const ProjectsList = () => {
   const params = useParams({ strict: false });
@@ -16,9 +16,9 @@ export const ProjectsList = () => {
     paginationOpts: { numItems: 20, cursor: null },
   });
 
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
   const removeProjectMutation = useMutation(api.projects.mutations.remove);
-  const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
+  const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
 
   return (
     <div className="flex flex-col gap-3 h-full ">
@@ -43,7 +43,7 @@ export const ProjectsList = () => {
               key={project._id}
               className="group rounded-md flex-row relative group/card px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-accent/30 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => {
-                updateChatInputMutation({
+                updateChatMutation({
                   chatId,
                   updates: {
                     projectId: project._id,

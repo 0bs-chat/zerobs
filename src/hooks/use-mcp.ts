@@ -2,13 +2,9 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import type { MCPData } from "@/components/chat/panels/mcp/types";
 import { useMutation, useQuery } from "convex/react";
-
 import { toast } from "sonner";
-import { mcpAtom } from "@/store/chatStore";
-import { useSetAtom } from "jotai";
 
 export function useMCPs() {
-  const setMcpAtom = useSetAtom(mcpAtom);
   const getAllMCPs = () => {
     const mcps = useQuery(api.mcps.queries.getAll, {
       paginationOpts: { numItems: 10, cursor: null },
@@ -55,20 +51,6 @@ export function useMCPs() {
       }
 
       await createMCP(createParams);
-
-      // Reset the form
-      setMcpAtom({
-        name: "",
-        command: "",
-        url: "",
-        dockerImage: "",
-        dockerPort: 8000,
-        type: "sse",
-        envVars: [{ key: "", value: "" }],
-        restartOnNewChat: false,
-        enabled: false,
-        status: "creating",
-      });
 
       setMcpEditDialogOpen(false);
       toast.success("MCP created successfully");

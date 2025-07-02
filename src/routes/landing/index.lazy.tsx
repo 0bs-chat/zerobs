@@ -1,8 +1,8 @@
 import { ThemeProvider } from "@/components/theme-provider";
-import { createFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { SignInButton } from "@clerk/clerk-react";
 
-export const Route = createFileRoute("/landing/")({
+export const Route = createLazyFileRoute("/landing/")({
   component: RouteComponent,
 });
 
@@ -44,4 +44,4 @@ function RouteComponent() {
       </main>
     </ThemeProvider>
   );
-}
+} 

@@ -2,15 +2,14 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api } from "../_generated/api";
-import { buildMessageTree, getCurrentThread, MessageNode } from "./helpers";
-import { Doc } from "../_generated/dataModel";
+import { buildMessageTree, getCurrentThread } from "./helpers";
 
 export const get = query({
   args: {
     chatId: v.id("chats"),
-    getCurrentThread: v.boolean(),
+    getCurrentThread: v.optional(v.boolean()),
   },
-  handler: async (ctx, args): Promise<MessageNode[] | Doc<"chatMessages">[]> => {
+  handler: async (ctx, args) => {
     await requireAuth(ctx);
 
     await ctx.runQuery(api.chats.queries.get, {
@@ -23,10 +22,6 @@ export const get = query({
       .order("asc")
       .collect();
 
-    if (args.getCurrentThread) {
-      return getCurrentThread(messages);
-    } else {
-      return buildMessageTree(messages);
-    }
+    return args.getCurrentThread ? getCurrentThread(messages) : buildMessageTree(messages)
   },
 });

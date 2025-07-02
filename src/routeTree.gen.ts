@@ -8,42 +8,47 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as LandingIndexRouteImport } from './routes/landing/index'
-import { Route as ChatChatIdIndexRouteImport } from './routes/chat_/$chatId/index'
+import { createFileRoute } from '@tanstack/react-router'
 
-const IndexRoute = IndexRouteImport.update({
+import { Route as rootRouteImport } from './routes/__root'
+
+const IndexLazyRouteImport = createFileRoute('/')()
+const LandingIndexLazyRouteImport = createFileRoute('/landing/')()
+const ChatChatIdIndexLazyRouteImport = createFileRoute('/chat_/$chatId/')()
+
+const IndexLazyRoute = IndexLazyRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const LandingIndexRoute = LandingIndexRouteImport.update({
+} as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
+const LandingIndexLazyRoute = LandingIndexLazyRouteImport.update({
   id: '/landing/',
   path: '/landing/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const ChatChatIdIndexRoute = ChatChatIdIndexRouteImport.update({
+} as any).lazy(() => import('./routes/landing/index.lazy').then((d) => d.Route))
+const ChatChatIdIndexLazyRoute = ChatChatIdIndexLazyRouteImport.update({
   id: '/chat_/$chatId/',
   path: '/chat/$chatId/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/chat_/$chatId/index.lazy').then((d) => d.Route),
+)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/landing': typeof LandingIndexRoute
-  '/chat/$chatId': typeof ChatChatIdIndexRoute
+  '/': typeof IndexLazyRoute
+  '/landing': typeof LandingIndexLazyRoute
+  '/chat/$chatId': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/landing': typeof LandingIndexRoute
-  '/chat/$chatId': typeof ChatChatIdIndexRoute
+  '/': typeof IndexLazyRoute
+  '/landing': typeof LandingIndexLazyRoute
+  '/chat/$chatId': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/landing/': typeof LandingIndexRoute
-  '/chat_/$chatId/': typeof ChatChatIdIndexRoute
+  '/': typeof IndexLazyRoute
+  '/landing/': typeof LandingIndexLazyRoute
+  '/chat_/$chatId/': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -54,9 +59,9 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  LandingIndexRoute: typeof LandingIndexRoute
-  ChatChatIdIndexRoute: typeof ChatChatIdIndexRoute
+  IndexLazyRoute: typeof IndexLazyRoute
+  LandingIndexLazyRoute: typeof LandingIndexLazyRoute
+  ChatChatIdIndexLazyRoute: typeof ChatChatIdIndexLazyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,30 +70,30 @@ declare module '@tanstack/react-router' {
       id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof IndexLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/landing/': {
       id: '/landing/'
       path: '/landing'
       fullPath: '/landing'
-      preLoaderRoute: typeof LandingIndexRouteImport
+      preLoaderRoute: typeof LandingIndexLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat_/$chatId/': {
       id: '/chat_/$chatId/'
       path: '/chat/$chatId'
       fullPath: '/chat/$chatId'
-      preLoaderRoute: typeof ChatChatIdIndexRouteImport
+      preLoaderRoute: typeof ChatChatIdIndexLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  LandingIndexRoute: LandingIndexRoute,
-  ChatChatIdIndexRoute: ChatChatIdIndexRoute,
+  IndexLazyRoute: IndexLazyRoute,
+  LandingIndexLazyRoute: LandingIndexLazyRoute,
+  ChatChatIdIndexLazyRoute: ChatChatIdIndexLazyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

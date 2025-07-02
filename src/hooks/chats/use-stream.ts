@@ -30,8 +30,14 @@ export function useStream(chatId: Id<"chats">) {
   );
   
   // Get stream metadata reactively using Convex useQuery hook
-  const stream = useQuery(api.streams.queries.get, { chatId });
-  const streamState = useQuery(api.streams.queries.getState, { chatId });
+  const stream = useQuery(
+    api.streams.queries.get,
+    chatId !== "new" ? { chatId } : "skip"
+  );
+  const streamState = useQuery(
+    api.streams.queries.getState,
+    chatId !== "new" ? { chatId } : "skip"
+  );
 
   // Reset chunks when chatId changes
   useEffect(() => {
@@ -43,12 +49,15 @@ export function useStream(chatId: Id<"chats">) {
   useEffect(() => {
     if (!stream) return;
     
+    const streamId = stream._id;
+    const streamStatus = stream.status;
+    
     // Reset state when stream changes
     lastTimeRef.current = undefined;
     setChunks([]);
 
     async function pollChunks() {
-      if (stream?.status !== "streaming") return;
+      if (streamStatus !== "streaming") return;
 
       let cursor: string | null = null;
       let hasMore = true;
@@ -93,7 +102,7 @@ export function useStream(chatId: Id<"chats">) {
     }
 
     pollChunks();
-  }, [convex, stream]);
+  }, [convex, stream?._id, stream?.status]);
 
   // Process chunks into grouped AI/tool events
   const chunkGroups = useMemo(() => {

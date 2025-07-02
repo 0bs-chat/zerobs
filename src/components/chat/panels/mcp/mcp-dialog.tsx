@@ -11,13 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EnvVarInput } from "./env-var-input";
 import { TypeSelector } from "./type-selector";
-import { mcpAtom } from "@/store/chatStore";
-import { useAtomValue, useSetAtom } from "jotai";
 import { useMCPs } from "@/hooks/use-mcp";
 import { PlusIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { Doc } from "../../../../../convex/_generated/dataModel";
 
 interface CreateDialogProps {
   isOpen: boolean;
@@ -25,8 +24,17 @@ interface CreateDialogProps {
 }
 
 export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
-  const mcp = useAtomValue(mcpAtom);
-  const setMcp = useSetAtom(mcpAtom);
+  const [mcp, setMcp] = useState<Omit<Doc<"mcps">, "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled">>({
+    name: "",
+    type: "sse",
+    command: "",
+    url: "",
+    dockerImage: "",
+    dockerPort: 0,
+    restartOnNewChat: false,
+    env: {},
+    status: "creating",
+  });
   const { handleCreate } = useMCPs();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -36,18 +44,18 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
       return false;
     }
 
-    if (mcp.type === "stdio" && !mcp.command.trim()) {
+    if (mcp.type === "stdio" && !mcp.command?.trim()) {
       toast.error("Command is required for STDIO type");
       return false;
     }
 
-    if (mcp.type === "sse" && !mcp.url.trim()) {
+    if (mcp.type === "sse" && !mcp.url?.trim()) {
       toast.error("URL is required for SSE type");
       return false;
     }
 
     if (mcp.type === "docker") {
-      if (!mcp.dockerImage.trim()) {
+      if (!mcp.dockerImage?.trim()) {
         toast.error("Docker image is required for Docker type");
         return false;
       }
@@ -171,8 +179,8 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
               {mcp.type === "sse" ? "Headers" : "Environment Variables"}
             </Label>
             <EnvVarInput
-              envVars={mcp.envVars}
-              onUpdate={(envVars) => setMcp((prev) => ({ ...prev, envVars }))}
+              envVars={mcp.env || {}}
+              onUpdate={(env) => setMcp((prev) => ({ ...prev, env }))}
             />
           </div>
 

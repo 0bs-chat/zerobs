@@ -1,7 +1,7 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/theme-switcher";
 import {
-  rightPanelVisibilityAtom,
+  resizePanelOpenAtom,
   selectedArtifactAtom,
 } from "@/store/chatStore";
 import { LogOutIcon, PanelRightCloseIcon } from "lucide-react";
@@ -12,8 +12,8 @@ import { toast } from "sonner";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 export function TopNav() {
-  const [rightPanelVisible, setRightPanelVisible] = useAtom(
-    rightPanelVisibilityAtom,
+  const [resizePanelOpen, setResizePanelOpen] = useAtom(
+    resizePanelOpenAtom,
   );
   const { signOut } = useAuth();
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
@@ -25,7 +25,7 @@ export function TopNav() {
         <SidebarTrigger className="h-8 w-8" />
       </div>
       <div className="flex items-center gap-2 justify-center top-0 right-0 pointer-events-auto">
-        {!rightPanelVisible ? (
+        {!resizePanelOpen ? (
           <Button
             variant="ghost"
             size="icon"
@@ -38,17 +38,17 @@ export function TopNav() {
             <LogOutIcon className="h-4 w-4" />
           </Button>
         ) : null}
-        {!rightPanelVisible ? <ModeToggle /> : null}
+        {!resizePanelOpen ? <ModeToggle /> : null}
         <Button
           variant="ghost"
           size="icon"
-          className={`${rightPanelVisible ? "bg-muted-foreground/30 dark:bg-accent" : "bg-background"} ${selectedArtifact ? "hidden" : ""}`}
+          className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent" : "bg-background"} ${selectedArtifact ? "hidden" : ""}`}
           onClick={() => {
-            setRightPanelVisible(!rightPanelVisible);
+            setResizePanelOpen(!resizePanelOpen);
             setSelectedArtifact(null);
           }}
         >
-          {rightPanelVisible ? (
+          {resizePanelOpen ? (
             <PanelRightCloseIcon className="h-5 w-5" />
           ) : (
             <PanelRightOpenIcon className="h-5 w-5" />

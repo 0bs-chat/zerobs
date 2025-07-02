@@ -1,46 +1,61 @@
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { newChatAtom } from "@/store/chatStore";
+import { useSetAtom } from "jotai";
 
 export const useRemoveDocument = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
-  const chatId = params.chatId as Id<"chats"> | "new";
-  const chatInputQuery = useQuery(api.chatInputs.queries.get, { chatId });
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const chatId = params.chatId as Id<"chats">;
+  const chatInputQuery = useQuery(api.chats.queries.get, chatId !== "new" ? { chatId } : "skip");
+  const updateChatInputMutation = useMutation(api.chats.mutations.update);
+  const setNewChat = useSetAtom(newChatAtom);
 
   return (documentId: Id<"documents">) => {
-    if (!chatInputQuery?.documents) return;
-    updateChatInputMutation({
-      chatId: chatId,
-      updates: {
-        documents: chatInputQuery?.documents.filter((id) => id !== documentId),
-      },
-    });
+    if (chatId !== "new") {
+      if (!chatInputQuery?.documents) {
+        return;
+      }
+      
+      const filteredDocuments = chatInputQuery.documents.filter((id) => id !== documentId);
+      
+      updateChatInputMutation({
+        chatId: chatId,
+        updates: {
+          documents: filteredDocuments,
+        },
+      });
+    } else {
+      setNewChat((prev) => {
+        const filteredDocuments = prev.documents.filter((id) => id !== documentId);
+        return { ...prev, documents: filteredDocuments };
+      });
+    }
   };
 };
 
 export const useUploadDocuments = (
   {
     type,
-    addToChatInput,
+    chat,
   }: {
     type: "file" | "url" | "site" | "youtube" | "text" | "github";
-    addToChatInput?: boolean;
-  } = { type: "file", addToChatInput: true },
+    chat?: Doc<"chats">;
+  } = { type: "file" },
 ) => {
   const params = useParams({ from: "/chat_/$chatId/" });
-  const chatId = params.chatId as Id<"chats"> | "new";
-  const chatInputQuery = useQuery(api.chatInputs.queries.get, { chatId });
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
+  const chatId = params.chatId as Id<"chats">;
+  const updateChatMutation = useMutation(api.chats.mutations.update);
   const generateUploadUrlMutation = useMutation(
     api.documents.mutations.generateUploadUrl,
   );
-  const createMultipleMutation = useMutation(
-    api.documents.mutations.createMultiple,
+  const createMutation = useMutation(
+    api.documents.mutations.create,
   );
-
+  const setNewChat = useSetAtom(newChatAtom);
+  
   return async (files: FileList) => {
     try {
       const uploadedStorageIds: Id<"_storage">[] = [];
@@ -66,27 +81,28 @@ export const useUploadDocuments = (
         uploadedStorageIds.push(storageId);
       }
 
-      const documentIds = await createMultipleMutation({
-        documents: uploadedStorageIds.map((storageId, index) => {
-          const file = files[index];
-          return {
-            name: file.name,
-            type,
-            size: file.size,
-            key: storageId,
-          };
-        }),
-      });
+      const documentIds = await Promise.all(uploadedStorageIds.map((storageId, index) => {
+        const file = files[index];
+        return createMutation({
+          name: file.name,
+          type,
+          size: file.size,
+          key: storageId,
+        });
+      }));
 
       // Update chat input with new documents
-      if (addToChatInput) {
-        const existingDocuments = chatInputQuery?.documents || [];
-        await updateChatInputMutation({
-          chatId,
-          updates: {
-            documents: [...existingDocuments, ...documentIds],
-          },
-        });
+      if (chat) {
+        if (chatId !== "new") {
+          await updateChatMutation({
+            chatId,
+            updates: {
+              documents: [...chat.documents, ...documentIds],
+            },
+          });
+        } else {
+          setNewChat((prev) => ({ ...prev, documents: [...prev.documents, ...documentIds] }));
+        }
       }
 
       toast(

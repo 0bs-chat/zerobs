@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { ChatMessages } from "@/components/chat/messages";
 import { ChatInput } from "@/components/chat/input/index";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -18,7 +18,7 @@ import { useEffect } from "react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/chat_/$chatId/")({
+export const Route = createLazyFileRoute("/chat_/$chatId/")({
   component: RouteComponent,
 });
 
@@ -26,7 +26,7 @@ function RouteComponent() {
   const params = useParams({
     from: "/chat_/$chatId/",
   });
-  const chatId = params.chatId as Id<"chats"> | "new";
+  const chatId = params.chatId as Id<"chats">;
   const resizePanelOpen = useAtomValue(resizePanelOpenAtom);
   const sidebarOpen = useAtomValue(sidebarOpenAtom);
   const setSidebarOpen = useSetAtom(sidebarOpenAtom);
@@ -48,7 +48,7 @@ function RouteComponent() {
       {sidebarOpen && <AppSidebar />}
       <div className="flex-1">
         <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel className="flex flex-col gap-1 p-2 pt-4 overflow-hidden">
+          <ResizablePanel className="flex flex-col items-center justify-between gap-1 p-2 pt-4 overflow-hidden">
             <ChatMessages />
             <ChatInput />
           </ResizablePanel>
@@ -68,4 +68,4 @@ function RouteComponent() {
       <CreateProjectDialog />
     </SidebarProvider>
   );
-}
+} 

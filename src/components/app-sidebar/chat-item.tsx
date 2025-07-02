@@ -12,7 +12,7 @@ interface ChatItemProps {
 }
 
 export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
-  function ChatItem({ chat, isPinned }) {
+  function ChatItem({ chat, isPinned }, ref) {
     const { handleNavigate, handlePin, handleUnpin, handleDelete, handleSelect } =
       chatHandlers();
     const params = useParams({ strict: false });
@@ -21,7 +21,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
     return (
       <SidebarMenuButton
         key={chat._id}
-        className="py-2.5 group/item cursor-pointer w-full h-full"
+        className="py-5 group/item cursor-pointer w-full h-full"
         asChild
         onClick={() => {
           handleNavigate(chat._id);
@@ -29,6 +29,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
         }}
       >
         <div
+          ref={ref}
           className={cn(
             "relative flex w-full items-center isolate justify-between overflow-hidden rounded-md",
             isSelected && "bg-secondary/50"

@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Loader2, Play, Square, Trash2, RotateCcw } from "lucide-react";
-import type { MCPCardProps } from "./types";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import type { Doc, Id } from "convex/_generated/dataModel";
 
 export const MCPCard = ({
   mcp,
@@ -10,7 +10,13 @@ export const MCPCard = ({
   onStartStop,
   onDelete,
   onRestart,
-}: MCPCardProps) => {
+}: {
+  mcp: Doc<"mcps">;
+  status: "creating" | "created" | "error";
+  onStartStop: (mcpId: Id<"mcps">, enabled: boolean) => Promise<void>;
+  onDelete: (mcpId: Id<"mcps">) => Promise<void>;
+  onRestart?: (mcpId: Id<"mcps">) => Promise<void>;
+}) => {
   const getDisplayValue = () => {
     switch (mcp.type) {
       case "stdio":

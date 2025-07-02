@@ -146,7 +146,11 @@ export const models: {
   },
 ];
 
-export async function getModel(ctx: ActionCtx, model: string): Promise<BaseChatModel> {
+export async function getModel(
+  ctx: ActionCtx, 
+  model: string, 
+  reasoningEffort: "low" | "medium" | "high" | undefined
+): Promise<BaseChatModel> {
   const modelConfig = models.find((m) => m.model_name === model);
 
   if (!modelConfig) {
@@ -165,7 +169,7 @@ export async function getModel(ctx: ActionCtx, model: string): Promise<BaseChatM
     apiKey: OPENAI_API_KEY,
     temperature: 0.3,
     reasoning: {
-      effort: "medium",
+      effort: reasoningEffort,
     },
     configuration: {
       baseURL: OPENAI_BASE_URL,

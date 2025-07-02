@@ -11,10 +11,11 @@ import {
   PaperclipIcon,
   GithubIcon,
   CircleStopIcon,
+  BrainIcon,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { useUploadDocuments } from "@/hooks/use-documents";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import {
   Select,
@@ -29,12 +30,13 @@ import type { Doc, Id } from "../../../../../convex/_generated/dataModel";
 import { useRef, useState } from "react";
 import { getTagInfo } from "@/lib/helpers";
 import GitHubDialog from "../github";
-import { useAuth } from "@clerk/clerk-react";
-import { AgentToggle } from "./agentToggle";
-import { PlannerToggle } from "./plannerToggle";
+import { ConductorToggle } from "./conductorToggle";
+import { DeepSearchToggle } from "./deepSearchToggle";
 import { useSetAtom, useAtomValue } from "jotai";
 import { streamStatusAtom, newChatAtom } from "@/store/chatStore";
 import { models } from "../../../../../convex/langchain/models";
+import { ArtifactsToggle } from "./artifatsToggle";
+import { WebSearchToggle } from "./webSearchToggle";
 
 export const ToolBar = ({
   chat,
@@ -50,15 +52,13 @@ export const ToolBar = ({
   const streamStatus = useAtomValue(streamStatusAtom);
   const cancelStreamMutation = useMutation(api.streams.mutations.cancel);
   const setNewChat = useSetAtom(newChatAtom);
+  const selectedModel = chat.model;
+  const reasoningEffort = chat.reasoningEffort;
+  const selectedModelConfig = models.find(m => m.model_name === selectedModel);
+  const showReasoningEffort = selectedModelConfig?.isThinking ?? false;
 
-  const getModelFromChat = useQuery(api.chats.queries.get, {
-    chatId,
-  });
-  const selectedModel = getModelFromChat?.model;
-
-  const handleFileUpload = useUploadDocuments();
-
-  const { isSignedIn } = useAuth();
+  const handleFileUpload = useUploadDocuments({ type: "file", chat });
+  const handleSubmit = useHandleSubmit();
 
   return (
     <div className="flex flex-row justify-between items-center w-full p-1">
@@ -69,47 +69,80 @@ export const ToolBar = ({
         multiple
         onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
       />
-      {isSignedIn && (
-        <GitHubDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
-      )}
+      <GitHubDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
 
       <div className="flex flex-row items-center gap-1">
-        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
-              <PlusIcon className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <PaperclipIcon className="w-4 h-4" />
-              Attach Documents
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                setIsDropdownOpen(false); // unmounting dropdown
-                setIsDialogOpen(true); // dialog mount
-              }}
-            >
-              <GithubIcon className="w-4 h-4" />
-              Add GitHub Repo
-            </DropdownMenuItem>
-            <ProjectsDropdown
-              onCloseDropdown={() => setIsDropdownOpen(false)}
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex flex-row items-center gap-1">
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <PlusIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                <PaperclipIcon className="w-4 h-4" />
+                Attach Documents
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setIsDropdownOpen(false); // unmounting dropdown
+                  setIsDialogOpen(true); // dialog mount
+                }}
+              >
+                <GithubIcon className="w-4 h-4" />
+                Add GitHub Repo
+              </DropdownMenuItem>
+              <ProjectsDropdown
+                onCloseDropdown={() => setIsDropdownOpen(false)}
+              />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <ConductorToggle
+          chatId={chatId}
+          conductorMode={chat.conductorMode}
+        />
+        <DeepSearchToggle
+          chatId={chatId}
+          deepSearchMode={chat.deepSearchMode}
+        />
+        <ArtifactsToggle
+          chatId={chatId}
+          artifacts={chat.artifacts}
+        />
+        <WebSearchToggle
+          chatId={chatId}
+          webSearch={chat.webSearch}
+        />
       </div>
-
-      <AgentToggle
-        chatId={chatId}
-        agentMode={chat.agentMode}
-      />
-      <PlannerToggle
-        chatId={chatId}
-        plannerMode={chat.plannerMode}
-      />
       <div className="flex flex-row items-center gap-1">
+        {showReasoningEffort && (
+          <Select
+            value={reasoningEffort}
+            onValueChange={(value: "low" | "medium" | "high") => {
+              if (chatId === "new") {
+                setNewChat((prev) => ({ ...prev, reasoningEffort: value }));
+              } else {
+                updateChatMutation({
+                  chatId,
+                  updates: { reasoningEffort: value },
+                });
+              }
+            }}
+          >
+            <SelectTrigger>
+              <BrainIcon className="h-4 w-4" />
+              {reasoningEffort}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
         <Select
           value={selectedModel}
           onValueChange={(value) => {
@@ -125,36 +158,39 @@ export const ToolBar = ({
         >
           <SelectTrigger>{selectedModel}</SelectTrigger>
           <SelectContent>
-            {models?.map((model, index) => (
-              <SelectItem
-                key={model.model}
-                value={model.model_name}
-                className={`${
-                  model.model_name === selectedModel ? "bg-accent" : ""
-                } ${index > 0 ? "mt-1" : ""}`}
-              >
-                <div className="flex flex-col w-full gap-2">
-                  <span className={`text-foreground`}>{model.label}</span>
-                  {model.modalities && (
-                    <div className="flex flex-row gap-1 ">
-                      {model.modalities?.map((modality) => {
-                        const { icon: Icon, className: IconClassName } =
-                          getTagInfo(modality);
-                        return (
-                          <Badge
-                            key={modality}
-                            className={`flex items-center gap-1 text-foreground bg-input/80`}
-                          >
-                            <Icon className={`h-3 w-3 ${IconClassName}`} />
-                            {modality}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </SelectItem>
-            ))}
+            {models?.map((model, index) => {
+              if (model.hidden) return null;
+              return (
+                <SelectItem
+                  key={model.model}
+                  value={model.model_name}
+                  className={`${
+                    model.model_name === selectedModel ? "bg-accent" : ""
+                  } ${index > 0 ? "mt-1" : ""}`}
+                >
+                  <div className="flex flex-col w-full gap-2">
+                    <span className={`text-foreground`}>{model.label}</span>
+                    {model.modalities && (
+                      <div className="flex flex-row gap-1 ">
+                        {model.modalities?.map((modality) => {
+                          const { icon: Icon, className: IconClassName } =
+                            getTagInfo(modality);
+                          return (
+                            <Badge
+                              key={modality}
+                              className={`flex items-center gap-1 text-foreground bg-input/80`}
+                            >
+                              <Icon className={`h-3 w-3 ${IconClassName}`} />
+                              {modality}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
 
@@ -163,7 +199,7 @@ export const ToolBar = ({
           size="icon"
           onClick={async () => {
             if (!["pending", "streaming"].includes(streamStatus ?? "")) {
-              await useHandleSubmit(chatId);
+              await handleSubmit(chat);
             } else {
               await cancelStreamMutation({ chatId });
             }

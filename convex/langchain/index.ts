@@ -9,6 +9,7 @@ import { MemorySaver } from "@langchain/langgraph";
 import { parseStateToStreamStatesDoc } from "./helpers";
 import { GraphState } from "./state";
 import { v } from "convex/values";
+import { getCurrentThread } from "../chatMessages/helpers";
 
 export const chat = action({
   args: v.object({
@@ -32,12 +33,10 @@ export const chat = action({
       chatId: args.chatId,
       getCurrentThread: true,
     })
-    const previousMessages = messages.map((message) => mapStoredMessageToChatMessage(JSON.parse(message.message)));
-
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
     const stream = agent.streamEvents(
-      { messages: previousMessages },
+      { messages: messages.map((message) => message.message) },
       { 
         version: "v2",
         configurable: { 
@@ -136,7 +135,7 @@ export const chat = action({
       throw error;
     }
 
-    const newMessages = checkpoint?.messages?.slice(previousMessages.length, checkpoint.messages.length);
+    const newMessages = checkpoint?.messages?.slice(messages.length, checkpoint.messages.length);
     if (newMessages) {
       let parentId: Id<"chatMessages"> | null = messages.length > 0 ? messages[messages.length - 1]._id : null;
       for (const message of newMessages) {

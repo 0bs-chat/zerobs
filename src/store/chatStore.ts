@@ -15,8 +15,8 @@ export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   model: "gemini-2.5-flash",
   reasoningEffort: "low",
   projectId: null,
-  agentMode: false,
-  plannerMode: false,
+  conductorMode: false,
+  deepSearchMode: false,
   webSearch: false,
   artifacts: false,
   updatedAt: 0,
@@ -43,3 +43,5 @@ export const streamStatusAtom = selectAtom(
   useStreamAtom,
   (stream) => stream?.status,
 );
+
+export const lastChatMessageAtom = atom<Doc<"chatMessages"> | undefined>(undefined);

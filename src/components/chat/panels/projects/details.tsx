@@ -19,7 +19,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
     projectId ? { projectId } : "skip",
   );
   const updateProject = useMutation(api.projects.mutations.update);
-  const updateChatInput = useMutation(api.chatInputs.mutations.update);
+  const updateChatInput = useMutation(api.chats.mutations.update);
 
   const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
     updateProject({

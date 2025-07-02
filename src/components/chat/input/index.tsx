@@ -6,23 +6,23 @@ import { useAtom } from "jotai";
 import { newChatAtom } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
-import type { Id } from "../../../../convex/_generated/dataModel";
 import { useEffect, useRef } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
+import { useParams } from "@tanstack/react-router";
+import type { Id } from "../../../../convex/_generated/dataModel";
 
-type ChatProps = {
-  chatId?: Id<"chats">;
-};
-
-export const ChatInput = ({ chatId }: ChatProps) => {
+export const ChatInput = () => {
+  const params = useParams({ from: "/chat_/$chatId/" });
+  const chatId = params.chatId as Id<"chats">;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const [newChat, setNewChat] = useAtom(newChatAtom);
+  const handleSubmit = useHandleSubmit();
 
   const chat = useQuery(
     api.chats.queries.get,
-    chatId ? { chatId } : "skip"
+    chatId !== "new" ? { chatId } : "skip"
   ) ?? newChat;
 
   // Load initial text including any saved draft
@@ -34,7 +34,7 @@ export const ChatInput = ({ chatId }: ChatProps) => {
 
   // Debounced draft saving (separate from UI updates)
   const debouncedSaveDraft = useDebouncedCallback((text: string) => {
-    if (chatId) {
+    if (chatId !== "new") {
       updateChatMutation({
         chatId,
         updates: { text },
@@ -46,7 +46,6 @@ export const ChatInput = ({ chatId }: ChatProps) => {
       }));
     }
   }, 300);
-
 
   return (
     <div className="flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">
@@ -76,7 +75,7 @@ export const ChatInput = ({ chatId }: ChatProps) => {
               return;
             }
     
-            useHandleSubmit(chatId!);
+            handleSubmit(chat);
     
             if (textareaRef.current) {
               textareaRef.current.value = "";

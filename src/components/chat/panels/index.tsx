@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  rightPanelActiveTabAtom,
+  selectedPanelTabAtom,
   selectedArtifactAtom,
 } from "@/store/chatStore";
 import { ProjectsPanel } from "./projects";
@@ -9,8 +9,8 @@ import { ArtifactsPanel } from "./artifacts";
 import { useAtomValue, useSetAtom } from "jotai";
 
 export const Panel = () => {
-  const activeTab = useAtomValue(rightPanelActiveTabAtom);
-  const setActiveTab = useSetAtom(rightPanelActiveTabAtom);
+  const activeTab = useAtomValue(selectedPanelTabAtom);
+  const setActiveTab = useSetAtom(selectedPanelTabAtom);
 
   // If an artifact is currently selected, we're in "preview" mode
   const selectedArtifact = useAtomValue(selectedArtifactAtom);

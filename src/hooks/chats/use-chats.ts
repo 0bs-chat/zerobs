@@ -1,12 +1,60 @@
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import { useAction, useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
-import type { Id } from "../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { useAtom, useAtomValue } from "jotai";
+import { lastChatMessageAtom, newChatAtom } from "@/store/chatStore";
 
-export const useHandleSubmit = (chatId: Id<"chats">) => {
-  return
+export const useHandleSubmit = () => {
+  const createMessageMutation = useMutation(api.chatMessages.mutations.create);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const createChatMutation = useMutation(api.chats.mutations.create);
+  const [newChat, setNewChat] = useAtom(newChatAtom);
+  const sendAction = useAction(api.langchain.index.chat);
+  const navigate = useNavigate();
+  const lastChatMessage = useAtomValue(lastChatMessageAtom);
+
+  const handleSubmit = async (chat: Doc<"chats">) => {
+    if (chat._id === "new") {
+      setNewChat((prev) => ({ ...prev, text: "", documents: [] }));
+      chat._id = await createChatMutation({
+        name: newChat.name,
+        model: newChat.model,
+        reasoningEffort: newChat.reasoningEffort,
+        projectId: newChat.projectId,
+        conductorMode: newChat.conductorMode,
+        deepSearchMode: newChat.deepSearchMode,
+        webSearch: newChat.webSearch,
+        artifacts: newChat.artifacts,
+      });
+      await createMessageMutation({
+        chatId: chat._id,
+        documents: chat.documents,
+        text: chat.text,
+        parentId: null,
+      });
+      navigate({
+        to: "/chat/$chatId",
+        params: { chatId: chat._id },
+      });
+    } else {
+      await updateChatMutation({
+        chatId: chat._id,
+        updates: { text: "", documents: [] },
+      });
+      await createMessageMutation({
+        chatId: chat._id,
+        documents: chat.documents,
+        text: chat.text,
+        parentId: lastChatMessage?._id ?? null,
+      });
+    }
+    await sendAction({ chatId: chat._id });
+  };
+
+  return handleSubmit;
 };
 
 export const useInfiniteChats = () => {

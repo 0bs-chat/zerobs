@@ -19,7 +19,7 @@ import mime from "mime";
 type DocumentBadgeProps = {
   doc: Doc<"documents">;
   onPreview: (documentId: Id<"documents">) => void;
-  onRemove: (documentId: Id<"documents">) => void;
+  onRemove: () => void;
   modalities?: string[];
 };
 
@@ -64,9 +64,9 @@ const DocumentBadge = React.memo(
     const handleRemove = useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation();
-        onRemove(doc._id);
+        onRemove();
       },
-      [onRemove, doc._id]
+      [onRemove]
     );
 
     return (
@@ -101,8 +101,6 @@ export const DocumentList = ({
   const documents = useQuery(api.documents.queries.getMultiple, {
     documentIds,
   });
-  const removeDocument = useRemoveDocument();
-
   const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
 
@@ -112,13 +110,6 @@ export const DocumentList = ({
       setDocumentDialogOpen(true);
     },
     [setDocumentDialogDocumentId, setDocumentDialogOpen]
-  );
-
-  const handleRemove = useCallback(
-    (documentId: Id<"documents">) => {
-      removeDocument(documentId);
-    },
-    [removeDocument]
   );
 
   if (!documents?.length) return null;
@@ -134,7 +125,7 @@ export const DocumentList = ({
             key={doc._id}
             doc={doc}
             onPreview={handlePreview}
-            onRemove={handleRemove}
+            onRemove={() => useRemoveDocument()(doc._id)}
             modalities={modalities}
           />
         ))}

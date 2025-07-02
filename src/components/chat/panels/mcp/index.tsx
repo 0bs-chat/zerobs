@@ -1,12 +1,12 @@
 import { MCPDialog } from "./mcp-dialog";
 import { MCPCard } from "./mcp-card";
-import { mcpEditDialogOpenAtom } from "@/store/chatStore";
+import { createMCPServerDialogOpenAtom } from "@/store/chatStore";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useMCPs } from "@/hooks/use-mcp";
 
 export const MCPPanel = () => {
-  const mcpEditDialogOpen = useAtomValue(mcpEditDialogOpenAtom);
-  const setMcpEditDialogOpen = useSetAtom(mcpEditDialogOpenAtom);
+  const createMCPServerDialogOpen = useAtomValue(createMCPServerDialogOpenAtom);
+  const setCreateMCPServerDialogOpen = useSetAtom(createMCPServerDialogOpenAtom);
   const { getAllMCPs, toggleMCP, handleDelete, restartMCP } = useMCPs();
 
   const mcps = getAllMCPs();
@@ -16,8 +16,8 @@ export const MCPPanel = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">MCPs</h2>
         <MCPDialog
-          isOpen={mcpEditDialogOpen}
-          onOpenChange={setMcpEditDialogOpen}
+          isOpen={createMCPServerDialogOpen}
+          onOpenChange={setCreateMCPServerDialogOpen}
         />
       </div>
 
