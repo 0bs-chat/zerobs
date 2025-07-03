@@ -6,11 +6,9 @@ import { selectedProjectIdAtom } from "@/store/chatStore";
 export const ProjectsPanel = () => {
   const chatProjectId = useAtomValue(selectedProjectIdAtom);
 
-  const showProjectList = !chatProjectId;
-
-  if (showProjectList) {
+  if (!chatProjectId) {
     return <ProjectsList />;
   }
-
+  
   return <ProjectDetails projectId={chatProjectId!} />;
 };

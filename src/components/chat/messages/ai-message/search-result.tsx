@@ -75,7 +75,7 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
           {results.map((result, index) => (
             <Card key={index} className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-col gap-2">
-                <div className="flex flex-row items-start justify-between">
+                <div className="flex flex-row items-start justify-between w-full">
                   <div className="flex flex-col gap-1 items-start flex-1 min-w-0">
                     <div className="flex flex-row items-center gap-2">
                       {result.metadata.favicon && (
@@ -88,8 +88,34 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
                         {result.metadata.title || "Untitled"}
                       </h3>
                     </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <GlobeIcon className="h-3 w-3" />
+                        <Link to={result.metadata.source} target="_blank" rel="noopener noreferrer" className="hover:underline truncate">{extractDomain(result.metadata.source)}</Link>
+                      </span>
+                      
+                      {result.metadata.publishedDate && (
+                        <>
+                          <Separator orientation="vertical" className="h-3" />
+                          <span className="flex items-center gap-1">
+                            <CalendarIcon className="h-3 w-3" />
+                            {formatDate(result.metadata.publishedDate)}
+                          </span>
+                        </>
+                      )}
+                      
+                      {result.metadata.author && (
+                        <>
+                          <Separator orientation="vertical" className="h-3" />
+                          <span className="flex items-center gap-1 truncate">
+                            <UserIcon className="h-3 w-3" />
+                            <span className="truncate">{result.metadata.author}</span>
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
-                          
+                              
                   {result.metadata.image && (
                     <div className="flex-shrink-0 ml-2">
                       <div className="w-12 h-12 rounded border overflow-hidden bg-muted">
@@ -104,33 +130,6 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
                         />
                       </div>
                     </div>
-                  )}
-                </div>
-                
-                <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <GlobeIcon className="h-3 w-3" />
-                    <Link to={result.metadata.source} target="_blank" rel="noopener noreferrer" className="hover:underline truncate">{extractDomain(result.metadata.source)}</Link>
-                  </span>
-                  
-                  {result.metadata.publishedDate && (
-                    <>
-                      <Separator orientation="vertical" className="h-3" />
-                      <span className="flex items-center gap-1">
-                        <CalendarIcon className="h-3 w-3" />
-                        {formatDate(result.metadata.publishedDate)}
-                      </span>
-                    </>
-                  )}
-                  
-                  {result.metadata.author && (
-                    <>
-                      <Separator orientation="vertical" className="h-3" />
-                      <span className="flex items-center gap-1 truncate">
-                        <UserIcon className="h-3 w-3" />
-                        <span className="truncate">{result.metadata.author}</span>
-                      </span>
-                    </>
                   )}
                 </div>
               </CardHeader>

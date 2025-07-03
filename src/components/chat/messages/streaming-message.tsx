@@ -102,7 +102,7 @@ export const StreamingMessage = memo(({ stream }: { stream: ReturnType<typeof us
     return stream.chunkGroups.map((chunk, index) => {
       if (chunk.type === "ai") {
         return (
-          <div key={`ai-${index}`} className="space-y-2">
+          <div key={`ai-${index}`}>
             {chunk.reasoning && (
               <Reasoning 
                 reasoning={chunk.reasoning} 
@@ -140,7 +140,7 @@ export const StreamingMessage = memo(({ stream }: { stream: ReturnType<typeof us
   }
 
   return (
-    <div className="space-y-3">
+    <div>
       {renderedChunks}
     </div>
   );

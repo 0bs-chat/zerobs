@@ -18,7 +18,7 @@ const MessageGroup = memo(({ group, navigateBranch }: {
   };
   navigateBranch: MessageBranchNavigation;
 }) => (
-  <div key={group.human.message._id} className="flex flex-col gap-2">
+  <div key={group.human.message._id} className="flex flex-col gap-1">
     <UserMessage item={group.human} navigateBranch={navigateBranch} />
     {group.responses.map((response) => (
       <AiMessage

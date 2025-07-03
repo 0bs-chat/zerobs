@@ -37,54 +37,52 @@ export const AiMessage = memo(({ item, navigateBranch }: AiMessageProps) => {
   const renderedContent = useMemo(() => {
     if (type !== "ai") return content as string;
     
-    return (
-      <div className="space-y-3">
-        {parsedContent.map((part: ContentPart, index: number) => {
-          if (part.type === "text") {
-            // Only render non-empty text content
-            if (part.content.trim()) {
-              return (
-                <Markdown 
-                  key={`text-${index}`} 
-                  content={part.content} 
-                  id={`${item.message._id}-${index}`} 
-                />
-              );
-            }
-            return null;
-          } else if (part.type === "artifact") {
-            return (
-              <div key={`artifact-${index}`} className="my-4">
-                <ArtifactCard 
-                  artifact={part.artifact} 
-                  onView={handleArtifactView}
-                />
-              </div>
-            );
-          }
-          return null;
-        })}
-      </div>
-    );
+    return parsedContent.map((part: ContentPart, index: number) => {
+      if (part.type === "text") {
+        // Only render non-empty text content
+        if (part.content.trim()) {
+          return (
+            <Markdown 
+              key={`text-${index}`} 
+              content={part.content} 
+              id={`${item.message._id}-${index}`} 
+            />
+          );
+        }
+        return null;
+      } else if (part.type === "artifact") {
+        return (
+          <div key={`artifact-${index}`} className="my-4">
+            <ArtifactCard 
+              artifact={part.artifact} 
+              onView={handleArtifactView}
+            />
+          </div>
+        );
+      }
+      return null;
+    });
   }, [parsedContent, item.message._id, handleArtifactView]);
 
   // Memoize the message content based on type
   const messageContent = useMemo(() => {
     if (type === "ai") {
       return (
-        <div>
+        <>
           <Reasoning reasoning={reasoning} messageId={item.message._id} />
-          {renderedContent}
-        </div>
+          <div className="">
+            {renderedContent}
+          </div>
+        </>
       );
     } else if (type === "tool") {
       return <ToolMessage message={msg} />;
     } else {
       return (
-        <div>
+        <>
           <div className="text-sm text-muted-foreground">Unknown:</div>
           <div>Can't parse message</div>
-        </div>
+        </>
       );
     }
   }, [type, reasoning, item.message._id, renderedContent, msg]);
@@ -118,9 +116,7 @@ export const AiMessage = memo(({ item, navigateBranch }: AiMessageProps) => {
 
   return (
     <div>
-      <div>
-        {messageContent}
-      </div>
+      {messageContent}
       {branchNavigation}
     </div>
   );

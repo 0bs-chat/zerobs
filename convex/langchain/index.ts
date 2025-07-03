@@ -76,6 +76,13 @@ export const chat = action({
 
     try {
       for await (const event of stream) {
+        // Check for cancellation using the current streamDoc
+        if (streamDoc?.status === "cancelled") {
+          wasCancelled = true;
+          abortController.abort();
+          break;
+        }
+
         checkpoint = (await agent.getState({ configurable: { thread_id: args.chatId } })).values as typeof GraphState.State
         const state = parseStateToStreamStatesDoc(checkpoint);
 
@@ -83,12 +90,6 @@ export const chat = action({
           chatId: args.chatId,
           updates: state,
         });
-
-        if (streamDoc?.status === "cancelled") {
-          wasCancelled = true;
-          abortController.abort();
-          break;
-        }
 
         if (
           ["on_chat_model_stream", "on_tool_start", "on_tool_end"].includes(
@@ -107,7 +108,8 @@ export const chat = action({
 
         const now = Date.now();
         if (now - lastFlush >= BUFFER) {
-          if (streamDoc) {
+          if (streamDoc && buffer.length > 0) {
+            // Update streamDoc with the return value from appendChunks
             streamDoc = await ctx.runMutation(
               internal.streams.mutations.appendChunks,
               {
@@ -115,13 +117,19 @@ export const chat = action({
                 chunks: buffer,
               },
             );
+            // Check if the stream was cancelled during appendChunks
+            if (streamDoc.status === "cancelled") {
+              wasCancelled = true;
+              abortController.abort();
+              break;
+            }
           }
           lastFlush = now;
           buffer.length = 0;
         }
       }
     } catch (error) {
-      if (wasCancelled) {
+      if (wasCancelled || abortController.signal.aborted) {
         return;
       }
       if (streamDoc) {

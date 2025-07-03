@@ -10,6 +10,8 @@ import { ProjectDocumentList } from "./document-list";
 import type { ProjectDetailsProps } from "./types";
 import { useParams } from "@tanstack/react-router";
 import type { Id } from "../../../../../convex/_generated/dataModel";
+import { useSetAtom } from "jotai";
+import { newChatAtom } from "@/store/chatStore";
 
 export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const params = useParams({ strict: false });
@@ -20,6 +22,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   );
   const updateProject = useMutation(api.projects.mutations.update);
   const updateChatInput = useMutation(api.chats.mutations.update);
+  const setNewChat = useSetAtom(newChatAtom);
 
   const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
     updateProject({
@@ -42,12 +45,19 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
             size="icon"
             className="cursor-pointer"
             onClick={() => {
-              updateChatInput({
+              if (chatId !== "new") {
+                updateChatInput({
                 chatId,
                 updates: {
+                    projectId: null,
+                  },
+                });
+              } else {
+                setNewChat((prev) => ({
+                  ...prev,
                   projectId: null,
-                },
-              });
+                }));
+              }
             }}
           >
             <XIcon className="size-5" />

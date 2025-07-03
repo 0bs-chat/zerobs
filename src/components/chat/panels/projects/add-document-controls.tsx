@@ -24,8 +24,7 @@ export const AddDocumentControls = ({
   projectId: Id<"projects">;
 }) => {
   const uploadDocuments = useUploadDocuments({
-    type: "file",
-    addToChatInput: false,
+    type: "file"
   });
   const createDocuments = useMutation(api.documents.mutations.create);
   const createProjectDocuments = useMutation(

@@ -2,8 +2,8 @@ import { DocumentList } from "./document-list";
 import { AutosizeTextarea, type AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useAtom } from "jotai";
-import { newChatAtom } from "@/store/chatStore";
+import { useAtom, useSetAtom } from "jotai";
+import { newChatAtom, selectedProjectIdAtom } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { useEffect, useRef } from "react";
@@ -19,11 +19,16 @@ export const ChatInput = () => {
   const textareaRef = useRef<AutosizeTextAreaRef>(null);
   const [newChat, setNewChat] = useAtom(newChatAtom);
   const handleSubmit = useHandleSubmit();
+  const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
 
   const chat = useQuery(
     api.chats.queries.get,
     chatId !== "new" ? { chatId } : "skip"
   ) ?? newChat;
+
+  useEffect(() => {
+    setSelectedProjectId(chat.projectId);
+  }, [chat.projectId]);
 
   // Debounced draft saving (separate from UI updates)
   const debouncedSaveDraft = useDebouncedCallback((text: string) => {
@@ -38,9 +43,6 @@ export const ChatInput = () => {
       ...prev,
       text: chat.text,
     }));
-    if (textareaRef.current) {
-      textareaRef.current.textArea.value = chat.text;
-    }
   }, [chatId]);
 
   return (
