@@ -16,14 +16,14 @@ export const Documents = Table("documents", {
     v.literal("site"),
     v.literal("youtube"),
     v.literal("text"),
-    v.literal("github"),
+    v.literal("github")
   ),
   size: v.number(),
   key: v.union(v.id("_storage"), v.string()),
   status: v.union(
     v.literal("processing"),
     v.literal("done"),
-    v.literal("error"),
+    v.literal("error")
   ),
   userId: v.string(),
 });
@@ -41,7 +41,11 @@ export const Chats = Table("chats", {
   documents: v.array(v.id("documents")),
   text: v.string(),
   model: v.string(),
-  reasoningEffort: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+  reasoningEffort: v.union(
+    v.literal("low"),
+    v.literal("medium"),
+    v.literal("high")
+  ),
   projectId: v.union(v.id("projects"), v.null()), // use null, because we don't want to confuse undefined when unsetting or just not updating rest of the chat doc
   conductorMode: v.boolean(),
   deepSearchMode: v.boolean(),
@@ -49,6 +53,22 @@ export const Chats = Table("chats", {
   artifacts: v.boolean(),
   updatedAt: v.number(),
   public: v.boolean(),
+});
+
+export const NewChatPrefs = Table("newChatPrefs", {
+  userId: v.string(),
+  model: v.string(),
+  text: v.string(),
+  reasoningEffort: v.union(
+    v.literal("low"),
+    v.literal("medium"),
+    v.literal("high")
+  ),
+  conductorMode: v.boolean(),
+  deepSearchMode: v.boolean(),
+  webSearch: v.boolean(),
+  artifacts: v.boolean(),
+  documents: v.array(v.id("documents")),
 });
 
 export const ChatMessages = Table("chatMessages", {
@@ -65,8 +85,8 @@ export const Streams = Table("streams", {
     v.literal("streaming"),
     v.literal("done"),
     v.literal("error"),
-    v.literal("cancelled"),
-  )
+    v.literal("cancelled")
+  ),
 });
 
 export const StreamChunks = Table("streamChunks", {
@@ -76,21 +96,27 @@ export const StreamChunks = Table("streamChunks", {
 
 export const StreamStates = Table("streamStates", {
   streamId: v.id("streams"),
-  sources: v.array(v.object({
-    type: v.union(v.literal("document"), v.literal("search")),
-    searchResult: v.optional(v.object({
-      title: v.string(),
-      source: v.string(),
-      publishedDate: v.optional(v.string()),
-      author: v.optional(v.string()),
-      image: v.optional(v.string()),
-      favicon: v.optional(v.string()),
-    })),
-    document: v.optional(v.object({
-      document: Documents.table.validator,
-      text: v.string(),
-    })),
-  })),
+  sources: v.array(
+    v.object({
+      type: v.union(v.literal("document"), v.literal("search")),
+      searchResult: v.optional(
+        v.object({
+          title: v.string(),
+          source: v.string(),
+          publishedDate: v.optional(v.string()),
+          author: v.optional(v.string()),
+          image: v.optional(v.string()),
+          favicon: v.optional(v.string()),
+        })
+      ),
+      document: v.optional(
+        v.object({
+          document: Documents.table.validator,
+          text: v.string(),
+        })
+      ),
+    })
+  ),
   plan: v.array(v.union(v.string(), v.array(v.string()))),
   pastSteps: v.array(v.object({ step: v.string(), message: v.string() })),
 });
@@ -126,7 +152,7 @@ export const Mcps = Table("mcps", {
   status: v.union(
     v.literal("creating"),
     v.literal("created"),
-    v.literal("error"),
+    v.literal("error")
   ),
   restartOnNewChat: v.boolean(),
   userId: v.optional(v.string()),
@@ -159,6 +185,7 @@ export default defineSchema({
       searchField: "name",
       filterFields: ["userId"],
     }),
+  newChatPrefs: NewChatPrefs.table.index("by_user", ["userId"]),
   chatMessages: ChatMessages.table
     .index("by_chat", ["chatId"])
     .index("by_parent", ["parentId"]),

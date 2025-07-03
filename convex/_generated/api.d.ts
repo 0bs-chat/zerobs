@@ -37,6 +37,8 @@ import type * as mcps_crud from "../mcps/crud.js";
 import type * as mcps_mutations from "../mcps/mutations.js";
 import type * as mcps_queries from "../mcps/queries.js";
 import type * as mcps_utils from "../mcps/utils.js";
+import type * as newChatPrefs_mutation from "../newChatPrefs/mutation.js";
+import type * as newChatPrefs_queries from "../newChatPrefs/queries.js";
 import type * as projectDocuments_mutations from "../projectDocuments/mutations.js";
 import type * as projectDocuments_queries from "../projectDocuments/queries.js";
 import type * as projects_mutations from "../projects/mutations.js";
@@ -96,6 +98,8 @@ declare const fullApi: ApiFromModules<{
   "mcps/mutations": typeof mcps_mutations;
   "mcps/queries": typeof mcps_queries;
   "mcps/utils": typeof mcps_utils;
+  "newChatPrefs/mutation": typeof newChatPrefs_mutation;
+  "newChatPrefs/queries": typeof newChatPrefs_queries;
   "projectDocuments/mutations": typeof projectDocuments_mutations;
   "projectDocuments/queries": typeof projectDocuments_queries;
   "projects/mutations": typeof projects_mutations;
