@@ -1,4 +1,4 @@
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import {
   type QueryCtx,
   type MutationCtx,
@@ -29,3 +29,11 @@ export const zodQuery = zCustomQuery(query, NoOp);
 export const zodMutation = zCustomMutation(mutation, NoOp);
 export const zodAction = zCustomAction(action, NoOp);
 export const zodInternalAction = zCustomAction(internalAction, NoOp);
+
+export async function getUrl(ctx: ActionCtx | MutationCtx, key: Doc<"documents">["key"]) {
+  try {
+    return await ctx.storage.getUrl(key);
+  } catch (error) {
+    return key;
+  }
+}

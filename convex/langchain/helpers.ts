@@ -218,21 +218,33 @@ export function parseStateToStreamStatesDoc(
 ): Omit<Doc<"streamStates">, "_id" | "_creationTime" | "streamId"> {
   // Convert documents to sources - these come from vector search or web search
   const sources = state.documents && state.documents.length > 0 ? state.documents.map(doc => {
-    const source: Doc<"streamStates">["sources"][0] = {
-      type: doc.metadata.type,
-      searchResult: {
-        title: doc.metadata.title,
-        source: doc.metadata.source,
-        publishedDate: doc.metadata.publishedDate,
-        author: doc.metadata.author,
-        image: doc.metadata.image,
-        favicon: doc.metadata.favicon,
-      },
-      document: doc.metadata.document ? {
-        document: doc.metadata.document,
-        text: doc.pageContent,
-      } : undefined,
-    };
+          const source: Doc<"streamStates">["sources"][0] = {
+        type: doc.metadata.type,
+        ...(doc.metadata.type === "search" ? {
+          searchResult: {
+            title: doc.metadata.title || doc.metadata.source || "Untitled",
+            source: doc.metadata.source || "",
+            publishedDate: doc.metadata.publishedDate,
+            author: doc.metadata.author,
+            image: doc.metadata.image,
+            favicon: doc.metadata.favicon,
+          }
+        } : {}),
+        ...(doc.metadata.type === "document" && doc.metadata.document ? {
+          document: {
+            // Strip system fields from the document to match the validator
+            document: {
+              name: doc.metadata.document.name,
+              type: doc.metadata.document.type,
+              size: doc.metadata.document.size,
+              key: doc.metadata.document.key,
+              status: doc.metadata.document.status,
+              userId: doc.metadata.document.userId,
+            },
+            text: doc.pageContent,
+          }
+        } : {}),
+      };
     return source;
   }) : [];
 

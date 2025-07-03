@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { internalAction } from "../../_generated/server";
 import mime from "mime";
 import { Documents } from "../../schema";
+import { getUrl } from "../helpers";
 
 const CRAWLER_URL = process.env.CRAWLER_URL ?? "http://127.0.0.1:7860";
 const DOC_PROCESSOR_URL =
@@ -28,7 +29,7 @@ export const processFile = internalAction({
         result = "";
       }
     } else {
-      const fileUrl = await ctx.storage.getUrl(document.key);
+      const fileUrl = await getUrl(ctx, document.key);
       const response = await fetch(`${DOC_PROCESSOR_URL}/process`, {
         method: "POST",
         headers: {

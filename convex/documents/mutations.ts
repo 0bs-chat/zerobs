@@ -1,7 +1,7 @@
-import { internalMutation, mutation } from "../_generated/server";
+import { action, internalMutation, mutation } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
-import { requireAuth } from "../utils/helpers";
+import { getUrl, requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
 import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
@@ -25,7 +25,7 @@ export const generateDownloadUrl = mutation({
     const document = await ctx.runQuery(api.documents.queries.get, {
       documentId: args.documentId,
     });
-    const url = await ctx.storage.getUrl(document.key as Id<"_storage">);
+    const url = await getUrl(ctx, document.key);
     if (!url) {
       throw new Error("Failed to generate download url");
     }
@@ -34,7 +34,7 @@ export const generateDownloadUrl = mutation({
   },
 });
 
-export const create = mutation({
+export const create = action({
   args: {
     name: schema.Documents.table.validator.fields.name,
     type: schema.Documents.table.validator.fields.type,
@@ -42,24 +42,23 @@ export const create = mutation({
     key: schema.Documents.table.validator.fields.key,
     ...partial(schema.Documents.systemFields),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<Id<"documents">> => {
     const { userId } = await requireAuth(ctx);
 
-    const documentId = await ctx.db.insert("documents", {
+    const document = await ctx.runMutation(internal.documents.crud.create, {
       ...args,
       userId,
       status: "processing",
     });
 
-    await ctx.scheduler.runAfter(
-      0,
+    await ctx.runAction(
       internal.documents.actions.addDocument,
       {
-        documentId,
+        documentId: document._id,
       },
     );
 
-    return documentId;
+    return document._id;
   },
 });
 

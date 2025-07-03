@@ -7,17 +7,11 @@ import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
 
 export const removeStreamChunks = internalMutation({
-  args: { chatId: v.id("chats") },
+  args: { streamId: v.id("streams") },
   handler: async (ctx, args): Promise<number> => {
-    const stream = await ctx.runQuery(api.streams.queries.get, {
-      chatId: args.chatId,
-    });
-    if (!stream) {
-      throw new Error("Stream not found");
-    }
     const refs = await ctx.db
       .query("streamChunkRefs")
-      .withIndex("by_stream", (q) => q.eq("streamId", stream._id))
+      .withIndex("by_stream", (q) => q.eq("streamId", args.streamId))
       .collect();
 
     await Promise.all([
@@ -43,7 +37,7 @@ export const update = internalMutation({
 
     if (args.updates.status === "done" || args.updates.status === "cancelled") {
       await ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
-        chatId: args.chatId,
+        streamId: stream?._id!,
       });
     }
 
@@ -136,7 +130,7 @@ export const remove = internalMutation({
     // Remove the stream document and its associated chunks.
     await ctx.db.delete(stream._id);
     await ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
-      chatId: args.chatId,
+      streamId: stream._id,
     });
     await ctx.runMutation(internal.streams.mutations.deleteState, {
       chatId: args.chatId,
@@ -177,7 +171,7 @@ export const cleanUp = internalMutation({
     const chunkCounts = await Promise.all(
       allStreamsToClean.map((stream) =>
         ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
-          chatId: stream.chatId,
+          streamId: stream._id,
         }),
       ),
     );

@@ -14,6 +14,7 @@ import { fly } from "../utils/flyio";
 import { getEmbeddingModel } from "./models";
 import type { GraphState } from "./state";
 import type { ExtendedRunnableConfig } from "./helpers";
+import { getUrl } from "../utils/helpers";
 
 export const getRetrievalTools = async (
   _state: typeof GraphState.State,
@@ -87,10 +88,8 @@ export const getRetrievalTools = async (
           if (!projectDocument) {
             return null;
           }
-          const url =
-            (await config.ctx.storage.getUrl(
-              projectDocument.key as Id<"_storage">,
-            )) ?? projectDocument.key;
+          const url = await getUrl(config.ctx, projectDocument.key);
+            
           return new Document({
             pageContent: doc.pageContent,
             metadata: {
@@ -296,7 +295,7 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
             documentId,
           });
           // Include various document types for upload (file, image, github, text)
-          const url = await ctx.storage.getUrl(document.key as Id<"_storage">) ?? document.key;
+          const url = await getUrl(ctx, document.key);
           return {
             name: `${index + 1}_${document.name}`,
             url,

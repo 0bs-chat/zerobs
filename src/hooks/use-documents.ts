@@ -1,5 +1,5 @@
 import type { Doc, Id } from "../../convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -51,7 +51,7 @@ export const useUploadDocuments = (
   const generateUploadUrlMutation = useMutation(
     api.documents.mutations.generateUploadUrl,
   );
-  const createMutation = useMutation(
+  const createMutation = useAction(
     api.documents.mutations.create,
   );
   const setNewChat = useSetAtom(newChatAtom);
