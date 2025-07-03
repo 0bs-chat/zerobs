@@ -8,6 +8,7 @@ import { ArtifactViewer } from "./viewer";
 import type { Artifact } from "../../artifacts/utils";
 import { parseArtifacts } from "../../artifacts/utils";
 import { ArtifactCard } from "../../artifacts/card";
+import type { AIChunkGroup } from "@/hooks/chats/use-stream";
 
 const ArtifactsList = ({
   artifacts,
@@ -67,14 +68,14 @@ export const ArtifactsPanel = () => {
     // 2. Get artifacts from stream and overwrite
     const streamingContent =
       stream?.chunkGroups
-        .filter((cg) => cg.type === "ai")
+        .filter((cg): cg is AIChunkGroup => cg.type === "ai")
         .map((cg) => cg.content)
         .join("") ?? "";
 
     if (streamingContent) {
       const streamingArtifacts = parseArtifacts(
         streamingContent,
-        stream?.messages?.length ?? 0
+        stream?.chunkGroups?.length ?? 0
       );
       streamingArtifacts.forEach((artifact) => {
         artifactMap.set(artifact.id, artifact);

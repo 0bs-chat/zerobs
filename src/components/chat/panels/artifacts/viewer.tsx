@@ -14,8 +14,6 @@ import { useCopy } from "@/hooks/use-copy";
 import { Markdown } from "@/components/ui/markdown";
 import { MermaidChart } from "@/components/ui/markdown/mermaid";
 import type { Artifact } from "../../artifacts/utils";
-
-import { iframeContent } from "./utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ArtifactViewerProps {
@@ -43,7 +41,7 @@ const TabbedRenderer = ({
     </TabsList>
     <TabsContent value="preview">{preview}</TabsContent>
     <TabsContent value="source">
-      <Markdown content={`\`\`\`${language || "text"}\n${source}\n\`\`\``} />
+      <Markdown content={`\`\`\`${language || "text"}\n${source}\n\`\`\``} id={`artifact-${Date.now()}`} />
     </TabsContent>
   </Tabs>
 );
@@ -186,7 +184,7 @@ const CodeRenderer = ({
   language?: string;
 }) => {
   return (
-    <Markdown content={`\`\`\`${language || "text"}\n${content}\n\`\`\``} />
+    <Markdown content={`\`\`\`${language || "text"}\n${content}\n\`\`\``} id={`artifact-${Date.now()}`} />
   );
 };
 
@@ -202,7 +200,7 @@ const SVGRenderer = ({ content }: { content: string }) => {
 const MarkdownRenderer = ({ content }: { content: string }) => {
   const preview = (
     <div className="border rounded-lg p-4 bg-background">
-      <Markdown content={content} />
+      <Markdown content={content} id={`artifact-${Date.now()}`} />
     </div>
   );
   return (

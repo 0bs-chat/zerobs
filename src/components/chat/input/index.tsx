@@ -1,5 +1,5 @@
 import { DocumentList } from "./document-list";
-import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
+import { AutosizeTextarea, type AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useAtom } from "jotai";
@@ -15,8 +15,8 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 export const ChatInput = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const chatId = params.chatId as Id<"chats">;
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const updateChatMutation = useMutation(api.chats.mutations.update);
+  const textareaRef = useRef<AutosizeTextAreaRef>(null);
   const [newChat, setNewChat] = useAtom(newChatAtom);
   const handleSubmit = useHandleSubmit();
 
@@ -25,27 +25,23 @@ export const ChatInput = () => {
     chatId !== "new" ? { chatId } : "skip"
   ) ?? newChat;
 
-  // Load initial text including any saved draft
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.value = chat.text;
-    }
-  }, [chatId, chat.text]);
-
   // Debounced draft saving (separate from UI updates)
   const debouncedSaveDraft = useDebouncedCallback((text: string) => {
-    if (chatId !== "new") {
-      updateChatMutation({
-        chatId,
-        updates: { text },
-      });
-    } else {
-      setNewChat((prev) => ({
-        ...prev,
-        text,
-      }));
-    }
+    updateChatMutation({
+      chatId,
+      updates: { text },
+    });
   }, 300);
+
+  useEffect(() => {
+    setNewChat((prev) => ({
+      ...prev,
+      text: chat.text,
+    }));
+    if (textareaRef.current) {
+      textareaRef.current.textArea.value = chat.text;
+    }
+  }, [chatId]);
 
   return (
     <div className="flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">
@@ -61,24 +57,30 @@ export const ChatInput = () => {
         maxHeight={192}
         minHeight={56}
         defaultValue={chat.text}
-        ref={textareaRef}
         className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
-        onChange={(e) => debouncedSaveDraft(e.target.value)}
+        onChange={(e) => {
+          setNewChat((prev) => ({
+            ...prev,
+            text: e.target.value,
+          }))
+          if (chatId !== "new") {
+            debouncedSaveDraft(e.target.value);
+          }
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-    
-            const enteredText = textareaRef.current?.value;
-    
-            if (!enteredText || enteredText.trim() === "") {
+            
+            if ((!newChat.text || newChat.text.trim() === "") && chat.documents.length === 0) {
               toast.error("Please enter a message");
               return;
             }
-    
+            
+            (e.target as HTMLTextAreaElement).value = "";
             handleSubmit(chat);
     
             if (textareaRef.current) {
-              textareaRef.current.value = "";
+              textareaRef.current.textArea.value = "";
             }
           }
         }}

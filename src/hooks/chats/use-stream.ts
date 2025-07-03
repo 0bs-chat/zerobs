@@ -5,13 +5,13 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import type { StreamEvent } from "@langchain/core/tracers/log_stream";
 
 // Define proper types based on LangChain StreamEvent structure
-interface AIChunkGroup {
+export interface AIChunkGroup {
   type: "ai";
   content: string;
   reasoning?: string;
 }
 
-interface ToolChunkGroup {
+export interface ToolChunkGroup {
   type: "tool";
   toolName: string;
   input?: unknown;
@@ -75,6 +75,8 @@ export function useStream(chatId: Id<"chats"> | "new") {
         // Wait 300ms before next poll
         await new Promise((res) => setTimeout(res, 300));
       }
+
+      setChunks([]);
     }
 
     poll();
@@ -101,9 +103,8 @@ export function useStream(chatId: Id<"chats"> | "new") {
       const id = chunk.run_id;
       switch (chunk.event) {
         case "on_chat_model_stream": {
-          const content = chunk.data?.chunk?.content ?? "";
-          const reasoning =
-            chunk.data?.chunk?.additional_kwargs?.reasoning_content ?? "";
+          const content = chunk.data?.chunk.kwargs.content ?? "";
+          const reasoning = chunk.data?.chunk.kwargs.additional_kwargs.reasoning_content ?? "";
           if (!aiBuffer) aiBuffer = { type: "ai", content: "" };
           aiBuffer.content += content;
           if (reasoning) {

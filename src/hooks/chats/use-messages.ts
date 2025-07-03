@@ -4,18 +4,18 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { buildMessageTree, type ParsedMessageNode } from "../../../convex/chatMessages/helpers";
 
-interface MessageWithBranchInfo {
+export interface MessageWithBranchInfo {
   message: ParsedMessageNode;
   branchIndex: number;
   totalBranches: number;
   depth: number;
 }
 
-interface UseMessagesOptions {
+export interface UseMessagesOptions {
   chatId: Id<"chats"> | "new";
 }
 
-type BranchPath = number[]; // index per depth, empty = default path
+export type BranchPath = number[]; // index per depth, empty = default path
 
 // Recursive helper to build the current thread
 const buildThread = (
@@ -39,6 +39,45 @@ const buildThread = (
   ];
 };
 
+export const groupMessages = (currentThread: MessageWithBranchInfo[]) => {
+  type MessageGroup = {
+    human: MessageWithBranchInfo;
+    responses: MessageWithBranchInfo[];
+  };
+
+  const groups: MessageGroup[] = [];
+  let currentGroup: MessageGroup | null = null;
+
+  for (const item of currentThread) {
+    const messageType = item.message.message.getType();
+    
+    if (messageType === "human") {
+      // Start a new group with this human message
+      if (currentGroup) {
+        groups.push(currentGroup);
+      }
+      currentGroup = {
+        human: item,
+        responses: []
+      };
+    } else if (messageType === "ai" || messageType === "tool") {
+      // Add to current group's responses
+      if (currentGroup) {
+        currentGroup.responses.push(item);
+      }
+      // If no current group (shouldn't happen in well-formed conversations),
+      // we could create a group with a placeholder human message, but for now skip
+    }
+  }
+
+  // Don't forget to add the last group
+  if (currentGroup) {
+    groups.push(currentGroup);
+  }
+
+  return groups;
+};
+
 export const useMessages = ({ chatId }: UseMessagesOptions) => {
   // Fetch message tree from Convex
   const messages = useQuery(
@@ -54,6 +93,14 @@ export const useMessages = ({ chatId }: UseMessagesOptions) => {
   const currentThread = useMemo(
     () => buildThread(messageTree, branchPath),
     [messageTree, branchPath]
+  );
+
+  // Group messages by human message + responses
+  const groupedMessages = useMemo(
+    () => {
+      return groupMessages(currentThread);
+    },
+    [currentThread]
   );
 
   // Function to change branch at a specific depth
@@ -109,7 +156,8 @@ export const useMessages = ({ chatId }: UseMessagesOptions) => {
     // Data
     messageTree,
     currentThread,
-    selectedBranches: branchPath, // Keep for compatibility, but now it's an array
+    groupedMessages,
+    lastMessageId: currentThread[currentThread.length - 1]?.message._id,
     
     // Actions
     changeBranch,
@@ -126,7 +174,3 @@ export const useMessages = ({ chatId }: UseMessagesOptions) => {
     isEmpty: currentThread.length === 0 && chatId !== "new"
   };
 };
-
-export const groupMessages = (messages: ParsedMessageNode[]) => {
-  
-}

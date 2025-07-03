@@ -1,20 +1,94 @@
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
-import { useMessages } from "../../../hooks/chats/use-messages";
+import { useMessages, type MessageWithBranchInfo } from "../../../hooks/chats/use-messages";
 import { useStream } from "../../../hooks/chats/use-stream";
-import { useStreamAtom } from "@/store/chatStore";
+import { groupedMessagesAtom, useStreamAtom, lastChatMessageAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { UserMessage, type MessageBranchNavigation } from "./user-message";
+import { AiMessage } from "./ai-message";
+import { StreamingMessage } from "./streaming-message";
+
+// Memoized message group component to prevent unnecessary re-renders
+const MessageGroup = memo(({ group, navigateBranch }: {
+  group: {
+    human: MessageWithBranchInfo;
+    responses: MessageWithBranchInfo[];
+  };
+  navigateBranch: MessageBranchNavigation;
+}) => (
+  <div key={group.human.message._id} className="flex flex-col gap-2">
+    <UserMessage item={group.human} navigateBranch={navigateBranch} />
+    {group.responses.map((response) => (
+      <AiMessage
+        key={response.message._id}
+        item={response}
+        navigateBranch={navigateBranch}
+      />
+    ))}
+  </div>
+));
+
+MessageGroup.displayName = "MessageGroup";
+
+// Memoized messages list component
+const MessagesList = memo(({ 
+  groupedMessages, 
+  navigateBranch, 
+  stream 
+}: {
+  groupedMessages: Array<{
+    human: MessageWithBranchInfo;
+    responses: MessageWithBranchInfo[];
+  }>;
+  navigateBranch: MessageBranchNavigation;
+  stream: ReturnType<typeof useStream>;
+}) => (
+  <>
+    {groupedMessages.map((group) => (
+      <MessageGroup 
+        key={group.human.message._id} 
+        group={group} 
+        navigateBranch={navigateBranch} 
+      />
+    ))}
+    <StreamingMessage stream={stream} />
+  </>
+));
+
+MessagesList.displayName = "MessagesList";
+
+// Memoized loading component
+const LoadingState = memo(() => (
+  <div className="flex items-center justify-center h-full">
+    <div className="text-muted-foreground">Loading messages...</div>
+  </div>
+));
+
+LoadingState.displayName = "LoadingState";
+
+// Memoized empty state component
+const EmptyState = memo(() => (
+  <div className="flex items-center justify-center h-full">
+    <div className="text-muted-foreground">No messages</div>
+  </div>
+));
+
+EmptyState.displayName = "EmptyState";
 
 export const ChatMessages = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const chatId = params.chatId as Id<"chats">;
   const setStreamAtom = useSetAtom(useStreamAtom);
+  const setGroupedMessagesAtom = useSetAtom(groupedMessagesAtom);
+  const setLastChatMessageAtom = useSetAtom(lastChatMessageAtom);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
   const {
-    currentThread,
+    groupedMessages,
+    lastMessageId,
     navigateBranch,
     isLoading,
     isEmpty
@@ -22,104 +96,67 @@ export const ChatMessages = () => {
 
   const stream = useStream(chatId);
 
+  // Memoize the navigation function to prevent child re-renders
+  const memoizedNavigateBranch = useCallback(
+    (depth: number, direction: 'prev' | 'next') => {
+      navigateBranch(depth, direction);
+    },
+    [navigateBranch]
+  );
+
+  // Memoize stream status and chunk length for scroll trigger optimization
+  const streamScrollTriggers = useMemo(() => ({
+    status: stream?.status,
+    chunkGroupsLength: stream?.chunkGroups?.length || 0
+  }), [stream?.status, stream?.chunkGroups?.length]);
+
+  // Memoize the messages length to optimize scroll triggers
+  const messagesLength = useMemo(() => groupedMessages.length, [groupedMessages.length]);
+
   useEffect(() => {
     setStreamAtom(stream);
-  }, [stream]);
+    setGroupedMessagesAtom(groupedMessages);
+    setLastChatMessageAtom(lastMessageId);
+  }, [stream, groupedMessages, lastMessageId, setStreamAtom, setGroupedMessagesAtom, setLastChatMessageAtom]);
+
+  // Optimized auto-scroll with memoized dependencies
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior });
+    }
+  }, []);
 
   // Auto-scroll to bottom when new messages arrive or when streaming
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [currentThread.length, stream?.status]);
+    scrollToBottom("smooth");
+  }, [messagesLength, streamScrollTriggers.status, streamScrollTriggers.chunkGroupsLength, scrollToBottom]);
 
   // Auto-scroll to bottom when component first loads with messages
   useEffect(() => {
-    if (!isEmpty && !isLoading && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
+    if (!isEmpty && !isLoading) {
+      scrollToBottom("auto");
     }
-  }, [isEmpty, isLoading]);
+  }, [isEmpty, isLoading, scrollToBottom]);
 
-  if (isLoading) {
+  // Memoize the main content to prevent unnecessary re-renders
+  const mainContent = useMemo(() => {
+    if (isLoading) {
+      return <LoadingState />;
+    }
+
+    if (isEmpty) {
+      return <EmptyState />;
+    }
+
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading messages...</div>
-      </div>
-    );
-  }
-
-  if (isEmpty) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">No messages</div>
-      </div>
-    );
-  }
-
-  return (
-    <ScrollArea 
-        ref={scrollAreaRef}
-        className="overflow-hidden h-full w-full"
-      >
-        <div className="flex flex-col gap-1 p-1 max-w-4xl mx-auto">
-          {currentThread.length > 0 ? (
-            <>
-              {currentThread.map((item) => (
-                <div 
-                  key={item.message._id}
-                >
-                  {/* Branch navigation info */}
-                  {item.totalBranches > 1 && (
-                    <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
-                      <span>Branch: {item.branchIndex}/{item.totalBranches}</span>
-                      <button 
-                        onClick={() => navigateBranch(item.depth, 'prev')}
-                        className="px-2 py-1 rounded border hover:bg-accent transition-colors"
-                        aria-label="Previous branch"
-                      >
-                        ←
-                      </button>
-                      <button 
-                        onClick={() => navigateBranch(item.depth, 'next')}
-                        className="px-2 py-1 rounded border hover:bg-accent transition-colors"
-                        aria-label="Next branch"
-                      >
-                        →
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* Message content */}
-                  <div className="bg-red-500">
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(item.message._creationTime).toLocaleString()}
-                    </div>
-                    <pre className="text-sm whitespace-pre-wrap font-mono bg-muted p-3 rounded">
-                      {JSON.stringify({
-                        id: item.message._id,
-                        hasChildren: (item.message.children?.length || 0) > 0,
-                        childrenCount: item.message.children?.length || 0,
-                        parentId: item.message.parentId,
-                        branchInfo: `${item.branchIndex}/${item.totalBranches}`,
-                        depth: item.depth,
-                        message: item.message.message
-                      }, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              ))}
-              {/* Stream status display */}
-              {stream && (
-                <div className="rounded-lg border bg-muted/50 p-3">
-                  <div className="text-xs text-muted-foreground">
-                    Stream Status: {stream.status}
-                  </div>
-                  <pre className="text-xs mt-2 whitespace-pre-wrap">
-                    {JSON.stringify(stream, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </>
+      <ScrollArea ref={scrollAreaRef} className="overflow-hidden h-full w-full">
+        <div className="flex flex-col gap-4 p-1 max-w-4xl mx-auto">
+          {groupedMessages.length > 0 ? (
+            <MessagesList
+              groupedMessages={groupedMessages}
+              navigateBranch={memoizedNavigateBranch}
+              stream={stream}
+            />
           ) : (
             <div className="text-center text-muted-foreground">No messages</div>
           )}
@@ -127,5 +164,8 @@ export const ChatMessages = () => {
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
-  );
+    );
+  }, [isLoading, isEmpty, groupedMessages, memoizedNavigateBranch, stream]);
+
+  return mainContent;
 };

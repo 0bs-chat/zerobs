@@ -17,6 +17,8 @@ export const useHandleSubmit = () => {
   const lastChatMessage = useAtomValue(lastChatMessageAtom);
 
   const handleSubmit = async (chat: Doc<"chats">) => {
+    console.log("chat", chat.text);
+    console.log("newChat", newChat.text);
     if (chat._id === "new") {
       setNewChat((prev) => ({ ...prev, text: "", documents: [] }));
       chat._id = await createChatMutation({
@@ -44,11 +46,12 @@ export const useHandleSubmit = () => {
         chatId: chat._id,
         updates: { text: "", documents: [] },
       });
+      setNewChat((prev) => ({ ...prev, text: "", documents: [] }));
       await createMessageMutation({
         chatId: chat._id,
         documents: chat.documents,
-        text: chat.text,
-        parentId: lastChatMessage?._id ?? null,
+        text: newChat.text,
+        parentId: lastChatMessage ?? null,
       });
     }
     await sendAction({ chatId: chat._id });

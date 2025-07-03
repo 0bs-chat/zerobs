@@ -240,36 +240,6 @@ code {
   }
 }
 
-/* Target react-syntax-highlighter spans directly */
-.syntax-highlighter-nowrap span[style] {
-  white-space: pre !important;
-  word-break: unset !important;
-}
-
-.syntax-highlighter-wrap span[style] {
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
-}
-
-.syntax-highlighter-nowrap {
-  overflow-x: auto;
-}
-
-.syntax-highlighter-wrap {
-  overflow-x: hidden;
-}
-
-/* More specific selectors to override inline styles */
-.syntax-highlighter-nowrap .bg-card {
-  white-space: pre !important;
-  word-break: unset !important;
-}
-
-.syntax-highlighter-wrap .bg-card {
-  white-space: pre-wrap !important;
-  word-break: break-word !important;
-}
-
 .mermaid-width-mode > svg {
   max-width: 100%;
   height: auto;
@@ -280,71 +250,7 @@ code {
   max-height: 80vh;
 }
 
-/* Custom markdown content styles */
-.markdown-content {
-  font-family: "Rubik", sans-serif !important;
-  font-weight: 500 !important;
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-.markdown-content p {
-  font-family: "Rubik", sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 1.1rem !important;
-  line-height: 1.6 !important;
-}
-
-.markdown-content h1,
-.markdown-content h2,
-.markdown-content h3,
-.markdown-content h4,
-.markdown-content h5,
-.markdown-content h6 {
-  font-family: "Rubik", sans-serif !important;
-  font-weight: 700 !important;
-}
-
-.markdown-content h1 {
-  font-size: 2rem !important;
-}
-
-.markdown-content h2 {
-  font-size: 1.75rem !important;
-}
-
-.markdown-content h3 {
-  font-size: 1.5rem !important;
-}
-
-.markdown-content h4 {
-  font-size: 1.25rem !important;
-}
-
-.markdown-content h5 {
-  font-size: 1.125rem !important;
-}
-
-.markdown-content h6 {
-  font-size: 1rem !important;
-}
-
-.markdown-content li {
-  font-family: "Rubik", sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 1.1rem !important;
-}
-
-.markdown-content strong {
-  font-weight: 700 !important;
-}
-
-.markdown-content em {
-  font-weight: 500 !important;
-}
-
-.markdown-content blockquote {
-  font-family: "Rubik", sans-serif !important;
-  font-weight: 500 !important;
-  font-size: 1.1rem !important;
+::selection {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
