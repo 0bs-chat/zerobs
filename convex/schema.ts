@@ -55,6 +55,22 @@ export const Chats = Table("chats", {
   public: v.boolean(),
 });
 
+export const NewChatPrefs = Table("newChatPrefs", {
+  userId: v.string(),
+  model: v.string(),
+  text: v.string(),
+  reasoningEffort: v.union(
+    v.literal("low"),
+    v.literal("medium"),
+    v.literal("high")
+  ),
+  conductorMode: v.boolean(),
+  deepSearchMode: v.boolean(),
+  webSearch: v.boolean(),
+  artifacts: v.boolean(),
+  documents: v.array(v.id("documents")),
+});
+
 export const ChatMessages = Table("chatMessages", {
   chatId: v.id("chats"),
   message: v.string(),
@@ -169,6 +185,7 @@ export default defineSchema({
       searchField: "name",
       filterFields: ["userId"],
     }),
+  newChatPrefs: NewChatPrefs.table.index("by_user", ["userId"]),
   chatMessages: ChatMessages.table
     .index("by_chat", ["chatId"])
     .index("by_parent", ["parentId"]),

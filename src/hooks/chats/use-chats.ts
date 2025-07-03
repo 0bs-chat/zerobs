@@ -5,60 +5,65 @@ import {
   useQuery,
 } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
+import { useMatchRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
-import { useAtom, useAtomValue } from "jotai";
-import { lastChatMessageAtom, chatAtom } from "@/store/chatStore";
+import { useAtomValue } from "jotai";
+import { lastChatMessageAtom } from "@/store/chatStore";
 
 export const useHandleSubmit = () => {
   const createMessageMutation = useMutation(api.chatMessages.mutations.create);
-  const updateChatMutation = useMutation(api.chats.mutations.update);
   const createChatMutation = useMutation(api.chats.mutations.create);
-  const [newChat, setNewChat] = useAtom(chatAtom);
   const sendAction = useAction(api.langchain.index.chat);
   const navigate = useNavigate();
   const lastChatMessage = useAtomValue(lastChatMessageAtom);
 
-  const handleSubmit = async (chat: Doc<"chats">) => {
-    if (chat._id === "new") {
-      setNewChat((prev: any) => ({ ...prev, text: "", documents: [] }));
-      chat._id = await createChatMutation({
-        name: newChat.name,
-        model: newChat.model,
-        reasoningEffort: newChat.reasoningEffort,
-        projectId: newChat.projectId,
-        conductorMode: newChat.conductorMode,
-        deepSearchMode: newChat.deepSearchMode,
-        webSearch: newChat.webSearch,
-        artifacts: newChat.artifacts,
+  const { data, isNew, chatId, save } = useChatState();
+
+  const handleSubmit = async () => {
+    if (!data) {
+      toast.error("No preferences found");
+      return;
+    }
+    if (isNew) {
+      const newChatId = await createChatMutation({
+        name: data.text,
+        model: data.model,
+        reasoningEffort: data.reasoningEffort,
+        conductorMode: data.conductorMode,
+        deepSearchMode: data.deepSearchMode,
+        webSearch: data.webSearch,
+        artifacts: data.artifacts,
+        projectId: null,
       });
       await createMessageMutation({
-        chatId: chat._id,
-        documents: chat.documents,
-        text: chat.text,
+        chatId: newChatId,
+        documents: data.documents,
+        text: data.text,
         parentId: null,
       });
       navigate({
         to: "/chat/$chatId",
-        params: { chatId: chat._id },
+        params: { chatId: newChatId },
       });
     } else {
-      await updateChatMutation({
-        chatId: chat._id,
-        updates: { text: "", documents: [] },
-      });
+      if (!chatId) {
+        toast.error("No chat id found");
+        return;
+      }
+      save({ text: data.text, documents: data.documents });
       await createMessageMutation({
-        chatId: chat._id,
-        documents: chat.documents,
-        text: chat.text,
+        chatId,
+        documents: data.documents,
+        text: data.text,
         parentId: lastChatMessage?._id ?? null,
       });
     }
-    await sendAction({ chatId: chat._id });
+    if (chatId) {
+      await sendAction({ chatId });
+    }
   };
-
   return handleSubmit;
 };
 
@@ -112,14 +117,14 @@ export const chatHandlers = () => {
   const updateChat = useMutation(api.chats.mutations.update);
   const removeChat = useMutation(api.chats.mutations.remove);
 
-  const handleNavigate = (chatId: string) => {
+  const handleNavigate = (chatId: Id<"chats">) => {
     navigate({
       to: "/chat/$chatId",
       params: { chatId },
     });
   };
 
-  const handlePin = (chatId: string) => {
+  const handlePin = (chatId: Id<"chats">) => {
     updateChat({
       chatId: chatId as Id<"chats">,
       updates: { pinned: true },
@@ -127,7 +132,7 @@ export const chatHandlers = () => {
     toast.success("Chat pinned");
   };
 
-  const handleUnpin = (chatId: string) => {
+  const handleUnpin = (chatId: Id<"chats">) => {
     updateChat({
       chatId: chatId as Id<"chats">,
       updates: { pinned: false },
@@ -135,19 +140,16 @@ export const chatHandlers = () => {
     toast.success("Chat unpinned");
   };
 
-  const handleSelect = (chatId: string) => {
+  const handleSelect = (chatId: Id<"chats">) => {
     navigate({
       to: "/chat/$chatId",
       params: { chatId },
     });
   };
 
-  const handleDelete = async (chatId: string) => {
+  const handleDelete = async (chatId: Id<"chats">) => {
     await removeChat({ chatId: chatId as Id<"chats"> });
-    const params = useParams({ from: "/chat/$chatId" });
-    if (params.chatId === chatId) {
-      navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
-    }
+    navigate({ to: "/" });
     toast.success("Chat deleted");
   };
 
@@ -157,5 +159,50 @@ export const chatHandlers = () => {
     handleUnpin,
     handleSelect,
     handleDelete,
+  };
+};
+
+export function useChatId(): Id<"chats"> | undefined {
+  const matchRoute = useMatchRoute();
+  const isChat = matchRoute({ to: "/chat/$chatId", fuzzy: false });
+  if (!isChat) return undefined; // ← safe fallback
+  const { chatId } = useParams({ from: "/chat/$chatId" });
+  return chatId as Id<"chats">;
+}
+
+export const useChatState = () => {
+  const chatId = useChatId();
+  const isNew = chatId === undefined;
+
+  const prefs = useQuery(api.newChatPrefs.queries.get, isNew ? {} : "skip");
+  const chat = useQuery(api.chats.queries.get, !isNew ? { chatId } : "skip");
+
+  const data = isNew ? prefs : chat;
+
+  const updatePrefs = useMutation(api.newChatPrefs.mutations.update);
+  const updateChat = useMutation(api.chats.mutations.update);
+
+  const updateProject = isNew
+    ? "skip"
+    : useMutation(api.projects.mutations.update);
+
+  const createProject = useMutation(api.projects.mutations.create);
+
+  const save = useCallback(
+    (updates: Partial<Doc<"chats">>) => {
+      isNew ? updatePrefs({ updates }) : updateChat({ chatId, updates });
+    },
+    [isNew, chatId]
+  );
+
+  return {
+    chatId,
+    isNew,
+    data,
+    save,
+    createProject,
+    updateProject,
+    prefs,
+    updateChat,
   };
 };

@@ -23,43 +23,37 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { ClientOnly, useParams } from "@tanstack/react-router";
-import type { Doc, Id } from "convex/_generated/dataModel";
+import { useChatState, useHandleSubmit } from "@/hooks/chats/use-chats";
+import { ClientOnly } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { getTagInfo } from "@/lib/helpers";
-import type { ChatState } from "@/store/chatStore";
 import { useAuth } from "@clerk/clerk-react";
 import { ConductorToggle } from "./conductorToggle";
 import { DeepSearchToggle } from "./deepSearchToggle";
 import { useAtom } from "jotai";
-import { chatAtom, streamStatusAtom } from "@/store/chatStore";
+import { streamStatusAtom } from "@/store/chatStore";
 import GitHubDialog from "../github";
+import { toast } from "sonner";
+import { useChatId } from "@/hooks/chats/use-chats";
+import { WebSearchToggle } from "./webSearchToggle";
 
-export const ToolBar = ({
-  isNewChat,
-  chatInputData,
-}: {
-  isNewChat: boolean;
-  chatInputData: ChatState;
-}) => {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats">;
+export const ToolBar = () => {
+  const chatId = useChatId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const updateChatMutation = useMutation(api.chats.mutations.update);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [chat, setChat] = useAtom(chatAtom);
   const [streamStatus] = useAtom(streamStatusAtom);
   const cancelStreamMutation = useMutation(api.streams.mutations.cancel);
 
   const models = useQuery(api.models.getModels);
+  const { data, save } = useChatState();
 
   const getModelFromChat = useQuery(
     api.chats.queries.get,
-    !chatId || chatId === "new" ? "skip" : { chatId }
+    !chatId || chatId === null ? "skip" : { chatId }
   );
-  const selectedModel = getModelFromChat?.model;
+
+  const selectedModel = getModelFromChat?.model ?? data?.model;
 
   const handleFileUpload = useUploadDocuments();
   const handleSubmit = useHandleSubmit();
@@ -80,6 +74,7 @@ export const ToolBar = ({
           <GitHubDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
         )}
       </ClientOnly>
+
       <div className="flex flex-row items-center gap-1">
         <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
@@ -106,30 +101,16 @@ export const ToolBar = ({
             />
           </DropdownMenuContent>
         </DropdownMenu>
+        <ConductorToggle />
+        <DeepSearchToggle />
+        <WebSearchToggle />
       </div>
 
-      <ConductorToggle
-        chatId={chatId}
-        conductorMode={chatInputData?.conductorMode}
-        isNewChat={isNewChat}
-      />
-      <DeepSearchToggle
-        chatId={chatId}
-        deepSearchMode={chatInputData?.deepSearchMode}
-        isNewChat={isNewChat}
-      />
       <div className="flex flex-row items-center gap-1">
         <Select
           value={selectedModel}
           onValueChange={(value) => {
-            if (isNewChat) {
-              setChat({ ...chat, model: value });
-            } else {
-              updateChatMutation({
-                chatId,
-                updates: { model: value },
-              });
-            }
+            save({ model: value });
           }}
         >
           <SelectTrigger>{selectedModel}</SelectTrigger>
@@ -172,9 +153,11 @@ export const ToolBar = ({
           size="icon"
           onClick={async () => {
             if (!["pending", "streaming"].includes(streamStatus ?? "")) {
-              await handleSubmit(chat as Doc<"chats">);
+              await handleSubmit();
             } else {
-              await cancelStreamMutation({ chatId });
+              if (chatId && chatId !== "" && chatId !== undefined) {
+                await cancelStreamMutation({ chatId });
+              }
             }
           }}
         >

@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChatInterface } from "@/components/chatInterface";
-import type { Id } from "convex/_generated/dataModel";
-import { useParams } from "@tanstack/react-router";
+import { ChatInput } from "@/components/chat/input";
+import { ChatMessages } from "@/components/chat/messages";
 
 export const Route = createFileRoute("/chat/$chatId")({
   component: ChatPage,
@@ -13,12 +12,12 @@ export const Route = createFileRoute("/chat/$chatId")({
 });
 
 function ChatPage() {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats">;
-
   return (
     <>
-      <ChatInterface isNewChat={false} chatId={chatId} />
+      <div className="flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">
+        <ChatMessages />
+        <ChatInput />
+      </div>
     </>
   );
 }

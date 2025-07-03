@@ -1,30 +1,17 @@
 import { Toggle } from "@/components/ui/toggle";
-import { useMutation } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
-import type { Id } from "../../../../../convex/_generated/dataModel";
 import { FileIcon } from "lucide-react";
+import { useChatState } from "@/hooks/chats/use-chats";
 
-export const ArtifactsToggle = ({
-  chatId,
-  artifacts,
-}: {
-  chatId: Id<"chats">;
-  artifacts?: boolean;
-}) => {
-  const updateChatMutation = useMutation(api.chats.mutations.update);
+export const ArtifactsToggle = () => {
+  const { save, data } = useChatState();
 
   return (
     <Toggle
       variant="outline"
       className="hover:transition hover:duration-500"
-      pressed={artifacts ?? false}
+      pressed={data?.artifacts ?? false}
       onPressedChange={() => {
-        updateChatMutation({
-          chatId,
-          updates: {
-            artifacts: !artifacts,
-          },
-        });
+        save({ artifacts: !data?.artifacts });
       }}
     >
       <FileIcon className="h-4 w-4" />

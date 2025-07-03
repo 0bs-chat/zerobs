@@ -60,6 +60,10 @@ async function createClientGitService(): Promise<GitService> {
   const git = await import("isomorphic-git");
   const LightningFS = await import("@isomorphic-git/lightning-fs");
   const http = await import("isomorphic-git/http/web");
+  const buffer = await import("buffer");
+
+  // Set up buffer for Node.js compatibility
+  (globalThis as any).Buffer = buffer.Buffer;
 
   // Initialize browser filesystem
   const fs = new LightningFS.default("github-repos");

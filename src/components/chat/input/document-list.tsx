@@ -15,6 +15,7 @@ import React, { useCallback } from "react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../convex/langchain/models";
 import mime from "mime";
+import { useChatState } from "@/hooks/chats/use-chats";
 
 type DocumentBadgeProps = {
   doc: Doc<"documents">;
@@ -93,16 +94,15 @@ DocumentBadge.displayName = "DocumentBadge";
 
 export const DocumentList = ({
   documentIds = [],
-  model,
 }: {
   documentIds?: Id<"documents">[];
-  model: string;
 }) => {
   const documents = useQuery(api.documents.queries.getMultiple, {
     documentIds,
   });
   const removeDocument = useRemoveDocument();
 
+  const { data } = useChatState();
   const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
 
@@ -123,7 +123,7 @@ export const DocumentList = ({
 
   if (!documents?.length) return null;
 
-  const selectedModel = models.find((m) => m.model_name === model);
+  const selectedModel = models.find((m) => m.model_name === data?.model);
   const modalities = selectedModel?.modalities;
 
   return (

@@ -1,5 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,18 +8,14 @@ import { useDebouncedCallback } from "use-debounce";
 import { AddDocumentControls } from "./add-document-controls";
 import { ProjectDocumentList } from "./document-list";
 import type { ProjectDetailsProps } from "./types";
-import { useParams } from "@tanstack/react-router";
-import type { Id } from "convex/_generated/dataModel";
+import { useChatState } from "@/hooks/chats/use-chats";
 
 export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats">;
   const project = useQuery(
     api.projects.queries.get,
-    projectId ? { projectId } : "skip",
+    projectId ? { projectId } : "skip"
   );
-  const updateProject = useMutation(api.projects.mutations.update);
-  const updateChatInput = useMutation(api.chatInputs.mutations.update);
+  const { save, updateProject } = useChatState();
 
   const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
     updateProject({
@@ -42,12 +38,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
             size="icon"
             className="cursor-pointer"
             onClick={() => {
-              updateChatInput({
-                chatId,
-                updates: {
-                  projectId: null,
-                },
-              });
+              save({ projectId: null });
             }}
           >
             <XIcon className="size-5" />

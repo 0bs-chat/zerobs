@@ -18,7 +18,7 @@ export function ProjectDocumentListItem({
   projectDocument: ProjectDocument;
 }) {
   const updateProjectDocument = useMutation(
-    api.projectDocuments.mutations.update,
+    api.projectDocuments.mutations.update
   );
   const removeDocument = useMutation(api.projectDocuments.mutations.remove);
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
@@ -42,7 +42,7 @@ export function ProjectDocumentListItem({
         {(() => {
           const { icon: Icon, className } = getTagInfo(
             projectDocument.document.type,
-            projectDocument.document.status,
+            projectDocument.document.status
           );
           return <Icon className={className} />;
         })()}

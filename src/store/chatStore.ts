@@ -46,49 +46,6 @@ export const selectedArtifactAtom = atom<Artifact | null>(null);
 
 export const themeAtom = atomWithStorage("theme", "dark");
 
-export type ChatState = {
-  name: string;
-  model: string;
-  reasoningEffort: "low" | "medium" | "high";
-  projectId: Id<"projects"> | null;
-  conductorMode: boolean;
-  deepSearchMode: boolean;
-  webSearch: boolean;
-  artifacts: boolean;
-  text: string;
-  documents: Id<"documents">[];
-};
-
-const initialChatState: ChatState = {
-  name: "",
-  model: "",
-  reasoningEffort: "medium",
-  projectId: null,
-  conductorMode: false,
-  deepSearchMode: false,
-  webSearch: false,
-  artifacts: false,
-  text: "",
-  documents: [],
-};
-
-export const chatAtom = atom<ChatState>(initialChatState);
-
-export const updateChatAtom = atom(
-  null,
-  (get, set, update: Partial<ChatState>) => {
-    set(chatAtom, {
-      ...get(chatAtom),
-      ...update,
-    });
-  }
-);
-
-export const resetChatAtom = atom(null, (_, set) => {
-  set(chatAtom, initialChatState);
-});
-
-export const existingChatTextAtom = atom<string>("");
 export const selectedArtifactIdAtom = atom<string | null>(null);
 
 export const processedChunksAtom = atom<

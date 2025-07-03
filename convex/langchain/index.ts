@@ -90,7 +90,6 @@ export const chat = action({
           updates: state,
         });
 
-        const now = Date.now();
         if (streamDoc?.status === "cancelled") {
           wasCancelled = true;
           abortController.abort();
@@ -112,6 +111,7 @@ export const chat = action({
           }
         }
 
+        const now = Date.now();
         if (now - lastFlush >= BUFFER) {
           if (streamDoc) {
             streamDoc = await ctx.runMutation(

@@ -43,3 +43,9 @@ isomorphic git loading time problem. [ ]
 
 (clerk may get advantage if we wanna use clerk billing.)
 
+
+
+
+--- dev [paused] ------------------------------------------------------------
+1. we on implementing usechatstate like stuff for project mcp and other stuff.
+ rresume after the mcp impelmentation.

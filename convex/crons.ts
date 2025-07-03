@@ -6,7 +6,7 @@ const crons = cronJobs();
 crons.interval(
   "cleanup-streams",
   { minutes: 150 },
-  internal.streams.mutations.cleanUp,
+  internal.streams.mutations.cleanUp
 );
 
 export default crons;

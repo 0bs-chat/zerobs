@@ -1,62 +1,38 @@
 import { DocumentList } from "./document-list";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
-import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useAtom } from "jotai";
-import { chatAtom } from "@/store/chatStore";
-import { api } from "../../../../convex/_generated/api";
-import { useQuery, useMutation } from "convex/react";
-import { useEffect, useRef } from "react";
+import { useChatState, useHandleSubmit } from "@/hooks/chats/use-chats";
+import { useRef } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
-import type { Doc, Id } from "../../../../convex/_generated/dataModel";
 
-export const ChatInput = ({ chatId }: { chatId: Id<"chats"> }) => {
+export const ChatInput = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const updateChatMutation = useMutation(api.chats.mutations.update);
-  const [newChat, setNewChat] = useAtom(chatAtom);
   const handleSubmit = useHandleSubmit();
+  const { data, save } = useChatState();
 
-  const chat =
-    useQuery(api.chats.queries.get, chatId !== "new" ? { chatId } : "skip") ??
-    newChat;
-
-  // Load initial text including any saved draft
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.value = chat.text;
-    }
-  }, [chatId, chat.text]);
-
-  // Debounced draft saving (separate from UI updates)
   const debouncedSaveDraft = useDebouncedCallback((text: string) => {
-    if (chatId !== "new") {
-      updateChatMutation({
-        chatId,
-        updates: { text },
-      });
-    } else {
-      setNewChat((prev) => ({
-        ...prev,
-        text,
-      }));
+    if (data) {
+      save({ text });
     }
   }, 300);
 
   return (
     <div className="flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">
       {/* Document List */}
-      <DocumentList documentIds={chat.documents} model={chat.model} />
+      <DocumentList documentIds={data?.documents} />
 
       {/* Input */}
       <AutosizeTextarea
         id="chatInputText"
-        maxHeight={192}
+        defaultValue={data?.text}
         minHeight={56}
-        defaultValue={chat.text}
+        maxHeight={192}
         ref={textareaRef}
-        className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
-        onChange={(e) => debouncedSaveDraft(e.target.value)}
+        className="resize-none bg-transparent  ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
+        onChange={(e) => {
+          debouncedSaveDraft(e.target.value);
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
@@ -67,9 +43,7 @@ export const ChatInput = ({ chatId }: { chatId: Id<"chats"> }) => {
               toast.error("Please enter a message");
               return;
             }
-
-            handleSubmit(chat as Doc<"chats">);
-
+            handleSubmit();
             if (textareaRef.current) {
               textareaRef.current.value = "";
             }
@@ -78,7 +52,7 @@ export const ChatInput = ({ chatId }: { chatId: Id<"chats"> }) => {
         placeholder="Type a message..."
       />
 
-      <ToolBar isNewChat={chatId === "new"} chatInputData={chat} />
+      <ToolBar />
     </div>
   );
 };
