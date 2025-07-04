@@ -10,7 +10,6 @@ import { parseStateToStreamStatesDoc } from "./helpers";
 import { GraphState } from "./state";
 import { v } from "convex/values";
 import { getCurrentThread } from "../chatMessages/helpers";
-import { StreamEvent } from "@langchain/core/tracers/log_stream";
 
 export const chat = action({
   args: v.object({
@@ -75,11 +74,8 @@ export const chat = action({
       },
     });
 
-    const eventNames: string[][] = [];
-
     try {
       for await (const event of stream) {
-        eventNames.push([event.event, event.name, event.metadata.checkpoint_ns]);
         // Check for cancellation using the current streamDoc
         if (streamDoc?.status === "cancelled") {
           wasCancelled = true;
@@ -87,13 +83,19 @@ export const chat = action({
           break;
         }
 
-        checkpoint = (await agent.getState({ configurable: { thread_id: args.chatId } })).values as typeof GraphState.State
-        const state = parseStateToStreamStatesDoc(checkpoint);
-
-        await ctx.runMutation(internal.streams.mutations.updateState, {
-          chatId: args.chatId,
-          updates: state,
-        });
+        const currentCheckpoint = (await agent.getState({ configurable: { thread_id: args.chatId } })).values as typeof GraphState.State
+        const state = parseStateToStreamStatesDoc(currentCheckpoint);
+        if (checkpoint === null
+            || (currentCheckpoint.messages?.length !== checkpoint.messages?.length)
+            || (currentCheckpoint.plan?.length !== checkpoint.plan?.length)
+            || (currentCheckpoint.pastSteps?.length !== checkpoint.pastSteps?.length)
+          ) {
+          checkpoint = currentCheckpoint;
+          await ctx.runMutation(internal.streams.mutations.updateState, {
+            chatId: args.chatId,
+            updates: state,
+          });
+        }
 
         if (
           ["on_chat_model_stream", "on_tool_start", "on_tool_end"].includes(
@@ -136,7 +138,7 @@ export const chat = action({
       if (wasCancelled || abortController.signal.aborted) {
         return;
       }
-      if (streamDoc) {
+      if (streamDoc && streamDoc.status !== "cancelled") {
         await ctx.runMutation(internal.streams.mutations.update, {
           chatId: args.chatId,
           updates: {
@@ -146,8 +148,6 @@ export const chat = action({
       }
       throw error;
     }
-
-    console.log(JSON.stringify(eventNames, null, 2));
 
     const newMessages = checkpoint?.messages?.slice(messages.length, checkpoint.messages.length);
     if (newMessages) {

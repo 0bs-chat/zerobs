@@ -127,7 +127,7 @@ export const getRetrievalTools = async (
         z.literal("linkedin profile"),
         z.literal("financial report")
       ])
-        .describe("The topic of the search query (e.g., 'news', 'finance').")
+        .describe("The topic of the search query (e.g., 'news', 'finance'). By default, it will perform a google search.")
         .nullable()
         .optional(),
     }),

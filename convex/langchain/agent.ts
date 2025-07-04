@@ -184,19 +184,19 @@ async function replanner(
   ) as z.infer<ReturnType<typeof replannerOutputSchema>>;
 
   if (response.action === "respond_to_user") {
-    return {
-      messages: [
-        new AIMessage({
-          content: response.response,
-          additional_kwargs: {
-            pastSteps: state.pastSteps.map((pastStep) => {
-              const [step, messages] = pastStep;
-              const storedMessages = mapChatMessagesToStoredMessages(messages);
-              return [step, storedMessages];
-            }),
-          },
+    const responseMessages = [new AIMessage({
+      content: response.response,
+      additional_kwargs: {
+        pastSteps: state.pastSteps.map((pastStep) => {
+          const [step, messages] = pastStep;
+          const storedMessages = mapChatMessagesToStoredMessages(messages);
+          return [step, storedMessages];
         }),
-      ],
+      },
+    })]
+    console.log(responseMessages.length);
+    return {
+      messages: responseMessages,
       plan: [],
       pastSteps: [],
     };
