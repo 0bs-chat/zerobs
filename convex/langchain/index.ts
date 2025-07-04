@@ -10,6 +10,7 @@ import { parseStateToStreamStatesDoc } from "./helpers";
 import { GraphState } from "./state";
 import { v } from "convex/values";
 import { getCurrentThread } from "../chatMessages/helpers";
+import { StreamEvent } from "@langchain/core/tracers/log_stream";
 
 export const chat = action({
   args: v.object({
@@ -74,8 +75,11 @@ export const chat = action({
       },
     });
 
+    const eventNames: string[][] = [];
+
     try {
       for await (const event of stream) {
+        eventNames.push([event.event, event.name, event.metadata.checkpoint_ns]);
         // Check for cancellation using the current streamDoc
         if (streamDoc?.status === "cancelled") {
           wasCancelled = true;
@@ -142,6 +146,8 @@ export const chat = action({
       }
       throw error;
     }
+
+    console.log(JSON.stringify(eventNames, null, 2));
 
     const newMessages = checkpoint?.messages?.slice(messages.length, checkpoint.messages.length);
     if (newMessages) {

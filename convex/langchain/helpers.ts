@@ -16,10 +16,8 @@ import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { getMCPTools, getRetrievalTools } from "./tools";
 import type { Tool } from "@langchain/core/tools";
 import { getModel } from "./models";
-import { createAgentSystemMessage, createGenerateQueriesPrompt, createGradeDocumentPrompt, generateQueriesSchema, gradeDocumentSchema } from "./prompts";
-import { Document } from "@langchain/core/documents";
+import { createAgentSystemMessage } from "./prompts";
 import { GraphState } from "./state";
-import { z } from "zod";
 
 export type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;
@@ -41,7 +39,6 @@ export async function createSimpleAgent(
       false,
       chat.artifacts
     ),
-    new MessagesPlaceholder("documents"),
     new MessagesPlaceholder("messages"),
   ]);
   return promptTemplate.pipe(model);
@@ -50,7 +47,7 @@ export async function createSimpleAgent(
 export async function createAgentWithTools(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
-  taskDescription?: string,
+  plannerMode: boolean = false,
 ) {
   const chat = config.chat;
   const tools = await getMCPTools(config.ctx, chat._id);
@@ -58,7 +55,7 @@ export async function createAgentWithTools(
   const allTools = [
     ...(tools.tools.length > 0 ? tools.tools : []),
     ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
-    retrievalTools.webSearch,
+    ...(chat.webSearch ? [retrievalTools.webSearch] : []),
   ];
 
   if (!chat.conductorMode) {
@@ -66,10 +63,10 @@ export async function createAgentWithTools(
     const promptTemplate = ChatPromptTemplate.fromMessages([
       createAgentSystemMessage(
         chat.model,
-        taskDescription,
-        config.customPrompt,
+        plannerMode,
+        plannerMode ? undefined : config.customPrompt,
         true,
-        chat.artifacts
+        plannerMode ? false : chat.artifacts
       ),
       new MessagesPlaceholder("messages"),
     ]);
@@ -99,10 +96,10 @@ export async function createAgentWithTools(
       llm: supervisorLlm,
       prompt: createAgentSystemMessage(
         chat.model,
-        taskDescription,
-        config.customPrompt,
+        plannerMode,
+        plannerMode ? undefined : config.customPrompt,
         true,
-        chat.artifacts
+        plannerMode ? false : chat.artifacts
       ),
     }).compile();
   }
@@ -125,47 +122,6 @@ export function getPlannerAgentResponse(
   }])[0];
 }
 
-export async function generateQueries(
-  state: typeof GraphState.State,
-  config: ExtendedRunnableConfig,
-  type: "vectorStore" | "webSearch" = "vectorStore"
-) {
-  const ctx = config.ctx;
-
-  const queryModel = (createGenerateQueriesPrompt(type)).pipe(
-    (await getModel(ctx, "worker", undefined))
-    .withStructuredOutput(generateQueriesSchema)
-  );
-  
-  return await queryModel.invoke({
-    messages: state.messages.slice(-5)
-  }) as z.infer<typeof generateQueriesSchema>;
-}
-
-export async function gradeDocument(
-  state: typeof GraphState.State,
-  config: ExtendedRunnableConfig,
-  document: Document,
-): Promise<boolean> {
-  const promptTemplate = createGradeDocumentPrompt();
-  const modelWithOutputParser = promptTemplate.pipe(
-    (await getModel(config.ctx, "worker", undefined)).withStructuredOutput(gradeDocumentSchema)
-  );
-
-  const result = await modelWithOutputParser.invoke({
-    document: document.pageContent,
-    input: state.messages.slice(-1),
-  }) as z.infer<typeof gradeDocumentSchema>;
-
-  return result.relevant;
-}
-
-export async function formatDocumentsToString(documents: Document[]) {
-  return documents.map(doc =>
-    `<document metadata="${JSON.stringify(doc.metadata)}">${doc.pageContent}</document>`
-  ).join("\n\n");
-}
-
 export function getLastMessage(messages: BaseMessage[], type: "ai" | "human"): { message: BaseMessage; index: number } | null {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
@@ -179,86 +135,19 @@ export function getLastMessage(messages: BaseMessage[], type: "ai" | "human"): {
   return null;
 }
 
-export function addDocumentsToMessage(message: BaseMessage, documents: Document[]): BaseMessage {
-  return mapStoredMessagesToChatMessages(
-    mapChatMessagesToStoredMessages([message]).map(msg => ({
-      ...msg,
-      data: {
-        ...msg.data,
-        additional_kwargs: {
-          ...msg.data.additional_kwargs,
-          documents: documents.map(doc => ({
-            pageContent: doc.pageContent,
-            metadata: doc.metadata,
-          })),
-        }
-      }
-    }))
-  )[0];
-}
-
-export async function getDocumentsMessage(documents: Document[]): Promise<HumanMessage | null> {
-  if (!documents || documents.length === 0) {
-    return null;
-  }
-  
-  const documentsContent = await formatDocumentsToString(documents);
-  
-  return new HumanMessage(
-    "## Available Context\n" +
-    "You have been provided with the following documents relevant to the user's request. Use them to inform your response.\n" +
-    "<documents>\n" +
-    documentsContent +
-    "</documents>\n\n"
-  );
-}
-
 export function parseStateToStreamStatesDoc(
   state: typeof GraphState.State,
 ): Omit<Doc<"streamStates">, "_id" | "_creationTime" | "streamId"> {
-  // Convert documents to sources - these come from vector search or web search
-  const sources = state.documents && state.documents.length > 0 ? state.documents.map(doc => {
-          const source: Doc<"streamStates">["sources"][0] = {
-        type: doc.metadata.type,
-        ...(doc.metadata.type === "search" ? {
-          searchResult: {
-            title: doc.metadata.title || doc.metadata.source || "Untitled",
-            source: doc.metadata.source || "",
-            publishedDate: doc.metadata.publishedDate,
-            author: doc.metadata.author,
-            image: doc.metadata.image,
-            favicon: doc.metadata.favicon,
-          }
-        } : {}),
-        ...(doc.metadata.type === "document" && doc.metadata.document ? {
-          document: {
-            // Strip system fields from the document to match the validator
-            document: {
-              name: doc.metadata.document.name,
-              type: doc.metadata.document.type,
-              size: doc.metadata.document.size,
-              key: doc.metadata.document.key,
-              status: doc.metadata.document.status,
-              userId: doc.metadata.document.userId,
-            },
-            text: doc.pageContent,
-          }
-        } : {}),
-      };
-    return source;
-  }) : [];
-
   const pastSteps = state.pastSteps && state.pastSteps.length > 0 ? (state.pastSteps || []).map(([step, message]) => {
     const stepString = Array.isArray(step) ? step.join(", ") : step;
-    const storedMessage = mapChatMessagesToStoredMessages([message])[0];
+    const storedMessages = mapChatMessagesToStoredMessages(message);
     return {
       step: stepString,
-      message: storedMessage.data.content,
+      messages: storedMessages.map((m) => JSON.stringify(m)),
     };
   }) : [];
 
   return {
-    sources,
     plan: state.plan || [],
     pastSteps,
   };

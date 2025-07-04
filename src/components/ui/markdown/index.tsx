@@ -9,10 +9,11 @@ import { MermaidChart } from "./mermaid";
 import { Button } from "../button";
 import { CopyIcon, TextIcon, WrapTextIcon, CheckIcon } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { atomDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useCopy } from "@/hooks/use-copy";
 import { wrapLongLinesAtom } from "@/store/chatStore";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
+import { themeAtom } from "@/store/settings";
 import { marked } from "marked";
 import rehypeSanitize from "rehype-sanitize";
 
@@ -68,7 +69,7 @@ export const MarkdownBlock = memo(
     const mermaidChartId = React.useRef(0);
     const { copy, copied } = useCopy({ duration: 1000 });
     const [wrapLongLines, setWrapLongLines] = useAtom(wrapLongLinesAtom);
-
+    const theme = useAtomValue(themeAtom);
     const customStyle = useMemo(
       () => ({
         backgroundColor: "transparent",
@@ -133,7 +134,7 @@ export const MarkdownBlock = memo(
                   PreTag="div"
                   customStyle={customStyle}
                   language={language}
-                  style={atomDark}
+                  style={theme === "light" ? oneLight : atomDark}
                 >
                   {children}
                 </SyntaxHighlighter>

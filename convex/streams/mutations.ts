@@ -198,7 +198,6 @@ export const updateState = internalMutation({
     if (!state) {
       await ctx.db.insert("streamStates", {
         streamId: stream._id,
-        sources: args.updates.sources ?? [],
         plan: args.updates.plan ?? [],
         pastSteps: args.updates.pastSteps ?? [],
       });

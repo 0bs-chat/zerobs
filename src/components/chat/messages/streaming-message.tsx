@@ -2,8 +2,7 @@ import { memo, useMemo } from "react";
 import { Reasoning } from "./ai-message/reasoning";
 import { Markdown } from "@/components/ui/markdown";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { SearchResultDisplay } from "./ai-message/search-result";
-import type { SearchResult } from "./ai-message/search-result";
+import { SearchResultDisplay, type SearchResult } from "./ai-message/tool-message/search-results";
 import type { ToolChunkGroup, useStream } from "@/hooks/chats/use-stream";
 
 const StreamingToolCall = memo(({ tool }: { tool: ToolChunkGroup }) => {

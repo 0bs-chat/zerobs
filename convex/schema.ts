@@ -76,23 +76,8 @@ export const StreamChunks = Table("streamChunks", {
 
 export const StreamStates = Table("streamStates", {
   streamId: v.id("streams"),
-  sources: v.array(v.object({
-    type: v.union(v.literal("document"), v.literal("search")),
-    searchResult: v.optional(v.object({
-      title: v.string(),
-      source: v.string(),
-      publishedDate: v.optional(v.string()),
-      author: v.optional(v.string()),
-      image: v.optional(v.string()),
-      favicon: v.optional(v.string()),
-    })),
-    document: v.optional(v.object({
-      document: Documents.table.validator,
-      text: v.string(),
-    })),
-  })),
   plan: v.array(v.union(v.string(), v.array(v.string()))),
-  pastSteps: v.array(v.object({ step: v.string(), message: v.string() })),
+  pastSteps: v.array(v.object({ step: v.string(), messages: v.array(v.string()) })),
 });
 
 export const Projects = Table("projects", {

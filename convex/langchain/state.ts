@@ -19,15 +19,11 @@ export const planSchema = z.object({
   plan: planArray,
 });
 
-export type CompletedStep = [z.infer<typeof planStep>, BaseMessage];
+export type CompletedStep = [z.infer<typeof planStep>, BaseMessage[]];
 
 export const GraphState = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
     reducer: (x, y) => x.concat(y),
-    default: () => [],
-  }),
-  documents: Annotation<Document[]>({
-    reducer: (x, y) => y ?? x ?? [],
     default: () => [],
   }),
   plan: Annotation<z.infer<typeof planArray>>({

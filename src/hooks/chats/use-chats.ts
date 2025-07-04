@@ -18,16 +18,16 @@ export const useHandleSubmit = () => {
 
   const handleSubmit = async (chat: Doc<"chats">) => {
     if (chat._id === "new") {
-      setNewChat((prev) => ({ ...prev, text: "", documents: [] }));
+      setNewChat((prev) => ({ ...prev, text: "", documents: [], projectId: null }));
       chat._id = await createChatMutation({
-        name: newChat.name,
-        model: newChat.model,
-        reasoningEffort: newChat.reasoningEffort,
-        projectId: newChat.projectId,
-        conductorMode: newChat.conductorMode,
-        deepSearchMode: newChat.deepSearchMode,
-        webSearch: newChat.webSearch,
-        artifacts: newChat.artifacts,
+        name: chat.name,
+        model: chat.model,
+        reasoningEffort: chat.reasoningEffort,
+        projectId: chat.projectId,
+        conductorMode: chat.conductorMode,
+        deepSearchMode: chat.deepSearchMode,
+        webSearch: chat.webSearch,
+        artifacts: chat.artifacts,
       });
       await createMessageMutation({
         chatId: chat._id,
@@ -44,13 +44,13 @@ export const useHandleSubmit = () => {
         chatId: chat._id,
         updates: { text: "", documents: [] },
       });
-      setNewChat((prev) => ({ ...prev, text: "", documents: [] }));
       await createMessageMutation({
         chatId: chat._id,
         documents: chat.documents,
         text: newChat.text !== "" ? newChat.text : chat.text,
         parentId: lastChatMessage ?? null,
       });
+      setNewChat((prev) => ({ ...prev, text: "", documents: [], projectId: null }));
     }
     await sendAction({ chatId: chat._id });
   };

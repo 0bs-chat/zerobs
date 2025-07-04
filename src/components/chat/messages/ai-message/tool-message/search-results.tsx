@@ -10,6 +10,7 @@ import {
   AccordionContent
 } from "@/components/ui/accordion";
 import { Markdown } from "@/components/ui/markdown";
+import { formatDate, extractDomain } from "@/lib/utils";
 
 // Type definition for search results output
 export type SearchResultMetadata = {
@@ -30,28 +31,6 @@ export type SearchResult = {
 interface SearchResultDisplayProps {
   results: SearchResult[];
 }
-
-const formatDate = (dateString: string) => {
-  if (!dateString) return null;
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  } catch {
-    return dateString;
-  }
-};
-
-const extractDomain = (url: string) => {
-  try {
-    return new URL(url).hostname.replace('www.', '');
-  } catch {
-    return url;
-  }
-};
 
 export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
   if (!results || results.length === 0) {

@@ -1,10 +1,11 @@
 import { memo, useMemo } from "react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { SearchResultDisplay } from "./search-result";
-import type { SearchResult } from "./search-result";
+import { SearchResultDisplay, type SearchResult } from "./search-results";
+import { DocumentResultDisplay, type DocumentResult } from "./document-results";
+import type { BaseMessage } from "@langchain/core/messages";
 
 interface ToolMessageProps {
-  message: any;
+  message: BaseMessage;
 }
 
 export const ToolMessage = memo(({ message }: ToolMessageProps) => {
@@ -13,22 +14,32 @@ export const ToolMessage = memo(({ message }: ToolMessageProps) => {
     if (!message) return null;
 
     if (message.name === "searchWeb") {
-      let results: SearchResult[] = [];
       try {
-        results = JSON.parse(message.content as string) as SearchResult[];
-      } catch (err) {
-        console.error("Failed to parse search results", err);
+        return { type: "searchWeb" as const, results: JSON.parse(message.content as string) as SearchResult[] };
+      } catch (error) {
+        return { type: "generic" as const, content: message.content };
       }
-      return { type: "searchWeb", results };
+    }
+    
+    if (message.name === "searchProjectDocuments") {
+      try {
+        return { type: "document" as const, results: JSON.parse(message.content as string) as DocumentResult[] };
+      } catch (error) {
+        return { type: "generic" as const, content: message.content };
+      }
     }
 
-    return { type: "generic", content: message.content };
+    return { type: "generic" as const, content: message.content };
   }, [message]);
 
   if (!message || !parsedContent) return null;
 
   if (parsedContent.type === "searchWeb") {
-    return <SearchResultDisplay results={parsedContent.results || []} />;
+    return <SearchResultDisplay results={parsedContent.results} />;
+  }
+
+  if (parsedContent.type === "document") {
+    return <DocumentResultDisplay results={parsedContent.results} />;
   }
 
   return (
