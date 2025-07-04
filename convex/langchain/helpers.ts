@@ -138,17 +138,8 @@ export function getLastMessage(messages: BaseMessage[], type: "ai" | "human"): {
 export function parseStateToStreamStatesDoc(
   state: typeof GraphState.State,
 ): Omit<Doc<"streamStates">, "_id" | "_creationTime" | "streamId"> {
-  const pastSteps = state.pastSteps && state.pastSteps.length > 0 ? (state.pastSteps || []).map(([step, message]) => {
-    const stepString = Array.isArray(step) ? step.join(", ") : step;
-    const storedMessages = mapChatMessagesToStoredMessages(message);
-    return {
-      step: stepString,
-      messages: storedMessages.map((m) => JSON.stringify(m)),
-    };
-  }) : [];
-
   return {
     plan: state.plan || [],
-    pastSteps,
+    completedSteps: state.pastSteps?.map(([step, messages]) => step as string) || [],
   };
 }

@@ -127,7 +127,24 @@ export const getRetrievalTools = async (
         z.literal("linkedin profile"),
         z.literal("financial report")
       ])
-        .describe("The topic of the search query (e.g., 'news', 'finance'). By default, it will perform a google search.")
+        .describe(
+          "The topic of the search query (e.g., 'news', 'finance'). By default, it will perform a google search." +
+          "### SEARCH STRATEGY EXAMPLES:\n" +
+          `- Topic: "AI model performance" → Search: "GPT-4 benchmark results 2024", "LLM performance comparison studies", "AI model evaluation metrics research"` +
+          `- Topic: "Company financials" → Search: "Tesla Q3 2024 earnings report", "Tesla revenue growth analysis", "electric vehicle market share 2024"` +
+          `- Topic: "Technical implementation" → Search: "React Server Components best practices", "Next.js performance optimization techniques", "modern web development patterns"` +
+          `### USAGE GUIDELINES:\n` +
+          `- Search first, search often, search comprehensively` +
+          `- Make 1-3 targeted searches per research topic to get different angles and perspectives` +
+          `- Search queries should be specific and focused` +
+          `- Follow up initial searches with more targeted queries based on what you learn` +
+          `- Cross-reference information by searching for the same topic from different angles` +
+          `- Search for contradictory information to get balanced perspectives` +
+          `- Include exact metrics, dates, technical terms, and proper nouns in queries` +
+          `- Make searches progressively more specific as you gather context` +
+          `- Search for recent developments, trends, and updates on topics` +
+          `- Always verify information with multiple searches from different sources`
+        )
         .nullable()
         .optional(),
     }),

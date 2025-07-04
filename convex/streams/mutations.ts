@@ -199,7 +199,7 @@ export const updateState = internalMutation({
       await ctx.db.insert("streamStates", {
         streamId: stream._id,
         plan: args.updates.plan ?? [],
-        pastSteps: args.updates.pastSteps ?? [],
+        completedSteps: args.updates.completedSteps ?? [],
       });
     } else {
       await ctx.db.patch(state._id, {

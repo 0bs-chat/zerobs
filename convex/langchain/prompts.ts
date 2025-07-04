@@ -201,7 +201,11 @@ export function createPlannerPrompt() {
         `- Single step: "Research topic A"\n` +
         `- Parallel steps: ["Research topic B", "Research topic C", "Research topic D"]\n` +
         `- Final step: "Combine all research findings"\n\n` +
-        `Use parallel execution when steps are independent and can benefit from simultaneous execution.`
+        `**Use parallel execution when task/steps are independent and can benefit from simultaneous execution.**\n` +
+        `Break down the topic into key aspects to research\n` +
+        `Generate specific, diverse search queries for each aspect\n` +
+        `Use the search queries to find relevant information\n` +
+        `Make the plan technical and specific to the topic`
     ],
     new MessagesPlaceholder("messages"),
   ]);

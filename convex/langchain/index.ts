@@ -102,7 +102,7 @@ export const chat = action({
             event.event,
           )
         ) {
-          const allowedNodes = ["baseAgent", "simple"];
+          const allowedNodes = ["baseAgent", "simple", "plannerAgent"];
           if (
             allowedNodes.some((node) =>
               event.metadata.checkpoint_ns.startsWith(node),
@@ -112,8 +112,7 @@ export const chat = action({
           }
         }
 
-        const now = Date.now();
-        if (now - lastFlush >= BUFFER) {
+        if (Date.now() - lastFlush >= BUFFER) {
           if (streamDoc && buffer.length > 0) {
             // Update streamDoc with the return value from appendChunks
             streamDoc = await ctx.runMutation(
@@ -130,7 +129,7 @@ export const chat = action({
               break;
             }
           }
-          lastFlush = now;
+          lastFlush = Date.now();
           buffer.length = 0;
         }
       }

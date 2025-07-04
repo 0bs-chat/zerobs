@@ -194,7 +194,6 @@ async function replanner(
         }),
       },
     })]
-    console.log(responseMessages.length);
     return {
       messages: responseMessages,
       plan: [],

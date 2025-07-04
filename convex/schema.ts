@@ -77,7 +77,7 @@ export const StreamChunks = Table("streamChunks", {
 export const StreamStates = Table("streamStates", {
   streamId: v.id("streams"),
   plan: v.array(v.union(v.string(), v.array(v.string()))),
-  pastSteps: v.array(v.object({ step: v.string(), messages: v.array(v.string()) })),
+  completedSteps: v.array(v.string()),
 });
 
 export const Projects = Table("projects", {
