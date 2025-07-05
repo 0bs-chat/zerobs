@@ -10,7 +10,7 @@ import { Markdown } from "@/components/ui/markdown";
 import { formatDate } from "@/lib/utils";
 import { getTagInfo } from "@/lib/helpers";
 import { useSetAtom } from "jotai";
-import { documentDialogOpenAtom, documentDialogDocumentIdAtom } from "@/store/chatStore";
+import { documentDialogOpenAtom } from "@/store/chatStore";
 import type { Doc } from "../../../../../../convex/_generated/dataModel";
 
 // Type definition for document search results
@@ -31,11 +31,9 @@ interface DocumentResultDisplayProps {
 
 export const DocumentResultDisplay = ({ results }: DocumentResultDisplayProps) => {
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
-  const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
 
   const handleDocumentClick = (document: Doc<"documents">) => {
-    setDocumentDialogDocumentId(document._id);
-    setDocumentDialogOpen(true);
+    setDocumentDialogOpen(document._id);
   };
 
   if (!results || results.length === 0) {

@@ -6,10 +6,7 @@ import type { ProjectDocument } from "./types";
 import { getTagInfo } from "@/lib/helpers";
 import { Button } from "@/components/ui/button";
 import { useSetAtom } from "jotai";
-import {
-  documentDialogOpenAtom,
-  documentDialogDocumentIdAtom,
-} from "@/store/chatStore";
+import { documentDialogOpenAtom } from "@/store/chatStore";
 import { Card } from "@/components/ui/card";
 
 export function ProjectDocumentListItem({
@@ -22,7 +19,6 @@ export function ProjectDocumentListItem({
   );
   const removeDocument = useMutation(api.projectDocuments.mutations.remove);
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
-  const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
 
   return (
     <Card
@@ -63,8 +59,7 @@ export function ProjectDocumentListItem({
           variant="ghost"
           size="icon"
           onClick={() => {
-            setDocumentDialogOpen(true);
-            setDocumentDialogDocumentId(projectDocument.document._id);
+            setDocumentDialogOpen(projectDocument.document._id);
           }}
         >
           <EyeIcon className="size-4" />

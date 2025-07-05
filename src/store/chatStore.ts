@@ -25,12 +25,12 @@ export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
 });
 
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
+
 export const resizePanelOpenAtom = atomWithStorage("resizePanelOpen", false);
 export const selectedPanelTabAtom = atomWithStorage("selectedPanelTab", "projects");
 export const resizePanelWidthAtom = atomWithStorage("resizePanelWidth", 40);
 
-export const documentDialogOpenAtom = atom(false);
-export const documentDialogDocumentIdAtom = atom<Id<"documents"> | null>(null);
+export const documentDialogOpenAtom = atom<Id<"documents"> | null>(null);
 export const createProjectDialogOpenAtom = atom(false);
 export const createMCPServerDialogOpenAtom = atom(false);
 

@@ -5,10 +5,7 @@ import type { Id, Doc } from "../../../../convex/_generated/dataModel";
 import { XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  documentDialogDocumentIdAtom,
-  documentDialogOpenAtom,
-} from "@/store/chatStore";
+import { documentDialogOpenAtom } from "@/store/chatStore";
 import { useRemoveDocument } from "@/hooks/use-documents";
 import { getTagInfo } from "@/lib/helpers";
 import React, { useCallback } from "react";
@@ -101,15 +98,13 @@ export const DocumentList = ({
   const documents = useQuery(api.documents.queries.getMultiple, {
     documentIds,
   });
-  const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
 
   const handlePreview = useCallback(
     (documentId: Id<"documents">) => {
-      setDocumentDialogDocumentId(documentId);
-      setDocumentDialogOpen(true);
+      setDocumentDialogOpen(documentId);
     },
-    [setDocumentDialogDocumentId, setDocumentDialogOpen]
+    [setDocumentDialogOpen]
   );
 
   if (!documents?.length) return null;

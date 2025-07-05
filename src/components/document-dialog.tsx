@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   documentDialogOpenAtom,
-  documentDialogDocumentIdAtom,
 } from "@/store/chatStore";
 import { api } from "../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
@@ -18,14 +17,13 @@ import { useAtomValue, useSetAtom } from "jotai";
 
 export const DocumentDialog = () => {
   const documentDialogOpen = useAtomValue(documentDialogOpenAtom);
-  const documentDialogDocumentId = useAtomValue(documentDialogDocumentIdAtom);
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const document = useQuery(
     api.documents.queries.get,
-    documentDialogDocumentId
-      ? { documentId: documentDialogDocumentId }
+    documentDialogOpen
+      ? { documentId: documentDialogOpen }
       : "skip",
   );
 
@@ -74,7 +72,7 @@ export const DocumentDialog = () => {
     }
   };
 
-  if (!documentDialogDocumentId) {
+  if (!documentDialogOpen) {
     return null;
   }
 
@@ -100,7 +98,7 @@ export const DocumentDialog = () => {
   );
 
   return (
-    <Dialog open={documentDialogOpen} onOpenChange={setDocumentDialogOpen}>
+    <Dialog open={!!documentDialogOpen} onOpenChange={() => setDocumentDialogOpen(null)}>
       <DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -182,7 +180,7 @@ export const DocumentDialog = () => {
           ) : null}
           <Button
             variant="outline"
-            onClick={() => setDocumentDialogOpen(false)}
+            onClick={() => setDocumentDialogOpen(null)}
           >
             Close
           </Button>
