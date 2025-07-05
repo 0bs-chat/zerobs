@@ -45,7 +45,7 @@ function RouteComponent() {
       }}
     >
       <TopNav />
-      {sidebarOpen && <AppSidebar />}
+      <AppSidebar />
       <div className="flex-1">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel className="flex flex-col items-center justify-between gap-1 p-2 pt-4 overflow-hidden">

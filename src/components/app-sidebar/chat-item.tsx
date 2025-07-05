@@ -21,7 +21,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
     return (
       <SidebarMenuButton
         key={chat._id}
-        className="py-5 group/item cursor-pointer w-full h-full"
+        className="py-3 group/item cursor-pointer w-full h-full"
         asChild
         onClick={() => {
           handleNavigate(chat._id);

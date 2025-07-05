@@ -254,3 +254,7 @@ code {
   background-color: var(--primary);
   color: var(--primary-foreground);
 }
+
+.scrollbar-none {
+  scrollbar-width: none;
+}

@@ -1,11 +1,12 @@
 import { useAction, useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useAtom, useAtomValue } from "jotai";
 import { lastChatMessageAtom, newChatAtom } from "@/store/chatStore";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 export const useHandleSubmit = () => {
   const createMessageMutation = useMutation(api.chatMessages.mutations.create);
@@ -63,17 +64,18 @@ export const useInfiniteChats = () => {
     api.chats.queries.getAll,
     {},
     {
-      initialNumItems: 20,
+      initialNumItems: 15,
     }
   );
 
+  const pinnedChats = results?.filter((chat) => chat.pinned) ?? [];
+  const historyChats = results?.filter((chat) => !chat.pinned) ?? [];
+
   return {
-    chats: results ?? [],
-    error: null,
-    isFetching: status === "LoadingFirstPage",
-    isFetchingNextPage: status === "LoadingMore",
-    fetchNextPage: () => loadMore(10),
-    hasNextPage: status === "CanLoadMore",
+    pinnedChats,
+    historyChats,
+    status,
+    loadMore,
   };
 };
 
