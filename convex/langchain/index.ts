@@ -6,7 +6,6 @@ import { agentGraph } from "./agent";
 import { api, internal } from "../_generated/api";
 import { mapChatMessagesToStoredMessages, mapStoredMessageToChatMessage } from "@langchain/core/messages";
 import { MemorySaver } from "@langchain/langgraph";
-import { parseStateToStreamStatesDoc } from "./helpers";
 import { GraphState } from "./state";
 import { v } from "convex/values";
 import { getCurrentThread } from "../chatMessages/helpers";
@@ -64,6 +63,7 @@ export const chat = action({
         userId: chat.userId,
         status: "pending",
         chatId: args.chatId,
+        completedSteps: [],
       });
     }
 
@@ -73,6 +73,44 @@ export const chat = action({
         status: "pending",
       },
     });
+
+    // Create a function to handle flushing chunks
+    async function flushChunks() {
+      while (!wasCancelled) {
+        await new Promise(resolve => setTimeout(resolve, BUFFER));
+        
+        if (buffer.length > 0) {
+          const chunksToFlush = [...buffer];
+          buffer.length = 0;
+          
+          try {
+            // Update streamDoc with the return value from appendChunks
+            const updatedDoc = await ctx.runMutation(
+              internal.streams.mutations.appendChunks,
+              {
+                chatId: args.chatId,
+                chunks: chunksToFlush,
+              },
+            );
+            
+            // Check if the stream was cancelled during appendChunks
+            if (updatedDoc.status === "cancelled") {
+              wasCancelled = true;
+              abortController.abort();
+              break;
+            }
+            
+            streamDoc = updatedDoc;
+          } catch (error) {
+            console.error("Error flushing chunks:", error);
+            // Don't set wasCancelled here - let the main loop handle errors
+          }
+        }
+      }
+    }
+
+    // Start the flush loop in parallel
+    const flushPromise = flushChunks();
 
     try {
       for await (const event of stream) {
@@ -84,16 +122,20 @@ export const chat = action({
         }
 
         const currentCheckpoint = (await agent.getState({ configurable: { thread_id: args.chatId } })).values as typeof GraphState.State
-        const state = parseStateToStreamStatesDoc(currentCheckpoint);
         if (checkpoint === null
             || (currentCheckpoint.messages?.length !== checkpoint.messages?.length)
             || (currentCheckpoint.plan?.length !== checkpoint.plan?.length)
             || (currentCheckpoint.pastSteps?.length !== checkpoint.pastSteps?.length)
           ) {
           checkpoint = currentCheckpoint;
-          await ctx.runMutation(internal.streams.mutations.updateState, {
+          await ctx.runMutation(internal.streams.mutations.update, {
             chatId: args.chatId,
-            updates: state,
+            updates: {
+              completedSteps: currentCheckpoint.pastSteps.map((pastStep) => {
+                const [step, _messages] = pastStep;
+                return step as string;
+              }),
+            },
           });
         }
 
@@ -111,30 +153,10 @@ export const chat = action({
             buffer.push(JSON.stringify(event));
           }
         }
-
-        if (Date.now() - lastFlush >= BUFFER) {
-          if (streamDoc && buffer.length > 0) {
-            // Update streamDoc with the return value from appendChunks
-            streamDoc = await ctx.runMutation(
-              internal.streams.mutations.appendChunks,
-              {
-                chatId: args.chatId,
-                chunks: buffer,
-              },
-            );
-            // Check if the stream was cancelled during appendChunks
-            if (streamDoc.status === "cancelled") {
-              wasCancelled = true;
-              abortController.abort();
-              break;
-            }
-          }
-          lastFlush = Date.now();
-          buffer.length = 0;
-        }
       }
     } catch (error) {
-      if (wasCancelled || abortController.signal.aborted) {
+      wasCancelled = true;
+      if (abortController.signal.aborted) {
         return;
       }
       if (streamDoc && streamDoc.status !== "cancelled") {
@@ -146,6 +168,9 @@ export const chat = action({
         });
       }
       throw error;
+    } finally {
+      // Wait for any remaining chunks to be flushed
+      await flushPromise;
     }
 
     const newMessages = checkpoint?.messages?.slice(messages.length, checkpoint.messages.length);

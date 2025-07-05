@@ -6,7 +6,7 @@ import type { Doc } from "../_generated/dataModel";
 import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
 
-export const removeStreamChunks = internalMutation({
+export const removeChunks = internalMutation({
   args: { streamId: v.id("streams") },
   handler: async (ctx, args): Promise<number> => {
     const refs = await ctx.db
@@ -36,7 +36,7 @@ export const update = internalMutation({
     });
 
     if (args.updates.status === "done" || args.updates.status === "cancelled") {
-      await ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
+      await ctx.runMutation(internal.streams.mutations.removeChunks, {
         streamId: stream?._id!,
       });
     }
@@ -129,11 +129,8 @@ export const remove = internalMutation({
 
     // Remove the stream document and its associated chunks.
     await ctx.db.delete(stream._id);
-    await ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
+    await ctx.runMutation(internal.streams.mutations.removeChunks, {
       streamId: stream._id,
-    });
-    await ctx.runMutation(internal.streams.mutations.deleteState, {
-      chatId: args.chatId,
     });
   },
 });
@@ -170,7 +167,7 @@ export const cleanUp = internalMutation({
     // Remove chunks for all collected streams in parallel by calling the new mutation.
     const chunkCounts = await Promise.all(
       allStreamsToClean.map((stream) =>
-        ctx.runMutation(internal.streams.mutations.removeStreamChunks, {
+        ctx.runMutation(internal.streams.mutations.removeChunks, {
           streamId: stream._id,
         }),
       ),
@@ -179,50 +176,5 @@ export const cleanUp = internalMutation({
     // Sum up the total number of removed chunk references.
     const totalRemovedRefs = chunkCounts.reduce((a, b) => a + b, 0);
     return totalRemovedRefs;
-  },
-});
-
-export const updateState = internalMutation({
-  args: {
-    chatId: v.id("chats"),
-    updates: v.object(partial(schema.StreamStates.withoutSystemFields)),
-  },
-  handler: async (ctx, args) => {
-    const stream = await ctx.runQuery(api.streams.queries.get, {
-      chatId: args.chatId,
-    });
-    if (!stream) {
-      throw new Error("Stream not found");
-    }
-    const state = await ctx.db.query("streamStates").withIndex("by_stream", (q) => q.eq("streamId", stream._id)).first();
-    if (!state) {
-      await ctx.db.insert("streamStates", {
-        streamId: stream._id,
-        plan: args.updates.plan ?? [],
-        completedSteps: args.updates.completedSteps ?? [],
-      });
-    } else {
-      await ctx.db.patch(state._id, {
-        ...args.updates,
-      });
-    }
-  },
-})
-
-export const deleteState = internalMutation({
-  args: {
-    chatId: v.id("chats"),
-  },
-  handler: async (ctx, args) => {
-    const stream = await ctx.runQuery(api.streams.queries.get, {
-      chatId: args.chatId,
-    });
-    if (!stream) {
-      throw new Error("Stream not found");
-    }
-    const state = await ctx.db.query("streamStates").withIndex("by_stream", (q) => q.eq("streamId", stream._id)).first();
-    if (state) {
-      await ctx.db.delete(state._id);
-    }
   },
 });

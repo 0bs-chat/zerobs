@@ -60,6 +60,7 @@ export const ChatMessages = Table("chatMessages", {
 export const Streams = Table("streams", {
   userId: v.string(),
   chatId: v.id("chats"),
+  completedSteps: v.array(v.string()),
   status: v.union(
     v.literal("pending"),
     v.literal("streaming"),
@@ -74,10 +75,9 @@ export const StreamChunks = Table("streamChunks", {
   chunks: v.array(v.string()),
 });
 
-export const StreamStates = Table("streamStates", {
+export const StreamChunkRefs = Table("streamChunkRefs", {
   streamId: v.id("streams"),
-  plan: v.array(v.union(v.string(), v.array(v.string()))),
-  completedSteps: v.array(v.string()),
+  chunkId: v.id("streamChunks"),
 });
 
 export const Projects = Table("projects", {
@@ -101,7 +101,7 @@ export const ProjectChats = Table("projectChats", {
 
 export const Mcps = Table("mcps", {
   name: v.string(),
-  type: v.union(v.literal("sse"), v.literal("stdio"), v.literal("docker")),
+  type: v.union(v.literal("http"), v.literal("stdio"), v.literal("docker")),
   dockerImage: v.optional(v.string()),
   dockerPort: v.optional(v.number()),
   command: v.optional(v.string()),
@@ -116,11 +116,6 @@ export const Mcps = Table("mcps", {
   restartOnNewChat: v.boolean(),
   userId: v.optional(v.string()),
   updatedAt: v.number(),
-});
-
-export const StreamChunkRefs = Table("streamChunkRefs", {
-  streamId: v.id("streams"),
-  chunkId: v.id("streamChunks"),
 });
 
 export default defineSchema({
@@ -152,7 +147,6 @@ export default defineSchema({
     .index("by_chat_user", ["chatId", "userId"])
     .index("by_status_user", ["status", "userId"]),
   streamChunks: StreamChunks.table.index("by_stream", ["streamId"]),
-  streamStates: StreamStates.table.index("by_stream", ["streamId"]),
   projects: Projects.table.index("by_user_updated", ["userId", "updatedAt"]),
   projectDocuments: ProjectDocuments.table
     .index("by_project", ["projectId"])

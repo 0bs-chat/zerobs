@@ -23,7 +23,6 @@ import type * as documents_actions from "../documents/actions.js";
 import type * as documents_crud from "../documents/crud.js";
 import type * as documents_mutations from "../documents/mutations.js";
 import type * as documents_queries from "../documents/queries.js";
-import type * as http from "../http.js";
 import type * as langchain_agent from "../langchain/agent.js";
 import type * as langchain_db from "../langchain/db.js";
 import type * as langchain_helpers from "../langchain/helpers.js";
@@ -49,7 +48,6 @@ import type * as utils_encryption from "../utils/encryption.js";
 import type * as utils_flyio_index from "../utils/flyio/index.js";
 import type * as utils_flyio_types from "../utils/flyio/types.js";
 import type * as utils_helpers from "../utils/helpers.js";
-import type * as utils_oauth_github_repo from "../utils/oauth/github_repo.js";
 import type * as utils_services_index from "../utils/services/index.js";
 
 import type {
@@ -82,7 +80,6 @@ declare const fullApi: ApiFromModules<{
   "documents/crud": typeof documents_crud;
   "documents/mutations": typeof documents_mutations;
   "documents/queries": typeof documents_queries;
-  http: typeof http;
   "langchain/agent": typeof langchain_agent;
   "langchain/db": typeof langchain_db;
   "langchain/helpers": typeof langchain_helpers;
@@ -108,7 +105,6 @@ declare const fullApi: ApiFromModules<{
   "utils/flyio/index": typeof utils_flyio_index;
   "utils/flyio/types": typeof utils_flyio_types;
   "utils/helpers": typeof utils_helpers;
-  "utils/oauth/github_repo": typeof utils_oauth_github_repo;
   "utils/services/index": typeof utils_services_index;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

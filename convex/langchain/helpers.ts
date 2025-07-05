@@ -134,12 +134,3 @@ export function getLastMessage(messages: BaseMessage[], type: "ai" | "human"): {
   }
   return null;
 }
-
-export function parseStateToStreamStatesDoc(
-  state: typeof GraphState.State,
-): Omit<Doc<"streamStates">, "_id" | "_creationTime" | "streamId"> {
-  return {
-    plan: state.plan || [],
-    completedSteps: state.pastSteps?.map(([step, messages]) => step as string) || [],
-  };
-}
