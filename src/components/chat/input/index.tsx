@@ -26,9 +26,14 @@ export const ChatInput = () => {
     chatId !== "new" ? { chatId } : "skip"
   ) ?? newChat;
 
+  setSelectedProjectId(chat.projectId);
+
   useEffect(() => {
-    setSelectedProjectId(chat.projectId);
-  }, [chat.projectId]);
+    if (textareaRef.current) {
+      textareaRef.current.textArea.value = chat.text;
+      textareaRef.current.textArea.focus();
+    }
+  }, [chatId]);
 
   // Debounced draft saving (separate from UI updates)
   const debouncedSaveDraft = useDebouncedCallback((text: string) => {
@@ -58,6 +63,7 @@ export const ChatInput = () => {
         id="chatInputText"
         maxHeight={192}
         minHeight={56}
+        ref={textareaRef}
         defaultValue={chat.text}
         className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
         onChange={(e) => {
@@ -78,12 +84,10 @@ export const ChatInput = () => {
               return;
             }
             
-            (e.target as HTMLTextAreaElement).value = "";
-            handleSubmit(chat);
-    
             if (textareaRef.current) {
               textareaRef.current.textArea.value = "";
             }
+            handleSubmit(chat);
           }
         }}
         placeholder="Type a message..."

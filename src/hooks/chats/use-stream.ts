@@ -2,7 +2,8 @@ import { useMemo, useEffect, useRef, useState } from "react";
 import { useQuery, useConvex } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import type { StreamEvent } from "@langchain/core/tracers/log_stream";
+// Stream events are now pre-minified on the backend. We only receive AIChunkGroup
+// and ToolChunkGroup objects, so we no longer depend on StreamEvent types.
 
 // Define proper types based on LangChain StreamEvent structure
 export interface AIChunkGroup {
@@ -26,14 +27,9 @@ export function useStream(chatId: Id<"chats"> | "new") {
     chatId !== "new" ? { chatId } : "skip",
   );
 
-  const streamState = useQuery(
-    api.streams.queries.getState,
-    chatId !== "new" ? { chatId } : "skip",
-  );
-
   const convex = useConvex();
 
-  const [chunks, setChunks] = useState<StreamEvent[]>([]);
+  const [chunks, setChunks] = useState<(AIChunkGroup | ToolChunkGroup)[]>([]);
   const lastTimeRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -56,10 +52,10 @@ export function useStream(chatId: Id<"chats"> | "new") {
           });
 
           if (result.chunks.page.length > 0) {
-            const newEvents: StreamEvent[] = [];
+            const newEvents: (AIChunkGroup | ToolChunkGroup)[] = [];
             result.chunks.page.forEach((chunkDoc) => {
               chunkDoc.chunks.forEach((chunkStr) => {
-                newEvents.push(JSON.parse(chunkStr) as StreamEvent);
+                newEvents.push(JSON.parse(chunkStr) as AIChunkGroup | ToolChunkGroup);
               });
             });
 
@@ -90,7 +86,6 @@ export function useStream(chatId: Id<"chats"> | "new") {
   const chunkGroups = useMemo(() => {
     const groups: (AIChunkGroup | ToolChunkGroup)[] = [];
     let aiBuffer: AIChunkGroup | null = null;
-    const toolMap = new Map<string, ToolChunkGroup>();
 
     const flushAI = () => {
       if (aiBuffer) {
@@ -100,55 +95,34 @@ export function useStream(chatId: Id<"chats"> | "new") {
     };
 
     for (const chunk of chunks) {
-      const id = chunk.run_id;
-      switch (chunk.event) {
-        case "on_chat_model_stream": {
-          const content = chunk.data?.chunk.kwargs.content ?? "";
-          const reasoning = chunk.data?.chunk.kwargs.additional_kwargs.reasoning_content ?? "";
-          if (!aiBuffer) aiBuffer = { type: "ai", content: "" };
-          aiBuffer.content += content;
-          if (reasoning) {
-            aiBuffer.reasoning = (aiBuffer.reasoning ?? "") + reasoning;
+      if (chunk.type === "ai") {
+        if (!aiBuffer) aiBuffer = { type: "ai", content: "" };
+        aiBuffer.content += chunk.content;
+        if (chunk.reasoning) {
+          aiBuffer.reasoning = (aiBuffer.reasoning ?? "") + chunk.reasoning;
+        }
+      } else if (chunk.type === "tool") {
+        // Flush any buffered AI content before handling tool chunk
+        flushAI();
+
+        let updated = false;
+        if (chunk.isComplete) {
+          // Try to find the most recent incomplete tool with the same name to update it
+          for (let i = groups.length - 1; i >= 0; i--) {
+            const g = groups[i];
+            if (g.type === "tool" && g.toolName === chunk.toolName && !g.isComplete) {
+              g.output = chunk.output;
+              g.isComplete = true;
+              updated = true;
+              break;
+            }
           }
-          break;
         }
-        case "on_llm_stream": {
-          const content = chunk.data?.chunk ?? "";
-          if (!aiBuffer) aiBuffer = { type: "ai", content: "" };
-          aiBuffer.content += content;
-          break;
+
+        // If no existing tool message was updated, push the current chunk as a new group
+        if (!updated) {
+          groups.push(chunk);
         }
-        case "on_tool_start": {
-          flushAI();
-          const tool: ToolChunkGroup = {
-            type: "tool",
-            toolName: chunk.name ?? "Tool",
-            input: chunk.data?.input,
-            isComplete: false,
-          };
-          groups.push(tool);
-          toolMap.set(id, tool);
-          break;
-        }
-        case "on_tool_end": {
-          flushAI();
-          const tool = toolMap.get(id);
-          if (tool) {
-            tool.output = chunk.data?.output;
-            tool.isComplete = true;
-            toolMap.delete(id);
-          } else {
-            groups.push({
-              type: "tool",
-              toolName: chunk.name ?? "Tool",
-              output: chunk.data?.output,
-              isComplete: true,
-            });
-          }
-          break;
-        }
-        default:
-          break;
       }
     }
 
@@ -156,5 +130,6 @@ export function useStream(chatId: Id<"chats"> | "new") {
     return groups;
   }, [chunks]);
 
-  return { chunkGroups, status: stream?.status, streamState };
+  // If completedSteps is not undefined, then planning/deepsearch mode is enabled
+  return { chunkGroups, status: stream?.status, completedSteps: stream?.completedSteps };
 }

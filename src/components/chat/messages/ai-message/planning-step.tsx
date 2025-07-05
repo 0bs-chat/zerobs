@@ -1,9 +1,7 @@
 import { memo, useMemo } from "react";
 import { AiMessageContent } from "./ai-message-content";
-import { ChunkRenderer } from "../chunk-renderer";
 import { mapStoredMessagesToChatMessages } from "@langchain/core/messages";
 import type { BaseMessage, StoredMessage } from "@langchain/core/messages";
-import type { AIChunkGroup, ToolChunkGroup } from "@/hooks/chats/use-stream";
 import { Separator } from "@/components/ui/separator";
 import { Check } from "lucide-react";
 
@@ -16,12 +14,6 @@ export const PlanningStep = memo(({
   message,
   messageId,
 }: PlanningStepProps) => {
-  // Extract streaming chunk groups from message if available
-  const streamingChunks = useMemo(() => {
-    if (!message?.additional_kwargs?.chunkGroups) return null;
-    return message.additional_kwargs.chunkGroups as (AIChunkGroup | ToolChunkGroup)[];
-  }, [message]);
-
   // Memoize the completed steps rendering from pastSteps
   const pastSteps = useMemo(() => {
     if (!message || !Array.isArray(message.additional_kwargs.pastSteps)) {
@@ -47,7 +39,7 @@ export const PlanningStep = memo(({
           <div className="flex-shrink-0 w-5 h-5 bg-input rounded-full flex items-center justify-center mt-0.5">
             <Check className="w-3 h-3 text-foreground-muted" />
           </div>
-          <div className="text-sm text-muted-foreground flex-1">
+          <div className="text-sm text-muted-foreground flex-1 min-w-0 break-all whitespace-pre-wrap">
             {step}
           </div>
         </div>
@@ -96,24 +88,13 @@ export const PlanningStep = memo(({
           DeepSearch
         </div>
         <Separator />
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 pr-4">
           {pastSteps}
         </div>
       </div>
       <div className="border-l" />
       <div className="flex flex-col gap-2 w-2/3 pl-4 max-h-[36rem] overflow-y-auto">
-        {/* Show streaming chunks first if available */}
-        {streamingChunks && streamingChunks.length > 0 && (
-          <div className="mb-4 p-3 bg-background/50 rounded-md border-l-2 border-primary/30">
-            <div className="text-xs font-medium text-muted-foreground mb-2">Current Step:</div>
-            <ChunkRenderer
-              chunkGroups={streamingChunks}
-              showTypingIndicator={true}
-              messageIdPrefix={`${messageId}-streaming`}
-            />
-          </div>
-        )}
-        {/* Then show completed step messages */}
+        {/* Show completed step messages */}
         {stepMessages}
       </div>
     </div>

@@ -1,12 +1,11 @@
 import { useAction, useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useAtom, useAtomValue } from "jotai";
 import { lastChatMessageAtom, newChatAtom } from "@/store/chatStore";
-import { useVirtualizer } from "@tanstack/react-virtual";
 
 export const useHandleSubmit = () => {
   const createMessageMutation = useMutation(api.chatMessages.mutations.create);

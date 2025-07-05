@@ -1,14 +1,12 @@
 import React from "react";
-import { useAtom, useAtomValue } from "jotai";
-import { selectedArtifactAtom, useStreamAtom } from "@/store/chatStore";
+import { useAtom } from "jotai";
+import { selectedArtifactAtom } from "@/store/chatStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 // import { Badge } from "@/components/ui/badge";
 // import { Separator } from "@/components/ui/separator";
 import { ArtifactViewer } from "./viewer";
 import type { Artifact } from "../../artifacts/utils";
-import { parseArtifacts } from "../../artifacts/utils";
 import { ArtifactCard } from "../../artifacts/card";
-import type { AIChunkGroup } from "@/hooks/chats/use-stream";
 
 const ArtifactsList = ({
   artifacts,
@@ -59,32 +57,12 @@ const ArtifactsList = ({
 
 export const ArtifactsPanel = () => {
   const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
-  const stream = useAtomValue(useStreamAtom);
+  
   const allArtifacts = React.useMemo(() => {
-    const artifactMap = new Map<string, Artifact>();
-
-    // 1. Get artifacts from completed messages
-
-    // 2. Get artifacts from stream and overwrite
-    const streamingContent =
-      stream?.chunkGroups
-        .filter((cg): cg is AIChunkGroup => cg.type === "ai")
-        .map((cg) => cg.content)
-        .join("") ?? "";
-
-    if (streamingContent) {
-      const streamingArtifacts = parseArtifacts(
-        streamingContent,
-        stream?.chunkGroups?.length ?? 0
-      );
-      streamingArtifacts.forEach((artifact) => {
-        artifactMap.set(artifact.id, artifact);
-      });
-    }
-
-    const allArtifacts = Array.from(artifactMap.values());
-    return allArtifacts.sort((a, b) => b.messageIndex - a.messageIndex);
-  }, [stream]);
+    // For now, return empty array since we removed streaming
+    // This can be populated with artifacts from completed messages
+    return [] as Artifact[];
+  }, []);
 
   const artifactToView = React.useMemo(() => {
     if (!selectedArtifact) return null;

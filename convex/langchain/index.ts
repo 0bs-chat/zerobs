@@ -10,20 +10,36 @@ import { GraphState } from "./state";
 import { v } from "convex/values";
 import { getCurrentThread } from "../chatMessages/helpers";
 
+export interface AIChunkGroup {
+  type: "ai";
+  content: string;
+  reasoning?: string;
+}
+
+export interface ToolChunkGroup {
+  type: "tool";
+  toolName: string;
+  input?: unknown;
+  output?: unknown;
+  isComplete: boolean;
+}
+
 export const chat = action({
   args: v.object({
     chatId: v.id("chats"),
   }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args) => {    
     let chat = await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });
+    
     const abortController = new AbortController();
     const project = chat.projectId 
       ? await ctx.runQuery(api.projects.queries.get, { 
           projectId: chat.projectId 
         })
       : null;
+    
     const customPrompt = project?.systemPrompt && project.systemPrompt.trim() !== "" 
       ? project.systemPrompt 
       : undefined;
@@ -32,8 +48,10 @@ export const chat = action({
       chatId: args.chatId,
     })
     const currentThread = getCurrentThread(messages);
+    
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
+    
     const stream = agent.streamEvents(
       { messages: currentThread.map((message) => message.message) },
       { 
@@ -50,9 +68,9 @@ export const chat = action({
     );
 
     const BUFFER = 300; // ms
-    let lastFlush = Date.now();
-    const buffer: string[] = [];
+    let buffer: string[] = [];
     let wasCancelled = false;
+    let streamCompleted = false;
     let streamDoc = await ctx.runQuery(api.streams.queries.get, {
       chatId: args.chatId,
     });
@@ -76,36 +94,40 @@ export const chat = action({
 
     // Create a function to handle flushing chunks
     async function flushChunks() {
-      while (!wasCancelled) {
+      while (!wasCancelled && !streamCompleted) {
         await new Promise(resolve => setTimeout(resolve, BUFFER));
         
         if (buffer.length > 0) {
-          const chunksToFlush = [...buffer];
-          buffer.length = 0;
+          const chunksToFlush = buffer;
+          buffer = [];
+          streamDoc = await ctx.runMutation(
+            internal.streams.mutations.appendChunks,
+            {
+              chatId: args.chatId,
+              chunks: chunksToFlush,
+            },
+          );
           
-          try {
-            // Update streamDoc with the return value from appendChunks
-            const updatedDoc = await ctx.runMutation(
-              internal.streams.mutations.appendChunks,
-              {
-                chatId: args.chatId,
-                chunks: chunksToFlush,
-              },
-            );
-            
-            // Check if the stream was cancelled during appendChunks
-            if (updatedDoc.status === "cancelled") {
-              wasCancelled = true;
-              abortController.abort();
-              break;
-            }
-            
-            streamDoc = updatedDoc;
-          } catch (error) {
-            console.error("Error flushing chunks:", error);
-            // Don't set wasCancelled here - let the main loop handle errors
+          // Check if the stream was cancelled during appendChunks
+          if (streamDoc.status === "cancelled") {
+            wasCancelled = true;
+            abortController.abort();
+            break;
           }
         }
+      }
+      
+      if (buffer.length > 0) {
+        const chunksToFlush = buffer;
+        buffer = [];
+        
+        await ctx.runMutation(
+          internal.streams.mutations.appendChunks,
+          {
+            chatId: args.chatId,
+            chunks: chunksToFlush,
+          },
+        );
       }
     }
 
@@ -114,7 +136,6 @@ export const chat = action({
 
     try {
       for await (const event of stream) {
-        // Check for cancellation using the current streamDoc
         if (streamDoc?.status === "cancelled") {
           wasCancelled = true;
           abortController.abort();
@@ -131,10 +152,10 @@ export const chat = action({
           await ctx.runMutation(internal.streams.mutations.update, {
             chatId: args.chatId,
             updates: {
-              completedSteps: currentCheckpoint.pastSteps.map((pastStep) => {
+              completedSteps: currentCheckpoint?.pastSteps?.length > 0 ? currentCheckpoint.pastSteps.map((pastStep) => {
                 const [step, _messages] = pastStep;
                 return step as string;
-              }),
+              }) : currentCheckpoint?.plan?.length > 0 ? [currentCheckpoint.plan.flat()[0]] : undefined,
             },
           });
         }
@@ -150,10 +171,42 @@ export const chat = action({
               event.metadata.checkpoint_ns.startsWith(node),
             )
           ) {
-            buffer.push(JSON.stringify(event));
+            // Minify the data before sending it to the frontend to reduce bandwidth.
+            if (event.event === "on_chat_model_stream") {
+              const content = event.data?.chunk?.kwargs?.content ?? "";
+              const reasoning =
+                event.data?.chunk?.kwargs?.additional_kwargs?.reasoning_content ?? "";
+
+              const aiChunk: AIChunkGroup = {
+                type: "ai",
+                content,
+                ...(reasoning ? { reasoning } : {}),
+              };
+
+              buffer.push(JSON.stringify(aiChunk));
+            } else if (event.event === "on_tool_start") {
+              const toolChunk: ToolChunkGroup = {
+                type: "tool",
+                toolName: event.name ?? "Tool",
+                input: event.data?.input,
+                isComplete: false,
+              } as ToolChunkGroup;
+
+              buffer.push(JSON.stringify(toolChunk));
+            } else if (event.event === "on_tool_end") {
+              const toolChunk: ToolChunkGroup = {
+                type: "tool",
+                toolName: event.name ?? "Tool",
+                output: event.data?.output,
+                isComplete: true,
+              } as ToolChunkGroup;
+
+              buffer.push(JSON.stringify(toolChunk));
+            }
           }
         }
       }
+      streamCompleted = true;
     } catch (error) {
       wasCancelled = true;
       if (abortController.signal.aborted) {
