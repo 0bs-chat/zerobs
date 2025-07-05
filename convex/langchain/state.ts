@@ -3,7 +3,6 @@
 import { z } from "zod";
 import { Annotation } from "@langchain/langgraph/web";
 import { BaseMessage } from "@langchain/core/messages";
-import { Document } from "@langchain/core/documents";
 
 export const planStep = z.union([z.string(), z.array(z.string())]);
 

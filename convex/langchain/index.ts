@@ -173,9 +173,9 @@ export const chat = action({
           ) {
             // Minify the data before sending it to the frontend to reduce bandwidth.
             if (event.event === "on_chat_model_stream") {
-              const content = event.data?.chunk?.kwargs?.content ?? "";
+              const content = event.data?.chunk?.content ?? "";
               const reasoning =
-                event.data?.chunk?.kwargs?.additional_kwargs?.reasoning_content ?? "";
+                event.data?.chunk?.additional_kwargs?.reasoning_content ?? "";
 
               const aiChunk: AIChunkGroup = {
                 type: "ai",
@@ -188,7 +188,7 @@ export const chat = action({
               const toolChunk: ToolChunkGroup = {
                 type: "tool",
                 toolName: event.name ?? "Tool",
-                input: event.data?.input,
+                input: JSON.stringify(event.data?.input),
                 isComplete: false,
               } as ToolChunkGroup;
 
@@ -197,7 +197,7 @@ export const chat = action({
               const toolChunk: ToolChunkGroup = {
                 type: "tool",
                 toolName: event.name ?? "Tool",
-                output: event.data?.output,
+                output: event.data?.output.content,
                 isComplete: true,
               } as ToolChunkGroup;
 
@@ -216,6 +216,7 @@ export const chat = action({
         await ctx.runMutation(internal.streams.mutations.update, {
           chatId: args.chatId,
           updates: {
+            completedSteps: [],
             status: "error",
           },
         });
@@ -242,6 +243,7 @@ export const chat = action({
     await ctx.runMutation(internal.streams.mutations.update, {
       chatId: args.chatId,
       updates: {
+        completedSteps: [],
         status: wasCancelled ? "cancelled" : "done",
       },
     });

@@ -1,6 +1,6 @@
 import { memo, useMemo } from "react";
 import { PlanningStep } from "./planning-step";
-import { AiMessageContent } from "./ai-message-content";
+import { AiMessageContent } from "./ai-message";
 import type { MessageBranchNavigation } from "../user-message";
 import type { MessageWithBranchInfo } from "../../../../hooks/chats/use-messages";
 

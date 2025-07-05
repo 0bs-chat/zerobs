@@ -1,43 +1,41 @@
 import { memo, useMemo } from "react";
-import { AiMessageContent } from "./ai-message-content";
+import { AiMessageContent } from "./ai-message";
 import { mapStoredMessagesToChatMessages } from "@langchain/core/messages";
-import type { BaseMessage, StoredMessage } from "@langchain/core/messages";
+import type { BaseMessage } from "@langchain/core/messages";
 import { Separator } from "@/components/ui/separator";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 
 interface PlanningStepProps {
   message?: BaseMessage;
   messageId: string;
+  isStreaming?: boolean;
 }
 
 export const PlanningStep = memo(({ 
   message,
   messageId,
+  isStreaming,
 }: PlanningStepProps) => {
-  // Memoize the completed steps rendering from pastSteps
   const pastSteps = useMemo(() => {
     if (!message || !Array.isArray(message.additional_kwargs.pastSteps)) {
       return null;
     }
-    return message.additional_kwargs.pastSteps.map((pastStep, index) => {
-      // Add safety check to ensure pastStep is an array with at least one element
+    const steps = message.additional_kwargs.pastSteps?.map((pastStep) => {
       if (!Array.isArray(pastStep) || pastStep.length === 0) {
-        console.warn('Invalid pastStep structure:', pastStep);
         return null;
       }
       
       const [step, _storedMessages] = pastStep;
-      
-      // Ensure step is a string
-      if (typeof step !== 'string') {
-        console.warn('Invalid step format:', step);
-        return null;
-      }
-      
+      return step;
+    });
+    return steps?.map((step, index) => {
       return (
         <div key={`${messageId}-past-step-${index}`} className="flex items-start gap-2">
           <div className="flex-shrink-0 w-5 h-5 bg-input rounded-full flex items-center justify-center mt-0.5">
-            <Check className="w-3 h-3 text-foreground-muted" />
+            {isStreaming && index === steps.length - 1 ?
+              <Loader2 className="w-3 h-3 animate-spin" /> :
+              <Check className="w-3 h-3 text-foreground-muted" />
+            }
           </div>
           <div className="text-sm text-muted-foreground flex-1 min-w-0 break-all whitespace-pre-wrap">
             {step}
@@ -45,42 +43,34 @@ export const PlanningStep = memo(({
         </div>
       );
     }).filter(Boolean); // Remove null entries
-  }, [message, messageId]);
+  }, [message, messageId, isStreaming]);
   
   const stepMessages = useMemo(() => {
     if (!message || !Array.isArray(message.additional_kwargs.pastSteps)) {
       return null;
     }
-    return message.additional_kwargs.pastSteps.map((pastStep, index) => {
-      // Add safety check to ensure pastStep is an array with at least two elements
-      if (!Array.isArray(pastStep) || pastStep.length < 2) {
-        console.warn('Invalid pastStep structure for stepMessages:', pastStep);
+    const messages = message.additional_kwargs.pastSteps.map((pastStep) => {
+      if (!Array.isArray(pastStep)) {
         return null;
       }
-      
       const [_step, storedMessages] = pastStep;
-      
-      // Ensure storedMessages is an array
       if (!Array.isArray(storedMessages)) {
-        console.warn('Invalid storedMessages format:', storedMessages);
         return null;
       }
-      
-      return storedMessages.map((storedMessage: StoredMessage, msgIndex: number) => {
-        const convertedMessage = mapStoredMessagesToChatMessages([storedMessage])[0];
-        return (
-          <div key={`${messageId}-past-step-${index}-${msgIndex}`} className="mb-4">
-            <AiMessageContent
-              message={convertedMessage}
-              messageId={`${messageId}-step-${index}-${msgIndex}`}
-              showReasoning={true}
-            />
-          </div>
-        );
-      });
-    }).filter(Boolean).flat(); // Remove null entries and flatten the nested arrays
+      return mapStoredMessagesToChatMessages(storedMessages);
+    }).flat().filter((m): m is BaseMessage => !!m);
+
+    return messages.map((pastStep, index) => {
+      return (
+        <AiMessageContent
+          key={`${messageId}-step-${index}`}
+          message={pastStep}
+          messageId={`${messageId}-step-${index}`}
+        />
+      );
+    });
   }, [message, messageId]);
-  
+
   return (
     <div className="border rounded-lg p-4 bg-card my-2 flex flex-row">
       <div className="flex flex-col w-1/3 items-start gap-2">

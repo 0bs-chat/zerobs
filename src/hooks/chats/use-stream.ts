@@ -1,11 +1,8 @@
-import { useMemo, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useConvex } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-// Stream events are now pre-minified on the backend. We only receive AIChunkGroup
-// and ToolChunkGroup objects, so we no longer depend on StreamEvent types.
 
-// Define proper types based on LangChain StreamEvent structure
 export interface AIChunkGroup {
   type: "ai";
   content: string;
@@ -82,17 +79,9 @@ export function useStream(chatId: Id<"chats"> | "new") {
     };
   }, [convex, stream?.status, stream?._id]);
 
-  // Group consecutive chunks into AI / Tool blocks
   const chunkGroups = useMemo(() => {
     const groups: (AIChunkGroup | ToolChunkGroup)[] = [];
     let aiBuffer: AIChunkGroup | null = null;
-
-    const flushAI = () => {
-      if (aiBuffer) {
-        groups.push(aiBuffer);
-        aiBuffer = null;
-      }
-    };
 
     for (const chunk of chunks) {
       if (chunk.type === "ai") {
@@ -102,31 +91,18 @@ export function useStream(chatId: Id<"chats"> | "new") {
           aiBuffer.reasoning = (aiBuffer.reasoning ?? "") + chunk.reasoning;
         }
       } else if (chunk.type === "tool") {
-        // Flush any buffered AI content before handling tool chunk
-        flushAI();
-
-        let updated = false;
-        if (chunk.isComplete) {
-          // Try to find the most recent incomplete tool with the same name to update it
-          for (let i = groups.length - 1; i >= 0; i--) {
-            const g = groups[i];
-            if (g.type === "tool" && g.toolName === chunk.toolName && !g.isComplete) {
-              g.output = chunk.output;
-              g.isComplete = true;
-              updated = true;
-              break;
-            }
-          }
+        if (aiBuffer) {
+          groups.push(aiBuffer);
+          aiBuffer = null;
         }
-
-        // If no existing tool message was updated, push the current chunk as a new group
-        if (!updated) {
-          groups.push(chunk);
-        }
+        groups.push(chunk);
       }
     }
 
-    flushAI();
+    if (aiBuffer) {
+      groups.push(aiBuffer);
+    }
+
     return groups;
   }, [chunks]);
 

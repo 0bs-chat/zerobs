@@ -82,7 +82,7 @@ export const ChatMessages = () => {
           {/* Show streaming message if there are streaming chunks */}
           {streamData.chunkGroups.length > 0 && (
             <StreamingMessage 
-              chunkGroups={streamData.chunkGroups}
+              chunks={streamData.chunkGroups}
               status={streamData.status}
               completedSteps={streamData.completedSteps}
             />

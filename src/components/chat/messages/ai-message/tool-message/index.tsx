@@ -35,11 +35,15 @@ export const ToolMessage = memo(({ message }: ToolMessageProps) => {
   if (!message || !parsedContent) return null;
 
   if (parsedContent.type === "searchWeb") {
-    return <SearchResultDisplay results={parsedContent.results} />;
+    if (Array.isArray(parsedContent.results)) {
+      return <SearchResultDisplay results={parsedContent.results} />;
+    }
   }
 
   if (parsedContent.type === "document") {
-    return <DocumentResultDisplay results={parsedContent.results} />;
+    if (Array.isArray(parsedContent.results)) {
+      return <DocumentResultDisplay results={parsedContent.results} />;
+    }
   }
 
   return (
