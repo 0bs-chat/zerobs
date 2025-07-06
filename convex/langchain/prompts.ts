@@ -5,8 +5,6 @@ import {
   ChatPromptTemplate,
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
-import { formatDocumentsAsString } from "langchain/util/document";
-import type { DocumentInterface } from "@langchain/core/documents";
 import { z } from "zod";
 import { planArray } from "./state";
 

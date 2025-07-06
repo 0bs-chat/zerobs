@@ -6,7 +6,8 @@ import { CheckCheck, PenSquare, RefreshCcw, Star, X } from "lucide-react";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type {
-  MessageWithBranchInfo, NavigateBranch,
+  MessageWithBranchInfo,
+  NavigateBranch,
 } from "@/hooks/chats/use-messages";
 import {
   Tooltip,
@@ -53,9 +54,11 @@ export const UtilsBar = memo(
 
       if (Array.isArray(content)) {
         if (isAI) {
-          const response = groupedMessages?.find(
-            (group) => group.input.message._id === item.message._id,
-          )?.response.map((response) => response.message.message.content as string);
+          const response = groupedMessages
+            ?.find((group) => group.input.message._id === item.message._id)
+            ?.response.map(
+              (response) => response.message.message.content as string,
+            );
           return response?.join("\n") || "";
         } else {
           const textContent = (content as MessageContent[]).find(

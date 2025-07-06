@@ -28,7 +28,7 @@ export const ChatInput = () => {
     useQuery(api.chats.queries.get, chatId !== "new" ? { chatId } : "skip") ??
     newChat;
 
-  setSelectedProjectId(chat.projectId);
+  setSelectedProjectId(chat.projectId ?? undefined);
 
   useEffect(() => {
     if (textareaRef.current) {

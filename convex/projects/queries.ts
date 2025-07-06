@@ -2,8 +2,6 @@ import { query } from "../_generated/server";
 import { paginationOptsValidator } from "convex/server";
 import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
-import { api } from "../_generated/api";
-import type { Doc } from "../_generated/dataModel";
 
 export const get = query({
   args: {

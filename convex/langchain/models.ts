@@ -3,14 +3,14 @@
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import { ActionCtx } from "../_generated/server";
+import type { ActionCtx } from "../_generated/server";
 import {
   BaseMessage,
   HumanMessage,
-  MessageContentComplex,
-  DataContentBlock,
+  type MessageContentComplex,
+  type DataContentBlock,
 } from "@langchain/core/messages";
-import { Doc, Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
 import mime from "mime";
 import { Base64 } from "convex/values";

@@ -67,7 +67,11 @@ export const ToolBar = ({ chat }: { chat: Doc<"chats"> }) => {
         multiple
         onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
       />
-      <GitHubDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+      <GitHubDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        chat={chat}
+      />
 
       <div className="flex flex-row items-center gap-1">
         <div className="flex flex-row items-center gap-1">

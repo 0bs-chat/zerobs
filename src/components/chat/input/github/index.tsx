@@ -28,11 +28,13 @@ import {
 } from "@/store/github";
 import { useUploadDocuments } from "@/hooks/use-documents";
 import { useAtom, useAtomValue } from "jotai";
+import type { Doc } from "../../../../../convex/_generated/dataModel";
 
 interface GitHubDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children?: React.ReactNode;
+  chat: Doc<"chats">;
 }
 
 const RepoLoader = () => {
@@ -161,12 +163,14 @@ const RepoLoader = () => {
 
 function RepoActions({
   onCloseDialog,
+  chat,
 }: {
   onCloseDialog: (open: boolean) => void;
+  chat: Doc<"chats">;
 }) {
   const uploadDocuments = useUploadDocuments({
     type: "github",
-    addToChatInput: true,
+    chat,
   });
   const { combineSelectedFilesForChat } = useGithub();
   const selectedFiles = useAtomValue(selectedFilesAtom);
@@ -206,7 +210,12 @@ function RepoActions({
   );
 }
 
-const GitHubDialog = ({ open, onOpenChange, children }: GitHubDialogProps) => {
+const GitHubDialog = ({
+  open,
+  onOpenChange,
+  children,
+  chat,
+}: GitHubDialogProps) => {
   return (
     <Suspense fallback={<div>...</div>}>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -223,7 +232,7 @@ const GitHubDialog = ({ open, onOpenChange, children }: GitHubDialogProps) => {
           <div className="py-4 w-full flex flex-col gap-4">
             <RepoLoader />
             <FileTree />
-            <RepoActions onCloseDialog={onOpenChange} />
+            <RepoActions onCloseDialog={onOpenChange} chat={chat} />
           </div>
         </DialogContent>
       </Dialog>

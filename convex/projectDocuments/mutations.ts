@@ -1,7 +1,7 @@
 import { requireAuth } from "../utils/helpers";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { api, internal } from "../_generated/api";
+import { api } from "../_generated/api";
 
 export const create = mutation({
   args: {

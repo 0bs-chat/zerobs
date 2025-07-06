@@ -96,7 +96,7 @@ export const DocumentDialog = () => {
   return (
     <Dialog
       open={!!documentDialogOpen}
-      onOpenChange={() => setDocumentDialogOpen(null)}
+      onOpenChange={() => setDocumentDialogOpen(undefined)}
     >
       <DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col">
         <DialogHeader>
@@ -177,7 +177,10 @@ export const DocumentDialog = () => {
               Open {document.type === "youtube" ? "in YouTube" : "in Browser"}
             </Button>
           ) : null}
-          <Button variant="outline" onClick={() => setDocumentDialogOpen(null)}>
+          <Button
+            variant="outline"
+            onClick={() => setDocumentDialogOpen(undefined)}
+          >
             Close
           </Button>
         </div>

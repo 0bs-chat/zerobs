@@ -1,4 +1,4 @@
-import { action, internalMutation, mutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import { getUrl, requireAuth } from "../utils/helpers";

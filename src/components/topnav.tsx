@@ -73,7 +73,7 @@ export function TopNav() {
           className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent" : "bg-background"} ${selectedArtifact ? "hidden" : ""}`}
           onClick={() => {
             setResizePanelOpen(!resizePanelOpen);
-            setSelectedArtifact(null);
+            setSelectedArtifact(undefined);
           }}
         >
           {resizePanelOpen ? (

@@ -1,5 +1,4 @@
 import * as jose from "jose";
-import type { Id } from "../_generated/dataModel";
 
 const JWT_PRIVATE_KEY_PEM = process.env.JWT_PRIVATE_KEY;
 const JWKS_URI = process.env.JWKS;

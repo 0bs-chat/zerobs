@@ -70,9 +70,7 @@ export const ChatMessages = () => {
             <MessagesList navigateBranch={navigateBranch} />
           )}
 
-          {streamData.chunkGroups.length > 0 && (
-            <StreamingMessage />
-          )}
+          {streamData.chunkGroups.length > 0 && <StreamingMessage />}
         </div>
       </ScrollArea>
     );

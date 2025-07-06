@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api } from "../_generated/api";
 import { mapStoredMessagesToChatMessages } from "@langchain/core/messages";
-import { Doc } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import { ChatMessages } from "../schema";
 
 export const get = query({

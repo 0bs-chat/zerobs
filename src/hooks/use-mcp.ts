@@ -1,8 +1,12 @@
 import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
-import type { MCPData } from "@/components/chat/panels/mcp/types";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
+
+export type MCPFormState = Omit<
+  Doc<"mcps">,
+  "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
+>;
 
 export function useMCPs() {
   const getAllMCPs = () => {
@@ -21,33 +25,26 @@ export function useMCPs() {
   const restartMutation = useMutation(api.mcps.mutations.restart);
 
   const handleCreate = async (
-    newMCPData: MCPData,
+    newMCPData: MCPFormState,
     setMcpEditDialogOpen: (open: boolean) => void,
   ) => {
     try {
-      // Filter out empty environment variables
-      const env = Object.fromEntries(
-        newMCPData.envVars
-          .filter((envVar) => envVar.key.trim() && envVar.value.trim())
-          .map((envVar) => [envVar.key.trim(), envVar.value.trim()]),
-      );
+      const { command, url, dockerImage, dockerPort, env, ...rest } =
+        newMCPData;
 
-      // Prepare the mutation parameters based on MCP type
       const createParams: Parameters<typeof createMCP>[0] = {
-        name: newMCPData.name.trim(),
+        ...rest,
+        command: command?.trim() || undefined,
+        url: url?.trim() || undefined,
+        dockerImage: dockerImage?.trim() || undefined,
+        dockerPort: dockerPort,
+        env: env && Object.keys(env).length > 0 ? env : undefined,
         enabled: true,
-        restartOnNewChat: newMCPData.restartOnNewChat,
-        env: Object.keys(env).length > 0 ? env : undefined,
+        status: "creating",
       };
 
-      // Add type-specific parameters
-      if (newMCPData.type === "stdio") {
-        createParams.command = newMCPData.command.trim();
-      } else if (newMCPData.type === "sse") {
-        createParams.url = newMCPData.url.trim();
-      } else if (newMCPData.type === "docker") {
-        createParams.dockerImage = newMCPData.dockerImage.trim();
-        createParams.dockerPort = newMCPData.dockerPort;
+      if (createParams.type !== "docker") {
+        createParams.dockerPort = undefined;
       }
 
       await createMCP(createParams);

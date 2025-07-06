@@ -12,7 +12,7 @@ import {
   PlusIcon,
   YoutubeIcon,
 } from "lucide-react";
-import { useAction, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useUploadDocuments } from "@/hooks/use-documents";
@@ -26,7 +26,7 @@ export const AddDocumentControls = ({
   const uploadDocuments = useUploadDocuments({
     type: "file",
   });
-  const createDocuments = useAction(api.documents.mutations.create);
+  const createDocuments = useMutation(api.documents.mutations.create);
   const createProjectDocuments = useMutation(
     api.projectDocuments.mutations.create,
   );

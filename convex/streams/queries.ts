@@ -2,7 +2,7 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api } from "../_generated/api";
-import { paginationOptsValidator, PaginationResult } from "convex/server";
+import { paginationOptsValidator, type PaginationResult } from "convex/server";
 import type { Doc } from "../_generated/dataModel";
 
 export const get = query({

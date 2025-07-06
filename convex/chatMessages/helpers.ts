@@ -1,4 +1,4 @@
-import { Doc, Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import {
   mapStoredMessageToChatMessage,
   type BaseMessage,
@@ -140,10 +140,9 @@ export function buildMessageTree(
 }
 
 export function getThreadFromMessage(
-  messages: Doc<"chatMessages">[],
   leafMessage: Doc<"chatMessages">,
+  messageMap: Map<Id<"chatMessages">, Doc<"chatMessages">>,
 ): ParsedMessage[] {
-  const { messageMap } = buildMessageLookups(messages);
   const thread: Doc<"chatMessages">[] = [];
 
   // Traverse up the parent chain from the leaf to the root
@@ -190,5 +189,5 @@ export function getCurrentThread(
     );
   }
 
-  return getThreadFromMessage(messages, leafMessage);
+  return getThreadFromMessage(leafMessage, messageMap);
 }

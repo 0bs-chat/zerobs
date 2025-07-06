@@ -15,8 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCopy } from "@/hooks/use-copy";
 import type { Artifact } from "./utils";
-import { useAtom, useSetAtom} from "jotai";
-import { selectedArtifactAtom, selectedPanelTabAtom, resizePanelOpenAtom } from "@/store/chatStore";
+import { useAtom, useSetAtom } from "jotai";
+import {
+  selectedArtifactAtom,
+  selectedPanelTabAtom,
+  resizePanelOpenAtom,
+} from "@/store/chatStore";
 
 // Get appropriate icon for artifact type
 const getArtifactIcon = (type: string, _language?: string) => {
@@ -62,7 +66,8 @@ export const ArtifactCard = React.memo(
   ({ artifact }: { artifact: Artifact }) => {
     const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
     const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
-    const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
+    const [selectedArtifact, setSelectedArtifact] =
+      useAtom(selectedArtifactAtom);
     const { Icon, className } = getArtifactIcon(
       artifact.type,
       artifact.language,

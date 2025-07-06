@@ -90,7 +90,7 @@ export const cancel = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const chatInput = await ctx.runQuery(api.chats.queries.get, {
+    await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });
     const stream = await ctx.runQuery(api.streams.queries.get, {

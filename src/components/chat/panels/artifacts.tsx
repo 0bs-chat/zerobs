@@ -1,16 +1,15 @@
 import React from "react";
 import { useAtom, useAtomValue } from "jotai";
-import { parsedArtifactsContentAtom, selectedArtifactAtom } from "@/store/chatStore";
+import {
+  parsedArtifactsContentAtom,
+  selectedArtifactAtom,
+} from "@/store/chatStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArtifactViewer } from "../../artifacts/viewer";
 import type { Artifact, ContentPart } from "../../artifacts/utils";
 import { ArtifactCard } from "../../artifacts/card";
 
-const ArtifactsList = ({
-  artifacts,
-}: {
-  artifacts: Artifact[];
-}) => {
+const ArtifactsList = ({ artifacts }: { artifacts: Artifact[] }) => {
   if (!artifacts || artifacts.length === 0) {
     return (
       <div className="flex items-center justify-center text-center h-32">
@@ -60,7 +59,7 @@ export const ArtifactsPanel = () => {
   }, [selectedArtifact, allArtifacts]);
 
   const handleCloseViewer = () => {
-    setSelectedArtifact(null);
+    setSelectedArtifact(undefined);
   };
 
   if (artifactToView) {

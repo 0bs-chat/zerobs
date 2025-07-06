@@ -2,19 +2,22 @@
 
 import { z } from "zod";
 import { action, internalAction } from "../_generated/server";
-import { Doc, Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { agentGraph } from "./agent";
 import { api, internal } from "../_generated/api";
 import {
   mapChatMessagesToStoredMessages,
   mapStoredMessageToChatMessage,
-  StoredMessage,
+  type StoredMessage,
   SystemMessage,
 } from "@langchain/core/messages";
 import { MemorySaver } from "@langchain/langgraph";
 import { GraphState } from "./state";
 import { v } from "convex/values";
-import { getThreadFromMessage } from "../chatMessages/helpers";
+import {
+  buildMessageLookups,
+  getThreadFromMessage,
+} from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
 
@@ -110,7 +113,8 @@ export const chat = action({
     if (!message) {
       throw new Error("Message not found");
     }
-    const currentThread = getThreadFromMessage(messages, message);
+    const { messageMap } = buildMessageLookups(messages);
+    const currentThread = getThreadFromMessage(message, messageMap);
 
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
@@ -340,12 +344,9 @@ export const regenerate = action({
     if (!message) {
       throw new Error("Message not found");
     }
-    await ctx.runMutation(
-      internal.chatMessages.mutations.regenerate,
-      {
-        messageId: args.messageId,
-      },
-    );
+    await ctx.runMutation(internal.chatMessages.mutations.regenerate, {
+      messageId: args.messageId,
+    });
     await ctx.runAction(api.langchain.index.chat, {
       chatId: message.chatId,
     });

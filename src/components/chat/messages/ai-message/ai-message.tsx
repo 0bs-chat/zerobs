@@ -2,10 +2,7 @@ import { memo, useMemo } from "react";
 import { Reasoning } from "./reasoning";
 import { ToolMessage } from "./tool-message";
 import { Markdown } from "@/components/ui/markdown";
-import {
-  parseContent,
-  type ContentPart,
-} from "../../../artifacts/utils";
+import { parseContent, type ContentPart } from "../../../artifacts/utils";
 import { ArtifactCard } from "../../../artifacts/card";
 import { useSetAtom } from "jotai";
 import { parsedArtifactsContentAtom } from "@/store/chatStore";

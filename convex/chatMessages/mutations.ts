@@ -8,7 +8,7 @@ import {
   HumanMessage,
 } from "@langchain/core/messages";
 import { omit } from "convex-helpers";
-import { Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 
 export const updateInput = mutation({
   args: {
