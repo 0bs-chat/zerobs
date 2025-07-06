@@ -12,11 +12,12 @@ export const get = query({
   handler: async (ctx, args): Promise<Doc<"streams"> | null> => {
     const { userId } = await requireAuth(ctx);
 
-    return await ctx.db.query("streams")
-      .withIndex("by_chat_user", (q) => q
-        .eq("chatId", args.chatId)
-        .eq("userId", userId)
-      ).first();
+    return await ctx.db
+      .query("streams")
+      .withIndex("by_chat_user", (q) =>
+        q.eq("chatId", args.chatId).eq("userId", userId),
+      )
+      .first();
   },
 });
 
@@ -26,7 +27,10 @@ export const getChunks = query({
     paginationOpts: paginationOptsValidator,
     lastChunkTime: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     stream: Doc<"streams">;
     chunks: PaginationResult<Doc<"streamChunks">>;
   }> => {
@@ -41,7 +45,7 @@ export const getChunks = query({
       .filter((q) =>
         args.lastChunkTime
           ? q.gt(q.field("_creationTime"), args.lastChunkTime)
-          : true
+          : true,
       )
       .paginate({
         cursor: args.paginationOpts.cursor,

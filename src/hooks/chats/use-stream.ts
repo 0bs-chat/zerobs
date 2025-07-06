@@ -52,7 +52,9 @@ export function useStream(chatId: Id<"chats"> | "new") {
             const newEvents: (AIChunkGroup | ToolChunkGroup)[] = [];
             result.chunks.page.forEach((chunkDoc) => {
               chunkDoc.chunks.forEach((chunkStr) => {
-                newEvents.push(JSON.parse(chunkStr) as AIChunkGroup | ToolChunkGroup);
+                newEvents.push(
+                  JSON.parse(chunkStr) as AIChunkGroup | ToolChunkGroup,
+                );
               });
             });
 
@@ -107,5 +109,9 @@ export function useStream(chatId: Id<"chats"> | "new") {
   }, [chunks]);
 
   // If completedSteps is not undefined, then planning/deepsearch mode is enabled
-  return { chunkGroups, status: stream?.status, completedSteps: stream?.completedSteps };
+  return {
+    chunkGroups,
+    status: stream?.status,
+    completedSteps: stream?.completedSteps,
+  };
 }

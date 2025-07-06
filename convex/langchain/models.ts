@@ -148,9 +148,9 @@ export const models: {
 ];
 
 export async function getModel(
-  ctx: ActionCtx, 
-  model: string, 
-  reasoningEffort: "low" | "medium" | "high" | undefined
+  ctx: ActionCtx,
+  model: string,
+  reasoningEffort: "low" | "medium" | "high" | undefined,
 ): Promise<BaseChatModel> {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -158,12 +158,18 @@ export async function getModel(
     throw new Error(`Model ${model} not found in configuration`);
   }
 
-  const OPENAI_API_KEY = (await ctx.runQuery(api.apiKeys.queries.getFromKey, {
-    key: "OPENAI_API_KEY",
-  }))?.value ?? process.env.OPENAI_API_KEY;
-  const OPENAI_BASE_URL = (await ctx.runQuery(api.apiKeys.queries.getFromKey, {
-    key: "OPENAI_BASE_URL",
-  }))?.value ?? "https://openrouter.ai/api/v1";
+  const OPENAI_API_KEY =
+    (
+      await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+        key: "OPENAI_API_KEY",
+      })
+    )?.value ?? process.env.OPENAI_API_KEY;
+  const OPENAI_BASE_URL =
+    (
+      await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+        key: "OPENAI_BASE_URL",
+      })
+    )?.value ?? "https://openrouter.ai/api/v1";
 
   return new ChatOpenAI({
     model: modelConfig.model,
@@ -185,9 +191,18 @@ export async function getEmbeddingModel(ctx: ActionCtx, model: string) {
     throw new Error(`Model ${model} not found in configuration`);
   }
 
-  const API_KEY = (await ctx.runQuery(api.apiKeys.queries.getFromKey, {
-    key: modelConfig.provider === "google" ? "GOOGLE_EMBEDDING_API_KEY" : "OPENAI_EMBEDDING_API_KEY",
-  }))?.value ?? process.env[modelConfig.provider === "google" ? "GOOGLE_API_KEY" : "OPENAI_API_KEY"];
+  const API_KEY =
+    (
+      await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+        key:
+          modelConfig.provider === "google"
+            ? "GOOGLE_EMBEDDING_API_KEY"
+            : "OPENAI_EMBEDDING_API_KEY",
+      })
+    )?.value ??
+    process.env[
+      modelConfig.provider === "google" ? "GOOGLE_API_KEY" : "OPENAI_API_KEY"
+    ];
 
   if (modelConfig.provider === "google") {
     return new GoogleGenerativeAIEmbeddings({
@@ -195,9 +210,11 @@ export async function getEmbeddingModel(ctx: ActionCtx, model: string) {
       apiKey: API_KEY,
     });
   } else {
-    const OPENAI_BASE_URL = (await ctx.runQuery(api.apiKeys.queries.getFromKey, {
-      key: "OPENAI_EMBEDDING_BASE_URL",
-    }))?.value;
+    const OPENAI_BASE_URL = (
+      await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+        key: "OPENAI_EMBEDDING_BASE_URL",
+      })
+    )?.value;
 
     return new OpenAIEmbeddings({
       model: modelConfig.model,
@@ -263,7 +280,15 @@ export async function formatMessages(
                         fileType as "text" | "image" | "pdf",
                       )
                     ) {
-                      const base64 = Base64.fromByteArray(new Uint8Array(await (await ctx.storage.get(document.key as Id<"_storage">))?.arrayBuffer()!));
+                      const base64 = Base64.fromByteArray(
+                        new Uint8Array(
+                          await (
+                            await ctx.storage.get(
+                              document.key as Id<"_storage">,
+                            )
+                          )?.arrayBuffer()!,
+                        ),
+                      );
                       if (fileType === "image") {
                         return {
                           type: "image_url",
@@ -279,7 +304,7 @@ export async function formatMessages(
                           file: {
                             filename: document.name,
                             file_data: `data:${mimeType};base64,${base64}`,
-                          }
+                          },
                         };
                       }
                     } else {
@@ -339,8 +364,8 @@ export async function getVectorText(
     vectors.length > 0
       ? vectors.map((vector) => vector.text).join("\n")
       : "No text found";
-  
-    const url = await getUrl(ctx, doc.key);
+
+  const url = await getUrl(ctx, doc.key);
   return {
     type: "text",
     text: `# [${doc.name}](${url})\n${text}\n`,

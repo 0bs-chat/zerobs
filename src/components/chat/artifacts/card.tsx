@@ -68,7 +68,7 @@ export const ArtifactCard = React.memo(
     const selectedArtifact = useAtomValue(selectedArtifactAtom);
     const { Icon, className } = getArtifactIcon(
       artifact.type,
-      artifact.language
+      artifact.language,
     );
     const { copy, copied } = useCopy({ duration: 2000 });
 
@@ -138,7 +138,7 @@ export const ArtifactCard = React.memo(
         </CardContent>
       </Card>
     );
-  }
+  },
 );
 
 ArtifactCard.displayName = "ArtifactCard";

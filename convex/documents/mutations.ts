@@ -51,12 +51,9 @@ export const create = action({
       status: "processing",
     });
 
-    await ctx.runAction(
-      internal.documents.actions.addDocument,
-      {
-        documentId: document._id,
-      },
-    );
+    await ctx.runAction(internal.documents.actions.addDocument, {
+      documentId: document._id,
+    });
 
     return document._id;
   },
@@ -88,9 +85,7 @@ export const removeVectorsPaginated = internalMutation({
       .order("asc")
       .paginate(args.paginationOpts);
 
-    await Promise.all(
-      vectors.page.map((vector) => ctx.db.delete(vector._id)),
-    );
+    await Promise.all(vectors.page.map((vector) => ctx.db.delete(vector._id)));
 
     return {
       isDone: vectors.isDone,
@@ -123,13 +118,19 @@ export const remove = mutation({
     let isDone = false;
     let cursor = null;
     while (!isDone) {
-      const { isDone: isDone2, continueCursor }: { isDone: boolean, continueCursor: string } = await ctx.runMutation(internal.documents.mutations.removeVectorsPaginated, {
-        documentId: args.documentId,
-        paginationOpts: {
-          cursor,
-          numItems: 20,
+      const {
+        isDone: isDone2,
+        continueCursor,
+      }: { isDone: boolean; continueCursor: string } = await ctx.runMutation(
+        internal.documents.mutations.removeVectorsPaginated,
+        {
+          documentId: args.documentId,
+          paginationOpts: {
+            cursor,
+            numItems: 20,
+          },
         },
-      });
+      );
       isDone = isDone2;
       cursor = continueCursor;
     }

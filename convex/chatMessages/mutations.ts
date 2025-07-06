@@ -3,7 +3,10 @@ import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
 import { api, internal } from "../_generated/api";
 import schema from "../schema";
-import { mapChatMessagesToStoredMessages, HumanMessage } from "@langchain/core/messages";
+import {
+  mapChatMessagesToStoredMessages,
+  HumanMessage,
+} from "@langchain/core/messages";
 import { omit } from "convex-helpers";
 import { Id } from "../_generated/dataModel";
 
@@ -31,20 +34,30 @@ export const updateInput = mutation({
     });
 
     const newMessage = {
-      message: JSON.stringify(mapChatMessagesToStoredMessages([new HumanMessage({
-        content: [
-          ...(args.updates.text ? [{
-            type: "text",
-            text: args.updates.text,
-          }] : []),
-          ...(args.updates.documents ? args.updates.documents.map((documentId) => ({
-            type: "file",
-            file: {
-              file_id: documentId,
-            }
-          })) : []),
-        ]
-      })])[0]),
+      message: JSON.stringify(
+        mapChatMessagesToStoredMessages([
+          new HumanMessage({
+            content: [
+              ...(args.updates.text
+                ? [
+                    {
+                      type: "text",
+                      text: args.updates.text,
+                    },
+                  ]
+                : []),
+              ...(args.updates.documents
+                ? args.updates.documents.map((documentId) => ({
+                    type: "file",
+                    file: {
+                      file_id: documentId,
+                    },
+                  }))
+                : []),
+            ],
+          }),
+        ])[0],
+      ),
     };
 
     if (args.applySame) {
@@ -76,20 +89,24 @@ export const create = mutation({
 
     return await ctx.db.insert("chatMessages", {
       chatId: args.chatId!,
-      message: JSON.stringify(mapChatMessagesToStoredMessages([new HumanMessage({
-        content: [
-          {
-            type: "text",
-            text: args.text,
-          },
-          ...args.documents.map((documentId) => ({
-            type: "file",
-            file: {
-              file_id: documentId,
-            }
-          })),
-        ]
-      })])[0]),
+      message: JSON.stringify(
+        mapChatMessagesToStoredMessages([
+          new HumanMessage({
+            content: [
+              {
+                type: "text",
+                text: args.text,
+              },
+              ...args.documents.map((documentId) => ({
+                type: "file",
+                file: {
+                  file_id: documentId,
+                },
+              })),
+            ],
+          }),
+        ])[0],
+      ),
       parentId: args.parentId!,
     });
   },
@@ -111,14 +128,17 @@ export const regenerate = internalMutation({
       chatId: message.chatId!,
     });
 
-    const messageToRegenerate = await ctx.runQuery(internal.chatMessages.queries.getMessageToRegenerate, {
-      message: message,
-    });
+    const messageToRegenerate = await ctx.runQuery(
+      internal.chatMessages.queries.getMessageToRegenerate,
+      {
+        message: message,
+      },
+    );
 
     return await ctx.db.insert("chatMessages", {
       chatId: messageToRegenerate.chatId,
       parentId: messageToRegenerate.parentId,
       message: messageToRegenerate.message,
     });
-  }
+  },
 });

@@ -1,8 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  selectedPanelTabAtom,
-  selectedArtifactAtom,
-} from "@/store/chatStore";
+import { selectedPanelTabAtom, selectedArtifactAtom } from "@/store/chatStore";
 import { ProjectsPanel } from "./projects";
 import { MCPPanel } from "./mcp/index";
 import { ArtifactsPanel } from "./artifacts";

@@ -40,7 +40,7 @@ const RepoLoader = () => {
   const [currentRepo, setCurrentRepo] = useAtom(githubCurrentRepoAtom);
   const [currentBranch, setCurrentBranch] = useAtom(githubCurrentBranchAtom);
   const [availableBranches, setAvailableBranches] = useAtom(
-    githubAvailableBranchesAtom
+    githubAvailableBranchesAtom,
   );
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
 
@@ -89,7 +89,7 @@ const RepoLoader = () => {
         setCurrentBranch("main");
       }
     },
-    500
+    500,
   );
 
   const handleBranchChange = (value: string) => {
@@ -175,7 +175,7 @@ function RepoActions({
     try {
       // Generate combined file
       const combinedFile = await combineSelectedFilesForChat(
-        Array.from(selectedFiles)
+        Array.from(selectedFiles),
       );
 
       // Create FileList
@@ -187,7 +187,7 @@ function RepoActions({
       await uploadDocuments(fileList);
 
       toast.success(
-        `Added ${selectedFiles.size} files to chat as combined document`
+        `Added ${selectedFiles.size} files to chat as combined document`,
       );
       onCloseDialog(false);
     } catch (error) {

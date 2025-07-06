@@ -23,7 +23,10 @@ export const ConductorToggle = ({
       pressed={conductorMode}
       onPressedChange={() => {
         if (chatId === "new") {
-          setNewChat((prev) => ({ ...prev, conductorMode: !prev.conductorMode }));
+          setNewChat((prev) => ({
+            ...prev,
+            conductorMode: !prev.conductorMode,
+          }));
         } else {
           updateChatMutation({
             chatId,
@@ -36,4 +39,4 @@ export const ConductorToggle = ({
       Conductor
     </Toggle>
   );
-}; 
+};

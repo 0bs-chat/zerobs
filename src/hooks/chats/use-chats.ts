@@ -1,4 +1,9 @@
-import { useAction, useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import {
+  useAction,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
@@ -18,8 +23,14 @@ export const useHandleSubmit = () => {
 
   const handleSubmit = async (chat: Doc<"chats">) => {
     if (chat._id === "new") {
-      setNewChat((prev) => ({ ...prev, text: "", documents: [], projectId: null, deepSearchMode: false,
-        webSearch: false, artifacts: false
+      setNewChat((prev) => ({
+        ...prev,
+        text: "",
+        documents: [],
+        projectId: null,
+        deepSearchMode: false,
+        webSearch: false,
+        artifacts: false,
       }));
       chat._id = await createChatMutation({
         name: chat.name,
@@ -53,7 +64,12 @@ export const useHandleSubmit = () => {
         text: newChat.text !== "" ? newChat.text : chat.text,
         parentId: lastChatMessage ?? null,
       });
-      setNewChat((prev) => ({ ...prev, text: "", documents: [], projectId: null }));
+      setNewChat((prev) => ({
+        ...prev,
+        text: "",
+        documents: [],
+        projectId: null,
+      }));
       await sendAction({ chatId: chat._id });
     }
   };
@@ -67,7 +83,7 @@ export const useInfiniteChats = () => {
     {},
     {
       initialNumItems: 15,
-    }
+    },
   );
 
   const pinnedChats = results?.filter((chat) => chat.pinned) ?? [];

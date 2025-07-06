@@ -29,7 +29,7 @@ export type BranchPath = number[]; // index per depth, empty = default path
 export const buildThread = (
   nodes: ParsedMessageNode[] | undefined,
   path: BranchPath,
-  depth = 0
+  depth = 0,
 ): MessageWithBranchInfo[] => {
   if (!nodes || nodes.length === 0) return [];
 
@@ -89,7 +89,7 @@ export function buildMessageLookups(messages: Doc<"chatMessages">[]) {
 
   for (const message of messages) {
     messageMap.set(message._id, message);
-    
+
     if (message.parentId) {
       if (!childrenMap.has(message.parentId)) {
         childrenMap.set(message.parentId, []);
@@ -101,7 +101,9 @@ export function buildMessageLookups(messages: Doc<"chatMessages">[]) {
   return { messageMap, childrenMap };
 }
 
-export function buildMessageTree(messages: Doc<"chatMessages">[]): ParsedMessageNode[] {
+export function buildMessageTree(
+  messages: Doc<"chatMessages">[],
+): ParsedMessageNode[] {
   if (messages.length === 0) {
     return [];
   }
@@ -109,7 +111,11 @@ export function buildMessageTree(messages: Doc<"chatMessages">[]): ParsedMessage
   const messageMap = new Map<Id<"chatMessages">, ParsedMessageNode>();
 
   for (const message of messages) {
-    messageMap.set(message._id, { ...message, message: mapStoredMessageToChatMessage(JSON.parse(message.message)), children: [] });
+    messageMap.set(message._id, {
+      ...message,
+      message: mapStoredMessageToChatMessage(JSON.parse(message.message)),
+      children: [],
+    });
   }
 
   const roots: ParsedMessageNode[] = [];
@@ -129,13 +135,13 @@ export function buildMessageTree(messages: Doc<"chatMessages">[]): ParsedMessage
       node.children.sort((a, b) => a._creationTime - b._creationTime);
     }
   }
-  
+
   return roots;
 }
 
 export function getThreadFromMessage(
   messages: Doc<"chatMessages">[],
-  leafMessage: Doc<"chatMessages">
+  leafMessage: Doc<"chatMessages">,
 ): ParsedMessage[] {
   const { messageMap } = buildMessageLookups(messages);
   const thread: Doc<"chatMessages">[] = [];
@@ -148,20 +154,22 @@ export function getThreadFromMessage(
       ? messageMap.get(currentMessage.parentId)
       : undefined;
   }
-  
+
   const parseMessage = (message: Doc<"chatMessages">): ParsedMessage => {
     return {
       ...message,
       message: mapStoredMessageToChatMessage(
-        JSON.parse(message.message) as StoredMessage
+        JSON.parse(message.message) as StoredMessage,
       ),
     };
-  }
+  };
 
   return thread.map(parseMessage).reverse();
 }
 
-export function getCurrentThread(messages: Doc<"chatMessages">[]): ParsedMessage[] {
+export function getCurrentThread(
+  messages: Doc<"chatMessages">[],
+): ParsedMessage[] {
   if (messages.length === 0) {
     return [];
   }
@@ -169,13 +177,16 @@ export function getCurrentThread(messages: Doc<"chatMessages">[]): ParsedMessage
   const { messageMap, childrenMap } = buildMessageLookups(messages);
 
   const mostRecentMessage = messages[0];
-  
+
   let leafMessage = mostRecentMessage;
-  while (childrenMap.has(leafMessage._id) && childrenMap.get(leafMessage._id)!.length > 0) {
+  while (
+    childrenMap.has(leafMessage._id) &&
+    childrenMap.get(leafMessage._id)!.length > 0
+  ) {
     // Get the most recent child (they should be sorted by creation time)
     const children = childrenMap.get(leafMessage._id)!;
-    leafMessage = children.reduce((latest, child) => 
-      child._creationTime > latest._creationTime ? child : latest
+    leafMessage = children.reduce((latest, child) =>
+      child._creationTime > latest._creationTime ? child : latest,
     );
   }
 

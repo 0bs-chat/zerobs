@@ -6,4 +6,4 @@ export const Route = createLazyFileRoute("/")({
 
 function RouteComponent() {
   return <div>wait, what</div>;
-} 
+}

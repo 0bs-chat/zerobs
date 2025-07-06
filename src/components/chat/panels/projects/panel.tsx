@@ -9,6 +9,6 @@ export const ProjectsPanel = () => {
   if (!chatProjectId) {
     return <ProjectsList />;
   }
-  
+
   return <ProjectDetails projectId={chatProjectId!} />;
 };

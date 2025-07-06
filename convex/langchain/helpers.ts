@@ -8,9 +8,12 @@ import {
   AIMessage,
   HumanMessage,
   mapChatMessagesToStoredMessages,
-  mapStoredMessagesToChatMessages
+  mapStoredMessagesToChatMessages,
 } from "@langchain/core/messages";
-import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
+import {
+  ChatPromptTemplate,
+  MessagesPlaceholder,
+} from "@langchain/core/prompts";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { getMCPTools, getRetrievalTools } from "./tools";
@@ -37,7 +40,7 @@ export async function createSimpleAgent(
       undefined,
       config.customPrompt,
       false,
-      chat.artifacts
+      chat.artifacts,
     ),
     new MessagesPlaceholder("messages"),
   ]);
@@ -66,7 +69,7 @@ export async function createAgentWithTools(
         plannerMode,
         plannerMode ? undefined : config.customPrompt,
         true,
-        plannerMode ? false : chat.artifacts
+        plannerMode ? false : chat.artifacts,
       ),
       new MessagesPlaceholder("messages"),
     ]);
@@ -81,14 +84,18 @@ export async function createAgentWithTools(
       throw new Error("Need atleast 1 mcp enabled to use conductor mode");
     }
     const llm = await getModel(config.ctx, "worker", undefined);
-    const supervisorLlm = await getModel(config.ctx, chat.model!, chat.reasoningEffort);
+    const supervisorLlm = await getModel(
+      config.ctx,
+      chat.model!,
+      chat.reasoningEffort,
+    );
     const agents = Object.entries(tools.groupedTools).map(
       ([groupName, tools]: [string, Tool[]]) =>
         createReactAgent({
           llm,
           tools,
           prompt: `You are a ${groupName} assistant`,
-        })
+        }),
     );
 
     return createSupervisor({
@@ -99,30 +106,35 @@ export async function createAgentWithTools(
         plannerMode,
         plannerMode ? undefined : config.customPrompt,
         true,
-        plannerMode ? false : chat.artifacts
+        plannerMode ? false : chat.artifacts,
       ),
     }).compile();
   }
 }
 
-export function getPlannerAgentResponse(
-  messages: BaseMessage[],
-): BaseMessage {
+export function getPlannerAgentResponse(messages: BaseMessage[]): BaseMessage {
   // filter and concat all ai messages
   const aiResponses = messages.filter(
     (message) => typeof message === typeof AIMessage,
   );
   const storedAIResponses = mapChatMessagesToStoredMessages(aiResponses);
-  return mapStoredMessagesToChatMessages([{
-    ...storedAIResponses[storedAIResponses.length - 1],
-    data: {
-      ...storedAIResponses[storedAIResponses.length - 1].data,
-      content: storedAIResponses.map((response) => response.data.content).join("\n\n"),
-    }
-  }])[0];
+  return mapStoredMessagesToChatMessages([
+    {
+      ...storedAIResponses[storedAIResponses.length - 1],
+      data: {
+        ...storedAIResponses[storedAIResponses.length - 1].data,
+        content: storedAIResponses
+          .map((response) => response.data.content)
+          .join("\n\n"),
+      },
+    },
+  ])[0];
 }
 
-export function getLastMessage(messages: BaseMessage[], type: "ai" | "human"): { message: BaseMessage; index: number } | null {
+export function getLastMessage(
+  messages: BaseMessage[],
+  type: "ai" | "human",
+): { message: BaseMessage; index: number } | null {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (message instanceof AIMessage && type === "ai") {

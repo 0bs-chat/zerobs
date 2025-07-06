@@ -38,11 +38,7 @@ import { models } from "../../../../../convex/langchain/models";
 import { ArtifactsToggle } from "./artifatsToggle";
 import { WebSearchToggle } from "./webSearchToggle";
 
-export const ToolBar = ({
-  chat,
-}: {
-  chat: Doc<"chats">;
-}) => {
+export const ToolBar = ({ chat }: { chat: Doc<"chats"> }) => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -54,7 +50,9 @@ export const ToolBar = ({
   const setNewChat = useSetAtom(newChatAtom);
   const selectedModel = chat.model;
   const reasoningEffort = chat.reasoningEffort;
-  const selectedModelConfig = models.find(m => m.model_name === selectedModel);
+  const selectedModelConfig = models.find(
+    (m) => m.model_name === selectedModel,
+  );
   const showReasoningEffort = selectedModelConfig?.isThinking ?? false;
 
   const handleFileUpload = useUploadDocuments({ type: "file", chat });
@@ -100,22 +98,13 @@ export const ToolBar = ({
           </DropdownMenu>
         </div>
 
-        <ConductorToggle
-          chatId={chatId}
-          conductorMode={chat.conductorMode}
-        />
+        <ConductorToggle chatId={chatId} conductorMode={chat.conductorMode} />
         <DeepSearchToggle
           chatId={chatId}
           deepSearchMode={chat.deepSearchMode}
         />
-        <ArtifactsToggle
-          chatId={chatId}
-          artifacts={chat.artifacts}
-        />
-        <WebSearchToggle
-          chatId={chatId}
-          webSearch={chat.webSearch}
-        />
+        <ArtifactsToggle chatId={chatId} artifacts={chat.artifacts} />
+        <WebSearchToggle chatId={chatId} webSearch={chat.webSearch} />
       </div>
       <div className="flex flex-row items-center gap-1">
         {showReasoningEffort && (

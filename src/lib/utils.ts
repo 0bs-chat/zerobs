@@ -20,18 +20,18 @@ export function formatDate(dateInput: string | number): string | null {
   try {
     const date = new Date(dateInput);
     return date.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   } catch {
-    return typeof dateInput === 'string' ? dateInput : null;
+    return typeof dateInput === "string" ? dateInput : null;
   }
 }
 
 export function extractDomain(url: string): string {
   try {
-    return new URL(url).hostname.replace('www.', '');
+    return new URL(url).hostname.replace("www.", "");
   } catch {
     return url;
   }

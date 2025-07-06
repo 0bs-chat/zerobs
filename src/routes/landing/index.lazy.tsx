@@ -32,9 +32,11 @@ function RouteComponent() {
                 github
               </a>
               <SignInButton mode="modal">
-                <button className="hover:cursor-pointer dark:text-black 
+                <button
+                  className="hover:cursor-pointer dark:text-black 
                 text-black hover:text-white dark:bg-white 
-                px-2 transition duration-500 font-medium">
+                px-2 transition duration-500 font-medium"
+                >
                   try now
                 </button>
               </SignInButton>
@@ -44,4 +46,4 @@ function RouteComponent() {
       </main>
     </ThemeProvider>
   );
-} 
+}

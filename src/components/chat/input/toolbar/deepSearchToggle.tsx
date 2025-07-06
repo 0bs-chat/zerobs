@@ -22,7 +22,10 @@ export const DeepSearchToggle = ({
       pressed={deepSearchMode}
       onPressedChange={() => {
         if (chatId === "new") {
-          setNewChat((prev) => ({ ...prev, deepSearchMode: !prev.deepSearchMode }));
+          setNewChat((prev) => ({
+            ...prev,
+            deepSearchMode: !prev.deepSearchMode,
+          }));
         } else {
           updateChatMutation({
             chatId,
@@ -37,4 +40,4 @@ export const DeepSearchToggle = ({
       DeepSearch
     </Toggle>
   );
-}; 
+};

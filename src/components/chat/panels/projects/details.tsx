@@ -47,8 +47,8 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
             onClick={() => {
               if (chatId !== "new") {
                 updateChatInput({
-                chatId,
-                updates: {
+                  chatId,
+                  updates: {
                     projectId: null,
                   },
                 });

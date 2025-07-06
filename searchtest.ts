@@ -24,7 +24,7 @@ for (let i = 0; i < argv.length; i++) {
 
 if (!query) {
   console.error(
-    `Usage: bun searchtest.ts -q "<query>" [--return-images] [--max-results N]`
+    `Usage: bun searchtest.ts -q "<query>" [--return-images] [--max-results N]`,
   );
   process.exit(1);
 }
@@ -168,7 +168,7 @@ async function searchImages(q: string) {
 }
 
 // --- 4) Main orchestration ---
-;(async () => {
+(async () => {
   let results = [];
 
   if (returnImages) {

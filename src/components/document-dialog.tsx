@@ -4,9 +4,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  documentDialogOpenAtom,
-} from "@/store/chatStore";
+import { documentDialogOpenAtom } from "@/store/chatStore";
 import { api } from "../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { Button } from "@/components/ui/button";
@@ -22,9 +20,7 @@ export const DocumentDialog = () => {
 
   const document = useQuery(
     api.documents.queries.get,
-    documentDialogOpen
-      ? { documentId: documentDialogOpen }
-      : "skip",
+    documentDialogOpen ? { documentId: documentDialogOpen } : "skip",
   );
 
   const generateDownloadUrl = useMutation(
@@ -98,7 +94,10 @@ export const DocumentDialog = () => {
   );
 
   return (
-    <Dialog open={!!documentDialogOpen} onOpenChange={() => setDocumentDialogOpen(null)}>
+    <Dialog
+      open={!!documentDialogOpen}
+      onOpenChange={() => setDocumentDialogOpen(null)}
+    >
       <DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -178,10 +177,7 @@ export const DocumentDialog = () => {
               Open {document.type === "youtube" ? "in YouTube" : "in Browser"}
             </Button>
           ) : null}
-          <Button
-            variant="outline"
-            onClick={() => setDocumentDialogOpen(null)}
-          >
+          <Button variant="outline" onClick={() => setDocumentDialogOpen(null)}>
             Close
           </Button>
         </div>

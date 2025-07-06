@@ -24,7 +24,12 @@ interface CreateDialogProps {
 }
 
 export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
-  const [mcp, setMcp] = useState<Omit<Doc<"mcps">, "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled">>({
+  const [mcp, setMcp] = useState<
+    Omit<
+      Doc<"mcps">,
+      "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
+    >
+  >({
     name: "",
     type: "sse",
     command: "",

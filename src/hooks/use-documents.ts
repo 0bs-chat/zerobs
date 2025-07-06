@@ -9,7 +9,10 @@ import { useSetAtom } from "jotai";
 export const useRemoveDocument = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const chatId = params.chatId as Id<"chats">;
-  const chatInputQuery = useQuery(api.chats.queries.get, chatId !== "new" ? { chatId } : "skip");
+  const chatInputQuery = useQuery(
+    api.chats.queries.get,
+    chatId !== "new" ? { chatId } : "skip",
+  );
   const updateChatInputMutation = useMutation(api.chats.mutations.update);
   const setNewChat = useSetAtom(newChatAtom);
 
@@ -18,9 +21,11 @@ export const useRemoveDocument = () => {
       if (!chatInputQuery?.documents) {
         return;
       }
-      
-      const filteredDocuments = chatInputQuery.documents.filter((id) => id !== documentId);
-      
+
+      const filteredDocuments = chatInputQuery.documents.filter(
+        (id) => id !== documentId,
+      );
+
       updateChatInputMutation({
         chatId: chatId,
         updates: {
@@ -29,7 +34,9 @@ export const useRemoveDocument = () => {
       });
     } else {
       setNewChat((prev) => {
-        const filteredDocuments = prev.documents.filter((id) => id !== documentId);
+        const filteredDocuments = prev.documents.filter(
+          (id) => id !== documentId,
+        );
         return { ...prev, documents: filteredDocuments };
       });
     }
@@ -51,11 +58,9 @@ export const useUploadDocuments = (
   const generateUploadUrlMutation = useMutation(
     api.documents.mutations.generateUploadUrl,
   );
-  const createMutation = useAction(
-    api.documents.mutations.create,
-  );
+  const createMutation = useAction(api.documents.mutations.create);
   const setNewChat = useSetAtom(newChatAtom);
-  
+
   return async (files: FileList) => {
     try {
       const uploadedStorageIds: Id<"_storage">[] = [];
@@ -81,15 +86,17 @@ export const useUploadDocuments = (
         uploadedStorageIds.push(storageId);
       }
 
-      const documentIds = await Promise.all(uploadedStorageIds.map((storageId, index) => {
-        const file = files[index];
-        return createMutation({
-          name: file.name,
-          type,
-          size: file.size,
-          key: storageId,
-        });
-      }));
+      const documentIds = await Promise.all(
+        uploadedStorageIds.map((storageId, index) => {
+          const file = files[index];
+          return createMutation({
+            name: file.name,
+            type,
+            size: file.size,
+            key: storageId,
+          });
+        }),
+      );
 
       // Update chat input with new documents
       if (chat) {
@@ -101,7 +108,10 @@ export const useUploadDocuments = (
             },
           });
         } else {
-          setNewChat((prev) => ({ ...prev, documents: [...prev.documents, ...documentIds] }));
+          setNewChat((prev) => ({
+            ...prev,
+            documents: [...prev.documents, ...documentIds],
+          }));
         }
       }
 

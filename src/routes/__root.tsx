@@ -28,9 +28,7 @@ export const Route = createRootRoute({
 
     // Show sign-in page for unauthenticated users on private routes
     if (!isSignedIn && !publicRoutes.includes(urlPath)) {
-      return (
-        <RedirectToSignIn />
-      );
+      return <RedirectToSignIn />;
     }
 
     return (

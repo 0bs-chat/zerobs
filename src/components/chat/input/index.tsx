@@ -1,5 +1,8 @@
 import { DocumentList } from "./document-list";
-import { AutosizeTextarea, type AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
+import {
+  AutosizeTextarea,
+  type AutosizeTextAreaRef,
+} from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useAtom, useSetAtom } from "jotai";
@@ -21,10 +24,9 @@ export const ChatInput = () => {
   const handleSubmit = useHandleSubmit();
   const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
 
-  const chat = useQuery(
-    api.chats.queries.get,
-    chatId !== "new" ? { chatId } : "skip"
-  ) ?? newChat;
+  const chat =
+    useQuery(api.chats.queries.get, chatId !== "new" ? { chatId } : "skip") ??
+    newChat;
 
   setSelectedProjectId(chat.projectId);
 
@@ -53,10 +55,7 @@ export const ChatInput = () => {
   return (
     <div className="flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">
       {/* Document List */}
-      <DocumentList
-        documentIds={chat.documents}
-        model={chat.model}
-      />
+      <DocumentList documentIds={chat.documents} model={chat.model} />
 
       {/* Input */}
       <AutosizeTextarea
@@ -70,7 +69,7 @@ export const ChatInput = () => {
           setNewChat((prev) => ({
             ...prev,
             text: e.target.value,
-          }))
+          }));
           if (chatId !== "new") {
             debouncedSaveDraft(e.target.value);
           }
@@ -78,12 +77,15 @@ export const ChatInput = () => {
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            
-            if ((!newChat.text || newChat.text.trim() === "") && chat.documents.length === 0) {
+
+            if (
+              (!newChat.text || newChat.text.trim() === "") &&
+              chat.documents.length === 0
+            ) {
               toast.error("Please enter a message");
               return;
             }
-            
+
             if (textareaRef.current) {
               textareaRef.current.textArea.value = "";
             }
@@ -93,9 +95,7 @@ export const ChatInput = () => {
         placeholder="Type a message..."
       />
 
-      <ToolBar
-        chat={chat}
-      />
+      <ToolBar chat={chat} />
     </div>
   );
 };

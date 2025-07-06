@@ -8,7 +8,10 @@ import { z } from "zod";
 import Exa from "exa-js";
 import { api, internal } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
-import type { StructuredToolInterface, ToolSchemaBase } from "@langchain/core/tools";
+import type {
+  StructuredToolInterface,
+  ToolSchemaBase,
+} from "@langchain/core/tools";
 import type { Doc, Id } from "../_generated/dataModel";
 import { fly } from "../utils/flyio";
 import { getEmbeddingModel } from "./models";
@@ -21,15 +24,12 @@ export const getRetrievalTools = async (
   config: ExtendedRunnableConfig,
   returnString: boolean = false,
 ) => {
-
   const vectorSearchTool = new DynamicStructuredTool({
     name: "searchProjectDocuments",
     description:
       "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents.",
     schema: z.object({
-      query: z
-        .string()
-        .describe("The search query to find relevant documents"),
+      query: z.string().describe("The search query to find relevant documents"),
       limit: z
         .number()
         .min(1)
@@ -37,13 +37,7 @@ export const getRetrievalTools = async (
         .describe("Number of results to return")
         .default(10),
     }),
-    func: async ({
-      query,
-      limit = 10,
-    }: {
-      query: string;
-      limit?: number;
-    }) => {
+    func: async ({ query, limit = 10 }: { query: string; limit?: number }) => {
       // Initialize ConvexVectorStore with the embedding model
       const embeddingModel = await getEmbeddingModel(config.ctx, "embeddings");
       const vectorStore = new ConvexVectorStore(embeddingModel, {
@@ -89,7 +83,7 @@ export const getRetrievalTools = async (
             return null;
           }
           const url = await getUrl(config.ctx, projectDocument.key);
-            
+
           return new Document({
             pageContent: doc.pageContent,
             metadata: {
@@ -117,53 +111,66 @@ export const getRetrievalTools = async (
       query: z
         .string()
         .describe("The search query to find relevant web information"),
-      topic: z.union([
-        z.literal("company"),
-        z.literal("research paper"),
-        z.literal("news"),
-        z.literal("pdf"),
-        z.literal("github"),
-        z.literal("personal site"),
-        z.literal("linkedin profile"),
-        z.literal("financial report")
-      ])
+      topic: z
+        .union([
+          z.literal("company"),
+          z.literal("research paper"),
+          z.literal("news"),
+          z.literal("pdf"),
+          z.literal("github"),
+          z.literal("personal site"),
+          z.literal("linkedin profile"),
+          z.literal("financial report"),
+        ])
         .describe(
           "The topic of the search query (e.g., 'news', 'finance'). By default, it will perform a google search." +
-          "### SEARCH STRATEGY EXAMPLES:\n" +
-          `- Topic: "AI model performance" → Search: "GPT-4 benchmark results 2024", "LLM performance comparison studies", "AI model evaluation metrics research"` +
-          `- Topic: "Company financials" → Search: "Tesla Q3 2024 earnings report", "Tesla revenue growth analysis", "electric vehicle market share 2024"` +
-          `- Topic: "Technical implementation" → Search: "React Server Components best practices", "Next.js performance optimization techniques", "modern web development patterns"` +
-          `### USAGE GUIDELINES:\n` +
-          `- Search first, search often, search comprehensively` +
-          `- Make 1-3 targeted searches per research topic to get different angles and perspectives` +
-          `- Search queries should be specific and focused` +
-          `- Follow up initial searches with more targeted queries based on what you learn` +
-          `- Cross-reference information by searching for the same topic from different angles` +
-          `- Search for contradictory information to get balanced perspectives` +
-          `- Include exact metrics, dates, technical terms, and proper nouns in queries` +
-          `- Make searches progressively more specific as you gather context` +
-          `- Search for recent developments, trends, and updates on topics` +
-          `- Always verify information with multiple searches from different sources`
+            "### SEARCH STRATEGY EXAMPLES:\n" +
+            `- Topic: "AI model performance" → Search: "GPT-4 benchmark results 2024", "LLM performance comparison studies", "AI model evaluation metrics research"` +
+            `- Topic: "Company financials" → Search: "Tesla Q3 2024 earnings report", "Tesla revenue growth analysis", "electric vehicle market share 2024"` +
+            `- Topic: "Technical implementation" → Search: "React Server Components best practices", "Next.js performance optimization techniques", "modern web development patterns"` +
+            `### USAGE GUIDELINES:\n` +
+            `- Search first, search often, search comprehensively` +
+            `- Make 1-3 targeted searches per research topic to get different angles and perspectives` +
+            `- Search queries should be specific and focused` +
+            `- Follow up initial searches with more targeted queries based on what you learn` +
+            `- Cross-reference information by searching for the same topic from different angles` +
+            `- Search for contradictory information to get balanced perspectives` +
+            `- Include exact metrics, dates, technical terms, and proper nouns in queries` +
+            `- Make searches progressively more specific as you gather context` +
+            `- Search for recent developments, trends, and updates on topics` +
+            `- Always verify information with multiple searches from different sources`,
         )
         .nullable()
         .optional(),
     }),
-    func: async ({ query, topic }: { query: string; topic?: string | null }) => {
+    func: async ({
+      query,
+      topic,
+    }: {
+      query: string;
+      topic?: string | null;
+    }) => {
       const EXA_API_KEY =
-        (await config.ctx.runQuery(api.apiKeys.queries.getFromKey, {
-          key: "EXA_API_KEY",
-        }))?.value ?? process.env.EXA_API_KEY ?? "";
+        (
+          await config.ctx.runQuery(api.apiKeys.queries.getFromKey, {
+            key: "EXA_API_KEY",
+          })
+        )?.value ??
+        process.env.EXA_API_KEY ??
+        "";
 
       try {
         const exa = new Exa(EXA_API_KEY, undefined);
-        
-        const searchResponse = (await exa.searchAndContents(query, {
-          numResults: 5,
-          type: "auto",
-          useAutoprompt: false,
-          topic: topic,
-          text: true,
-        })).results;
+
+        const searchResponse = (
+          await exa.searchAndContents(query, {
+            numResults: 5,
+            type: "auto",
+            useAutoprompt: false,
+            topic: topic,
+            text: true,
+          })
+        ).results;
 
         if (searchResponse.length === 0) {
           return "No results found.";
@@ -197,7 +204,7 @@ export const getRetrievalTools = async (
       }
     },
   });
-  
+
   return {
     vectorSearch: vectorSearchTool,
     webSearch: webSearchTool,
@@ -287,7 +294,8 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
 
   const tools = await client.getTools();
 
-  const groupedTools: Map<string, StructuredToolInterface<ToolSchemaBase>[]> = new Map();
+  const groupedTools: Map<string, StructuredToolInterface<ToolSchemaBase>[]> =
+    new Map();
 
   for (const tool of tools) {
     const parts = tool.name.split("__");
@@ -319,8 +327,9 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
           };
         }) ?? [],
       )
+    )
       // Filter out any null results from documents without URLs
-    ).filter((file): file is { name: string; url: string } => file !== null);
+      .filter((file): file is { name: string; url: string } => file !== null);
 
     // Upload files to all stdio-type MCPs
     await Promise.all(

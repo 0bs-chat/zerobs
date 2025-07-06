@@ -27,7 +27,10 @@ export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
 
 export const resizePanelOpenAtom = atomWithStorage("resizePanelOpen", false);
-export const selectedPanelTabAtom = atomWithStorage("selectedPanelTab", "projects");
+export const selectedPanelTabAtom = atomWithStorage(
+  "selectedPanelTab",
+  "projects",
+);
 export const resizePanelWidthAtom = atomWithStorage("resizePanelWidth", 40);
 
 export const documentDialogOpenAtom = atom<Id<"documents"> | null>(null);
@@ -39,11 +42,15 @@ export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", false);
 export const selectedProjectIdAtom = atom<Id<"projects"> | null>(null);
 export const selectedArtifactAtom = atom<Artifact | null>(null);
 
-export const groupedMessagesAtom = atom<ReturnType<typeof groupMessages> | null>(null);
+export const groupedMessagesAtom = atom<ReturnType<
+  typeof groupMessages
+> | null>(null);
 export const useStreamAtom = atom<ReturnType<typeof useStream> | null>(null);
 export const streamStatusAtom = selectAtom(
   useStreamAtom,
   (stream) => stream?.status,
 );
 
-export const lastChatMessageAtom = atom<Id<"chatMessages"> | undefined>(undefined);
+export const lastChatMessageAtom = atom<Id<"chatMessages"> | undefined>(
+  undefined,
+);

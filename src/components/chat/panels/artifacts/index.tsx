@@ -57,7 +57,7 @@ const ArtifactsList = ({
 
 export const ArtifactsPanel = () => {
   const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
-  
+
   const allArtifacts = React.useMemo(() => {
     // For now, return empty array since we removed streaming
     // This can be populated with artifacts from completed messages

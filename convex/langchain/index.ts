@@ -5,7 +5,12 @@ import { action, internalAction } from "../_generated/server";
 import { Doc, Id } from "../_generated/dataModel";
 import { agentGraph } from "./agent";
 import { api, internal } from "../_generated/api";
-import { HumanMessage, mapChatMessagesToStoredMessages, mapStoredMessageToChatMessage, StoredMessage, SystemMessage } from "@langchain/core/messages";
+import {
+  mapChatMessagesToStoredMessages,
+  mapStoredMessageToChatMessage,
+  StoredMessage,
+  SystemMessage,
+} from "@langchain/core/messages";
 import { MemorySaver } from "@langchain/langgraph";
 import { GraphState } from "./state";
 import { v } from "convex/values";
@@ -33,48 +38,65 @@ export const generateTitle = internalAction({
     message: ChatMessages.doc,
   }),
   handler: async (ctx, args) => {
-    const firstMessage = await formatMessages(ctx, [mapStoredMessageToChatMessage(JSON.parse(args.message.message) as StoredMessage)], args.chat.model);
-    const model = await getModel(ctx, args.chat.model, args.chat.reasoningEffort);
+    const firstMessage = await formatMessages(
+      ctx,
+      [
+        mapStoredMessageToChatMessage(
+          JSON.parse(args.message.message) as StoredMessage,
+        ),
+      ],
+      args.chat.model,
+    );
+    const model = await getModel(
+      ctx,
+      args.chat.model,
+      args.chat.reasoningEffort,
+    );
     const titleSchema = z.object({
-      title: z.string().describe("A short title for the chat. Keep it under 6 words."),
+      title: z
+        .string()
+        .describe("A short title for the chat. Keep it under 6 words."),
     });
     const structuredModel = model.withStructuredOutput(titleSchema);
-    const title = await structuredModel.invoke([
-      new SystemMessage("You are a title generator that generates a short title for the following user message."),
+    const title = (await structuredModel.invoke([
+      new SystemMessage(
+        "You are a title generator that generates a short title for the following user message.",
+      ),
       ...firstMessage,
-    ]) as z.infer<typeof titleSchema>;
+    ])) as z.infer<typeof titleSchema>;
     await ctx.runMutation(api.chats.mutations.update, {
       chatId: args.chat._id,
       updates: {
         name: title.title,
       },
     });
-  }
+  },
 });
 
 export const chat = action({
   args: v.object({
     chatId: v.id("chats"),
   }),
-  handler: async (ctx, args) => {    
+  handler: async (ctx, args) => {
     let chat = await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });
-    
+
     const abortController = new AbortController();
-    const project = chat.projectId 
-      ? await ctx.runQuery(api.projects.queries.get, { 
-          projectId: chat.projectId 
+    const project = chat.projectId
+      ? await ctx.runQuery(api.projects.queries.get, {
+          projectId: chat.projectId,
         })
       : null;
-    
-    const customPrompt = project?.systemPrompt && project.systemPrompt.trim() !== "" 
-      ? project.systemPrompt 
-      : undefined;
-    
+
+    const customPrompt =
+      project?.systemPrompt && project.systemPrompt.trim() !== ""
+        ? project.systemPrompt
+        : undefined;
+
     const messages = await ctx.runQuery(api.chatMessages.queries.get, {
       chatId: args.chatId,
-    })
+    });
 
     if (messages?.length === 1) {
       ctx.runAction(internal.langchain.index.generateTitle, {
@@ -82,29 +104,29 @@ export const chat = action({
         message: messages[0],
       });
     }
-    
+
     const message = messages.slice(-1)[0];
     if (!message) {
       throw new Error("Message not found");
     }
     const currentThread = getThreadFromMessage(messages, message);
-    
+
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
-    
+
     const stream = agent.streamEvents(
       { messages: currentThread.map((message) => message.message) },
-      { 
+      {
         version: "v2",
-        configurable: { 
-          ctx, 
+        configurable: {
+          ctx,
           chat: chat,
           customPrompt,
           thread_id: args.chatId,
         },
         recursionLimit: 100,
         signal: abortController.signal,
-      }
+      },
     );
 
     const BUFFER = 300; // ms
@@ -115,7 +137,7 @@ export const chat = action({
       chatId: args.chatId,
     });
     let checkpoint: typeof GraphState.State | null = null;
-    
+
     if (!streamDoc) {
       streamDoc = await ctx.runMutation(internal.streams.crud.create, {
         userId: chat.userId,
@@ -135,8 +157,8 @@ export const chat = action({
     // Create a function to handle flushing chunks
     async function flushChunks() {
       while (!wasCancelled && !streamCompleted) {
-        await new Promise(resolve => setTimeout(resolve, BUFFER));
-        
+        await new Promise((resolve) => setTimeout(resolve, BUFFER));
+
         if (buffer.length > 0) {
           const chunksToFlush = buffer;
           buffer = [];
@@ -147,7 +169,7 @@ export const chat = action({
               chunks: chunksToFlush,
             },
           );
-          
+
           // Check if the stream was cancelled during appendChunks
           if (streamDoc.status === "cancelled") {
             wasCancelled = true;
@@ -156,18 +178,15 @@ export const chat = action({
           }
         }
       }
-      
+
       if (buffer.length > 0) {
         const chunksToFlush = buffer;
         buffer = [];
-        
-        await ctx.runMutation(
-          internal.streams.mutations.appendChunks,
-          {
-            chatId: args.chatId,
-            chunks: chunksToFlush,
-          },
-        );
+
+        await ctx.runMutation(internal.streams.mutations.appendChunks, {
+          chatId: args.chatId,
+          chunks: chunksToFlush,
+        });
       }
     }
 
@@ -182,20 +201,28 @@ export const chat = action({
           break;
         }
 
-        const currentCheckpoint = (await agent.getState({ configurable: { thread_id: args.chatId } })).values as typeof GraphState.State
-        if (checkpoint === null
-            || (currentCheckpoint.messages?.length !== checkpoint.messages?.length)
-            || (currentCheckpoint.plan?.length !== checkpoint.plan?.length)
-            || (currentCheckpoint.pastSteps?.length !== checkpoint.pastSteps?.length)
-          ) {
+        const currentCheckpoint = (
+          await agent.getState({ configurable: { thread_id: args.chatId } })
+        ).values as typeof GraphState.State;
+        if (
+          checkpoint === null ||
+          currentCheckpoint.messages?.length !== checkpoint.messages?.length ||
+          currentCheckpoint.plan?.length !== checkpoint.plan?.length ||
+          currentCheckpoint.pastSteps?.length !== checkpoint.pastSteps?.length
+        ) {
           checkpoint = currentCheckpoint;
           await ctx.runMutation(internal.streams.mutations.update, {
             chatId: args.chatId,
             updates: {
-              completedSteps: currentCheckpoint?.pastSteps?.length > 0 ? currentCheckpoint.pastSteps.map((pastStep) => {
-                const [step, _messages] = pastStep;
-                return step as string;
-              }) : currentCheckpoint?.plan?.length > 0 ? [currentCheckpoint.plan.flat()[0]] : undefined,
+              completedSteps:
+                currentCheckpoint?.pastSteps?.length > 0
+                  ? currentCheckpoint.pastSteps.map((pastStep) => {
+                      const [step, _messages] = pastStep;
+                      return step as string;
+                    })
+                  : currentCheckpoint?.plan?.length > 0
+                    ? [currentCheckpoint.plan.flat()[0]]
+                    : undefined,
             },
           });
         }
@@ -267,15 +294,26 @@ export const chat = action({
       await flushPromise;
     }
 
-    const newMessages = checkpoint?.messages?.slice(currentThread.length, checkpoint.messages.length);
+    const newMessages = checkpoint?.messages?.slice(
+      currentThread.length,
+      checkpoint.messages.length,
+    );
     if (newMessages) {
-      let parentId: Id<"chatMessages"> | null = currentThread.length > 0 ? currentThread[currentThread.length - 1]._id : null;
+      let parentId: Id<"chatMessages"> | null =
+        currentThread.length > 0
+          ? currentThread[currentThread.length - 1]._id
+          : null;
       for (const message of newMessages) {
-        const newMessageDoc: Doc<"chatMessages"> = await ctx.runMutation(internal.chatMessages.crud.create, {
-          chatId: args.chatId,
-          parentId: parentId,
-          message: JSON.stringify(mapChatMessagesToStoredMessages([message])[0]),
-        });
+        const newMessageDoc: Doc<"chatMessages"> = await ctx.runMutation(
+          internal.chatMessages.crud.create,
+          {
+            chatId: args.chatId,
+            parentId: parentId,
+            message: JSON.stringify(
+              mapChatMessagesToStoredMessages([message])[0],
+            ),
+          },
+        );
         parentId = newMessageDoc._id;
       }
     }
@@ -287,7 +325,7 @@ export const chat = action({
         status: wasCancelled ? "cancelled" : "done",
       },
     });
-  }
+  },
 });
 
 export const regenerate = action({
@@ -301,11 +339,14 @@ export const regenerate = action({
     if (!message) {
       throw new Error("Message not found");
     }
-    const newMessageId = await ctx.runMutation(internal.chatMessages.mutations.regenerate, {
-      messageId: args.messageId,
-    });
+    const newMessageId = await ctx.runMutation(
+      internal.chatMessages.mutations.regenerate,
+      {
+        messageId: args.messageId,
+      },
+    );
     await ctx.runAction(api.langchain.index.chat, {
       chatId: message.chatId,
     });
-  }
+  },
 });

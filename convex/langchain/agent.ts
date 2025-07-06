@@ -1,12 +1,26 @@
 "use node";
 
 import { RunnableConfig } from "@langchain/core/runnables";
-import { ExtendedRunnableConfig, createSimpleAgent, createAgentWithTools, getPlannerAgentResponse } from "./helpers";
+import {
+  ExtendedRunnableConfig,
+  createSimpleAgent,
+  createAgentWithTools,
+  getPlannerAgentResponse,
+} from "./helpers";
 import { CompletedStep, GraphState, planSchema } from "./state";
 import { modelSupportsTools, formatMessages, getModel } from "./models";
 import { getLastMessage } from "./helpers";
-import { BaseMessage, AIMessage, HumanMessage, mapChatMessagesToStoredMessages } from "@langchain/core/messages";
-import { createPlannerPrompt, createReplannerPrompt, replannerOutputSchema } from "./prompts";
+import {
+  BaseMessage,
+  AIMessage,
+  HumanMessage,
+  mapChatMessagesToStoredMessages,
+} from "@langchain/core/messages";
+import {
+  createPlannerPrompt,
+  createReplannerPrompt,
+  replannerOutputSchema,
+} from "./prompts";
 import { z } from "zod";
 import { END, START, StateGraph } from "@langchain/langgraph";
 
@@ -48,7 +62,10 @@ async function simple(state: typeof GraphState.State, config: RunnableConfig) {
   };
 }
 
-async function baseAgent(state: typeof GraphState.State, config: RunnableConfig) {
+async function baseAgent(
+  state: typeof GraphState.State,
+  config: RunnableConfig,
+) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
   const chain = await createAgentWithTools(state, formattedConfig);
@@ -65,7 +82,9 @@ async function baseAgent(state: typeof GraphState.State, config: RunnableConfig)
     config,
   );
 
-  let newMessages = response.messages.slice(formattedMessages.length) as BaseMessage[];
+  let newMessages = response.messages.slice(
+    formattedMessages.length,
+  ) as BaseMessage[];
 
   return {
     messages: newMessages,
@@ -76,7 +95,13 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
   const promptTemplate = createPlannerPrompt();
   const modelWithOutputParser = promptTemplate.pipe(
-    (await getModel(formattedConfig.ctx, formattedConfig.chat.model, formattedConfig.chat.reasoningEffort)).withStructuredOutput(planSchema)
+    (
+      await getModel(
+        formattedConfig.ctx,
+        formattedConfig.chat.model,
+        formattedConfig.chat.reasoningEffort,
+      )
+    ).withStructuredOutput(planSchema),
   );
 
   const formattedMessages = await formatMessages(
@@ -85,12 +110,12 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
     formattedConfig.chat.model,
   );
 
-  const response = await modelWithOutputParser.invoke(
+  const response = (await modelWithOutputParser.invoke(
     {
       messages: formattedMessages,
     },
     config,
-  ) as z.infer<typeof planSchema>;
+  )) as z.infer<typeof planSchema>;
 
   return {
     plan: response.plan,
@@ -111,24 +136,36 @@ async function plannerAgent(
   const remainingPlan = state.plan.slice(1);
   const pastSteps = state.pastSteps || [];
 
-  const formattedPastSteps = pastSteps.map((pastStep) => {
-    const [step, messages] = pastStep;
-    const stepMessage = new HumanMessage(step as string);
-    return [stepMessage, ...messages];
-  }).flat();
+  const formattedPastSteps = pastSteps
+    .map((pastStep) => {
+      const [step, messages] = pastStep;
+      const stepMessage = new HumanMessage(step as string);
+      return [stepMessage, ...messages];
+    })
+    .flat();
 
   if (Array.isArray(currentPlanItem)) {
     const parallelResults: CompletedStep[] = await Promise.all(
       currentPlanItem.map(async (step) => {
-        const plannerAgentChain = await createAgentWithTools(state, formattedConfig, true);
+        const plannerAgentChain = await createAgentWithTools(
+          state,
+          formattedConfig,
+          true,
+        );
         const response = await plannerAgentChain.invoke(
           {
-            messages: [...formattedPastSteps, new HumanMessage(`Task: ${step}`)],
+            messages: [
+              ...formattedPastSteps,
+              new HumanMessage(`Task: ${step}`),
+            ],
           },
           config,
         );
 
-        const newMessages = response.messages.slice(formatMessages.length + 1, response.messages.length);
+        const newMessages = response.messages.slice(
+          formatMessages.length + 1,
+          response.messages.length,
+        );
         return [step, newMessages];
       }),
     );
@@ -138,15 +175,25 @@ async function plannerAgent(
       pastSteps: [...pastSteps, ...parallelResults],
     };
   } else {
-    const plannerAgentChain = await createAgentWithTools(state, formattedConfig, true);
+    const plannerAgentChain = await createAgentWithTools(
+      state,
+      formattedConfig,
+      true,
+    );
     const response = await plannerAgentChain.invoke(
       {
-        messages: [...formattedPastSteps, new HumanMessage(`Task: ${currentPlanItem}`)],
+        messages: [
+          ...formattedPastSteps,
+          new HumanMessage(`Task: ${currentPlanItem}`),
+        ],
       },
       config,
     );
 
-    const newMessages = response.messages.slice(formattedPastSteps.length + 1, response.messages.length);
+    const newMessages = response.messages.slice(
+      formattedPastSteps.length + 1,
+      response.messages.length,
+    );
     const completedStep: CompletedStep = [currentPlanItem, newMessages];
 
     return {
@@ -164,9 +211,14 @@ async function replanner(
   const promptTemplate = createReplannerPrompt();
   const modelWithOutputParser = promptTemplate.pipe(
     (
-      await getModel(formattedConfig.ctx, formattedConfig.chat.model, formattedConfig.chat.reasoningEffort))
-        .withStructuredOutput(replannerOutputSchema(formattedConfig.chat.artifacts)
-    )
+      await getModel(
+        formattedConfig.ctx,
+        formattedConfig.chat.model,
+        formattedConfig.chat.reasoningEffort,
+      )
+    ).withStructuredOutput(
+      replannerOutputSchema(formattedConfig.chat.artifacts),
+    ),
   );
 
   const inputMessage = getLastMessage(state.messages, "human")?.message;
@@ -176,30 +228,34 @@ async function replanner(
     formattedConfig.chat.model,
   );
 
-  const response = await modelWithOutputParser.invoke(
+  const response = (await modelWithOutputParser.invoke(
     {
       messages: formattedMessages,
       plan: state.plan,
-      pastSteps: state.pastSteps.map((pastStep) => {
-        const [step, messages] = pastStep;
-        const stepMessage = new HumanMessage(step as string);
-        return [stepMessage, ...messages];
-      }).flat(),
+      pastSteps: state.pastSteps
+        .map((pastStep) => {
+          const [step, messages] = pastStep;
+          const stepMessage = new HumanMessage(step as string);
+          return [stepMessage, ...messages];
+        })
+        .flat(),
     },
     config,
-  ) as z.infer<ReturnType<typeof replannerOutputSchema>>;
+  )) as z.infer<ReturnType<typeof replannerOutputSchema>>;
 
   if (response.action === "respond_to_user") {
-    const responseMessages = [new AIMessage({
-      content: response.response,
-      additional_kwargs: {
-        pastSteps: state.pastSteps.map((pastStep) => {
-          const [step, messages] = pastStep;
-          const storedMessages = mapChatMessagesToStoredMessages(messages);
-          return [step, storedMessages];
-        }),
-      },
-    })]
+    const responseMessages = [
+      new AIMessage({
+        content: response.response,
+        additional_kwargs: {
+          pastSteps: state.pastSteps.map((pastStep) => {
+            const [step, messages] = pastStep;
+            const storedMessages = mapChatMessagesToStoredMessages(messages);
+            return [step, storedMessages];
+          }),
+        },
+      }),
+    ];
     return {
       messages: responseMessages,
       plan: [],

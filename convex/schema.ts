@@ -41,7 +41,11 @@ export const Chats = Table("chats", {
   documents: v.array(v.id("documents")),
   text: v.string(),
   model: v.string(),
-  reasoningEffort: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+  reasoningEffort: v.union(
+    v.literal("low"),
+    v.literal("medium"),
+    v.literal("high"),
+  ),
   projectId: v.union(v.id("projects"), v.null()), // use null, because we don't want to confuse undefined when unsetting or just not updating rest of the chat doc
   conductorMode: v.boolean(),
   deepSearchMode: v.boolean(),
@@ -67,7 +71,7 @@ export const Streams = Table("streams", {
     v.literal("done"),
     v.literal("error"),
     v.literal("cancelled"),
-  )
+  ),
 });
 
 export const StreamChunks = Table("streamChunks", {

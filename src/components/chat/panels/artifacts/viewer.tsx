@@ -41,7 +41,10 @@ const TabbedRenderer = ({
     </TabsList>
     <TabsContent value="preview">{preview}</TabsContent>
     <TabsContent value="source">
-      <Markdown content={`\`\`\`${language || "text"}\n${source}\n\`\`\``} id={`artifact-${Date.now()}`} />
+      <Markdown
+        content={`\`\`\`${language || "text"}\n${source}\n\`\`\``}
+        id={`artifact-${Date.now()}`}
+      />
     </TabsContent>
   </Tabs>
 );
@@ -184,7 +187,10 @@ const CodeRenderer = ({
   language?: string;
 }) => {
   return (
-    <Markdown content={`\`\`\`${language || "text"}\n${content}\n\`\`\``} id={`artifact-${Date.now()}`} />
+    <Markdown
+      content={`\`\`\`${language || "text"}\n${content}\n\`\`\``}
+      id={`artifact-${Date.now()}`}
+    />
   );
 };
 
@@ -236,9 +242,7 @@ const renderArtifactContent = (artifact: Artifact) => {
     case "application/vnd.ant.mermaid":
       return <MermaidRenderer content={artifact.content} />;
     default:
-      return (
-        <CodeRenderer content={artifact.content} language="text" />
-      );
+      return <CodeRenderer content={artifact.content} language="text" />;
   }
 };
 

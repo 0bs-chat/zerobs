@@ -50,4 +50,4 @@ export const BranchNavigation = memo(
   },
 );
 
-BranchNavigation.displayName = "BranchNavigation"; 
+BranchNavigation.displayName = "BranchNavigation";

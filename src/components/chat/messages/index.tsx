@@ -2,7 +2,11 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
 import { useMessages } from "../../../hooks/chats/use-messages";
 import { useStream } from "../../../hooks/chats/use-stream";
-import { groupedMessagesAtom, lastChatMessageAtom, useStreamAtom } from "@/store/chatStore";
+import {
+  groupedMessagesAtom,
+  lastChatMessageAtom,
+  useStreamAtom,
+} from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { useEffect, useRef, useMemo, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,14 +20,9 @@ export const ChatMessages = () => {
   const setLastChatMessageAtom = useSetAtom(lastChatMessageAtom);
   const setUseStreamAtom = useSetAtom(useStreamAtom);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  
-  const {
-    groupedMessages,
-    lastMessageId,
-    navigateBranch,
-    isLoading,
-    isEmpty
-  } = useMessages({ chatId });
+
+  const { groupedMessages, lastMessageId, navigateBranch, isLoading, isEmpty } =
+    useMessages({ chatId });
 
   const streamData = useStream(chatId);
 
@@ -73,7 +72,7 @@ export const ChatMessages = () => {
               navigateBranch={navigateBranch}
             />
           )}
-          
+
           {streamData.chunkGroups.length > 0 && (
             <StreamingMessage
               chunks={streamData.chunkGroups}

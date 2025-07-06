@@ -1,9 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/theme-switcher";
-import {
-  resizePanelOpenAtom,
-  selectedArtifactAtom,
-} from "@/store/chatStore";
+import { resizePanelOpenAtom, selectedArtifactAtom } from "@/store/chatStore";
 import { LogOutIcon, PanelRightCloseIcon } from "lucide-react";
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
@@ -21,14 +18,12 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function TopNav() {
-  const [resizePanelOpen, setResizePanelOpen] = useAtom(
-    resizePanelOpenAtom,
-  );
+  const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
   const { signOut } = useAuth();
   const { user } = useUser();
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
   const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
-  
+
   return (
     <div className="fixed right-0 py-2.5 px-4 flex items-center gap-4 w-full bg-transparent justify-between pointer-events-none z-50">
       <div className="flex items-center gap-2 justify-center top-0 left-0 pointer-events-auto">
@@ -38,12 +33,12 @@ export function TopNav() {
         {!resizePanelOpen ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="relative h-8 w-8 rounded-full"
-              >
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.imageUrl} alt={user?.fullName ?? ""} />
+                  <AvatarImage
+                    src={user?.imageUrl}
+                    alt={user?.fullName ?? ""}
+                  />
                   <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
                 </Avatar>
               </Button>

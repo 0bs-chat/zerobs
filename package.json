@@ -10,7 +10,8 @@
     "build": "vite build && tsc --noEmit",
     "build:prod": "bunx convex deploy --cmd 'CONVEX_DEPLOYMENT=resolute-lark-139 VITE_CONVEX_SITE_URL=https://resolute-lark-139.convex.site VITE_CONVEX_URL=https://resolute-lark-139.convex.cloud bun run build && cd dist && zip -r dist.zip . && cd ..' -y",
     "serve": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "bunx prettier --write ."
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.32.3",

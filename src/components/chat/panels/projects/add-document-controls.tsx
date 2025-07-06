@@ -24,11 +24,11 @@ export const AddDocumentControls = ({
   projectId: Id<"projects">;
 }) => {
   const uploadDocuments = useUploadDocuments({
-    type: "file"
+    type: "file",
   });
   const createDocuments = useAction(api.documents.mutations.create);
   const createProjectDocuments = useMutation(
-    api.projectDocuments.mutations.create
+    api.projectDocuments.mutations.create,
   );
   const updateChatInput = useMutation(api.chats.mutations.update);
   const params = useParams({ strict: false });
@@ -45,8 +45,8 @@ export const AddDocumentControls = ({
             createProjectDocuments({
               projectId,
               documentId,
-            })
-          )
+            }),
+          ),
       );
     }
 

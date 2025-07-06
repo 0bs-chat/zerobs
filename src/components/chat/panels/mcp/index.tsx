@@ -6,7 +6,9 @@ import { useMCPs } from "@/hooks/use-mcp";
 
 export const MCPPanel = () => {
   const createMCPServerDialogOpen = useAtomValue(createMCPServerDialogOpenAtom);
-  const setCreateMCPServerDialogOpen = useSetAtom(createMCPServerDialogOpenAtom);
+  const setCreateMCPServerDialogOpen = useSetAtom(
+    createMCPServerDialogOpenAtom,
+  );
   const { getAllMCPs, toggleMCP, handleDelete, restartMCP } = useMCPs();
 
   const mcps = getAllMCPs();

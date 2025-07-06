@@ -13,7 +13,11 @@ import { Panel } from "@/components/chat/panels";
 import { DocumentDialog } from "@/components/document-dialog";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
 import { useAtomValue, useSetAtom } from "jotai";
-import { resizePanelOpenAtom, selectedArtifactAtom, sidebarOpenAtom } from "@/store/chatStore";
+import {
+  resizePanelOpenAtom,
+  selectedArtifactAtom,
+  sidebarOpenAtom,
+} from "@/store/chatStore";
 import { useEffect } from "react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";

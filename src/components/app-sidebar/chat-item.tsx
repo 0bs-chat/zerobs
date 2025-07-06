@@ -13,8 +13,13 @@ interface ChatItemProps {
 
 export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
   function ChatItem({ chat, isPinned }, ref) {
-    const { handleNavigate, handlePin, handleUnpin, handleDelete, handleSelect } =
-      chatHandlers();
+    const {
+      handleNavigate,
+      handlePin,
+      handleUnpin,
+      handleDelete,
+      handleSelect,
+    } = chatHandlers();
     const params = useParams({ strict: false });
     const isSelected = params.chatId === chat._id;
 
@@ -32,7 +37,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
           ref={ref}
           className={cn(
             "relative flex w-full items-center isolate justify-between overflow-hidden rounded-md",
-            isSelected && "bg-secondary/50"
+            isSelected && "bg-secondary/50",
           )}
         >
           <span className="truncate">{chat.name}</span>
@@ -65,5 +70,5 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
         </div>
       </SidebarMenuButton>
     );
-  }
+  },
 );

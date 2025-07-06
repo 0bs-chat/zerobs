@@ -82,7 +82,8 @@ export const getVectorPaginated = internalQuery({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const vectors = await ctx.db.query("documentVectors")
+    const vectors = await ctx.db
+      .query("documentVectors")
       .filter((q) => q.eq(q.field("metadata"), { source: args.documentId }))
       .order("asc")
       .paginate(args.paginationOpts);
@@ -94,7 +95,7 @@ export const getVectorPaginated = internalQuery({
         text: v.text,
         source: v.metadata.source,
       })),
-    }
+    };
   },
 });
 
@@ -102,14 +103,16 @@ export const getAllVectors = internalQuery({
   args: {
     documentId: v.id("documents"),
   },
-  returns: v.array(v.object({
-    text: v.string(),
-    source: v.id("documents"),
-  })),
+  returns: v.array(
+    v.object({
+      text: v.string(),
+      source: v.id("documents"),
+    }),
+  ),
   handler: async (ctx, args) => {
     let cursor: string | null = null;
     const vectors: { text: string; source: Id<"documents"> }[] = [];
-    
+
     while (true) {
       const result: {
         isDone: boolean;
@@ -117,18 +120,18 @@ export const getAllVectors = internalQuery({
         page: { text: string; source: Id<"documents"> }[];
       } = await ctx.runQuery(internal.documents.queries.getVectorPaginated, {
         documentId: args.documentId,
-        paginationOpts: { 
+        paginationOpts: {
           cursor,
           numItems: 100,
         },
       });
-      
+
       vectors.push(...result.page);
-      
+
       if (result.isDone) break;
       cursor = result.continueCursor;
     }
-    
+
     return vectors;
   },
 });

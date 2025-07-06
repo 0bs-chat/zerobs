@@ -23,22 +23,22 @@ export const get = query({
       .order("asc")
       .collect();
 
-    return messages
+    return messages;
   },
 });
 
 export const getMessageToRegenerate = internalQuery({
   args: {
-    message: ChatMessages.doc
+    message: ChatMessages.doc,
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
     let messageToRegenerate: Doc<"chatMessages"> = args.message;
     while (true) {
-      const parsed = mapStoredMessagesToChatMessages(
-        [JSON.parse(messageToRegenerate!.message)]
-      )[0];
+      const parsed = mapStoredMessagesToChatMessages([
+        JSON.parse(messageToRegenerate!.message),
+      ])[0];
       if (parsed._getType() === "human") {
         break;
       }

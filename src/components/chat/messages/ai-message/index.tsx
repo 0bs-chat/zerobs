@@ -6,7 +6,9 @@ import type { MessageWithBranchInfo } from "../utils-bar/branch-navigation";
 export const AiMessage = memo(({ item }: { item: MessageWithBranchInfo }) => {
   const msg = item.message.message;
   const type = msg?.getType?.();
-  const pastSteps = msg?.additional_kwargs?.pastSteps as Array<[string, any[]]> | undefined;
+  const pastSteps = msg?.additional_kwargs?.pastSteps as
+    | Array<[string, any[]]>
+    | undefined;
 
   // Check if this is a completed planner message
   const isCompletedPlanner = useMemo(() => {
@@ -19,32 +21,17 @@ export const AiMessage = memo(({ item }: { item: MessageWithBranchInfo }) => {
     if (isCompletedPlanner) {
       return (
         <>
-          <PlanningStep
-            message={msg}
-            messageId={item.message._id}
-          />
-          <AiMessageContent
-            message={msg}
-            messageId={item.message._id}
-          />
+          <PlanningStep message={msg} messageId={item.message._id} />
+          <AiMessageContent message={msg} messageId={item.message._id} />
         </>
       );
     }
 
     // Regular message (AI, tool, or unknown)
-    return (
-      <AiMessageContent
-        message={msg}
-        messageId={item.message._id}
-      />
-    );
+    return <AiMessageContent message={msg} messageId={item.message._id} />;
   }, [isCompletedPlanner, msg, item.message._id]);
 
-  return (
-    <div className="flex flex-col gap-1">
-      {messageContent}
-    </div>
-  );
+  return <div className="flex flex-col gap-1">{messageContent}</div>;
 });
 
 AiMessage.displayName = "AiMessage";

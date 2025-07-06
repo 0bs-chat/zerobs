@@ -21,7 +21,7 @@ import { useParams } from "@tanstack/react-router";
 
 export const CreateProjectDialog = () => {
   const [projectDialogOpen, setProjectDialogOpen] = useAtom(
-    createProjectDialogOpenAtom
+    createProjectDialogOpenAtom,
   );
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
   const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);

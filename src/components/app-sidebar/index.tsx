@@ -54,7 +54,7 @@ export function AppSidebar() {
         root: null,
         rootMargin: "0px",
         threshold: 0.1,
-      }
+      },
     );
 
     observer.observe(loadMoreElement);
@@ -83,7 +83,7 @@ export function AppSidebar() {
                   New chat
                 </div>
               </Button>
-              
+
               <div className="flex items-center border-b border-border relative">
                 <SearchIcon className="w-4 h-4 text-foreground ml-2" />
                 <Input
@@ -150,7 +150,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
+
       <SidebarFooter />
     </Sidebar>
   );

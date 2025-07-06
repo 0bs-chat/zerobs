@@ -20,9 +20,10 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
   }));
 
   // Ensure there's always at least one empty row
-  const displayEnvVars = envVarArray.length === 0 
-    ? [{ key: "", value: "" }] 
-    : [...envVarArray, { key: "", value: "" }];
+  const displayEnvVars =
+    envVarArray.length === 0
+      ? [{ key: "", value: "" }]
+      : [...envVarArray, { key: "", value: "" }];
 
   const convertToRecord = (envArray: EnvVar[]): Record<string, string> => {
     const result: Record<string, string> = {};

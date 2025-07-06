@@ -9,7 +9,10 @@ import { MermaidChart } from "./mermaid";
 import { Button } from "../button";
 import { CopyIcon, TextIcon, WrapTextIcon, CheckIcon } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { atomDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+  atomDark,
+  oneLight,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useCopy } from "@/hooks/use-copy";
 import { wrapLongLinesAtom } from "@/store/chatStore";
 import { useAtom, useAtomValue } from "jotai";
@@ -19,49 +22,49 @@ import rehypeSanitize from "rehype-sanitize";
 
 const sanitizeSchema = {
   tagNames: [
-      "h1",
-      "h2",
-      "h3",
-      "h4",
-      "h5",
-      "h6",
-      "p",
-      "blockquote",
-      "ul",
-      "ol",
-      "li",
-      "strong",
-      "em",
-      "del",
-      "code",
-      "pre",
-      "hr",
-      "br",
-      "a",
-      "img",
-      "table",
-      "thead",
-      "tbody",
-      "tr",
-      "th",
-      "td"
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "p",
+    "blockquote",
+    "ul",
+    "ol",
+    "li",
+    "strong",
+    "em",
+    "del",
+    "code",
+    "pre",
+    "hr",
+    "br",
+    "a",
+    "img",
+    "table",
+    "thead",
+    "tbody",
+    "tr",
+    "th",
+    "td",
   ],
   attributes: {
-      "*": ["className", "id", "data-theme"],
-      a: ["href", "title", "target", "rel"],
-      img: ["src", "alt", "title", "width", "height"],
-      card: ["title", "subtext", "largeText", "id", "caption"],
-      financialchart: ["*"]
+    "*": ["className", "id", "data-theme"],
+    a: ["href", "title", "target", "rel"],
+    img: ["src", "alt", "title", "width", "height"],
+    card: ["title", "subtext", "largeText", "id", "caption"],
+    financialchart: ["*"],
   },
   protocols: {
-      href: ["http", "https", "mailto"],
-      src: ["http", "https"]
-  }
-}
+    href: ["http", "https", "mailto"],
+    src: ["http", "https"],
+  },
+};
 
 function parseMarkdownIntoBlocks(markdown: string): string[] {
-  const tokens = marked.lexer(markdown)
-  return tokens.map((token) => token.raw)
+  const tokens = marked.lexer(markdown);
+  return tokens.map((token) => token.raw);
 }
 
 export const MarkdownBlock = memo(
@@ -163,8 +166,8 @@ export const MarkdownBlock = memo(
           remarkPlugins={[remarkMath, remarkGfm, remarkBreaks]}
           rehypePlugins={[
             [rehypeSanitize, sanitizeSchema],
-            [rehypeKatex, { output: "html" }]
-        ]}
+            [rehypeKatex, { output: "html" }],
+          ]}
           components={components}
         >
           {content}
@@ -186,7 +189,7 @@ export const Markdown = memo(
     id: string;
     className?: string;
   }) => {
-    const blocks = useMemo(() => parseMarkdownIntoBlocks(content), [content])
+    const blocks = useMemo(() => parseMarkdownIntoBlocks(content), [content]);
 
     return blocks.map((block, index) => (
       <MarkdownBlock

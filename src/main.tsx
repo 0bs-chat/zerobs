@@ -47,7 +47,9 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ClerkProvider publishableKey={import.meta.env.VITE_PUBLIC_CLERK_PUBLISHABLE_KEY}>
+      <ClerkProvider
+        publishableKey={import.meta.env.VITE_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      >
         <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
           <ConvexQueryCacheProvider>
             <RouterProvider router={router} />
