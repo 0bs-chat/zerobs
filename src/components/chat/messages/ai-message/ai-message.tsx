@@ -1,15 +1,14 @@
-import { memo, useMemo, useCallback } from "react";
+import { memo, useMemo } from "react";
 import { Reasoning } from "./reasoning";
 import { ToolMessage } from "./tool-message";
 import { Markdown } from "@/components/ui/markdown";
 import {
   parseContent,
   type ContentPart,
-  type Artifact,
 } from "../../../artifacts/utils";
 import { ArtifactCard } from "../../../artifacts/card";
 import { useSetAtom } from "jotai";
-import { selectedArtifactAtom, parsedArtifactsContentAtom } from "@/store/chatStore";
+import { parsedArtifactsContentAtom } from "@/store/chatStore";
 import type { BaseMessage } from "@langchain/core/messages";
 
 interface AiMessageContentProps {
@@ -21,21 +20,12 @@ interface AiMessageContentProps {
 export const AiMessageContent = memo(
   ({ message, messageId, className }: AiMessageContentProps) => {
     const type = message?.getType?.();
-    const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
     const setParsedArtifactsContent = useSetAtom(parsedArtifactsContentAtom);
 
     const content = message?.content ?? "";
     const reasoning = message?.additional_kwargs?.reasoning_content as
       | string
       | undefined;
-
-    // Memoize the artifact view handler to prevent unnecessary re-renders
-    const handleArtifactView = useCallback(
-      (artifact: Artifact) => {
-        setSelectedArtifact(artifact);
-      },
-      [setSelectedArtifact],
-    );
 
     // Memoize content parsing to avoid expensive re-calculations
     const parsedContent = useMemo(() => {
@@ -73,9 +63,8 @@ export const AiMessageContent = memo(
         }
         return null;
       });
-    }, [parsedContent, messageId, handleArtifactView]);
+    }, [parsedContent, messageId]);
 
-    // Memoize the message content based on type
     const messageContent = useMemo(() => {
       if (type === "ai") {
         return (

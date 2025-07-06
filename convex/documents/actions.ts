@@ -36,9 +36,9 @@ export const addDocument = internalAction({
         result = await processYoutubeVideo(ctx, document);
       } else {
         if (["text", "github"].includes(document.type)) {
-          await ctx.runMutation(internal.documents.mutations.updateStatus, {
-            documentId: args.documentId,
-            update: {
+          await ctx.runMutation(internal.documents.crud.update, {
+            id: args.documentId,
+            patch: {
               status: "done" as const,
             },
           });
@@ -84,16 +84,16 @@ export const addDocument = internalAction({
       });
       await vectorStore.addDocuments(chunks);
 
-      await ctx.runMutation(internal.documents.mutations.updateStatus, {
-        documentId: args.documentId,
-        update: {
+      await ctx.runMutation(internal.documents.crud.update, {
+        id: args.documentId,
+        patch: {
           status: "done" as const,
         },
       });
     } catch (error) {
-      await ctx.runMutation(internal.documents.mutations.updateStatus, {
-        documentId: args.documentId,
-        update: {
+      await ctx.runMutation(internal.documents.crud.update, {
+        id: args.documentId,
+        patch: {
           status: "error" as const,
         },
       });

@@ -46,11 +46,13 @@ export const selectedArtifactAtom = atom<Artifact | null>(null);
 export const groupedMessagesAtom = atom<ReturnType<
   typeof groupMessages
 > | null>(null);
+
 export const useStreamAtom = atom<ReturnType<typeof useStream> | null>(null);
 export const streamStatusAtom = selectAtom(
   useStreamAtom,
   (stream) => stream?.status,
 );
+
 export const parsedArtifactsContentAtom = atom<ContentPart[] | null>(null);
 
 export const lastChatMessageAtom = atom<Id<"chatMessages"> | undefined>(

@@ -34,7 +34,7 @@ export const generateDownloadUrl = mutation({
   },
 });
 
-export const create = action({
+export const create = mutation({
   args: {
     name: schema.Documents.table.validator.fields.name,
     type: schema.Documents.table.validator.fields.type,
@@ -51,25 +51,11 @@ export const create = action({
       status: "processing",
     });
 
-    await ctx.runAction(internal.documents.actions.addDocument, {
+    await ctx.scheduler.runAfter(0, internal.documents.actions.addDocument, {
       documentId: document._id,
     });
 
     return document._id;
-  },
-});
-
-export const updateStatus = internalMutation({
-  args: {
-    documentId: v.id("documents"),
-    update: v.object({
-      status: schema.Documents.table.validator.fields.status,
-    }),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.documentId, {
-      status: args.update.status,
-    });
   },
 });
 

@@ -58,7 +58,7 @@ export const useUploadDocuments = (
   const generateUploadUrlMutation = useMutation(
     api.documents.mutations.generateUploadUrl,
   );
-  const createMutation = useAction(api.documents.mutations.create);
+  const createMutation = useMutation(api.documents.mutations.create);
   const setNewChat = useSetAtom(newChatAtom);
 
   return async (files: FileList) => {
