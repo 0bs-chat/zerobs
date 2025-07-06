@@ -1,7 +1,6 @@
 import { type MessageWithBranchInfo, type NavigateBranch } from "../../../hooks/chats/use-messages";
 import { memo, useState, useEffect } from "react";
 import { UserMessage } from "./user-message";
-import type { BranchNavigationProps } from "./utils-bar/branch-navigation";
 import { AiMessage } from "./ai-message";
 import { UtilsBar } from "./utils-bar";
 

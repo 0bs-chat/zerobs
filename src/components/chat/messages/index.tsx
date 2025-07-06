@@ -31,19 +31,16 @@ export const ChatMessages = () => {
   setLastChatMessageAtom(lastMessageId);
   setUseStreamAtom(streamData);
 
-  // Optimized auto-scroll with memoized dependencies
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollIntoView({ behavior });
     }
   }, []);
 
-  // Auto-scroll to bottom when new messages arrive or streaming updates
   useEffect(() => {
     scrollToBottom("smooth");
   }, [groupedMessages.length, streamData.chunkGroups.length, scrollToBottom]);
 
-  // Auto-scroll to bottom when component first loads with messages
   useEffect(() => {
     if (!isEmpty && !isLoading) {
       scrollToBottom("auto");
@@ -77,9 +74,8 @@ export const ChatMessages = () => {
             />
           )}
           
-          {/* Show streaming message if there are streaming chunks */}
           {streamData.chunkGroups.length > 0 && (
-            <StreamingMessage 
+            <StreamingMessage
               chunks={streamData.chunkGroups}
               status={streamData.status}
               completedSteps={streamData.completedSteps}

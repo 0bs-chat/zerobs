@@ -1,14 +1,17 @@
 "use node";
 
-import { action } from "../_generated/server";
+import { z } from "zod";
+import { action, internalAction } from "../_generated/server";
 import { Doc, Id } from "../_generated/dataModel";
 import { agentGraph } from "./agent";
 import { api, internal } from "../_generated/api";
-import { mapChatMessagesToStoredMessages, mapStoredMessageToChatMessage } from "@langchain/core/messages";
+import { HumanMessage, mapChatMessagesToStoredMessages, mapStoredMessageToChatMessage, StoredMessage, SystemMessage } from "@langchain/core/messages";
 import { MemorySaver } from "@langchain/langgraph";
 import { GraphState } from "./state";
 import { v } from "convex/values";
-import { getCurrentThread, getThreadFromMessage } from "../chatMessages/helpers";
+import { getThreadFromMessage } from "../chatMessages/helpers";
+import { formatMessages, getModel } from "./models";
+import { ChatMessages, Chats } from "../schema";
 
 export interface AIChunkGroup {
   type: "ai";
@@ -23,6 +26,31 @@ export interface ToolChunkGroup {
   output?: unknown;
   isComplete: boolean;
 }
+
+export const generateTitle = internalAction({
+  args: v.object({
+    chat: Chats.doc,
+    message: ChatMessages.doc,
+  }),
+  handler: async (ctx, args) => {
+    const firstMessage = await formatMessages(ctx, [mapStoredMessageToChatMessage(JSON.parse(args.message.message) as StoredMessage)], args.chat.model);
+    const model = await getModel(ctx, args.chat.model, args.chat.reasoningEffort);
+    const titleSchema = z.object({
+      title: z.string().describe("A short title for the chat. Keep it under 6 words."),
+    });
+    const structuredModel = model.withStructuredOutput(titleSchema);
+    const title = await structuredModel.invoke([
+      new SystemMessage("You are a title generator that generates a short title for the following user message."),
+      ...firstMessage,
+    ]) as z.infer<typeof titleSchema>;
+    await ctx.runMutation(api.chats.mutations.update, {
+      chatId: args.chat._id,
+      updates: {
+        name: title.title,
+      },
+    });
+  }
+});
 
 export const chat = action({
   args: v.object({
@@ -47,6 +75,13 @@ export const chat = action({
     const messages = await ctx.runQuery(api.chatMessages.queries.get, {
       chatId: args.chatId,
     })
+
+    if (messages?.length === 1) {
+      ctx.runAction(internal.langchain.index.generateTitle, {
+        chat: chat,
+        message: messages[0],
+      });
+    }
     
     const message = messages.slice(-1)[0];
     if (!message) {
