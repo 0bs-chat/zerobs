@@ -37,12 +37,12 @@ function RouteComponent() {
   const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
 
   useEffect(() => {
-    setSelectedArtifact(null);
+    setSelectedArtifact(undefined);
   }, [chatId, setSelectedArtifact]);
 
   return (
     <SidebarProvider
-      className="font-sans h-svh"
+      className="font-sans h-svh relative before:content-[''] before:fixed before:inset-0 before:bg-[url('/images/noise.png')] before:opacity-50 before:pointer-events-none before:z-[-1]"
       open={sidebarOpen}
       onOpenChange={() => {
         setSidebarOpen(!sidebarOpen);

@@ -34,27 +34,22 @@ export const selectedPanelTabAtom = atomWithStorage(
 );
 export const resizePanelWidthAtom = atomWithStorage("resizePanelWidth", 40);
 
-export const documentDialogOpenAtom = atom<Id<"documents"> | null>(null);
+export const documentDialogOpenAtom = atom<Id<"documents"> | undefined>(undefined);
 export const createProjectDialogOpenAtom = atom(false);
 export const createMCPServerDialogOpenAtom = atom(false);
 
 export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", false);
 
-export const selectedProjectIdAtom = atom<Id<"projects"> | null>(null);
-export const selectedArtifactAtom = atom<Artifact | null>(null);
+export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(undefined);
+export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
 
-export const groupedMessagesAtom = atom<ReturnType<
-  typeof groupMessages
-> | null>(null);
+export const groupedMessagesAtom = atom<ReturnType<typeof groupMessages> | undefined>(undefined);  
+export const lastChatMessageAtom = atom<Id<"chatMessages"> | undefined>(undefined);
 
-export const useStreamAtom = atom<ReturnType<typeof useStream> | null>(null);
+export const useStreamAtom = atom<ReturnType<typeof useStream> | undefined>(undefined);
 export const streamStatusAtom = selectAtom(
   useStreamAtom,
   (stream) => stream?.status,
 );
 
-export const parsedArtifactsContentAtom = atom<ContentPart[] | null>(null);
-
-export const lastChatMessageAtom = atom<Id<"chatMessages"> | undefined>(
-  undefined,
-);
+export const parsedArtifactsContentAtom = atom<ContentPart[] | undefined>(undefined);

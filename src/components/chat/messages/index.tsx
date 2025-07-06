@@ -67,18 +67,11 @@ export const ChatMessages = () => {
       <ScrollArea ref={scrollAreaRef} className="h-full">
         <div className="flex flex-col gap-1 p-1 max-w-4xl mx-auto">
           {groupedMessages.length > 0 && (
-            <MessagesList
-              groupedMessages={groupedMessages}
-              navigateBranch={navigateBranch}
-            />
+            <MessagesList navigateBranch={navigateBranch} />
           )}
 
           {streamData.chunkGroups.length > 0 && (
-            <StreamingMessage
-              chunks={streamData.chunkGroups}
-              status={streamData.status}
-              completedSteps={streamData.completedSteps}
-            />
+            <StreamingMessage />
           )}
         </div>
       </ScrollArea>

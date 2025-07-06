@@ -6,8 +6,7 @@ import { CheckCheck, PenSquare, RefreshCcw, Star, X } from "lucide-react";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type {
-  MessageWithBranchInfo,
-  NavigateBranch,
+  MessageWithBranchInfo, NavigateBranch,
 } from "@/hooks/chats/use-messages";
 import {
   Tooltip,
@@ -17,6 +16,8 @@ import {
 } from "@/components/ui/tooltip";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { CopyButton } from "./copy-button";
+import { useAtomValue } from "jotai";
+import { groupedMessagesAtom } from "@/store/chatStore";
 
 interface MessageContent {
   type: string;
@@ -26,41 +27,37 @@ interface MessageContent {
 export const UtilsBar = memo(
   ({
     item,
-    humanVersionOfItemForBranching,
-    navigateBranch,
     isEditing,
     setEditing,
     editedText,
     onDone,
+    isAI,
+    navigateBranch,
   }: {
     item: MessageWithBranchInfo;
-    humanVersionOfItemForBranching?: MessageWithBranchInfo;
+    isEditing?: boolean;
+    setEditing?: Dispatch<SetStateAction<string | null>>;
+    editedText?: string;
+    onDone?: () => void;
+    isAI?: boolean;
     navigateBranch: NavigateBranch;
-    isEditing: boolean;
-    setEditing: Dispatch<SetStateAction<string | null>>;
-    editedText: string;
-    onDone: () => void;
   }) => {
     const regenerate = useAction(api.langchain.index.regenerate);
     const updateMessage = useMutation(api.chatMessages.mutations.updateInput);
     const chat = useAction(api.langchain.index.chat);
-    const messageType = item.message.message.getType();
-    const branchingItem = humanVersionOfItemForBranching ?? item;
 
-    // Get the text content for copying
     const copyText = (() => {
+      const groupedMessages = useAtomValue(groupedMessagesAtom);
       const content = item.message.message.content;
       if (!content) return "";
 
       if (Array.isArray(content)) {
-        if (messageType === "ai") {
-          // For AI messages, join all text content, skipping tool messages
-          return (content as MessageContent[])
-            .filter((entry) => entry.type === "text" && entry.text)
-            .map((entry) => entry.text!)
-            .join("\n");
+        if (isAI) {
+          const response = groupedMessages?.find(
+            (group) => group.input.message._id === item.message._id,
+          )?.response.map((response) => response.message.message.content as string);
+          return response?.join("\n") || "";
         } else {
-          // For user messages, take the first text content
           const textContent = (content as MessageContent[]).find(
             (entry) => entry.type === "text",
           );
@@ -72,7 +69,7 @@ export const UtilsBar = memo(
 
     const handleSubmit = (applySame: boolean) => {
       if (applySame === false) {
-        navigateBranch(branchingItem.depth, branchingItem.totalBranches);
+        navigateBranch?.(item.depth, item.totalBranches);
       }
       updateMessage({
         id: item.message._id as Id<"chatMessages">,
@@ -83,7 +80,7 @@ export const UtilsBar = memo(
           chat({ chatId: item.message.chatId! });
         }
       });
-      onDone();
+      onDone?.();
     };
 
     if (isEditing) {
@@ -95,7 +92,7 @@ export const UtilsBar = memo(
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setEditing(null)}
+                  onClick={() => setEditing?.(null)}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -137,15 +134,15 @@ export const UtilsBar = memo(
       );
     }
 
-    if (messageType === "ai") {
+    if (isAI) {
       return (
         <div className={`flex flex-row items-center gap-1 self-start`}>
-          <BranchNavigation item={item} navigateBranch={navigateBranch} />
+          <BranchNavigation item={item} navigateBranch={navigateBranch!} />
           <Button
             variant="ghost"
             size="icon"
             onClick={() => {
-              navigateBranch(branchingItem.depth, branchingItem.totalBranches);
+              navigateBranch?.(item.depth, item.totalBranches);
               regenerate({ messageId: item.message._id });
             }}
           >
@@ -158,11 +155,11 @@ export const UtilsBar = memo(
 
     return (
       <div className={`flex flex-row items-center gap-1 self-start`}>
-        <BranchNavigation item={item} navigateBranch={navigateBranch} />
+        <BranchNavigation item={item} navigateBranch={navigateBranch!} />
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setEditing(item.message._id)}
+          onClick={() => setEditing?.(item.message._id)}
         >
           <PenSquare className="h-4 w-4" />
         </Button>
@@ -170,7 +167,7 @@ export const UtilsBar = memo(
           variant="ghost"
           size="icon"
           onClick={() => {
-            navigateBranch(branchingItem.depth, branchingItem.totalBranches);
+            navigateBranch?.(item.depth, item.totalBranches);
             regenerate({ messageId: item.message._id });
           }}
         >

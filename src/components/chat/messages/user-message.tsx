@@ -25,15 +25,13 @@ export const UserMessage = memo(
           <div key={`${item.message._id}-${idx}`}>
             {entry.type === "text" ? (
               <Markdown content={entry.text} id={item.message._id} />
-            ) : (
-              entry
-            )}
+            ) : null}
             {entry.type === "file" ? entry.file.file_id : null}
           </div>
         ));
       }
       return content;
-    }, [content, item.message._id]);
+    }, [content]);
 
     if (isEditing) {
       return (
@@ -49,7 +47,7 @@ export const UserMessage = memo(
     }
 
     return (
-      <div className="bg-card max-w-full self-end p-4 rounded-md shadow-sm">
+      <div className="bg-card flex flex-col gap-1 max-w-full self-end p-4 rounded-md shadow-sm">
         {renderedContent}
       </div>
     );

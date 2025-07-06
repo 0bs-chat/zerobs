@@ -1,31 +1,22 @@
 import { memo, useMemo } from "react";
 import { AiMessageContent } from "./ai-message/ai-message";
 import { ToolMessage } from "./ai-message/tool-message";
-import type {
-  AIChunkGroup,
-  ToolChunkGroup,
-} from "../../../hooks/chats/use-stream";
 import { PlanningStep } from "./ai-message/planning-step";
 import {
   AIMessage,
   ToolMessage as LangChainToolMessage,
   mapChatMessagesToStoredMessages,
 } from "@langchain/core/messages";
+import { useAtomValue } from "jotai";
+import { useStreamAtom } from "@/store/chatStore";
 
 export const StreamingMessage = memo(
-  ({
-    chunks,
-    status,
-    completedSteps,
-  }: {
-    chunks: (AIChunkGroup | ToolChunkGroup)[];
-    status?: string;
-    completedSteps?: string[];
-  }) => {
+  () => {
+    const streamData = useAtomValue(useStreamAtom);
     const messageId = "streaming-message";
 
     const langchainMessages = useMemo(() => {
-      return chunks
+      return streamData?.chunkGroups
         .map((chunk) => {
           if (chunk?.type === "ai") {
             return new AIMessage({
@@ -59,19 +50,19 @@ export const StreamingMessage = memo(
           return null;
         })
         .filter((m): m is AIMessage | LangChainToolMessage => !!m);
-    }, [chunks]);
+    }, [streamData?.chunkGroups]);
 
     const planningSteps = useMemo(() => {
-      if (!completedSteps || completedSteps.length === 0) return null;
+      if (!streamData?.completedSteps || streamData.completedSteps.length === 0) return null;
       const message = new AIMessage({
         content: "",
         additional_kwargs: {
           pastSteps: [
             [
-              completedSteps[0],
-              mapChatMessagesToStoredMessages(langchainMessages),
+              streamData.completedSteps[0],
+              mapChatMessagesToStoredMessages(langchainMessages!),
             ],
-            ...completedSteps.slice(1).map((step) => [step, []]),
+            ...streamData.completedSteps.slice(1).map((step) => [step, []]),
           ],
         },
       });
@@ -82,11 +73,11 @@ export const StreamingMessage = memo(
           messageId={messageId}
         />
       );
-    }, [completedSteps, langchainMessages, messageId, status]);
+    }, [streamData?.completedSteps, langchainMessages, messageId, status]);
 
     // Regular streaming display (no planning mode)
     const regularContent = useMemo(() => {
-      return langchainMessages.map((message, index) => (
+      return langchainMessages?.map((message, index) => (
         <div key={index} className="mb-4">
           {message?.getType() === "ai" ? (
             <AiMessageContent
@@ -103,9 +94,9 @@ export const StreamingMessage = memo(
           )}
         </div>
       ));
-    }, [langchainMessages, messageId, status]);
+    }, [langchainMessages, messageId, streamData?.status]);
 
-    if (chunks.length === 0) return null;
+    if (streamData?.chunkGroups.length === 0) return null;
 
     return (
       <div className="flex flex-col gap-1">
