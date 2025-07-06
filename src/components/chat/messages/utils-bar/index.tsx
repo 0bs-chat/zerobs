@@ -8,6 +8,12 @@ import { api } from "../../../../../convex/_generated/api";
 import type { MessageWithBranchInfo, NavigateBranch } from "@/hooks/chats/use-messages";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Id } from "../../../../../convex/_generated/dataModel";
+import { CopyButton } from "./copy-button";
+
+interface MessageContent {
+  type: string;
+  text?: string;
+}
 
 export const UtilsBar = memo(({ 
   item, 
@@ -32,6 +38,27 @@ export const UtilsBar = memo(({
   const messageType = item.message.message.getType();
   const branchingItem = humanVersionOfItemForBranching ?? item;
 
+  // Get the text content for copying
+  const copyText = (() => {
+    const content = item.message.message.content;
+    if (!content) return "";
+    
+    if (Array.isArray(content)) {
+      if (messageType === 'ai') {
+        // For AI messages, join all text content, skipping tool messages
+        return (content as MessageContent[])
+          .filter(entry => entry.type === "text" && entry.text)
+          .map(entry => entry.text!)
+          .join("\n");
+      } else {
+        // For user messages, take the first text content
+        const textContent = (content as MessageContent[]).find(entry => entry.type === "text");
+        return textContent?.text || "";
+      }
+    }
+    return typeof content === 'string' ? content : '';
+  })();
+
   const handleSubmit = (applySame: boolean) => {
     if (applySame === false) {
       navigateBranch(branchingItem.depth, branchingItem.totalBranches);
@@ -40,9 +67,9 @@ export const UtilsBar = memo(({
       id: item.message._id as Id<'chatMessages'>,
       updates: { text: editedText },
       applySame: applySame,
-    }).then((newMessageId) => {
+    }).then(() => {
         if (applySame === false) {
-            chat({ chatId: item.message.chatId!, messageId: newMessageId });
+            chat({ chatId: item.message.chatId! });
         }
     });
     onDone();
@@ -97,6 +124,7 @@ export const UtilsBar = memo(({
         }}>
           <RefreshCcw className="h-4 w-4" />
         </Button>
+        {copyText && <CopyButton text={copyText} />}
       </div>
     )
   }
@@ -113,6 +141,7 @@ export const UtilsBar = memo(({
       }}>
         <RefreshCcw className="h-4 w-4" />
       </Button>
+      {copyText && <CopyButton text={copyText} />}
     </div>
   );
 });

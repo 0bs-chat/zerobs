@@ -18,6 +18,7 @@ export const PlanningStep = memo(({
 }: PlanningStepProps) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const stepsContainerRef = useRef<HTMLDivElement>(null);
 
   const pastStepsData = useMemo(() => {
     if (!message || !Array.isArray(message.additional_kwargs.pastSteps)) {
@@ -82,10 +83,15 @@ export const PlanningStep = memo(({
   }, [message, messageId]);
 
   useEffect(() => {
-    if (isStreaming && !isMinimized && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    if (isStreaming && !isMinimized) {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      }
+      if (stepsContainerRef.current) {
+        stepsContainerRef.current.scrollTop = stepsContainerRef.current.scrollHeight;
+      }
     }
-  }, [isStreaming, isMinimized, stepMessages]);
+  }, [isStreaming, isMinimized, stepMessages, pastSteps]);
 
   const lastStep = pastStepsData && pastStepsData.length > 0 ? pastStepsData[pastStepsData.length - 1] : "Planning...";
 
@@ -95,7 +101,7 @@ export const PlanningStep = memo(({
 
   if (isMinimized) {
     return (
-      <div className="border rounded-lg p-4 bg-card flex justify-between items-center">
+      <div className={`border rounded-lg p-4 bg-card flex justify-between items-center ${streamingContainerClasses}`}>
         <div className="text-sm font-semibold flex items-center gap-2">
           <div className="flex-shrink-0 w-5 h-5 bg-input rounded-full flex items-center justify-center">
             {isStreaming ? (
@@ -114,20 +120,25 @@ export const PlanningStep = memo(({
   }
 
   return (
-    <div className={`relative rounded-lg bg-card ${streamingContainerClasses}`}>
+    <div className={`relative rounded-lg bg-card`}>
       <div className="rounded-[7px] bg-card p-4 flex flex-row">
-        <div className="flex flex-col w-1/3 items-start gap-2">
+        <div className="flex flex-col w-1/3">
           <div className="text-sm font-semibold">
             DeepSearch
           </div>
-          <Separator />
-          <div className="flex flex-col gap-2 pr-4">
+          <Separator className="my-2" />
+          <div 
+            ref={stepsContainerRef} 
+            className="flex flex-col gap-2 pr-4 max-h-[36rem] overflow-y-auto"
+          >
             {pastSteps}
           </div>
         </div>
         <div className="border-l" />
-        <div ref={scrollContainerRef} className="flex flex-col gap-2 w-2/3 pl-4 max-h-[36rem] overflow-y-auto">
-          {/* Show completed step messages */}
+        <div 
+          ref={scrollContainerRef} 
+          className="flex flex-col gap-2 w-2/3 pl-4 max-h-[36rem] overflow-y-auto"
+        >
           {stepMessages}
         </div>
       </div>

@@ -48,12 +48,3 @@ export const getMessageToRegenerate = internalQuery({
     return messageToRegenerate;
   },
 });
-
-export const getById = internalQuery({
-  args: { 
-    id: v.id("chatMessages") 
-  },
-  handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
-  }
-});

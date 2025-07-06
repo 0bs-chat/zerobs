@@ -27,7 +27,6 @@ export interface ToolChunkGroup {
 export const chat = action({
   args: v.object({
     chatId: v.id("chats"),
-    messageId: v.id("chatMessages"),
   }),
   handler: async (ctx, args) => {    
     let chat = await ctx.runQuery(api.chats.queries.get, {
@@ -49,7 +48,7 @@ export const chat = action({
       chatId: args.chatId,
     })
     
-    const message = messages.find((m) => m._id === args.messageId);
+    const message = messages.slice(-1)[0];
     if (!message) {
       throw new Error("Message not found");
     }
@@ -261,7 +260,7 @@ export const regenerate = action({
     messageId: v.id("chatMessages"),
   }),
   handler: async (ctx, args) => {
-    const message = await ctx.runQuery(internal.chatMessages.queries.getById, {
+    const message = await ctx.runQuery(internal.chatMessages.crud.read, {
       id: args.messageId,
     });
     if (!message) {
@@ -272,7 +271,6 @@ export const regenerate = action({
     });
     await ctx.runAction(api.langchain.index.chat, {
       chatId: message.chatId,
-      messageId: newMessageId,
     });
   }
 });
