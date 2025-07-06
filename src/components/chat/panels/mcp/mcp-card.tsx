@@ -21,7 +21,7 @@ export const MCPCard = ({
     switch (mcp.type) {
       case "stdio":
         return mcp.command;
-      case "sse":
+      case "http":
         return mcp.url;
       case "docker":
         return `${mcp.dockerImage}:${mcp.dockerPort}`;
@@ -44,8 +44,8 @@ export const MCPCard = ({
   };
 
   const shouldShowStatusDot = () => {
-    // Don't show status dots for SSE MCPs
-    return mcp.type !== "sse";
+    // Don't show status dots for HTTP MCPs
+    return mcp.type !== "http";
   };
 
   return (

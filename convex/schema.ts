@@ -105,7 +105,7 @@ export const ProjectChats = Table("projectChats", {
 
 export const Mcps = Table("mcps", {
   name: v.string(),
-  type: v.union(v.literal("sse"), v.literal("stdio"), v.literal("docker")),
+  type: v.union(v.literal("http"), v.literal("stdio"), v.literal("docker")),
   dockerImage: v.optional(v.string()),
   dockerPort: v.optional(v.number()),
   command: v.optional(v.string()),

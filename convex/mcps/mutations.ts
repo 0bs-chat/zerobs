@@ -14,8 +14,16 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    if (!args.command && !args.url) {
-      throw new Error("Command or URL is required");
+    if (!args.type) {
+      throw new Error("MCP type is required");
+    }
+
+    if (args.type === "stdio" && !args.command) {
+      throw new Error("Command is required for stdio type");
+    } else if (args.type === "http" && !args.url) {
+      throw new Error("URL is required for http type");
+    } else if (args.type === "docker" && !args.dockerImage && !args.dockerPort) {
+      throw new Error("Docker image and port are required for docker type");
     }
 
     const envJwts: Record<string, string> = {};
@@ -27,9 +35,9 @@ export const create = mutation({
 
     const newMCPId = await ctx.db.insert("mcps", {
       name: args.name ?? "",
-      type: args.command ? "stdio" : args.dockerImage ? "docker" : "sse",
+      type: args.type,
       dockerImage: args.dockerImage,
-      dockerPort: args.dockerImage ? args.dockerPort : undefined,
+      dockerPort: args.dockerPort,
       command: args.command,
       env: envJwts,
       url: args.url,

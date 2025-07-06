@@ -92,11 +92,14 @@ export const restart = internalAction({
       if (!mcp) {
         throw new Error("MCP not found");
       }
-      if (mcp.type !== "sse") {
-        throw new Error("MCP is not an sse type");
+      if (mcp.type !== "http") {
+        throw new Error("MCP is not an http type");
       }
       if (!mcp.url) {
         throw new Error("MCP URL is not defined");
+      }
+      if (mcp.status === "creating") {
+        throw new Error("MCP is still creating");
       }
 
       await ctx.runMutation(api.mcps.mutations.update, {

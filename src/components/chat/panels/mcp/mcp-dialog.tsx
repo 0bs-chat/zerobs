@@ -31,7 +31,7 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
     >
   >({
     name: "",
-    type: "sse",
+    type: "http",
     command: "",
     url: "",
     dockerImage: "",
@@ -54,8 +54,8 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
       return false;
     }
 
-    if (mcp.type === "sse" && !mcp.url?.trim()) {
-      toast.error("URL is required for SSE type");
+    if (mcp.type === "http" && !mcp.url?.trim()) {
+      toast.error("URL is required for HTTP type");
       return false;
     }
 
@@ -116,7 +116,16 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
             <Label>Type *</Label>
             <TypeSelector
               type={mcp.type}
-              onTypeChange={(type) => setMcp((prev) => ({ ...prev, type }))}
+              onTypeChange={(type) =>
+                setMcp((prev) => ({
+                  ...prev,
+                  type,
+                  command: type === "stdio" ? prev.command : "",
+                  url: type === "http" ? prev.url : "",
+                  dockerImage: type === "docker" ? prev.dockerImage : "",
+                  dockerPort: type === "docker" ? prev.dockerPort : 0,
+                }))
+              }
             />
           </div>
 
@@ -134,12 +143,12 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
             </div>
           )}
 
-          {mcp.type === "sse" && (
+          {mcp.type === "http" && (
             <div className="flex flex-col gap-2">
               <Label htmlFor="mcp-url">URL *</Label>
               <Input
                 id="mcp-url"
-                placeholder="SSE URL (e.g., http://localhost:3000/sse)"
+                placeholder="HTTP URL (e.g., http://localhost:3000/sse)"
                 value={mcp.url}
                 onChange={(e) =>
                   setMcp((prev) => ({ ...prev, url: e.target.value }))
@@ -181,7 +190,7 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
 
           <div className="flex flex-col gap-2">
             <Label>
-              {mcp.type === "sse" ? "Headers" : "Environment Variables"}
+              {mcp.type === "http" ? "Headers" : "Environment Variables"}
             </Label>
             <EnvVarInput
               envVars={mcp.env || {}}

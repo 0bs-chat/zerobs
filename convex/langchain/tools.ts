@@ -271,7 +271,7 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
     readyMcps.map((mcp) => [
       mcp.name,
       {
-        transport: "sse",
+        transport: "http",
         url: mcp.url!, // url is guaranteed to be present for readyMcps
         headers: mcp.env!,
         useNodeEventSource: true,
