@@ -3,8 +3,12 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { buildMessageTree, buildThread, groupMessages, type BranchPath, type MessageWithBranchInfo } from "../../../convex/chatMessages/helpers";
+import { lastChatMessageAtom } from "@/store/chatStore";
+import { useSetAtom } from "jotai";
 
 export type { MessageWithBranchInfo, BranchPath };
+
+export type NavigateBranch = (depth: number, direction: 'prev' | 'next' | number) => void;
 
 export const useMessages = ({ chatId }: {
   chatId: Id<"chats"> | "new";
@@ -15,6 +19,7 @@ export const useMessages = ({ chatId }: {
     chatId !== "new" ? { chatId } : "skip"
   );
   const messageTree = useMemo(() => messages ? buildMessageTree(messages) : [], [messages]);
+  const setLastMessageId = useSetAtom(lastChatMessageAtom);
 
   // State to track selected branch path (array of indices, one per depth)
   const [branchPath, setBranchPath] = useState<BranchPath>([]);
@@ -26,6 +31,14 @@ export const useMessages = ({ chatId }: {
   );
 
   // Group messages by human message + responses
+  useMemo(
+    () => {
+      const thread = buildThread(messageTree, branchPath);
+      setLastMessageId(thread.length > 0 ? thread[thread.length - 1].message._id : undefined);
+    },
+    [messageTree, branchPath, setLastMessageId]
+  );
+  
   const groupedMessages = useMemo(
     () => {
       return groupMessages(currentThread);
@@ -43,7 +56,12 @@ export const useMessages = ({ chatId }: {
   }, []);
 
   // Function to navigate branches (prev/next)
-  const navigateBranch = useCallback((depth: number, direction: 'prev' | 'next') => {
+  const navigateBranch: NavigateBranch = useCallback((depth: number, direction: 'prev' | 'next' | number) => {
+    if (typeof direction === 'number') {
+      changeBranch(depth, direction);
+      return;
+    }
+    
     const threadItem = currentThread[depth];
     if (!threadItem) return;
 

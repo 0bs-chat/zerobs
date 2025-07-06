@@ -1,9 +1,9 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState, useRef, useEffect } from "react";
 import { AiMessageContent } from "./ai-message";
 import { mapStoredMessagesToChatMessages } from "@langchain/core/messages";
 import type { BaseMessage } from "@langchain/core/messages";
 import { Separator } from "@/components/ui/separator";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 
 interface PlanningStepProps {
   message?: BaseMessage;
@@ -16,7 +16,10 @@ export const PlanningStep = memo(({
   messageId,
   isStreaming,
 }: PlanningStepProps) => {
-  const pastSteps = useMemo(() => {
+  const [isMinimized, setIsMinimized] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const pastStepsData = useMemo(() => {
     if (!message || !Array.isArray(message.additional_kwargs.pastSteps)) {
       return null;
     }
@@ -28,11 +31,18 @@ export const PlanningStep = memo(({
       const [step, _storedMessages] = pastStep;
       return step;
     });
-    return steps?.map((step, index) => {
+    return steps?.filter(Boolean) as string[];
+  }, [message]);
+
+  const pastSteps = useMemo(() => {
+    if (!pastStepsData) {
+      return null;
+    }
+    return pastStepsData?.map((step, index) => {
       return (
         <div key={`${messageId}-past-step-${index}`} className="flex items-start gap-2">
           <div className="flex-shrink-0 w-5 h-5 bg-input rounded-full flex items-center justify-center mt-0.5">
-            {isStreaming && index === steps.length - 1 ?
+            {isStreaming && index === pastStepsData.length - 1 ?
               <Loader2 className="w-3 h-3 animate-spin" /> :
               <Check className="w-3 h-3 text-foreground-muted" />
             }
@@ -42,8 +52,8 @@ export const PlanningStep = memo(({
           </div>
         </div>
       );
-    }).filter(Boolean); // Remove null entries
-  }, [message, messageId, isStreaming]);
+    });
+  }, [pastStepsData, messageId, isStreaming]);
   
   const stepMessages = useMemo(() => {
     if (!message || !Array.isArray(message.additional_kwargs.pastSteps)) {
@@ -71,22 +81,59 @@ export const PlanningStep = memo(({
     });
   }, [message, messageId]);
 
+  useEffect(() => {
+    if (isStreaming && !isMinimized && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
+  }, [isStreaming, isMinimized, stepMessages]);
+
+  const lastStep = pastStepsData && pastStepsData.length > 0 ? pastStepsData[pastStepsData.length - 1] : "Planning...";
+
+  const streamingContainerClasses = isStreaming
+    ? "bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30 p-0.5 animate-pulse"
+    : "border";
+
+  if (isMinimized) {
+    return (
+      <div className="border rounded-lg p-4 bg-card flex justify-between items-center">
+        <div className="text-sm font-semibold flex items-center gap-2">
+          <div className="flex-shrink-0 w-5 h-5 bg-input rounded-full flex items-center justify-center">
+            {isStreaming ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Check className="w-3 h-3 text-foreground-muted" />
+            )}
+          </div>
+          {lastStep}
+        </div>
+        <button onClick={() => setIsMinimized(false)} className="p-1 rounded-md hover:bg-muted">
+          <ChevronDown className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="border rounded-lg p-4 bg-card flex flex-row">
-      <div className="flex flex-col w-1/3 items-start gap-2">
-        <div className="text-sm font-semibold">
-          DeepSearch
+    <div className={`relative rounded-lg bg-card ${streamingContainerClasses}`}>
+      <div className="rounded-[7px] bg-card p-4 flex flex-row">
+        <div className="flex flex-col w-1/3 items-start gap-2">
+          <div className="text-sm font-semibold">
+            DeepSearch
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2 pr-4">
+            {pastSteps}
+          </div>
         </div>
-        <Separator />
-        <div className="flex flex-col gap-2 pr-4">
-          {pastSteps}
+        <div className="border-l" />
+        <div ref={scrollContainerRef} className="flex flex-col gap-2 w-2/3 pl-4 max-h-[36rem] overflow-y-auto">
+          {/* Show completed step messages */}
+          {stepMessages}
         </div>
       </div>
-      <div className="border-l" />
-      <div className="flex flex-col gap-2 w-2/3 pl-4 max-h-[36rem] overflow-y-auto">
-        {/* Show completed step messages */}
-        {stepMessages}
-      </div>
+      <button onClick={() => setIsMinimized(true)} className="absolute bottom-2 left-2 p-1 rounded-md bg-card hover:bg-muted border">
+        <ChevronUp className="w-4 h-4" />
+      </button>
     </div>
   );
 });

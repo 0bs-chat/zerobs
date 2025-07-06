@@ -16,6 +16,7 @@ export const updateInput = mutation({
     }),
     applySame: v.optional(v.boolean()),
   },
+  returns: v.id("chatMessages"),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
@@ -47,7 +48,8 @@ export const updateInput = mutation({
     };
 
     if (args.applySame) {
-      return await ctx.db.patch(args.id, newMessage);
+      await ctx.db.patch(args.id, newMessage);
+      return args.id;
     } else {
       return await ctx.db.insert("chatMessages", {
         chatId: message?.chatId!,
@@ -97,7 +99,7 @@ export const regenerate = internalMutation({
   args: {
     messageId: v.id("chatMessages"),
   },
-  handler: async (ctx, args): Promise<Id<"chats">> => {
+  handler: async (ctx, args): Promise<Id<"chatMessages">> => {
     await requireAuth(ctx);
 
     const message = await ctx.db.get(args.messageId);
@@ -113,12 +115,10 @@ export const regenerate = internalMutation({
       message: message,
     });
 
-    await ctx.db.insert("chatMessages", {
+    return await ctx.db.insert("chatMessages", {
       chatId: messageToRegenerate.chatId,
       parentId: messageToRegenerate.parentId,
       message: messageToRegenerate.message,
     });
-
-    return messageToRegenerate.chatId;
   }
 });

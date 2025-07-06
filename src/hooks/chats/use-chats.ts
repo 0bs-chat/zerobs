@@ -29,12 +29,13 @@ export const useHandleSubmit = () => {
         webSearch: chat.webSearch,
         artifacts: chat.artifacts,
       });
-      await createMessageMutation({
+      const messageId = await createMessageMutation({
         chatId: chat._id,
         documents: chat.documents,
         text: chat.text,
         parentId: null,
       });
+      await sendAction({ chatId: chat._id, messageId });
       navigate({
         to: "/chat/$chatId",
         params: { chatId: chat._id },
@@ -44,15 +45,15 @@ export const useHandleSubmit = () => {
         chatId: chat._id,
         updates: { text: "", documents: [] },
       });
-      await createMessageMutation({
+      const messageId = await createMessageMutation({
         chatId: chat._id,
         documents: chat.documents,
         text: newChat.text !== "" ? newChat.text : chat.text,
         parentId: lastChatMessage ?? null,
       });
       setNewChat((prev) => ({ ...prev, text: "", documents: [], projectId: null }));
+      await sendAction({ chatId: chat._id, messageId });
     }
-    await sendAction({ chatId: chat._id });
   };
 
   return handleSubmit;

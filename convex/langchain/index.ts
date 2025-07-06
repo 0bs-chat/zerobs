@@ -8,7 +8,7 @@ import { mapChatMessagesToStoredMessages, mapStoredMessageToChatMessage } from "
 import { MemorySaver } from "@langchain/langgraph";
 import { GraphState } from "./state";
 import { v } from "convex/values";
-import { getCurrentThread } from "../chatMessages/helpers";
+import { getCurrentThread, getThreadFromMessage } from "../chatMessages/helpers";
 
 export interface AIChunkGroup {
   type: "ai";
@@ -27,6 +27,7 @@ export interface ToolChunkGroup {
 export const chat = action({
   args: v.object({
     chatId: v.id("chats"),
+    messageId: v.id("chatMessages"),
   }),
   handler: async (ctx, args) => {    
     let chat = await ctx.runQuery(api.chats.queries.get, {
@@ -47,7 +48,12 @@ export const chat = action({
     const messages = await ctx.runQuery(api.chatMessages.queries.get, {
       chatId: args.chatId,
     })
-    const currentThread = getCurrentThread(messages);
+    
+    const message = messages.find((m) => m._id === args.messageId);
+    if (!message) {
+      throw new Error("Message not found");
+    }
+    const currentThread = getThreadFromMessage(messages, message);
     
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
@@ -255,11 +261,18 @@ export const regenerate = action({
     messageId: v.id("chatMessages"),
   }),
   handler: async (ctx, args) => {
-    const chatId = await ctx.runMutation(internal.chatMessages.mutations.regenerate, {
+    const message = await ctx.runQuery(internal.chatMessages.queries.getById, {
+      id: args.messageId,
+    });
+    if (!message) {
+      throw new Error("Message not found");
+    }
+    const newMessageId = await ctx.runMutation(internal.chatMessages.mutations.regenerate, {
       messageId: args.messageId,
     });
     await ctx.runAction(api.langchain.index.chat, {
-      chatId,
+      chatId: message.chatId,
+      messageId: newMessageId,
     });
   }
 });

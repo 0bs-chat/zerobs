@@ -1,4 +1,4 @@
-import { type MessageWithBranchInfo } from "../../../hooks/chats/use-messages";
+import { type MessageWithBranchInfo, type NavigateBranch } from "../../../hooks/chats/use-messages";
 import { memo, useState, useEffect } from "react";
 import { UserMessage } from "./user-message";
 import type { BranchNavigationProps } from "./utils-bar/branch-navigation";
@@ -13,7 +13,7 @@ export const MessagesList = memo(({
     input: MessageWithBranchInfo;
     response: MessageWithBranchInfo[];
   }>;
-  navigateBranch: BranchNavigationProps["navigateBranch"];
+  navigateBranch: NavigateBranch;
 }) => {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editedText, setEditedText] = useState('');
@@ -66,16 +66,17 @@ export const MessagesList = memo(({
               />
             </div>
           ))}
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+          {group.response.length > 0 && <div className="opacity-0 group-hover:opacity-100 transition-opacity">
             <UtilsBar 
               item={group.response[group.response.length - 1]} 
+              humanVersionOfItemForBranching={group.input}
               navigateBranch={navigateBranch} 
               setEditing={setEditingMessageId} 
               isEditing={false}
               editedText={''}
               onDone={onDone}
             />
-          </div>
+          </div>}
         </div>
       </div>
     ))}

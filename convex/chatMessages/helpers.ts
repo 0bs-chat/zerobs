@@ -122,8 +122,43 @@ export function buildMessageTree(messages: Doc<"chatMessages">[]): ParsedMessage
       roots.push(node);
     }
   }
+
+  // Sort children by creation time to ensure consistent ordering
+  for (const node of messageMap.values()) {
+    if (node.children) {
+      node.children.sort((a, b) => a._creationTime - b._creationTime);
+    }
+  }
   
   return roots;
+}
+
+export function getThreadFromMessage(
+  messages: Doc<"chatMessages">[],
+  leafMessage: Doc<"chatMessages">
+): ParsedMessage[] {
+  const { messageMap } = buildMessageLookups(messages);
+  const thread: Doc<"chatMessages">[] = [];
+
+  // Traverse up the parent chain from the leaf to the root
+  let currentMessage: Doc<"chatMessages"> | undefined = leafMessage;
+  while (currentMessage) {
+    thread.push(currentMessage);
+    currentMessage = currentMessage.parentId
+      ? messageMap.get(currentMessage.parentId)
+      : undefined;
+  }
+  
+  const parseMessage = (message: Doc<"chatMessages">): ParsedMessage => {
+    return {
+      ...message,
+      message: mapStoredMessageToChatMessage(
+        JSON.parse(message.message) as StoredMessage
+      ),
+    };
+  }
+
+  return thread.map(parseMessage).reverse();
 }
 
 export function getCurrentThread(messages: Doc<"chatMessages">[]): ParsedMessage[] {
@@ -144,25 +179,5 @@ export function getCurrentThread(messages: Doc<"chatMessages">[]): ParsedMessage
     );
   }
 
-  const thread: Doc<"chatMessages">[] = [];
-
-  // Traverse up the parent chain from the leaf to the root
-  let currentMessage: Doc<"chatMessages"> | undefined = leafMessage;
-  while (currentMessage) {
-    thread.push(currentMessage);
-    currentMessage = currentMessage.parentId
-      ? messageMap.get(currentMessage.parentId)
-      : undefined;
-  }
-
-  const parseMessage = (message: Doc<"chatMessages">): ParsedMessage => {
-    return {
-      ...message,
-      message: mapStoredMessageToChatMessage(
-        JSON.parse(message.message) as StoredMessage
-      ),
-    };
-  }
-
-  return thread.map(parseMessage).reverse();
+  return getThreadFromMessage(messages, leafMessage);
 }
