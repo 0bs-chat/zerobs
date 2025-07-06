@@ -1,15 +1,9 @@
 import { memo, useMemo } from "react";
 import { PlanningStep } from "./planning-step";
 import { AiMessageContent } from "./ai-message";
-import type { MessageBranchNavigation } from "../user-message";
-import type { MessageWithBranchInfo } from "../../../../hooks/chats/use-messages";
+import type { MessageWithBranchInfo } from "../utils-bar/branch-navigation";
 
-interface AiMessageProps {
-  item: MessageWithBranchInfo;
-  navigateBranch: MessageBranchNavigation;
-}
-
-export const AiMessage = memo(({ item, navigateBranch }: AiMessageProps) => {
+export const AiMessage = memo(({ item }: { item: MessageWithBranchInfo }) => {
   const msg = item.message.message;
   const type = msg?.getType?.();
   const pastSteps = msg?.additional_kwargs?.pastSteps as Array<[string, any[]]> | undefined;
@@ -32,7 +26,6 @@ export const AiMessage = memo(({ item, navigateBranch }: AiMessageProps) => {
           <AiMessageContent
             message={msg}
             messageId={item.message._id}
-            showReasoning={true}
           />
         </>
       );
@@ -43,42 +36,13 @@ export const AiMessage = memo(({ item, navigateBranch }: AiMessageProps) => {
       <AiMessageContent
         message={msg}
         messageId={item.message._id}
-        showReasoning={true}
       />
     );
   }, [isCompletedPlanner, msg, item.message._id]);
 
-  // Memoize branch navigation buttons to prevent unnecessary re-renders
-  const branchNavigation = useMemo(() => {
-    if (item.totalBranches <= 1) return null;
-
-    return (
-      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-        <span>
-          Branch: {item.branchIndex}/{item.totalBranches}
-        </span>
-        <button
-          onClick={() => navigateBranch(item.depth, "prev")}
-          className="px-2 py-1 rounded border hover:bg-accent transition-colors"
-          aria-label="Previous branch"
-        >
-          ←
-        </button>
-        <button
-          onClick={() => navigateBranch(item.depth, "next")}
-          className="px-2 py-1 rounded border hover:bg-accent transition-colors"
-          aria-label="Next branch"
-        >
-          →
-        </button>
-      </div>
-    );
-  }, [item.totalBranches, item.branchIndex, item.depth, navigateBranch]);
-
   return (
-    <div>
+    <div className="flex flex-col gap-1">
       {messageContent}
-      {branchNavigation}
     </div>
   );
 });

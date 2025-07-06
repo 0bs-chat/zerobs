@@ -16,7 +16,6 @@ export const ChatMessages = () => {
   const setLastChatMessageAtom = useSetAtom(lastChatMessageAtom);
   const setUseStreamAtom = useSetAtom(useStreamAtom);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const {
     groupedMessages,
@@ -34,8 +33,8 @@ export const ChatMessages = () => {
 
   // Optimized auto-scroll with memoized dependencies
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior });
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollIntoView({ behavior });
     }
   }, []);
 
@@ -51,7 +50,6 @@ export const ChatMessages = () => {
     }
   }, [isEmpty, isLoading, scrollToBottom]);
 
-  // Memoize the main content to prevent unnecessary re-renders
   const mainContent = useMemo(() => {
     if (isLoading) {
       return (
@@ -70,8 +68,8 @@ export const ChatMessages = () => {
     }
 
     return (
-      <ScrollArea ref={scrollAreaRef} className="overflow-hidden h-full w-full">
-        <div className="flex flex-col gap-4 p-1 max-w-4xl mx-auto">
+      <ScrollArea ref={scrollAreaRef} className="h-full">
+        <div className="flex flex-col gap-1 p-1 max-w-4xl mx-auto">
           {groupedMessages.length > 0 && (
             <MessagesList
               groupedMessages={groupedMessages}
@@ -87,9 +85,6 @@ export const ChatMessages = () => {
               completedSteps={streamData.completedSteps}
             />
           )}
-          
-          {/* Invisible element to scroll to */}
-          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
     );

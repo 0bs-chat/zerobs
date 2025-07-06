@@ -111,18 +111,24 @@ async function plannerAgent(
   const remainingPlan = state.plan.slice(1);
   const pastSteps = state.pastSteps || [];
 
+  const formattedPastSteps = pastSteps.map((pastStep) => {
+    const [step, messages] = pastStep;
+    const stepMessage = new HumanMessage(step as string);
+    return [stepMessage, ...messages];
+  }).flat();
+
   if (Array.isArray(currentPlanItem)) {
     const parallelResults: CompletedStep[] = await Promise.all(
       currentPlanItem.map(async (step) => {
         const plannerAgentChain = await createAgentWithTools(state, formattedConfig, true);
         const response = await plannerAgentChain.invoke(
           {
-            messages: [new HumanMessage(`Task: ${step}`)],
+            messages: [...formattedPastSteps, new HumanMessage(`Task: ${step}`)],
           },
           config,
         );
 
-        const newMessages = response.messages.slice(1, response.messages.length);
+        const newMessages = response.messages.slice(formatMessages.length + 1, response.messages.length);
         return [step, newMessages];
       }),
     );
@@ -135,12 +141,12 @@ async function plannerAgent(
     const plannerAgentChain = await createAgentWithTools(state, formattedConfig, true);
     const response = await plannerAgentChain.invoke(
       {
-        messages: [new HumanMessage(`Task: ${currentPlanItem}`)],
+        messages: [...formattedPastSteps, new HumanMessage(`Task: ${currentPlanItem}`)],
       },
       config,
     );
 
-    const newMessages = response.messages.slice(1, response.messages.length);
+    const newMessages = response.messages.slice(formattedPastSteps.length + 1, response.messages.length);
     const completedStep: CompletedStep = [currentPlanItem, newMessages];
 
     return {

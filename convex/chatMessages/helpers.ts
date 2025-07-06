@@ -1,13 +1,87 @@
 import { Doc, Id } from "../_generated/dataModel";
-import { mapStoredMessageToChatMessage, type BaseMessage, type StoredMessage } from "@langchain/core/messages";
+import {
+  mapStoredMessageToChatMessage,
+  type BaseMessage,
+  type StoredMessage,
+} from "@langchain/core/messages";
 
-export type ParsedMessage = Omit<Doc<"chatMessages">, 'message'> & {
+export type ParsedMessage = Omit<Doc<"chatMessages">, "message"> & {
   message: BaseMessage;
-}
-export type ParsedMessageNode = Omit<Doc<"chatMessages">, 'message' | 'children'> & {
+};
+export type ParsedMessageNode = Omit<
+  Doc<"chatMessages">,
+  "message" | "children"
+> & {
   message: BaseMessage;
   children?: ParsedMessageNode[];
+};
+
+export interface MessageWithBranchInfo {
+  message: ParsedMessageNode;
+  branchIndex: number;
+  totalBranches: number;
+  depth: number;
 }
+
+export type BranchPath = number[]; // index per depth, empty = default path
+
+// Recursive helper to build the current thread
+export const buildThread = (
+  nodes: ParsedMessageNode[] | undefined,
+  path: BranchPath,
+  depth = 0
+): MessageWithBranchInfo[] => {
+  if (!nodes || nodes.length === 0) return [];
+
+  const idx = Math.min(path[depth] ?? nodes.length - 1, nodes.length - 1);
+  const node = nodes[idx];
+
+  return [
+    {
+      message: node,
+      branchIndex: idx + 1, // 1-indexed for display
+      totalBranches: nodes.length,
+      depth,
+    },
+    ...buildThread(node.children, path, depth + 1),
+  ];
+};
+
+export const groupMessages = (currentThread: MessageWithBranchInfo[]) => {
+  type MessageGroup = {
+    input: MessageWithBranchInfo;
+    response: MessageWithBranchInfo[];
+  };
+
+  const groups: MessageGroup[] = [];
+  let currentGroup: MessageGroup | null = null;
+
+  for (const item of currentThread) {
+    const messageType = item.message.message.getType();
+
+    if (messageType === "human") {
+      // Start a new group with this human message
+      if (currentGroup) {
+        groups.push(currentGroup);
+      }
+      currentGroup = {
+        input: item,
+        response: [],
+      };
+    } else if (messageType === "ai" || messageType === "tool") {
+      // Add to current group's responses
+      if (currentGroup) {
+        currentGroup.response.push(item);
+      }
+    }
+  }
+
+  if (currentGroup) {
+    groups.push(currentGroup);
+  }
+
+  return groups;
+};
 
 export function buildMessageLookups(messages: Doc<"chatMessages">[]) {
   const messageMap = new Map<Id<"chatMessages">, Doc<"chatMessages">>();

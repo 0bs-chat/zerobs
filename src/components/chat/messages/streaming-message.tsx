@@ -58,7 +58,6 @@ export const StreamingMessage = memo(({ chunks, status, completedSteps }: {
 
   // Regular streaming display (no planning mode)
   const regularContent = useMemo(() => {
-    console.log(status);
     return langchainMessages.map((message, index) => (
       <div key={index} className="mb-4">
         {message?.getType() === "ai" ? (

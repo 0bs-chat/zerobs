@@ -38,7 +38,7 @@ function RouteComponent() {
 
   return (
     <SidebarProvider
-      className="flex h-svh font-sans"
+      className="font-sans h-svh"
       open={sidebarOpen}
       onOpenChange={() => {
         setSidebarOpen(!sidebarOpen);
@@ -46,26 +46,27 @@ function RouteComponent() {
     >
       <TopNav />
       <AppSidebar />
-      <div className="flex-1">
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel className="flex flex-col items-center justify-between gap-1 p-2 pt-4 overflow-hidden">
+      <ResizablePanelGroup direction="horizontal">
+        <ResizablePanel className="flex flex-col gap-1 p-2 pt-4">
+          <div className="flex-1 min-h-0">
             <ChatMessages />
+          </div>
+          <div className="flex-none">
             <ChatInput />
-          </ResizablePanel>
-          {resizePanelOpen && (
-            <>
-              <ResizableHandle />
-              <ResizablePanel defaultSize={40} minSize={25} maxSize={50}>
-                <Panel />
-              </ResizablePanel>
-            </>
-          )}
-        </ResizablePanelGroup>
-      </div>
-
+          </div>
+        </ResizablePanel>
+        {resizePanelOpen && (
+          <>
+            <ResizableHandle />
+            <ResizablePanel defaultSize={40} minSize={25} maxSize={50}>
+              <Panel />
+            </ResizablePanel>
+          </>
+        )}
+      </ResizablePanelGroup>
       {/* Dialogs */}
       <DocumentDialog />
       <CreateProjectDialog />
     </SidebarProvider>
   );
-} 
+}

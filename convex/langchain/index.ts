@@ -227,9 +227,9 @@ export const chat = action({
       await flushPromise;
     }
 
-    const newMessages = checkpoint?.messages?.slice(messages.length, checkpoint.messages.length);
+    const newMessages = checkpoint?.messages?.slice(currentThread.length, checkpoint.messages.length);
     if (newMessages) {
-      let parentId: Id<"chatMessages"> | null = messages.length > 0 ? messages[messages.length - 1]._id : null;
+      let parentId: Id<"chatMessages"> | null = currentThread.length > 0 ? currentThread[currentThread.length - 1]._id : null;
       for (const message of newMessages) {
         const newMessageDoc: Doc<"chatMessages"> = await ctx.runMutation(internal.chatMessages.crud.create, {
           chatId: args.chatId,
@@ -246,6 +246,20 @@ export const chat = action({
         completedSteps: [],
         status: wasCancelled ? "cancelled" : "done",
       },
+    });
+  }
+});
+
+export const regenerate = action({
+  args: v.object({
+    messageId: v.id("chatMessages"),
+  }),
+  handler: async (ctx, args) => {
+    const chatId = await ctx.runMutation(internal.chatMessages.mutations.regenerate, {
+      messageId: args.messageId,
+    });
+    await ctx.runAction(api.langchain.index.chat, {
+      chatId,
     });
   }
 });

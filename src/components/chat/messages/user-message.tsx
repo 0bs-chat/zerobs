@@ -1,19 +1,20 @@
 import { memo, useMemo } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { Markdown } from "@/components/ui/markdown";
-import type { MessageWithBranchInfo } from "../../../hooks/chats/use-messages";
+import type { MessageWithBranchInfo } from "./utils-bar/branch-navigation";
+import { Textarea } from "@/components/ui/textarea";
 
-export type BranchDirection = "prev" | "next";
-
-export interface MessageBranchNavigation {
-  (depth: number, direction: BranchDirection): void;
-}
-
-interface UserMessageProps {
-  item: MessageWithBranchInfo;
-  navigateBranch: MessageBranchNavigation;
-}
-
-export const UserMessage = memo(({ item, navigateBranch }: UserMessageProps) => {
+export const UserMessage = memo(({ 
+  item, 
+  isEditing,
+  editedText,
+  setEditedText
+}: { 
+  item: MessageWithBranchInfo, 
+  isEditing: boolean,
+  editedText: string;
+  setEditedText: Dispatch<SetStateAction<string>>;
+}) => {
   const content = item?.message?.message?.content;
 
   // Memoize the content rendering to avoid unnecessary calculations
@@ -29,40 +30,23 @@ export const UserMessage = memo(({ item, navigateBranch }: UserMessageProps) => 
     return content;
   }, [content, item.message._id]);
 
-  // Memoize branch navigation buttons to prevent unnecessary re-renders
-  const branchNavigation = useMemo(() => {
-    if (item.totalBranches <= 1) return null;
-
+  if (isEditing) {
     return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span>
-          Branch: {item.branchIndex}/{item.totalBranches}
-        </span>
-        <button
-          onClick={() => navigateBranch(item.depth, "prev")}
-          className="px-2 py-1 rounded border hover:bg-accent transition-colors"
-          aria-label="Previous branch"
-        >
-          ←
-        </button>
-        <button
-          onClick={() => navigateBranch(item.depth, "next")}
-          className="px-2 py-1 rounded border hover:bg-accent transition-colors"
-          aria-label="Next branch"
-        >
-          →
-        </button>
+      <div className="bg-card max-w-full self-end p-4 rounded-md shadow-sm w-full">
+        <Textarea 
+          value={editedText}
+          onChange={(e) => setEditedText(e.target.value)}
+          className="bg-background shadow-inner"
+          autoFocus
+        />
       </div>
     );
-  }, [item.totalBranches, item.branchIndex, item.depth, navigateBranch]);
+  }
 
   return (
-    <>
-      <div className="bg-card max-w-[80%] self-end p-4 rounded-md shadow-sm">
-        {renderedContent}
-      </div>
-      {branchNavigation}
-    </>
+    <div className="bg-card max-w-full self-end p-4 rounded-md shadow-sm">
+      {renderedContent}
+    </div>
   );
 });
 

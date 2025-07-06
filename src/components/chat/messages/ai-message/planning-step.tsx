@@ -72,7 +72,7 @@ export const PlanningStep = memo(({
   }, [message, messageId]);
 
   return (
-    <div className="border rounded-lg p-4 bg-card my-2 flex flex-row">
+    <div className="border rounded-lg p-4 bg-card flex flex-row">
       <div className="flex flex-col w-1/3 items-start gap-2">
         <div className="text-sm font-semibold">
           DeepSearch
