@@ -43,17 +43,17 @@ export const StreamingMessage = memo(
                 tool_call_id: `streaming-tool-${chunk.toolName}`,
               });
             } else {
-              return new AIMessage({
-                content: "",
-                tool_calls: [
-                  {
-                    id: `streaming-tool-${chunk.toolName}`,
-                    type: "tool_call",
-                    name: chunk.toolName,
-                    args: JSON.parse(JSON.stringify(chunk.input)),
-                  },
-                ],
-              });
+              // return new AIMessage({
+              //   content: "",
+              //   tool_calls: [
+              //     {
+              //       id: `streaming-tool-${chunk.toolName}`,
+              //       type: "tool_call",
+              //       name: chunk.toolName,
+              //       args: JSON.parse(JSON.stringify(chunk.input)),
+              //     },
+              //   ],
+              // });
             }
           }
           return null;

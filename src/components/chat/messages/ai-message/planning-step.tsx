@@ -141,7 +141,7 @@ export const PlanningStep = memo(
             <Separator className="my-2" />
             <div
               ref={stepsContainerRef}
-              className="flex flex-col gap-2 pr-4 max-h-[36rem] overflow-y-auto"
+              className="flex flex-col gap-1 pr-4 max-h-[36rem] overflow-y-auto"
             >
               {pastSteps}
             </div>
@@ -149,7 +149,7 @@ export const PlanningStep = memo(
           <div className="border-l" />
           <div
             ref={scrollContainerRef}
-            className="flex flex-col gap-2 w-2/3 pl-4 max-h-[36rem] overflow-y-auto"
+            className="flex flex-col gap-1 w-2/3 pl-4 max-h-[36rem] overflow-y-auto"
           >
             {stepMessages}
           </div>

@@ -100,7 +100,7 @@ export const chat = action({
     });
 
     if (messages?.length === 1) {
-      await ctx.scheduler.runAfter(0, internal.langchain.index.generateTitle, {
+      ctx.runAction(internal.langchain.index.generateTitle, {
         chat: chat,
         message: messages[0],
       });

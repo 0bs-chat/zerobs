@@ -70,11 +70,13 @@ export const MessagesList = memo(
               </div>
             </div>
             <div className="flex flex-col gap-1 group">
-              {group.response.map((response) => (
-                <div key={response.message._id} className="flex flex-col gap-1">
-                  <AiMessage item={response} />
-                </div>
-              ))}
+              {group.response.map((response) => {
+                return (
+                  <div key={response.message._id} className="flex flex-col gap-1">
+                    <AiMessage item={response} />
+                  </div>
+                );
+              })}
               {group.response.length > 0 && (
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                   <UtilsBar

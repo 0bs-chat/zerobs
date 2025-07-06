@@ -10,7 +10,6 @@ import {
   ArrowUp,
   PaperclipIcon,
   GithubIcon,
-  CircleStopIcon,
   BrainIcon,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
@@ -37,6 +36,7 @@ import { streamStatusAtom, newChatAtom } from "@/store/chatStore";
 import { models } from "../../../../../convex/langchain/models";
 import { ArtifactsToggle } from "./artifatsToggle";
 import { WebSearchToggle } from "./webSearchToggle";
+import { StopButtonIcon } from "./stop-button-icon";
 
 export const ToolBar = ({ chat }: { chat: Doc<"chats"> }) => {
   const params = useParams({ strict: false });
@@ -195,7 +195,7 @@ export const ToolBar = ({ chat }: { chat: Doc<"chats"> }) => {
           }}
         >
           {["pending", "streaming"].includes(streamStatus ?? "") ? (
-            <CircleStopIcon className="h-4 w-4" />
+            <StopButtonIcon className="h-6 w-6 -translate-y-0.5 -translate-x-0.5" />
           ) : (
             <ArrowUp className="h-4 w-4" />
           )}
