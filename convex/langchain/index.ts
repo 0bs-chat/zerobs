@@ -64,10 +64,11 @@ export const generateTitle = internalAction({
       ),
       ...firstMessage,
     ])) as z.infer<typeof titleSchema>;
-    await ctx.runMutation(api.chats.mutations.update, {
-      chatId: args.chat._id,
-      updates: {
+    await ctx.runMutation(internal.chats.crud.update, {
+      id: args.chat._id,
+      patch: {
         name: title.title,
+        updatedAt: Date.now(),
       },
     });
   },
@@ -99,7 +100,7 @@ export const chat = action({
     });
 
     if (messages?.length === 1) {
-      ctx.runAction(internal.langchain.index.generateTitle, {
+      await ctx.scheduler.runAfter(0, internal.langchain.index.generateTitle, {
         chat: chat,
         message: messages[0],
       });
@@ -339,7 +340,7 @@ export const regenerate = action({
     if (!message) {
       throw new Error("Message not found");
     }
-    const newMessageId = await ctx.runMutation(
+    await ctx.runMutation(
       internal.chatMessages.mutations.regenerate,
       {
         messageId: args.messageId,

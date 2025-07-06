@@ -28,7 +28,7 @@ export const useHandleSubmit = () => {
         text: "",
         documents: [],
         projectId: null,
-        deepSearchMode: false,
+        orchestratorMode: false,
         webSearch: false,
         artifacts: false,
       }));
@@ -38,7 +38,7 @@ export const useHandleSubmit = () => {
         reasoningEffort: chat.reasoningEffort,
         projectId: chat.projectId,
         conductorMode: chat.conductorMode,
-        deepSearchMode: chat.deepSearchMode,
+        orchestratorMode: chat.orchestratorMode,
         webSearch: chat.webSearch,
         artifacts: chat.artifacts,
       });
@@ -48,11 +48,11 @@ export const useHandleSubmit = () => {
         text: chat.text,
         parentId: null,
       });
-      await sendAction({ chatId: chat._id });
       navigate({
         to: "/chat/$chatId",
         params: { chatId: chat._id },
       });
+      await sendAction({ chatId: chat._id });
     } else {
       await updateChatMutation({
         chatId: chat._id,

@@ -6,7 +6,7 @@ import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -21,8 +21,7 @@ export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
   const { signOut } = useAuth();
   const { user } = useUser();
-  const selectedArtifact = useAtomValue(selectedArtifactAtom);
-  const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
+  const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
 
   return (
     <div className="fixed right-0 py-2.5 px-4 flex items-center gap-4 w-full bg-transparent justify-between pointer-events-none z-50">

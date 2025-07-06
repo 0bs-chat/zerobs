@@ -6,10 +6,10 @@ import {
   parseContent,
   type ContentPart,
   type Artifact,
-} from "../../artifacts/utils";
-import { ArtifactCard } from "../../artifacts/card";
+} from "../../../artifacts/utils";
+import { ArtifactCard } from "../../../artifacts/card";
 import { useSetAtom } from "jotai";
-import { selectedArtifactAtom } from "@/store/chatStore";
+import { selectedArtifactAtom, parsedArtifactsContentAtom } from "@/store/chatStore";
 import type { BaseMessage } from "@langchain/core/messages";
 
 interface AiMessageContentProps {
@@ -22,6 +22,7 @@ export const AiMessageContent = memo(
   ({ message, messageId, className }: AiMessageContentProps) => {
     const type = message?.getType?.();
     const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
+    const setParsedArtifactsContent = useSetAtom(parsedArtifactsContentAtom);
 
     const content = message?.content ?? "";
     const reasoning = message?.additional_kwargs?.reasoning_content as
@@ -38,9 +39,13 @@ export const AiMessageContent = memo(
 
     // Memoize content parsing to avoid expensive re-calculations
     const parsedContent = useMemo(() => {
-      if (type !== "ai") return [];
-      return parseContent(content as string, 0);
-    }, [content, type]);
+      if (type !== "ai") {
+        return [];
+      }
+      const parsed = parseContent(content as string, 0);
+      setParsedArtifactsContent(parsed);
+      return parsed;
+    }, [content, type, setParsedArtifactsContent]);
 
     // Memoize the content rendering to avoid unnecessary re-renders
     const renderedContent = useMemo(() => {
@@ -62,10 +67,7 @@ export const AiMessageContent = memo(
         } else if (part.type === "artifact") {
           return (
             <div key={`artifact-${index}`} className="my-4">
-              <ArtifactCard
-                artifact={part.artifact}
-                onView={handleArtifactView}
-              />
+              <ArtifactCard artifact={part.artifact} />
             </div>
           );
         }

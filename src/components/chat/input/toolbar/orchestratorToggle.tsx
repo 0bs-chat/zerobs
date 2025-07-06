@@ -6,12 +6,12 @@ import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useSetAtom } from "jotai";
 import { newChatAtom } from "@/store/chatStore";
 
-export const DeepSearchToggle = ({
+export const OrchestratorToggle = ({
   chatId,
-  deepSearchMode,
+  orchestratorMode,
 }: {
   chatId: Id<"chats">;
-  deepSearchMode?: boolean;
+  orchestratorMode?: boolean;
 }) => {
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const setNewChat = useSetAtom(newChatAtom);
@@ -19,25 +19,25 @@ export const DeepSearchToggle = ({
     <Toggle
       variant="outline"
       className="hover:transition hover:duration-500"
-      pressed={deepSearchMode}
+      pressed={orchestratorMode}
       onPressedChange={() => {
         if (chatId === "new") {
           setNewChat((prev) => ({
             ...prev,
-            deepSearchMode: !prev.deepSearchMode,
+            orchestratorMode: !prev.orchestratorMode,
           }));
         } else {
           updateChatMutation({
             chatId,
             updates: {
-              deepSearchMode: !deepSearchMode,
+              orchestratorMode: !orchestratorMode,
             },
           });
         }
       }}
     >
       <Binoculars className="h-4 w-4" />
-      DeepSearch
+      Orchestrator
     </Toggle>
   );
 };

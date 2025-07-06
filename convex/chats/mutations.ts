@@ -14,7 +14,7 @@ export const create = mutation({
     ),
     projectId: v.union(v.id("projects"), v.null()),
     conductorMode: v.boolean(),
-    deepSearchMode: v.boolean(),
+    orchestratorMode: v.boolean(),
     webSearch: v.boolean(),
     artifacts: v.boolean(),
   },

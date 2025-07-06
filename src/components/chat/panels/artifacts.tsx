@@ -1,21 +1,17 @@
 import React from "react";
-import { useAtom } from "jotai";
-import { selectedArtifactAtom } from "@/store/chatStore";
+import { useAtom, useAtomValue } from "jotai";
+import { parsedArtifactsContentAtom, selectedArtifactAtom } from "@/store/chatStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
-// import { Badge } from "@/components/ui/badge";
-// import { Separator } from "@/components/ui/separator";
-import { ArtifactViewer } from "./viewer";
-import type { Artifact } from "../../artifacts/utils";
+import { ArtifactViewer } from "../../artifacts/viewer";
+import type { Artifact, ContentPart } from "../../artifacts/utils";
 import { ArtifactCard } from "../../artifacts/card";
 
 const ArtifactsList = ({
   artifacts,
-  onSelectArtifact,
 }: {
   artifacts: Artifact[];
-  onSelectArtifact: (artifact: Artifact) => void;
 }) => {
-  if (artifacts.length === 0) {
+  if (!artifacts || artifacts.length === 0) {
     return (
       <div className="flex items-center justify-center text-center h-32">
         <div className="text-sm text-muted-foreground">
@@ -26,17 +22,6 @@ const ArtifactsList = ({
   }
   return (
     <div className="flex flex-col gap-4 h-full">
-      {/* <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-medium">Artifacts</h3>
-          <p className="text-xs text-muted-foreground">
-            Interactive content from this conversation
-          </p>
-        </div>
-      </div> */}
-
-      {/* <Separator /> */}
-
       <ScrollArea
         type="always"
         className="flex-grow h-[calc(100vh-10rem)] pr-3"
@@ -46,7 +31,6 @@ const ArtifactsList = ({
             <ArtifactCard
               key={`${artifact.id}-${artifact.messageIndex}`}
               artifact={artifact}
-              onView={onSelectArtifact}
             />
           ))}
         </div>
@@ -57,12 +41,16 @@ const ArtifactsList = ({
 
 export const ArtifactsPanel = () => {
   const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
-
+  const parsedArtifactsContent = useAtomValue(parsedArtifactsContentAtom);
   const allArtifacts = React.useMemo(() => {
-    // For now, return empty array since we removed streaming
-    // This can be populated with artifacts from completed messages
-    return [] as Artifact[];
-  }, []);
+    if (!parsedArtifactsContent) return [];
+    return parsedArtifactsContent
+      .filter(
+        (part): part is Extract<ContentPart, { type: "artifact" }> =>
+          part.type === "artifact",
+      )
+      .map((part) => part.artifact);
+  }, [parsedArtifactsContent]);
 
   const artifactToView = React.useMemo(() => {
     if (!selectedArtifact) return null;
@@ -81,10 +69,5 @@ export const ArtifactsPanel = () => {
     );
   }
 
-  return (
-    <ArtifactsList
-      artifacts={allArtifacts}
-      onSelectArtifact={setSelectedArtifact}
-    />
-  );
+  return <ArtifactsList artifacts={allArtifacts} />;
 };

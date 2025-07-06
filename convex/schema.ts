@@ -48,7 +48,7 @@ export const Chats = Table("chats", {
   ),
   projectId: v.union(v.id("projects"), v.null()), // use null, because we don't want to confuse undefined when unsetting or just not updating rest of the chat doc
   conductorMode: v.boolean(),
-  deepSearchMode: v.boolean(),
+  orchestratorMode: v.boolean(),
   webSearch: v.boolean(),
   artifacts: v.boolean(),
   updatedAt: v.number(),

@@ -10,10 +10,10 @@ import {
   EyeIcon,
   CodeIcon,
 } from "lucide-react";
-import { useCopy } from "@/hooks/use-copy";
+import { useCopy } from "@/hooks/use-copy"; 
 import { Markdown } from "@/components/ui/markdown";
 import { MermaidChart } from "@/components/ui/markdown/mermaid";
-import type { Artifact } from "../../artifacts/utils";
+import type { Artifact } from "./utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ArtifactViewerProps {

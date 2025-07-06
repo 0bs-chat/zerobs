@@ -33,7 +33,7 @@ async function shouldPlanOrAgentOrSimple(
     return "simple";
   }
 
-  if (formattedConfig.chat.deepSearchMode) {
+  if (formattedConfig.chat.orchestratorMode) {
     return "planner";
   }
 

@@ -31,7 +31,7 @@ import { useRef, useState } from "react";
 import { getTagInfo } from "@/lib/helpers";
 import GitHubDialog from "../github";
 import { ConductorToggle } from "./conductorToggle";
-import { DeepSearchToggle } from "./deepSearchToggle";
+import { OrchestratorToggle } from "./orchestratorToggle";
 import { useSetAtom, useAtomValue } from "jotai";
 import { streamStatusAtom, newChatAtom } from "@/store/chatStore";
 import { models } from "../../../../../convex/langchain/models";
@@ -99,9 +99,9 @@ export const ToolBar = ({ chat }: { chat: Doc<"chats"> }) => {
         </div>
 
         <ConductorToggle chatId={chatId} conductorMode={chat.conductorMode} />
-        <DeepSearchToggle
+        <OrchestratorToggle
           chatId={chatId}
-          deepSearchMode={chat.deepSearchMode}
+          orchestratorMode={chat.orchestratorMode}
         />
         <ArtifactsToggle chatId={chatId} artifacts={chat.artifacts} />
         <WebSearchToggle chatId={chatId} webSearch={chat.webSearch} />

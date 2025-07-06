@@ -2,8 +2,9 @@ import { atom } from "jotai";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { atomWithStorage, selectAtom } from "jotai/utils";
 import { useStream } from "@/hooks/chats/use-stream";
-import type { Artifact } from "@/components/chat/artifacts/utils";
-import type { groupMessages } from "@/hooks/chats/use-messages";
+import type { Artifact } from "@/components/artifacts/utils";
+import { groupMessages } from "../../convex/chatMessages/helpers";
+import type { ContentPart } from "@/components/artifacts/utils";
 
 export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   _id: "new" as Id<"chats">,
@@ -17,7 +18,7 @@ export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   reasoningEffort: "low",
   projectId: null,
   conductorMode: false,
-  deepSearchMode: false,
+  orchestratorMode: false,
   webSearch: false,
   artifacts: false,
   updatedAt: 0,
@@ -50,6 +51,7 @@ export const streamStatusAtom = selectAtom(
   useStreamAtom,
   (stream) => stream?.status,
 );
+export const parsedArtifactsContentAtom = atom<ContentPart[] | null>(null);
 
 export const lastChatMessageAtom = atom<Id<"chatMessages"> | undefined>(
   undefined,
