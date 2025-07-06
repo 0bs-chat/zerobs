@@ -4,12 +4,12 @@ import { z } from "zod";
 import { Annotation } from "@langchain/langgraph/web";
 import { BaseMessage } from "@langchain/core/messages";
 
-export const planStep = z.union([z.string(), z.array(z.string())]);
+export const planStep = z.string();
 
 export const planArray = z
   .array(planStep)
   .describe(
-    "A step by step plan to achieve the objective. Group parallel steps in an array.",
+    "A step by step plan to achieve the objective. Keep the step description < 6 words.",
   )
   .min(1)
   .max(9);

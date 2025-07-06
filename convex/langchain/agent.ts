@@ -144,63 +144,31 @@ async function plannerAgent(
     })
     .flat();
 
-  if (Array.isArray(currentPlanItem)) {
-    const parallelResults: CompletedStep[] = await Promise.all(
-      currentPlanItem.map(async (step) => {
-        const plannerAgentChain = await createAgentWithTools(
-          state,
-          formattedConfig,
-          true,
-        );
-        const response = await plannerAgentChain.invoke(
-          {
-            messages: [
-              ...formattedPastSteps,
-              new HumanMessage(`Task: ${step}`),
-            ],
-          },
-          config,
-        );
+  const plannerAgentChain = await createAgentWithTools(
+    state,
+    formattedConfig,
+    true,
+  );
+  const response = await plannerAgentChain.invoke(
+    {
+      messages: [
+        ...formattedPastSteps,
+        new HumanMessage(`Task: ${currentPlanItem}`),
+      ],
+    },
+    config,
+  );
 
-        const newMessages = response.messages.slice(
-          formatMessages.length + 1,
-          response.messages.length,
-        );
-        return [step, newMessages];
-      }),
-    );
+  const newMessages = response.messages.slice(
+    formattedPastSteps.length + 1,
+    response.messages.length,
+  );
+  const completedStep: CompletedStep = [currentPlanItem, newMessages];
 
-    return {
-      plan: remainingPlan,
-      pastSteps: [...pastSteps, ...parallelResults],
-    };
-  } else {
-    const plannerAgentChain = await createAgentWithTools(
-      state,
-      formattedConfig,
-      true,
-    );
-    const response = await plannerAgentChain.invoke(
-      {
-        messages: [
-          ...formattedPastSteps,
-          new HumanMessage(`Task: ${currentPlanItem}`),
-        ],
-      },
-      config,
-    );
-
-    const newMessages = response.messages.slice(
-      formattedPastSteps.length + 1,
-      response.messages.length,
-    );
-    const completedStep: CompletedStep = [currentPlanItem, newMessages];
-
-    return {
-      plan: remainingPlan,
-      pastSteps: [...pastSteps, completedStep],
-    };
-  }
+  return {
+    plan: remainingPlan,
+    pastSteps: [...pastSteps, completedStep],
+  };
 }
 
 async function replanner(
