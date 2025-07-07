@@ -10,7 +10,7 @@
         "@langchain/core": "^0.3.61",
         "@langchain/google-genai": "^0.2.14",
         "@langchain/langgraph": "^0.3.5",
-        "@langchain/langgraph-supervisor": "^0.0.14",
+        "@langchain/langgraph-supervisor": "0.0.15",
         "@langchain/mcp-adapters": "^0.5.2",
         "@langchain/openai": "https://raw.githubusercontent.com/0bs-chat/langchainjs/main/libs/langchain-openai/langchain-openai-0.5.16.tgz",
         "@radix-ui/react-accordion": "^1.2.11",
@@ -364,7 +364,7 @@
 
     "@langchain/langgraph-sdk": ["@langchain/langgraph-sdk@0.0.87", "", { "dependencies": { "@types/json-schema": "^7.0.15", "p-queue": "^6.6.2", "p-retry": "4", "uuid": "^9.0.0" }, "peerDependencies": { "@langchain/core": ">=0.2.31 <0.4.0", "react": "^18 || ^19" }, "optionalPeers": ["@langchain/core", "react"] }, "sha512-wQtP0V8qPpOnDqTICZA5pFVBhtLyqR41Tau6oZey7hTEWd9ZIWQFdDGP3lZhgcS7iSimNAjg27SWrAG7MWZSyQ=="],
 
-    "@langchain/langgraph-supervisor": ["@langchain/langgraph-supervisor@0.0.14", "", { "dependencies": { "uuid": "^10.0.0", "zod": "^3.25.32" }, "peerDependencies": { "@langchain/core": "^0.3.58", "@langchain/langgraph": "^0.2.72 || ^0.3.0" } }, "sha512-OA9ZR2UUB1B5gOoZXk5QH9gS2Dry076e5YWG6AdALvbQ+UPY0PDGDavcTjmFUeKef5RvLKVGXUKC8UC74XLbYA=="],
+    "@langchain/langgraph-supervisor": ["@langchain/langgraph-supervisor@0.0.15", "", { "dependencies": { "uuid": "^10.0.0", "zod": "^3.25.32" }, "peerDependencies": { "@langchain/core": "^0.3.58", "@langchain/langgraph": "^0.2.72 || ^0.3.0" } }, "sha512-F2S/0yYQHRSjLvSmw+THkHlf4z836XXGWtpvrgimGghhHCCj/HKSVpSEwUCb8CeU+nsa+dnOvrTlwAFsceLY3w=="],
 
     "@langchain/mcp-adapters": ["@langchain/mcp-adapters@0.5.2", "", { "dependencies": { "@modelcontextprotocol/sdk": "^1.12.1", "debug": "^4.4.0", "zod": "^3.24.2" }, "optionalDependencies": { "extended-eventsource": "^1.x" }, "peerDependencies": { "@langchain/core": "^0.3.44" } }, "sha512-Jh+xjjgyk/gH+Sr17IbHOqoyA1vLIKhvSv93N1FsxuI4TfXjixjgR0WDuobvdqAyhFl7dyh74P8OSEd4Ci6ROg=="],
 

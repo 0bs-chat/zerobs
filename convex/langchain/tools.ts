@@ -343,6 +343,6 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
 
   return {
     tools: tools,
-    groupedTools: groupedTools,
+    groupedTools: Object.fromEntries(groupedTools),
   };
 };

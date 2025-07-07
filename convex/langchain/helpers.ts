@@ -17,7 +17,6 @@ import {
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { getMCPTools, getRetrievalTools } from "./tools";
-import type { Tool } from "@langchain/core/tools";
 import { getModel } from "./models";
 import { createAgentSystemMessage } from "./prompts";
 import { GraphState } from "./state";
@@ -90,16 +89,31 @@ export async function createAgentWithTools(
       chat.reasoningEffort,
     );
     const agents = Object.entries(tools.groupedTools).map(
-      ([groupName, tools]: [string, Tool[]]) =>
+      ([groupName, tools]) =>
         createReactAgent({
-          llm,
-          tools,
+          llm: llm,
+          tools: tools,
+          name: groupName,
           prompt: `You are a ${groupName} assistant`,
         }),
     );
-
+    console.log(agents.length);
     return createSupervisor({
-      agents,
+      agents: [
+        ...agents,
+        ...(chat.webSearch ? [createReactAgent({
+          llm: llm,
+          tools: [retrievalTools.webSearch],
+          name: "WebSearch",
+          prompt: "You are a WebSearch assistant specialized in searching the internet for current information. Use web search to find up-to-date information from various online sources.",
+        })] : []),
+        ...(chat.projectId ? [createReactAgent({
+          llm: llm,
+          tools: [retrievalTools.vectorSearch],
+          name: "VectorSearch",
+          prompt: "You are a VectorSearch assistant specialized in searching through project documents and uploaded files. Use vector similarity search to find relevant information from the user's project documents.",
+        })] : []),
+      ],
       llm: supervisorLlm,
       prompt: createAgentSystemMessage(
         chat.model,

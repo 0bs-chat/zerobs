@@ -677,5 +677,5 @@ export default function App() {
 
 # General Guidelines (ALWAYS FOLLOW THESE)
 - use bun to install packages, never use npm/npx
-- DO NOT RUN `bun dev`, I am already ruuning the dev server
+- DO NOT RUN `bun dev`, I am already running the dev server
 - Whenever making an UI change, always use browsermcp screenshot tool to capture the screenshot of your changes, reflect on them and iterate till the actual goal is achieved. After a screenshot analyze and compare it to the component you made the change to and map each thing if present as intended order or not use <uiThought>thought process here....</uiThought>. Do not worry about the browser page/url as well, its already loaded in for you, all you have to do is directly take a screenshot

@@ -69,11 +69,11 @@ export const StreamingMessage = memo(() => {
     return (
       <PlanningStep
         message={message}
-        isStreaming={status === "streaming"}
+        isStreaming={streamData?.status === "streaming"}
         messageId={messageId}
       />
     );
-  }, [streamData?.completedSteps, langchainMessages, messageId, status]);
+  }, [streamData?.completedSteps, langchainMessages, messageId, streamData?.status]);
 
   // Regular streaming display (no planning mode)
   const regularContent = useMemo(() => {
@@ -88,11 +88,6 @@ export const StreamingMessage = memo(() => {
         ) : (
           <ToolMessage message={message!} />
         )}
-        {["streaming", "pending"].includes(status ?? "") && (
-          <div className="flex items-center gap-1">
-            <span className="inline-block w-2 h-4 bg-current animate-pulse" />
-          </div>
-        )}
       </div>
     ));
   }, [langchainMessages, messageId, streamData?.status]);
@@ -100,7 +95,14 @@ export const StreamingMessage = memo(() => {
   if (streamData?.chunkGroups.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-1">{planningSteps || regularContent}</div>
+    <>
+      <div className="flex flex-col gap-1">{planningSteps || regularContent}</div>
+      {["streaming", "pending"].includes(streamData?.status ?? "") && (
+        <div className="flex items-center gap-1">
+          <span className="inline-block w-2 h-4 bg-current animate-pulse" />
+        </div>
+      )}
+    </>
   );
 });
 

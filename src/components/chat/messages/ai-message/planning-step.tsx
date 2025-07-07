@@ -14,6 +14,9 @@ interface PlanningStepProps {
 export const PlanningStep = memo(
   ({ message, messageId, isStreaming }: PlanningStepProps) => {
     const [isMinimized, setIsMinimized] = useState(false);
+    
+    // Debug log to check streaming state
+    console.log('PlanningStep - isStreaming:', isStreaming, 'messageId:', messageId);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const stepsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -106,12 +109,12 @@ export const PlanningStep = memo(
 
     const streamingContainerClasses = isStreaming
       ? "bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30 p-0.5 animate-pulse"
-      : "border";
+      : "border bg-card";
 
     if (isMinimized) {
       return (
         <div
-          className={`border rounded-lg p-4 bg-card flex justify-between items-center ${streamingContainerClasses}`}
+          className={`rounded-lg p-4 flex justify-between items-center ${streamingContainerClasses}`}
         >
           <div className="text-sm font-semibold flex items-center gap-2">
             <div className="flex-shrink-0 w-5 h-5 bg-input rounded-full flex items-center justify-center">
@@ -134,8 +137,8 @@ export const PlanningStep = memo(
     }
 
     return (
-      <div className={`relative rounded-lg bg-card`}>
-        <div className="rounded-[7px] bg-card p-4 flex flex-row">
+      <div className={`relative rounded-lg ${streamingContainerClasses}`}>
+        <div className={`rounded-[7px] p-4 flex flex-row bg-card`}>
           <div className="flex flex-col w-1/3">
             <div className="text-sm font-semibold">DeepSearch</div>
             <Separator className="my-2" />
