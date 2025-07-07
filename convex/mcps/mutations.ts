@@ -42,15 +42,17 @@ export const create = mutation({
       env: envJwts,
       url: args.url,
       enabled: args.enabled ?? false,
-      status: "creating",
+      status: args.type === "http" ? "created" : "creating",
       restartOnNewChat: args.restartOnNewChat ?? false,
       userId: userId,
       updatedAt: Date.now(),
     });
 
-    await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
-      mcpId: newMCPId,
-    });
+    if (args.type !== "http") {
+      await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
+        mcpId: newMCPId,
+      });
+    }
 
     return newMCPId;
   },
@@ -92,13 +94,15 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    await ctx.runQuery(api.mcps.queries.get, {
+    const mcp = await ctx.runQuery(api.mcps.queries.get, {
       mcpId: args.mcpId,
     });
 
-    await ctx.scheduler.runAfter(0, internal.mcps.actions.remove, {
-      mcpId: args.mcpId,
-    });
+    if (mcp.type !== "http") {
+      await ctx.scheduler.runAfter(0, internal.mcps.actions.remove, {
+        mcpId: args.mcpId,
+      });
+    }
 
     await ctx.db.delete(args.mcpId);
 

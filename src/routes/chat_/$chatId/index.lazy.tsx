@@ -18,7 +18,7 @@ import {
   selectedArtifactAtom,
   sidebarOpenAtom,
 } from "@/store/chatStore";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
 
@@ -35,6 +35,7 @@ function RouteComponent() {
   const sidebarOpen = useAtomValue(sidebarOpenAtom);
   const setSidebarOpen = useSetAtom(sidebarOpenAtom);
   const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setSelectedArtifact(undefined);
@@ -53,10 +54,10 @@ function RouteComponent() {
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel className="flex flex-col gap-1 p-2 pt-4">
           <div className="flex-1 min-h-0">
-            <ChatMessages />
+            <ChatMessages scrollAreaRef={scrollAreaRef} />
           </div>
           <div className="flex-none">
-            <ChatInput />
+            <ChatInput scrollAreaRef={scrollAreaRef} />
           </div>
         </ResizablePanel>
         {resizePanelOpen && (

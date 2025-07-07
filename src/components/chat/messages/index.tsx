@@ -8,18 +8,24 @@ import {
   useStreamAtom,
 } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
-import { useEffect, useRef, useMemo, useCallback } from "react";
+import { useEffect, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessagesList } from "./messages";
 import { StreamingMessage } from "./streaming-message";
+import { useScroll } from "@/hooks/chats/use-scroll";
+import { type RefObject } from "react";
 
-export const ChatMessages = () => {
+export const ChatMessages = ({
+  scrollAreaRef,
+}: {
+  scrollAreaRef: RefObject<HTMLDivElement | null>;
+}) => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const chatId = params.chatId as Id<"chats">;
   const setGroupedMessagesAtom = useSetAtom(groupedMessagesAtom);
   const setLastChatMessageAtom = useSetAtom(lastChatMessageAtom);
   const setUseStreamAtom = useSetAtom(useStreamAtom);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { scrollToBottom } = useScroll(scrollAreaRef);
 
   const { groupedMessages, lastMessageId, navigateBranch, isLoading, isEmpty } =
     useMessages({ chatId });
@@ -29,12 +35,6 @@ export const ChatMessages = () => {
   setGroupedMessagesAtom(groupedMessages);
   setLastChatMessageAtom(lastMessageId);
   setUseStreamAtom(streamData);
-
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollIntoView({ behavior });
-    }
-  }, []);
 
   useEffect(() => {
     scrollToBottom("smooth");
@@ -64,13 +64,14 @@ export const ChatMessages = () => {
     }
 
     return (
-      <ScrollArea ref={scrollAreaRef} className="h-full">
+      <ScrollArea className="h-full">
         <div className="flex flex-col gap-1 p-1 max-w-4xl mx-auto">
           {groupedMessages.length > 0 && (
             <MessagesList navigateBranch={navigateBranch} />
           )}
 
           {streamData.chunkGroups.length > 0 && <StreamingMessage />}
+          <div ref={scrollAreaRef} />
         </div>
       </ScrollArea>
     );

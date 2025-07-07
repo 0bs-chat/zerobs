@@ -9,13 +9,20 @@ import { useAtom, useSetAtom } from "jotai";
 import { newChatAtom, selectedProjectIdAtom } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
 import { useParams } from "@tanstack/react-router";
 import type { Id } from "../../../../convex/_generated/dataModel";
+import { useScroll } from "@/hooks/chats/use-scroll";
+import { Button } from "@/components/ui/button";
+import { ArrowDown } from "lucide-react";
 
-export const ChatInput = () => {
+export const ChatInput = ({
+  scrollAreaRef,
+}: {
+  scrollAreaRef: RefObject<HTMLDivElement | null>;
+}) => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const chatId = params.chatId as Id<"chats">;
   const updateChatMutation = useMutation(api.chats.mutations.update);
@@ -23,6 +30,7 @@ export const ChatInput = () => {
   const [newChat, setNewChat] = useAtom(newChatAtom);
   const handleSubmit = useHandleSubmit();
   const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
+  const { scrollToBottom, isAtBottom } = useScroll(scrollAreaRef);
 
   const chat =
     useQuery(api.chats.queries.get, chatId !== "new" ? { chatId } : "skip") ??
@@ -31,11 +39,8 @@ export const ChatInput = () => {
   setSelectedProjectId(chat.projectId ?? undefined);
 
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.textArea.value = chat.text;
-      textareaRef.current.textArea.focus();
-    }
-  }, [chatId]);
+    textareaRef?.current?.textArea.focus();
+  }, [chatId, scrollToBottom]);
 
   // Debounced draft saving (separate from UI updates)
   const debouncedSaveDraft = useDebouncedCallback((text: string) => {
@@ -45,15 +50,19 @@ export const ChatInput = () => {
     });
   }, 300);
 
-  useEffect(() => {
-    setNewChat((prev) => ({
-      ...prev,
-      text: chat.text,
-    }));
-  }, [chatId]);
-
   return (
-    <div className="flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">
+    <div className="relative flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">
+      <Button
+        onClick={() => scrollToBottom("smooth")}
+        variant="outline"
+        size="sm"
+        className={`text-xs text-muted-foreground absolute top-0 right-1/2 -translate-y-10 translate-x-1/2 rounded-full ${
+          isAtBottom ? "hidden" : ""
+        }`}
+      >
+        <ArrowDown className="w-4 h-4" />
+        Scroll to bottom
+      </Button>
       {/* Document List */}
       <DocumentList documentIds={chat.documents} model={chat.model} />
 
@@ -86,16 +95,15 @@ export const ChatInput = () => {
               return;
             }
 
-            if (textareaRef.current) {
-              textareaRef.current.textArea.value = "";
+            if (textareaRef?.current) {
+              handleSubmit(chat, textareaRef);
             }
-            handleSubmit(chat);
           }
         }}
         placeholder="Type a message..."
       />
 
-      <ToolBar chat={chat} />
+      <ToolBar chat={chat} textareaRef={textareaRef} />
     </div>
   );
 };

@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useParams } from "@tanstack/react-router";
 import type { Doc, Id } from "../../../../../convex/_generated/dataModel";
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { getTagInfo } from "@/lib/helpers";
 import GitHubDialog from "../github";
 import { ConductorToggle } from "./conductorToggle";
@@ -37,8 +37,15 @@ import { models } from "../../../../../convex/langchain/models";
 import { ArtifactsToggle } from "./artifatsToggle";
 import { WebSearchToggle } from "./webSearchToggle";
 import { StopButtonIcon } from "./stop-button-icon";
+import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
 
-export const ToolBar = ({ chat }: { chat: Doc<"chats"> }) => {
+export const ToolBar = ({
+  chat,
+  textareaRef,
+}: {
+  chat: Doc<"chats">;
+  textareaRef?: RefObject<AutosizeTextAreaRef | null>;
+}) => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -192,7 +199,7 @@ export const ToolBar = ({ chat }: { chat: Doc<"chats"> }) => {
           size="icon"
           onClick={async () => {
             if (!["pending", "streaming"].includes(streamStatus ?? "")) {
-              await handleSubmit(chat);
+              await handleSubmit(chat, textareaRef);
             } else {
               await cancelStreamMutation({ chatId });
             }
