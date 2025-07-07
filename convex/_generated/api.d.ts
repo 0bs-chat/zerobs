@@ -8,7 +8,6 @@
  * @module
  */
 
-import type * as apiKeys_actions from "../apiKeys/actions.js";
 import type * as apiKeys_mutations from "../apiKeys/mutations.js";
 import type * as apiKeys_queries from "../apiKeys/queries.js";
 import type * as chatMessages_crud from "../chatMessages/crud.js";
@@ -65,7 +64,6 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  "apiKeys/actions": typeof apiKeys_actions;
   "apiKeys/mutations": typeof apiKeys_mutations;
   "apiKeys/queries": typeof apiKeys_queries;
   "chatMessages/crud": typeof chatMessages_crud;

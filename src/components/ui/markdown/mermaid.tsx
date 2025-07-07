@@ -41,6 +41,8 @@ export const MermaidChart = memo(
 
           mermaid.default.initialize({
             startOnLoad: false,
+            securityLevel: "loose",
+            suppressErrorRendering: true,
             theme: "base",
             themeVariables: {
               primaryColor: colors.primary,
@@ -73,7 +75,9 @@ export const MermaidChart = memo(
             chart,
           )
           setMermaidHTML(svg)
+          setError(null)
         } catch (err) {
+          setMermaidHTML(null)
           setError(
             err instanceof Error ? err.message : "Failed to render diagram",
           )

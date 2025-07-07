@@ -11,6 +11,7 @@ import {
   PaperclipIcon,
   GithubIcon,
   BrainIcon,
+  Hammer,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { useUploadDocuments } from "@/hooks/use-documents";
@@ -156,7 +157,7 @@ export const ToolBar = ({
             }
           }}
         >
-          <SelectTrigger>{selectedModel}</SelectTrigger>
+          <SelectTrigger>{selectedModelConfig?.label || selectedModel}</SelectTrigger>
           <SelectContent>
             {models?.map((model, index) => {
               if (model.hidden) return null;
@@ -170,23 +171,27 @@ export const ToolBar = ({
                 >
                   <div className="flex flex-col w-full gap-2">
                     <span className={`text-foreground`}>{model.label}</span>
-                    {model.modalities && (
-                      <div className="flex flex-row gap-1 ">
-                        {model.modalities?.map((modality) => {
-                          const { icon: Icon, className: IconClassName } =
-                            getTagInfo(modality);
-                          return (
-                            <Badge
-                              key={modality}
-                              className={`flex items-center gap-1 text-foreground bg-input/80`}
-                            >
-                              <Icon className={`h-3 w-3 ${IconClassName}`} />
-                              {modality}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <div className="flex flex-row gap-1 flex-wrap">
+                      {model.modalities?.map((modality) => {
+                        const { icon: Icon, className: IconClassName } =
+                          getTagInfo(modality);
+                        return (
+                          <Badge
+                            key={modality}
+                            className={`flex items-center gap-1 text-foreground bg-input/80`}
+                          >
+                            <Icon className={`h-3 w-3 ${IconClassName}`} />
+                            {modality}
+                          </Badge>
+                        );
+                      })}
+                      {model.toolSupport && (
+                        <Badge className={`flex items-center gap-1 text-foreground bg-input/80`}>
+                          <Hammer className="h-3 w-3" />
+                          Tools
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </SelectItem>
               );

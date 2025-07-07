@@ -5,6 +5,7 @@ import { useStream } from "@/hooks/chats/use-stream";
 import type { Artifact } from "@/components/artifacts/utils";
 import { groupMessages } from "../../convex/chatMessages/helpers";
 import type { ContentPart } from "@/components/artifacts/utils";
+import { parseContent } from "@/components/artifacts/utils";
 
 export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   _id: "new" as Id<"chats">,
@@ -62,6 +63,51 @@ export const streamStatusAtom = selectAtom(
   (stream) => stream?.status,
 );
 
-export const parsedArtifactsContentAtom = atom<ContentPart[] | undefined>(
-  undefined,
-);
+export const allArtifactsAtom = atom((get) => {
+  const artifacts: Artifact[] = [];
+
+  const groupedMessages = get(groupedMessagesAtom);
+  if (groupedMessages) {
+    groupedMessages.forEach((group) => {
+      group.response.forEach((responseMessage) => {
+        const msg = responseMessage.message.message;
+        if (msg.getType() === "ai") {
+          const content = msg.content;
+          if (typeof content === "string") {
+            const parts = parseContent(content, 0);
+            const messageArtifacts = parts
+              .filter(
+                (part): part is Extract<ContentPart, { type: "artifact" }> =>
+                  part.type === "artifact",
+              )
+              .map((part) => part.artifact);
+            artifacts.push(...messageArtifacts);
+          }
+        }
+      });
+    });
+  }
+
+  const streamData = get(useStreamAtom);
+  if (streamData?.chunkGroups) {
+    const streamContent = streamData.chunkGroups
+      .filter((g) => g.type === "ai")
+      .map((g) => (g.type === "ai" ? g.content : ""))
+      .join("");
+    const streamParts = parseContent(streamContent, 0);
+    const streamArtifacts = streamParts
+      .filter(
+        (part): part is Extract<ContentPart, { type: "artifact" }> =>
+          part.type === "artifact",
+      )
+      .map((part) => part.artifact);
+
+    streamArtifacts.forEach((sa) => {
+      if (!artifacts.find((a) => a.id === sa.id)) {
+        artifacts.push(sa);
+      }
+    });
+  }
+
+  return artifacts;
+});

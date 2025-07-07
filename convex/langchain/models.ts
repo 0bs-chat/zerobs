@@ -9,6 +9,7 @@ import {
   HumanMessage,
   type MessageContentComplex,
   type DataContentBlock,
+  ToolMessage,
 } from "@langchain/core/messages";
 import type { Doc, Id } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
@@ -145,6 +146,20 @@ export const models: {
       "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     usageRateMultiplier: 1.0,
   },
+  {
+    label: "Cypher Alpha",
+    model_name: "cypher-alpha",
+    model: "openrouter/cypher-alpha:free",
+    isThinking: true,
+    toolSupport: false,
+    provider: "openai",
+    modalities: ["text"],
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "Cypher Alpha is a stealth mode model that can be used to generate text.",
+    usageRateMultiplier: 0.0,
+  },
 ];
 
 export async function getModel(
@@ -160,13 +175,13 @@ export async function getModel(
 
   const OPENAI_API_KEY =
     (
-      await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
         key: "OPENAI_API_KEY",
       })
     )?.value ?? process.env.OPENAI_API_KEY;
   const OPENAI_BASE_URL =
     (
-      await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
         key: "OPENAI_BASE_URL",
       })
     )?.value ?? "https://openrouter.ai/api/v1";
@@ -193,7 +208,7 @@ export async function getEmbeddingModel(ctx: ActionCtx, model: string) {
 
   const API_KEY =
     (
-      await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
         key:
           modelConfig.provider === "google"
             ? "GOOGLE_EMBEDDING_API_KEY"
@@ -211,7 +226,7 @@ export async function getEmbeddingModel(ctx: ActionCtx, model: string) {
     });
   } else {
     const OPENAI_BASE_URL = (
-      await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
         key: "OPENAI_EMBEDDING_BASE_URL",
       })
     )?.value;
@@ -242,7 +257,7 @@ export async function formatMessages(
   // Process all messages in parallel
   const formattedMessages = await Promise.all(
     messages.map(async (message) => {
-      if (typeof message === typeof HumanMessage) {
+      if (message instanceof HumanMessage || message instanceof ToolMessage) {
         const content = message.content;
 
         // If content is a string, no processing needed
@@ -255,10 +270,6 @@ export async function formatMessages(
           // Process all content items in parallel
           const processedContent = await Promise.all(
             content.map(async (contentItem) => {
-              if (typeof contentItem === "string") {
-                return contentItem;
-              }
-
               if (typeof contentItem === "object") {
                 if (contentItem.type === "file" && "file" in contentItem) {
                   const documentId = contentItem.file?.file_id;
@@ -311,7 +322,7 @@ export async function formatMessages(
                       return await getVectorText(ctx, document);
                     }
                   } else if (["text", "github"].includes(document.type)) {
-                    const blob = await ctx.storage.get(document.key);
+                    const blob = await ctx.storage.get(document.key as Id<"_storage">);
                     return {
                       type: "text",
                       text: `# ${document.name}\n${blob?.text()}\n`,

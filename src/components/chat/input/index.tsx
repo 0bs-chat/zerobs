@@ -9,7 +9,7 @@ import { useAtom, useSetAtom } from "jotai";
 import { newChatAtom, selectedProjectIdAtom } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
 import { useParams } from "@tanstack/react-router";
@@ -18,11 +18,7 @@ import { useScroll } from "@/hooks/chats/use-scroll";
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
 
-export const ChatInput = ({
-  scrollAreaRef,
-}: {
-  scrollAreaRef: RefObject<HTMLDivElement | null>;
-}) => {
+export const ChatInput = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const chatId = params.chatId as Id<"chats">;
   const updateChatMutation = useMutation(api.chats.mutations.update);
@@ -30,7 +26,7 @@ export const ChatInput = ({
   const [newChat, setNewChat] = useAtom(newChatAtom);
   const handleSubmit = useHandleSubmit();
   const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
-  const { scrollToBottom, isAtBottom } = useScroll(scrollAreaRef);
+  const { scrollToBottom, isAtBottom } = useScroll();
 
   const chat =
     useQuery(api.chats.queries.get, chatId !== "new" ? { chatId } : "skip") ??
@@ -40,7 +36,7 @@ export const ChatInput = ({
 
   useEffect(() => {
     textareaRef?.current?.textArea.focus();
-  }, [chatId, scrollToBottom]);
+  }, [chatId]);
 
   // Debounced draft saving (separate from UI updates)
   const debouncedSaveDraft = useDebouncedCallback((text: string) => {
@@ -52,17 +48,18 @@ export const ChatInput = ({
 
   return (
     <div className="relative flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">
-      <Button
-        onClick={() => scrollToBottom("smooth")}
-        variant="outline"
-        size="sm"
-        className={`text-xs text-muted-foreground absolute top-0 right-1/2 -translate-y-10 translate-x-1/2 rounded-full ${
-          isAtBottom ? "hidden" : ""
-        }`}
-      >
-        <ArrowDown className="w-4 h-4" />
-        Scroll to bottom
-      </Button>
+      {!isAtBottom && (
+        <Button
+          onClick={() => scrollToBottom("smooth")}
+          variant="outline"
+          size="sm"
+          className="text-xs text-muted-foreground absolute top-0 right-1/2 -translate-y-10 translate-x-1/2 rounded-full"
+        >
+          <ArrowDown className="w-4 h-4" />
+          Scroll to bottom
+        </Button>
+      )}
+      
       {/* Document List */}
       <DocumentList documentIds={chat.documents} model={chat.model} />
 

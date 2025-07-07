@@ -21,21 +21,6 @@ import {
 import { useAtomValue } from "jotai";
 import { themeAtom } from "@/store/settings";
 
-const PREVIEW_ENABLED_TYPES: Artifact["type"][] = [
-  "application/vnd.ant.react",
-  "text/html",
-  "text/markdown",
-  "image/svg+xml",
-  "application/vnd.ant.mermaid",
-];
-const hasPreview = (artifact: Artifact) =>
-  PREVIEW_ENABLED_TYPES.includes(artifact.type);
-
-interface ArtifactViewerProps {
-  artifact: Artifact;
-  onClose: () => void;
-}
-
 const prepareReactCode = (code: string): string => {
   const withoutImports = code.replace(
     /import\s+(?:React(?:,\s*)?)?(?:\{[^}]*\})?\s+from\s+['"]react['"];?/g,
@@ -200,7 +185,7 @@ const SVGRenderer = ({ content }: { content: string }) => {
 
 const MarkdownRenderer = ({ content }: { content: string }) => {
   return (
-    <div className="border p-4 bg-background">
+    <div className="h-full border px-1 bg-background overflow-y-auto">
       <Markdown content={content} id={`artifact-${Date.now()}`} />
     </div>
   );
@@ -218,7 +203,7 @@ const renderArtifactContent = (
   artifact: Artifact,
   view: "preview" | "source",
 ) => {
-  if (view === "source" && hasPreview(artifact)) {
+  if (view === "source" && artifact.type !== "application/vnd.ant.code") {
     let language = artifact.language;
     if (!language) {
       switch (artifact.type) {
@@ -258,16 +243,19 @@ const renderArtifactContent = (
     case "application/vnd.ant.mermaid":
       return <MermaidRenderer content={artifact.content} />;
     default:
-      return <CodeRenderer content={artifact.content} language="text" />;
+      return <MarkdownRenderer content={artifact.content} />;
   }
 };
 
-export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
+export const ArtifactViewer = ({ artifact, onClose }: {
+  artifact: Artifact;
+  onClose: () => void;
+}) => {
   const { copy, copied } = useCopy({ duration: 500 });
   const [view, setView] = useState<"preview" | "source">("preview");
 
   useEffect(() => {
-    if (!hasPreview(artifact)) {
+    if (artifact.type === "application/vnd.ant.code") {
       setView("source");
     } else {
       setView("preview");
@@ -295,7 +283,7 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
         <h2 className="text-lg font-semibold">{artifact.title}</h2>
 
         <div className="flex items-center gap-1">
-          {hasPreview(artifact) && (
+          {artifact.type !== "application/vnd.ant.code" && (
             <Tabs
               value={view}
               onValueChange={(v) => setView(v as "preview" | "source")}

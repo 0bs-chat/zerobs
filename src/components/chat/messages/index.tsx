@@ -8,24 +8,20 @@ import {
   useStreamAtom,
 } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessagesList } from "./messages";
 import { StreamingMessage } from "./streaming-message";
 import { useScroll } from "@/hooks/chats/use-scroll";
-import { type RefObject } from "react";
 
-export const ChatMessages = ({
-  scrollAreaRef,
-}: {
-  scrollAreaRef: RefObject<HTMLDivElement | null>;
-}) => {
+export const ChatMessages = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
   const chatId = params.chatId as Id<"chats">;
   const setGroupedMessagesAtom = useSetAtom(groupedMessagesAtom);
   const setLastChatMessageAtom = useSetAtom(lastChatMessageAtom);
   const setUseStreamAtom = useSetAtom(useStreamAtom);
-  const { scrollToBottom } = useScroll(scrollAreaRef);
+  const { scrollToBottom, shouldAutoScroll } = useScroll();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const { groupedMessages, lastMessageId, navigateBranch, isLoading, isEmpty } =
     useMessages({ chatId });
@@ -36,10 +32,21 @@ export const ChatMessages = ({
   setLastChatMessageAtom(lastMessageId);
   setUseStreamAtom(streamData);
 
+  // Auto-scroll during streaming only if user hasn't scrolled away
   useEffect(() => {
-    scrollToBottom("smooth");
-  }, [groupedMessages.length, streamData.chunkGroups.length, scrollToBottom]);
+    if (shouldAutoScroll && streamData.chunkGroups.length > 0) {
+      scrollToBottom("smooth");
+    }
+  }, [streamData.chunkGroups.length, shouldAutoScroll, scrollToBottom]);
 
+  // Auto-scroll when new messages arrive (non-streaming)
+  useEffect(() => {
+    if (shouldAutoScroll && groupedMessages.length > 0) {
+      scrollToBottom("smooth");
+    }
+  }, [groupedMessages.length, shouldAutoScroll, scrollToBottom]);
+
+  // Initial scroll to bottom when chat loads
   useEffect(() => {
     if (!isEmpty && !isLoading) {
       scrollToBottom("auto");

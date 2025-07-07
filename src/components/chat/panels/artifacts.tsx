@@ -1,12 +1,12 @@
 import React from "react";
 import { useAtom, useAtomValue } from "jotai";
 import {
-  parsedArtifactsContentAtom,
+  allArtifactsAtom,
   selectedArtifactAtom,
 } from "@/store/chatStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArtifactViewer } from "../../artifacts/viewer";
-import type { Artifact, ContentPart } from "../../artifacts/utils";
+import type { Artifact } from "../../artifacts/utils";
 import { ArtifactCard } from "../../artifacts/card";
 
 const ArtifactsList = ({ artifacts }: { artifacts: Artifact[] }) => {
@@ -40,16 +40,7 @@ const ArtifactsList = ({ artifacts }: { artifacts: Artifact[] }) => {
 
 export const ArtifactsPanel = () => {
   const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
-  const parsedArtifactsContent = useAtomValue(parsedArtifactsContentAtom);
-  const allArtifacts = React.useMemo(() => {
-    if (!parsedArtifactsContent) return [];
-    return parsedArtifactsContent
-      .filter(
-        (part): part is Extract<ContentPart, { type: "artifact" }> =>
-          part.type === "artifact",
-      )
-      .map((part) => part.artifact);
-  }, [parsedArtifactsContent]);
+  const allArtifacts = useAtomValue(allArtifactsAtom);
 
   const artifactToView = React.useMemo(() => {
     if (!selectedArtifact) return null;

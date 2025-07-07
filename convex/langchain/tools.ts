@@ -152,7 +152,7 @@ export const getRetrievalTools = async (
     }) => {
       const EXA_API_KEY =
         (
-          await config.ctx.runQuery(api.apiKeys.queries.getFromKey, {
+          await config.ctx.runQuery(internal.apiKeys.queries.getFromKey, {
             key: "EXA_API_KEY",
           })
         )?.value ??

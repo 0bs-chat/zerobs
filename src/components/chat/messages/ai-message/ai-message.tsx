@@ -4,8 +4,6 @@ import { ToolMessage } from "./tool-message";
 import { Markdown } from "@/components/ui/markdown";
 import { parseContent, type ContentPart } from "../../../artifacts/utils";
 import { ArtifactCard } from "../../../artifacts/card";
-import { useSetAtom } from "jotai";
-import { parsedArtifactsContentAtom } from "@/store/chatStore";
 import type { BaseMessage } from "@langchain/core/messages";
 
 interface AiMessageContentProps {
@@ -18,7 +16,6 @@ interface AiMessageContentProps {
 export const AiMessageContent = memo(
   ({ message, messageId, className, isStreaming }: AiMessageContentProps) => {
     const type = message?.getType?.();
-    const setParsedArtifactsContent = useSetAtom(parsedArtifactsContentAtom);
 
     const content = message?.content ?? "";
     const reasoning = message?.additional_kwargs?.reasoning_content as
@@ -31,9 +28,8 @@ export const AiMessageContent = memo(
         return [];
       }
       const parsed = parseContent(content as string, 0);
-      setParsedArtifactsContent(parsed);
       return parsed;
-    }, [content, type, setParsedArtifactsContent]);
+    }, [content, type]);
 
     // Memoize the content rendering to avoid unnecessary re-renders
     const renderedContent = useMemo(() => {
