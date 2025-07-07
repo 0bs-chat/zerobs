@@ -120,6 +120,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^4.3.4",
     "cheerio": "^1.1.0",
+    "clipboardy": "^4.0.0",
     "jsdom": "^26.1.0",
     "rollup-plugin-visualizer": "^6.0.3",
     "typescript": "^5.7.2",

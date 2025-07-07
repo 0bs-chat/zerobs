@@ -1,175 +1,94 @@
 import { exportJWK, exportPKCS8, generateKeyPair } from "jose";
-import { execSync } from "child_process";
-import readline from "readline";
+import clipboardy from "clipboardy";
 
-function runCommand(command, message, ignoreError = false) {
-  console.log(message);
+async function generateJWTKeys() {
+  console.log("🔑 Generating JWT keys...");
+  
   try {
-    execSync(command, { stdio: "inherit" });
-    console.log("✔️ Command executed successfully.");
-  } catch (error) {
-    if (!ignoreError) {
-      console.error(`❌ Error executing command: ${command}`);
-      console.error(error.message);
-      process.exit(1);
-    } else {
-      console.warn(`⚠️ Command failed, but continuing: ${command}`);
-      console.warn(error.message);
-    }
-  }
-}
-
-async function askQuestion(query, optional = false, defaultValue = "") {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  return new Promise((resolve) => {
-    let prompt = query;
-    if (defaultValue) {
-      prompt += ` (default: ${defaultValue})`;
-    }
-    if (optional) {
-      prompt += " (optional)";
-    }
-    prompt += ": ";
-
-    rl.question(prompt, (answer) => {
-      rl.close();
-      resolve(answer.trim() === "" ? defaultValue : answer.trim());
+    // Generate RSA key pair
+    const keys = await generateKeyPair("RS256", {
+      extractable: true,
     });
-  });
-}
-
-async function collectEnvironmentVariables() {
-  console.log("\n--- Please provide the following environment variables ---");
-
-  /** @type {RequiredEnvVar[]} */
-  const requiredVars = [
-    { name: "FLY_API_TOKEN", prompt: "Enter FLY_API_TOKEN" },
-    { name: "AUTH_GITHUB_REPO_ID", prompt: "Enter AUTH_GITHUB_REPO_ID" },
-    {
-      name: "AUTH_GITHUB_REPO_SECRET",
-      prompt: "Enter AUTH_GITHUB_REPO_SECRET",
-    },
-  ];
-
-  /** @type {OptionalEnvVar[]} */
-  const optionalVars = [
-    { name: "AUTH_GITHUB_ID", prompt: "Enter AUTH_GITHUB_ID" },
-    { name: "AUTH_GITHUB_SECRET", prompt: "Enter AUTH_GITHUB_SECRET" },
-    { name: "OPENAI_API_KEY", prompt: "Enter OPENAI_API_KEY" },
-    { name: "GOOGLE_API_KEY", prompt: "Enter GOOGLE_API_KEY" },
-    { name: "ANTHROPIC_API_KEY", prompt: "Enter ANTHROPIC_API_KEY" },
-    { name: "TAVILY_API_KEY", prompt: "Enter TAVILY_API_KEY" },
-    { name: "LANGSMITH_API_KEY", prompt: "Enter LANGSMITH_API_KEY" },
-    { name: "LANGSMITH_ENDPOINT", prompt: "Enter LANGSMITH_ENDPOINT" },
-    { name: "LANGSMITH_PROJECT", prompt: "Enter LANGSMITH_PROJECT" },
-    { name: "LANGSMITH_TRACING", prompt: "Enter LANGSMITH_TRACING" },
-    {
-      name: "SITE_URL",
-      prompt: "Enter SITE_URL for your application",
-      defaultValue: "http://localhost:3000",
-    },
-    { name: "SERVICE_PASSWORD", prompt: "Enter SERVICE_PASSWORD" },
-    {
-      name: "CRAWLER_URL",
-      prompt: "Enter CRAWLER_URL",
-      defaultValue: "http://127.0.0.1:7860",
-    },
-    {
-      name: "DOC_PROCESSOR_URL",
-      prompt: "Enter DOC_PROCESSOR_URL",
-      defaultValue: "http://127.0.0.1:7861",
-    },
-  ];
-
-  const envVars = {};
-
-  for (const { name, prompt } of requiredVars) {
-    const value = await askQuestion(prompt);
-    if (!value) {
-      console.error(`Error: ${name} is a required environment variable.`);
-      process.exit(1);
+    
+    // Export private key in PKCS8 format
+    const privateKeyPem = await exportPKCS8(keys.privateKey);
+    
+    // Format private key for environment variable (single line)
+    const privateKeyFormatted = privateKeyPem
+      .trimEnd()
+      .replace(/\n/g, " ");
+    
+    // Export public key as JWK
+    const publicKeyJwk = await exportJWK(keys.publicKey);
+    
+    // Create JWKS (JSON Web Key Set)
+    const jwks = JSON.stringify({ 
+      keys: [{ 
+        use: "sig", 
+        ...publicKeyJwk 
+      }] 
+    });
+    
+    // Print the keys
+    console.log("\n" + "=".repeat(80));
+    console.log("🔐 GENERATED JWT KEYS");
+    console.log("=".repeat(80));
+    
+    console.log("\n📋 JWT_PRIVATE_KEY:");
+    console.log("-".repeat(50));
+    console.log(privateKeyFormatted);
+    
+    console.log("\n📋 JWKS:");
+    console.log("-".repeat(50));
+    console.log(jwks);
+    
+    console.log("\n📋 JWKS (Pretty formatted):");
+    console.log("-".repeat(50));
+    console.log(JSON.stringify(JSON.parse(jwks), null, 2));
+    
+    // Copy to clipboard
+    const clipboardContent = `JWT_PRIVATE_KEY="${privateKeyFormatted}"\n\nJWKS='${jwks}'`;
+    
+    try {
+      await clipboardy.write(clipboardContent);
+      console.log("\n✅ Keys copied to clipboard!");
+      console.log("📋 Clipboard contains both JWT_PRIVATE_KEY and JWKS ready for use");
+    } catch (clipboardError) {
+      console.log("\n⚠️  Could not copy to clipboard automatically.");
+      console.log("💡 You can manually copy the keys above.");
     }
-    envVars[name] = value;
+    
+    console.log("\n" + "=".repeat(80));
+    console.log("🎉 Key generation complete!");
+    console.log("=".repeat(80));
+    
+    return {
+      privateKey: privateKeyFormatted,
+      jwks: jwks,
+      publicKey: publicKeyJwk
+    };
+    
+  } catch (error) {
+    console.error("❌ Error generating JWT keys:", error);
+    throw error;
   }
-
-  for (const { name, prompt, defaultValue } of optionalVars) {
-    const value = await askQuestion(prompt, true, defaultValue);
-    if (value) {
-      envVars[name] = value;
-    }
-  }
-
-  return envVars;
-}
-
-function setConvexEnvironmentVariables(envVars, jwtPrivateKey, jwks) {
-  console.log("\n--- Setting Convex environment variables ---");
-
-  const baseConvexCommands = [
-    `bunx convex env set JWT_PRIVATE_KEY="${jwtPrivateKey}"`,
-    `bunx convex env set JWKS='${jwks}'`,
-  ];
-
-  const dynamicConvexCommands = Object.entries(envVars).map(([key, value]) => {
-    // Escape single quotes for JWKS if it contains them (though JSON.stringify handles this usually)
-    const formattedValue =
-      key === "JWKS" ? `'${value.replace(/'/g, "\\'")}'` : `"${value}"`;
-    return `bunx convex env set ${key}=${formattedValue}`;
-  });
-
-  const allConvexCommands = [...baseConvexCommands, ...dynamicConvexCommands];
-
-  for (const command of allConvexCommands) {
-    const varNameMatch = command.match(/env set ([A-Z_]+)=/);
-    const varName = varNameMatch ? varNameMatch[1] : "an environment variable";
-    runCommand(command, `Setting ${varName}...`);
-  }
-
-  console.log("✅ Convex environment variables set successfully.");
-}
-
-async function setupConvex() {
-  console.log("🚀 Starting Convex environment setup...");
-
-  const keys = await generateKeyPair("RS256", {
-    extractable: true,
-  });
-  // The private key needs to be trimmed and newlines replaced for shell command compatibility.
-  const privateKey = (await exportPKCS8(keys.privateKey))
-    .trimEnd()
-    .replace(/\n/g, " ");
-  const publicKey = await exportJWK(keys.publicKey);
-  const jwks = JSON.stringify({ keys: [{ use: "sig", ...publicKey }] });
-
-  const collectedEnvVars = await collectEnvironmentVariables();
-
-  // Add the internally generated keys to the collected variables for setting
-  const allEnvVarsToSet = {
-    ...collectedEnvVars,
-    JWT_PRIVATE_KEY: privateKey,
-    JWKS: jwks,
-  };
-
-  setConvexEnvironmentVariables(
-    allEnvVarsToSet,
-    allEnvVarsToSet.JWT_PRIVATE_KEY, // Pass specific values for clarity if needed, though they are in allEnvVarsToSet
-    allEnvVarsToSet.JWKS,
-  );
-
-  console.log("\n🎉 Convex setup complete!");
 }
 
 async function main() {
-  await setupConvex();
-
-  console.log("\nAll setup tasks finished!");
+  try {
+    const keys = await generateJWTKeys();
+    
+    // Optional: Show usage instructions
+    console.log("\n📖 Usage Instructions:");
+    console.log("• Use JWT_PRIVATE_KEY in your environment variables");
+    console.log("• Use JWKS for your JSON Web Key Set endpoint");
+    console.log("• The keys are now in your clipboard for easy pasting");
+    
+  } catch (error) {
+    console.error("An error occurred:", error);
+    process.exit(1);
+  }
 }
 
-main().catch((error) => {
-  console.error("An unexpected error occurred:", error);
-  process.exit(1);
-});
+// Run the script
+main();

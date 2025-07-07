@@ -8,87 +8,85 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router'
 
-import { Route as rootRouteImport } from "./routes/__root";
+import { Route as rootRouteImport } from './routes/__root'
 
-const IndexLazyRouteImport = createFileRoute("/")();
-const LandingIndexLazyRouteImport = createFileRoute("/landing/")();
-const ChatChatIdIndexLazyRouteImport = createFileRoute("/chat_/$chatId/")();
+const IndexLazyRouteImport = createFileRoute('/')()
+const LandingIndexLazyRouteImport = createFileRoute('/landing/')()
+const ChatChatIdIndexLazyRouteImport = createFileRoute('/chat_/$chatId/')()
 
 const IndexLazyRoute = IndexLazyRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import("./routes/index.lazy").then((d) => d.Route));
+} as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
 const LandingIndexLazyRoute = LandingIndexLazyRouteImport.update({
-  id: "/landing/",
-  path: "/landing/",
+  id: '/landing/',
+  path: '/landing/',
   getParentRoute: () => rootRouteImport,
-} as any).lazy(() =>
-  import("./routes/landing/index.lazy").then((d) => d.Route),
-);
+} as any).lazy(() => import('./routes/landing/index.lazy').then((d) => d.Route))
 const ChatChatIdIndexLazyRoute = ChatChatIdIndexLazyRouteImport.update({
-  id: "/chat_/$chatId/",
-  path: "/chat/$chatId/",
+  id: '/chat_/$chatId/',
+  path: '/chat/$chatId/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
-  import("./routes/chat_/$chatId/index.lazy").then((d) => d.Route),
-);
+  import('./routes/chat_/$chatId/index.lazy').then((d) => d.Route),
+)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexLazyRoute;
-  "/landing": typeof LandingIndexLazyRoute;
-  "/chat/$chatId": typeof ChatChatIdIndexLazyRoute;
+  '/': typeof IndexLazyRoute
+  '/landing': typeof LandingIndexLazyRoute
+  '/chat/$chatId': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexLazyRoute;
-  "/landing": typeof LandingIndexLazyRoute;
-  "/chat/$chatId": typeof ChatChatIdIndexLazyRoute;
+  '/': typeof IndexLazyRoute
+  '/landing': typeof LandingIndexLazyRoute
+  '/chat/$chatId': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexLazyRoute;
-  "/landing/": typeof LandingIndexLazyRoute;
-  "/chat_/$chatId/": typeof ChatChatIdIndexLazyRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexLazyRoute
+  '/landing/': typeof LandingIndexLazyRoute
+  '/chat_/$chatId/': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/landing" | "/chat/$chatId";
-  fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/landing" | "/chat/$chatId";
-  id: "__root__" | "/" | "/landing/" | "/chat_/$chatId/";
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/landing' | '/chat/$chatId'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/landing' | '/chat/$chatId'
+  id: '__root__' | '/' | '/landing/' | '/chat_/$chatId/'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexLazyRoute: typeof IndexLazyRoute;
-  LandingIndexLazyRoute: typeof LandingIndexLazyRoute;
-  ChatChatIdIndexLazyRoute: typeof ChatChatIdIndexLazyRoute;
+  IndexLazyRoute: typeof IndexLazyRoute
+  LandingIndexLazyRoute: typeof LandingIndexLazyRoute
+  ChatChatIdIndexLazyRoute: typeof ChatChatIdIndexLazyRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexLazyRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/landing/": {
-      id: "/landing/";
-      path: "/landing";
-      fullPath: "/landing";
-      preLoaderRoute: typeof LandingIndexLazyRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/chat_/$chatId/": {
-      id: "/chat_/$chatId/";
-      path: "/chat/$chatId";
-      fullPath: "/chat/$chatId";
-      preLoaderRoute: typeof ChatChatIdIndexLazyRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/landing/': {
+      id: '/landing/'
+      path: '/landing'
+      fullPath: '/landing'
+      preLoaderRoute: typeof LandingIndexLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat_/$chatId/': {
+      id: '/chat_/$chatId/'
+      path: '/chat/$chatId'
+      fullPath: '/chat/$chatId'
+      preLoaderRoute: typeof ChatChatIdIndexLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -96,7 +94,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
   LandingIndexLazyRoute: LandingIndexLazyRoute,
   ChatChatIdIndexLazyRoute: ChatChatIdIndexLazyRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
