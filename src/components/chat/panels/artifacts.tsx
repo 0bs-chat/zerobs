@@ -1,9 +1,6 @@
 import React from "react";
 import { useAtom, useAtomValue } from "jotai";
-import {
-  allArtifactsAtom,
-  selectedArtifactAtom,
-} from "@/store/chatStore";
+import { allArtifactsAtom, selectedArtifactAtom } from "@/store/chatStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArtifactViewer } from "../../artifacts/viewer";
 import type { Artifact } from "../../artifacts/utils";

@@ -59,7 +59,7 @@ export const ChatInput = () => {
           Scroll to bottom
         </Button>
       )}
-      
+
       {/* Document List */}
       <DocumentList documentIds={chat.documents} model={chat.model} />
 

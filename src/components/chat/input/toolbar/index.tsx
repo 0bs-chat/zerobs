@@ -157,7 +157,9 @@ export const ToolBar = ({
             }
           }}
         >
-          <SelectTrigger>{selectedModelConfig?.label || selectedModel}</SelectTrigger>
+          <SelectTrigger>
+            {selectedModelConfig?.label || selectedModel}
+          </SelectTrigger>
           <SelectContent>
             {models?.map((model, index) => {
               if (model.hidden) return null;
@@ -186,7 +188,9 @@ export const ToolBar = ({
                         );
                       })}
                       {model.toolSupport && (
-                        <Badge className={`flex items-center gap-1 text-foreground bg-input/80`}>
+                        <Badge
+                          className={`flex items-center gap-1 text-foreground bg-input/80`}
+                        >
                           <Hammer className="h-3 w-3" />
                           Tools
                         </Badge>

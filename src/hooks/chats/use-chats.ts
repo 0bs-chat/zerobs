@@ -38,6 +38,7 @@ export const useHandleSubmit = () => {
         orchestratorMode: false,
         webSearch: false,
         artifacts: false,
+        conductorMode: false,
       }));
       chat._id = await createChatMutation({
         name: chat.name,
@@ -134,6 +135,7 @@ export const chatHandlers = () => {
   const navigate = useNavigate();
   const updateChat = useMutation(api.chats.mutations.update);
   const removeChat = useMutation(api.chats.mutations.remove);
+  const params = useParams({ strict: false });
 
   const handleNavigate = (chatId: string) => {
     navigate({
@@ -166,11 +168,14 @@ export const chatHandlers = () => {
   };
 
   const handleDelete = async (chatId: string) => {
-    await removeChat({ chatId: chatId as Id<"chats"> });
-    const params = useParams({ from: "/chat_/$chatId/" });
     if (params.chatId === chatId) {
-      navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
+      navigate({
+        to: "/chat/$chatId",
+        params: { chatId: "new" },
+        replace: true,
+      });
     }
+    await removeChat({ chatId: chatId as Id<"chats"> });
     toast.success("Chat deleted");
   };
 

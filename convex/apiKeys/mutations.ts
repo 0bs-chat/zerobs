@@ -2,7 +2,7 @@ import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { createJwt } from "../utils/encryption";
-import { api, internal } from "../_generated/api";
+import { internal } from "../_generated/api";
 
 export const create = mutation({
   args: {

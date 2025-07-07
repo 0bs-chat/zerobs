@@ -9,7 +9,6 @@ import { SearchResultDisplay, type SearchResult } from "./search-results";
 import { DocumentResultDisplay, type DocumentResult } from "./document-results";
 import type { BaseMessage } from "@langchain/core/messages";
 import { FileDisplay } from "./file-result";
-import type { Id } from "../../../../../../convex/_generated/dataModel";
 
 interface ToolMessageProps {
   message: BaseMessage;
@@ -46,9 +45,9 @@ export const ToolMessage = memo(({ message }: ToolMessageProps) => {
       const parsed = JSON.parse(message.content as string);
       if (Array.isArray(parsed)) {
         const hasFileAndText = parsed.some(
-          (item) => 
-            (item.type === "file" && item.file?.file_id) || 
-            (item.type === "text" && item.text)
+          (item) =>
+            (item.type === "file" && item.file?.file_id) ||
+            (item.type === "text" && item.text),
         );
         if (hasFileAndText) {
           return { type: "mixed" as const, content: parsed };
@@ -92,7 +91,10 @@ export const ToolMessage = memo(({ message }: ToolMessageProps) => {
                 }
                 if (item.type === "text" && item.text) {
                   return (
-                    <pre key={index} className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+                    <pre
+                      key={index}
+                      className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap"
+                    >
                       {item.text}
                     </pre>
                   );

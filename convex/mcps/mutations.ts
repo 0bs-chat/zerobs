@@ -22,7 +22,11 @@ export const create = mutation({
       throw new Error("Command is required for stdio type");
     } else if (args.type === "http" && !args.url) {
       throw new Error("URL is required for http type");
-    } else if (args.type === "docker" && !args.dockerImage && !args.dockerPort) {
+    } else if (
+      args.type === "docker" &&
+      !args.dockerImage &&
+      !args.dockerPort
+    ) {
       throw new Error("Docker image and port are required for docker type");
     }
 

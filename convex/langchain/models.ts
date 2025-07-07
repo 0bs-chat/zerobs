@@ -322,7 +322,9 @@ export async function formatMessages(
                       return await getVectorText(ctx, document);
                     }
                   } else if (["text", "github"].includes(document.type)) {
-                    const blob = await ctx.storage.get(document.key as Id<"_storage">);
+                    const blob = await ctx.storage.get(
+                      document.key as Id<"_storage">,
+                    );
                     return {
                       type: "text",
                       text: `# ${document.name}\n${blob?.text()}\n`,

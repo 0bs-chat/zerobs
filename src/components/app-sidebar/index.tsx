@@ -66,11 +66,11 @@ export function AppSidebar() {
 
   // Determine whether to show search results or regular chat lists
   const isSearching = searchQuery.trim().length > 0;
-  const searchPinnedChats = isSearching 
-    ? searchResults.filter((chat) => chat.pinned) 
+  const searchPinnedChats = isSearching
+    ? searchResults.filter((chat) => chat.pinned)
     : [];
-  const searchHistoryChats = isSearching 
-    ? searchResults.filter((chat) => !chat.pinned) 
+  const searchHistoryChats = isSearching
+    ? searchResults.filter((chat) => !chat.pinned)
     : [];
 
   const displayPinnedChats = isSearching ? searchPinnedChats : pinnedChats;
@@ -156,7 +156,9 @@ export function AppSidebar() {
                 )}
                 {displayHistoryChats.length === 0 && (
                   <div className="text-sm text-muted-foreground text-center py-2">
-                    {isSearching ? "No matching chats found" : "No chat history"}
+                    {isSearching
+                      ? "No matching chats found"
+                      : "No chat history"}
                   </div>
                 )}
               </div>

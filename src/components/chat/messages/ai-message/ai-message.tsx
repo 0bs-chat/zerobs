@@ -63,7 +63,11 @@ export const AiMessageContent = memo(
       if (type === "ai") {
         return (
           <>
-            <Reasoning reasoning={reasoning} messageId={messageId} isStreaming={isStreaming} />
+            <Reasoning
+              reasoning={reasoning}
+              messageId={messageId}
+              isStreaming={isStreaming}
+            />
             <div className={className}>{renderedContent}</div>
           </>
         );

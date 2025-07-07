@@ -247,7 +247,10 @@ const renderArtifactContent = (
   }
 };
 
-export const ArtifactViewer = ({ artifact, onClose }: {
+export const ArtifactViewer = ({
+  artifact,
+  onClose,
+}: {
   artifact: Artifact;
   onClose: () => void;
 }) => {

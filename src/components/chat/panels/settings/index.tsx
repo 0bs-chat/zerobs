@@ -3,7 +3,13 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { SaveIcon, TrashIcon, SettingsIcon, GlobeIcon } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
@@ -23,10 +29,16 @@ export const SettingsPanel = () => {
   const removeApiKey = useMutation(api.apiKeys.mutations.remove);
 
   // Find existing keys
-  const existingOpenAIKey = existingKeys?.find(key => key.key === "OPENAI_API_KEY");
-  const existingExaKey = existingKeys?.find(key => key.key === "EXA_API_KEY");
-  const existingOpenAIBaseUrl = existingKeys?.find(key => key.key === "OPENAI_BASE_URL");
-  const existingOpenAIEmbeddingBaseUrl = existingKeys?.find(key => key.key === "OPENAI_EMBEDDING_BASE_URL");
+  const existingOpenAIKey = existingKeys?.find(
+    (key) => key.key === "OPENAI_API_KEY",
+  );
+  const existingExaKey = existingKeys?.find((key) => key.key === "EXA_API_KEY");
+  const existingOpenAIBaseUrl = existingKeys?.find(
+    (key) => key.key === "OPENAI_BASE_URL",
+  );
+  const existingOpenAIEmbeddingBaseUrl = existingKeys?.find(
+    (key) => key.key === "OPENAI_EMBEDDING_BASE_URL",
+  );
 
   const handleSaveOpenAIKey = async () => {
     if (!openAIKey.trim()) {
@@ -158,7 +170,7 @@ export const SettingsPanel = () => {
     onSave: () => void,
     onRemove: () => void,
     placeholder: string,
-    isPassword: boolean = false
+    isPassword: boolean = false,
   ) => (
     <Card>
       <CardHeader>
@@ -177,11 +189,7 @@ export const SettingsPanel = () => {
                 {isPassword ? maskKey(currentValue) : currentValue}
               </span>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRemove}
-            >
+            <Button variant="ghost" size="sm" onClick={onRemove}>
               <TrashIcon className="h-4 w-4" />
             </Button>
           </div>
@@ -211,7 +219,8 @@ export const SettingsPanel = () => {
       <div>
         <h2 className="text-lg font-semibold">API Keys</h2>
         <p className="text-sm text-muted-foreground">
-          Configure your API keys to enable AI models and web search functionality.
+          Configure your API keys to enable AI models and web search
+          functionality.
         </p>
       </div>
 
@@ -222,86 +231,88 @@ export const SettingsPanel = () => {
         className="flex-grow h-[calc(100vh-10rem)] pr-3"
       >
         <div className="flex flex-col gap-1">
-        {/* OpenAI API Key */}
-        {renderConfigField(
-          "OpenAI API Key",
-          <>
-            Required for GPT models and AI-powered features. Get your API key from{" "}
-            <a
-              href="https://platform.openai.com/api-keys"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline"
-            >
-              OpenAI Platform
-            </a>
-          </>,
-          <div className="w-6 h-6 bg-green-500 rounded-sm flex items-center justify-center">
-            <span className="text-white text-xs font-bold">AI</span>
-          </div>,
-          existingOpenAIKey?.value,
-          openAIKey,
-          setOpenAIKey,
-          handleSaveOpenAIKey,
-          handleRemoveOpenAIKey,
-          "sk-...",
-          true
-        )}
-        {/* OpenAI Base URL */}
-        {renderConfigField(
-          "OpenAI Base URL",
-          "Custom base URL for OpenAI-compatible APIs (e.g., OpenRouter, local deployments). Defaults to OpenRouter if not set.",
-          <div className="w-6 h-6 bg-purple-500 rounded-sm flex items-center justify-center">
-            <GlobeIcon className="h-3 w-3 text-white" />
-          </div>,
-          existingOpenAIBaseUrl?.value,
-          openAIBaseUrl,
-          setOpenAIBaseUrl,
-          handleSaveOpenAIBaseUrl,
-          handleRemoveOpenAIBaseUrl,
-          "https://api.openai.com/v1"
-        )}
-        {/* OpenAI Embedding Base URL */}
-        {renderConfigField(
-          "OpenAI Embedding Base URL",
-          "Custom base URL for OpenAI embedding models. Leave empty to use the same as OpenAI Base URL.",
-          <div className="w-6 h-6 bg-indigo-500 rounded-sm flex items-center justify-center">
-            <SettingsIcon className="h-3 w-3 text-white" />
-          </div>,
-          existingOpenAIEmbeddingBaseUrl?.value,
-          openAIEmbeddingBaseUrl,
-          setOpenAIEmbeddingBaseUrl,
-          handleSaveOpenAIEmbeddingBaseUrl,
-          handleRemoveOpenAIEmbeddingBaseUrl,
-          "https://api.openai.com/v1"
-        )}
-        {/* Exa API Key */}
-        {renderConfigField(
-          "Exa API Key",
-          <>
-            Required for enhanced web search capabilities. Get your API key from{" "}
-            <a
-              href="https://exa.ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline"
-            >
-              Exa
-            </a>
-          </>,
-          <div className="w-6 h-6 bg-blue-500 rounded-sm flex items-center justify-center">
-            <span className="text-white text-xs font-bold">E</span>
-          </div>,
-          existingExaKey?.value,
-          exaKey,
-          setExaKey,
-          handleSaveExaKey,
-          handleRemoveExaKey,
-          "Enter your Exa API key...",
-          true
-        )}
+          {/* OpenAI API Key */}
+          {renderConfigField(
+            "OpenAI API Key",
+            <>
+              Required for GPT models and AI-powered features. Get your API key
+              from{" "}
+              <a
+                href="https://platform.openai.com/api-keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline"
+              >
+                OpenAI Platform
+              </a>
+            </>,
+            <div className="w-6 h-6 bg-green-500 rounded-sm flex items-center justify-center">
+              <span className="text-white text-xs font-bold">AI</span>
+            </div>,
+            existingOpenAIKey?.value,
+            openAIKey,
+            setOpenAIKey,
+            handleSaveOpenAIKey,
+            handleRemoveOpenAIKey,
+            "sk-...",
+            true,
+          )}
+          {/* OpenAI Base URL */}
+          {renderConfigField(
+            "OpenAI Base URL",
+            "Custom base URL for OpenAI-compatible APIs (e.g., OpenRouter, local deployments). Defaults to OpenRouter if not set.",
+            <div className="w-6 h-6 bg-purple-500 rounded-sm flex items-center justify-center">
+              <GlobeIcon className="h-3 w-3 text-white" />
+            </div>,
+            existingOpenAIBaseUrl?.value,
+            openAIBaseUrl,
+            setOpenAIBaseUrl,
+            handleSaveOpenAIBaseUrl,
+            handleRemoveOpenAIBaseUrl,
+            "https://api.openai.com/v1",
+          )}
+          {/* OpenAI Embedding Base URL */}
+          {renderConfigField(
+            "OpenAI Embedding Base URL",
+            "Custom base URL for OpenAI embedding models. Leave empty to use the same as OpenAI Base URL.",
+            <div className="w-6 h-6 bg-indigo-500 rounded-sm flex items-center justify-center">
+              <SettingsIcon className="h-3 w-3 text-white" />
+            </div>,
+            existingOpenAIEmbeddingBaseUrl?.value,
+            openAIEmbeddingBaseUrl,
+            setOpenAIEmbeddingBaseUrl,
+            handleSaveOpenAIEmbeddingBaseUrl,
+            handleRemoveOpenAIEmbeddingBaseUrl,
+            "https://api.openai.com/v1",
+          )}
+          {/* Exa API Key */}
+          {renderConfigField(
+            "Exa API Key",
+            <>
+              Required for enhanced web search capabilities. Get your API key
+              from{" "}
+              <a
+                href="https://exa.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline"
+              >
+                Exa
+              </a>
+            </>,
+            <div className="w-6 h-6 bg-blue-500 rounded-sm flex items-center justify-center">
+              <span className="text-white text-xs font-bold">E</span>
+            </div>,
+            existingExaKey?.value,
+            exaKey,
+            setExaKey,
+            handleSaveExaKey,
+            handleRemoveExaKey,
+            "Enter your Exa API key...",
+            true,
+          )}
         </div>
       </ScrollArea>
     </div>
   );
-}; 
+};

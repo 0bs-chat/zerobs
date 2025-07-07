@@ -29,7 +29,9 @@ export const FileDisplay = ({ fileId }: FileDisplayProps) => {
   }, [fileId, generateDownloadUrl]);
 
   if (error) {
-    return <div className="text-red-500 text-xs">Error loading image: {error}</div>;
+    return (
+      <div className="text-red-500 text-xs">Error loading image: {error}</div>
+    );
   }
 
   if (!imageUrl) {
@@ -43,4 +45,4 @@ export const FileDisplay = ({ fileId }: FileDisplayProps) => {
       className="rounded-md max-h-[400px] w-auto object-contain"
     />
   );
-}; 
+};

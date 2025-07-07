@@ -32,7 +32,10 @@ export const Panel = () => {
       )}
 
       <>
-        <TabsContent value="artifacts" className={`h-full w-full ${hideTabHeader ? "px-0" : "px-2"}`}>
+        <TabsContent
+          value="artifacts"
+          className={`h-full w-full ${hideTabHeader ? "px-0" : "px-2"}`}
+        >
           <ArtifactsPanel />
         </TabsContent>
 
