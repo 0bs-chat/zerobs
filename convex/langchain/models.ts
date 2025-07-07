@@ -150,7 +150,7 @@ export const models: {
     label: "Cypher Alpha",
     model_name: "cypher-alpha",
     model: "openrouter/cypher-alpha:free",
-    isThinking: true,
+    isThinking: false,
     toolSupport: false,
     provider: "openai",
     modalities: ["text"],
