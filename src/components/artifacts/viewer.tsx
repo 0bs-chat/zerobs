@@ -1,7 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   XIcon,
   CopyIcon,
@@ -14,40 +12,29 @@ import { useCopy } from "@/hooks/use-copy";
 import { Markdown } from "@/components/ui/markdown";
 import { MermaidChart } from "@/components/ui/markdown/mermaid";
 import type { Artifact } from "./utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState, useEffect } from "react";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import {
+  atomDark,
+  oneLight,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useAtomValue } from "jotai";
+import { themeAtom } from "@/store/settings";
+
+const PREVIEW_ENABLED_TYPES: Artifact["type"][] = [
+  "application/vnd.ant.react",
+  "text/html",
+  "text/markdown",
+  "image/svg+xml",
+  "application/vnd.ant.mermaid",
+];
+const hasPreview = (artifact: Artifact) =>
+  PREVIEW_ENABLED_TYPES.includes(artifact.type);
 
 interface ArtifactViewerProps {
   artifact: Artifact;
   onClose: () => void;
 }
-
-const TabbedRenderer = ({
-  preview,
-  source,
-  language,
-}: {
-  preview: React.ReactNode;
-  source: string;
-  language: string;
-}) => (
-  <Tabs defaultValue="preview" className="w-full">
-    <TabsList className="overflow-x-auto">
-      <TabsTrigger value="preview">
-        <EyeIcon className="w-4 h-4" />
-      </TabsTrigger>
-      <TabsTrigger value="source">
-        <CodeIcon className="w-4 h-4" />
-      </TabsTrigger>
-    </TabsList>
-    <TabsContent value="preview">{preview}</TabsContent>
-    <TabsContent value="source">
-      <Markdown
-        content={`\`\`\`${language || "text"}\n${source}\n\`\`\``}
-        id={`artifact-${Date.now()}`}
-      />
-    </TabsContent>
-  </Tabs>
-);
 
 const prepareReactCode = (code: string): string => {
   const withoutImports = code.replace(
@@ -72,16 +59,16 @@ const ReactComponentRenderer = ({ content }: { content: string }) => {
         <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
         <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
         <style>
-          body { 
-            margin: 0; 
-            padding: 16px;
-            font-family: Inter, system-ui, -apple-system, sans-serif; 
+          html, body, #root {
+            height: 100%;
+            margin: 0;
+          }
+          body {
+            font-family: Rubik, system-ui, -apple-system, sans-serif; 
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            background: white;
-          }
-          #root {
-            min-height: 100%;
+            background:rgb(233, 220, 220);
+            box-sizing: border-box;
           }
         </style>
       </head>
@@ -146,10 +133,10 @@ const ReactComponentRenderer = ({ content }: { content: string }) => {
     </html>
   `;
 
-  const preview = (
+  return (
     <iframe
       srcDoc={iframeContent}
-      className="w-full h-[600px] border-0 rounded"
+      className="w-full h-full"
       title="React Preview"
       sandbox="allow-scripts allow-same-origin"
       onLoad={(e) => {
@@ -163,20 +150,17 @@ const ReactComponentRenderer = ({ content }: { content: string }) => {
       }}
     />
   );
-
-  return <TabbedRenderer preview={preview} source={content} language="jsx" />;
 };
 
 const HTMLRenderer = ({ content }: { content: string }) => {
-  const preview = (
+  return (
     <iframe
       srcDoc={content}
-      className="w-full h-[600px] border-0 rounded"
+      className="w-full h-full"
       title="HTML Preview"
       sandbox="allow-scripts allow-same-origin"
     />
   );
-  return <TabbedRenderer preview={preview} source={content} language="html" />;
 };
 
 const CodeRenderer = ({
@@ -186,46 +170,78 @@ const CodeRenderer = ({
   content: string;
   language?: string;
 }) => {
+  const theme = useAtomValue(themeAtom);
   return (
-    <Markdown
-      content={`\`\`\`${language || "text"}\n${content}\n\`\`\``}
-      id={`artifact-${Date.now()}`}
-    />
+    <div className="flex flex-col h-full border text-card-foreground overflow-x-auto text-sm">
+      <SyntaxHighlighter
+        customStyle={{
+          backgroundColor: "transparent",
+          padding: "1rem",
+          margin: "0",
+          height: "100%",
+        }}
+        language={language || "text"}
+        style={theme === "light" ? oneLight : atomDark}
+        wrapLines={true}
+      >
+        {content}
+      </SyntaxHighlighter>
+    </div>
   );
 };
 
 const SVGRenderer = ({ content }: { content: string }) => {
-  const preview = (
-    <div className="border rounded-lg p-4 bg-background flex items-center justify-center">
+  return (
+    <div className="border p-4 bg-background flex items-center justify-center">
       <div dangerouslySetInnerHTML={{ __html: content }} />
     </div>
   );
-  return <TabbedRenderer preview={preview} source={content} language="xml" />;
 };
 
 const MarkdownRenderer = ({ content }: { content: string }) => {
-  const preview = (
-    <div className="border rounded-lg p-4 bg-background">
+  return (
+    <div className="border p-4 bg-background">
       <Markdown content={content} id={`artifact-${Date.now()}`} />
     </div>
-  );
-  return (
-    <TabbedRenderer preview={preview} source={content} language="markdown" />
   );
 };
 
 const MermaidRenderer = ({ content }: { content: string }) => {
-  const preview = (
-    <div className="border rounded-lg p-4 bg-background">
+  return (
+    <div className="border p-4 bg-background">
       <MermaidChart chart={content} id={`artifact-${Date.now()}`} />
     </div>
   );
-  return (
-    <TabbedRenderer preview={preview} source={content} language="mermaid" />
-  );
 };
 
-const renderArtifactContent = (artifact: Artifact) => {
+const renderArtifactContent = (
+  artifact: Artifact,
+  view: "preview" | "source",
+) => {
+  if (view === "source" && hasPreview(artifact)) {
+    let language = artifact.language;
+    if (!language) {
+      switch (artifact.type) {
+        case "application/vnd.ant.react":
+          language = "jsx";
+          break;
+        case "text/html":
+          language = "html";
+          break;
+        case "text/markdown":
+          language = "markdown";
+          break;
+        case "image/svg+xml":
+          language = "xml";
+          break;
+        case "application/vnd.ant.mermaid":
+          language = "mermaid";
+          break;
+      }
+    }
+    return <CodeRenderer content={artifact.content} language={language} />;
+  }
+
   switch (artifact.type) {
     case "application/vnd.ant.react":
       return <ReactComponentRenderer content={artifact.content} />;
@@ -248,6 +264,15 @@ const renderArtifactContent = (artifact: Artifact) => {
 
 export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
   const { copy, copied } = useCopy({ duration: 500 });
+  const [view, setView] = useState<"preview" | "source">("preview");
+
+  useEffect(() => {
+    if (!hasPreview(artifact)) {
+      setView("source");
+    } else {
+      setView("preview");
+    }
+  }, [artifact]);
 
   const handleCopy = () => {
     copy(artifact.content);
@@ -264,18 +289,34 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full grid grid-rows-[auto_1fr]">
       {/* Header */}
-      <div className="flex items-center justify-between p-4">
+      <div className="flex items-center justify-between py-1 px-1">
         <h2 className="text-lg font-semibold">{artifact.title}</h2>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {hasPreview(artifact) && (
+            <Tabs
+              value={view}
+              onValueChange={(v) => setView(v as "preview" | "source")}
+            >
+              <TabsList>
+                <TabsTrigger value="preview">
+                  <EyeIcon className="w-4 h-4" />
+                </TabsTrigger>
+                <TabsTrigger value="source">
+                  <CodeIcon className="w-4 h-4" />
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+
           {artifact.type === "text/html" && (
-            <Button variant="outline" size="sm" onClick={handleOpenInNewTab}>
+            <Button variant="outline" size="icon" onClick={handleOpenInNewTab}>
               <ExternalLinkIcon className="w-4 h-4" />
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={handleCopy}>
+          <Button variant="outline" size="icon" onClick={handleCopy}>
             {copied ? (
               <CheckIcon className="w-4 h-4" />
             ) : (
@@ -288,12 +329,10 @@ export const ArtifactViewer = ({ artifact, onClose }: ArtifactViewerProps) => {
         </div>
       </div>
 
-      <Separator />
-
       {/* Content */}
-      <ScrollArea className="flex-1 p-4">
-        {renderArtifactContent(artifact)}
-      </ScrollArea>
+      <div className="min-h-0 min-w-0">
+        {renderArtifactContent(artifact, view)}
+      </div>
     </div>
   );
 };

@@ -70,7 +70,7 @@ export function TopNav() {
         <Button
           variant="ghost"
           size="icon"
-          className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent" : "bg-background"} ${selectedArtifact ? "hidden" : ""}`}
+          className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent translate-x-2" : "bg-background"} ${selectedArtifact ? "hidden" : ""} hover:bg-muted-foreground/30 dark:hover:bg-accent transition-colors duration-100`}
           onClick={() => {
             setResizePanelOpen(!resizePanelOpen);
             setSelectedArtifact(undefined);

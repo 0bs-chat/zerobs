@@ -677,3 +677,4 @@ export default function App() {
 
 use bun to install packages, never use npm/npx
 DO NOT RUN `bun dev`
+Whenever making an UI change, always use browsermcp screenshot tool to capture the screenshot of your changes, reflect on them and iterate till the goal is achieved.
