@@ -19,7 +19,7 @@ import type { Doc } from "../../../convex/_generated/dataModel";
 export function AppSidebar() {
   const navigate = useNavigate();
   const { pinnedChats, historyChats, status, loadMore } = useInfiniteChats();
-  const { searchQuery, setSearchQuery } = useSearchChats();
+  const { searchQuery, setSearchQuery, searchResults } = useSearchChats();
   const loadMoreRef = React.useRef<HTMLButtonElement>(null);
 
   const handleNewChat = () => {
@@ -63,6 +63,18 @@ export function AppSidebar() {
       observer.disconnect();
     };
   }, [loadMore, status]);
+
+  // Determine whether to show search results or regular chat lists
+  const isSearching = searchQuery.trim().length > 0;
+  const searchPinnedChats = isSearching 
+    ? searchResults.filter((chat) => chat.pinned) 
+    : [];
+  const searchHistoryChats = isSearching 
+    ? searchResults.filter((chat) => !chat.pinned) 
+    : [];
+
+  const displayPinnedChats = isSearching ? searchPinnedChats : pinnedChats;
+  const displayHistoryChats = isSearching ? searchHistoryChats : historyChats;
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -113,12 +125,12 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {pinnedChats.length > 0 && (
+        {displayPinnedChats.length > 0 && (
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarGroupLabel>Pinned</SidebarGroupLabel>
               <div className="flex flex-col gap-1">
-                {pinnedChats.map((chat) => renderChatItem(chat))}
+                {displayPinnedChats.map((chat) => renderChatItem(chat))}
               </div>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -126,11 +138,13 @@ export function AppSidebar() {
 
         <SidebarGroup className="flex-1 min-h-0">
           <SidebarGroupContent className="h-full flex flex-col">
-            <SidebarGroupLabel>History</SidebarGroupLabel>
+            <SidebarGroupLabel>
+              {isSearching ? "Search Results" : "History"}
+            </SidebarGroupLabel>
             <div className="flex-1 overflow-y-auto scrollbar-none">
               <div className="flex flex-col gap-1">
-                {historyChats.map((chat) => renderChatItem(chat))}
-                {status === "CanLoadMore" && (
+                {displayHistoryChats.map((chat) => renderChatItem(chat))}
+                {!isSearching && status === "CanLoadMore" && (
                   <Button
                     ref={loadMoreRef}
                     variant="ghost"
@@ -140,9 +154,9 @@ export function AppSidebar() {
                     Load More
                   </Button>
                 )}
-                {historyChats.length === 0 && (
+                {displayHistoryChats.length === 0 && (
                   <div className="text-sm text-muted-foreground text-center py-2">
-                    No chat history
+                    {isSearching ? "No matching chats found" : "No chat history"}
                   </div>
                 )}
               </div>
