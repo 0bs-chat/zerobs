@@ -12,10 +12,11 @@ interface AiMessageContentProps {
   message: BaseMessage;
   messageId: string;
   className?: string;
+  isStreaming?: boolean;
 }
 
 export const AiMessageContent = memo(
-  ({ message, messageId, className }: AiMessageContentProps) => {
+  ({ message, messageId, className, isStreaming }: AiMessageContentProps) => {
     const type = message?.getType?.();
     const setParsedArtifactsContent = useSetAtom(parsedArtifactsContentAtom);
 
@@ -66,7 +67,7 @@ export const AiMessageContent = memo(
       if (type === "ai") {
         return (
           <>
-            <Reasoning reasoning={reasoning} messageId={messageId} />
+            <Reasoning reasoning={reasoning} messageId={messageId} isStreaming={isStreaming} />
             <div className={className}>{renderedContent}</div>
           </>
         );

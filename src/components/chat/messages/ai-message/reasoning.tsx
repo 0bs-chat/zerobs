@@ -6,13 +6,15 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { Markdown } from "@/components/ui/markdown";
+import { Loader2 } from "lucide-react";
 
 interface ReasoningProps {
   reasoning?: string;
   messageId: string;
+  isStreaming?: boolean;
 }
 
-export const Reasoning = memo(({ reasoning, messageId }: ReasoningProps) => {
+export const Reasoning = memo(({ reasoning, messageId, isStreaming }: ReasoningProps) => {
   if (!reasoning) return null;
 
   return (
@@ -22,6 +24,9 @@ export const Reasoning = memo(({ reasoning, messageId }: ReasoningProps) => {
           <span className="text-muted-foreground translate-y-[.1rem]">
             Reasoning
           </span>
+          {isStreaming && (
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground translate-y-[.1rem]" />
+          )}
         </AccordionTrigger>
         <AccordionContent className="bg-card rounded-md p-2 border mt-2 max-h-[36rem] overflow-y-auto">
           <Markdown

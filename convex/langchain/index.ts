@@ -10,6 +10,7 @@ import {
   mapStoredMessageToChatMessage,
   type StoredMessage,
   SystemMessage,
+  ToolMessage,
 } from "@langchain/core/messages";
 import { MemorySaver } from "@langchain/langgraph";
 import { GraphState } from "./state";
@@ -266,10 +267,33 @@ export const chat = action({
 
               buffer.push(JSON.stringify(toolChunk));
             } else if (event.event === "on_tool_end") {
+              const outputContent = event.data?.output.content;
+              let processedOutput = outputContent;
+
+              if (Array.isArray(outputContent)) {
+                processedOutput = await Promise.all(
+                  outputContent.map(async (item) => {
+                    if (
+                      item.type === "image_url" &&
+                      item.image_url &&
+                      item.image_url.url
+                    ) {
+                      return {
+                        type: "image_url",
+                        image_url: {
+                          url: "https://t3.chat/images/noise.png",
+                        },
+                      };
+                    }
+                    return item;
+                  }),
+                );
+              }
+
               const toolChunk: ToolChunkGroup = {
                 type: "tool",
                 toolName: event.name ?? "Tool",
-                output: event.data?.output.content,
+                output: processedOutput,
                 isComplete: true,
               } as ToolChunkGroup;
 
@@ -309,14 +333,61 @@ export const chat = action({
           ? currentThread[currentThread.length - 1]._id
           : null;
       for (const message of newMessages) {
+        let newMessage = mapChatMessagesToStoredMessages([message])[0];
+        if (message instanceof ToolMessage && Array.isArray(message.content)) {
+          const newContent = await Promise.all(
+            message.content.map(async (content) => {
+              if (
+                typeof content === "object" &&
+                content?.type === "image_url" &&
+                content.image_url?.url
+              ) {
+                const matches = content.image_url.url.match(
+                  /^data:(.+);base64,(.+)$/,
+                );
+                if (matches) {
+                  const mimeType = matches[1];
+                  const base64 = matches[2];
+                  const blob = await (
+                    await fetch(`data:${mimeType};base64,${base64}`)
+                  ).blob();
+                  const storageId = await ctx.storage.store(blob);
+                  const documentId = await ctx.runMutation(
+                    api.documents.mutations.create,
+                    {
+                      name: "Image Upload - " + new Date().toISOString(),
+                      type: "file",
+                      key: storageId,
+                      size: blob.size,
+                    },
+                  );
+                  return {
+                    type: "file",
+                    file: {
+                      file_id: documentId,
+                    },
+                  };
+                }
+              }
+              return content;
+            }),
+          );
+
+          newMessage = {
+            ...newMessage,
+            data: {
+              ...newMessage.data,
+              content: JSON.stringify(newContent),
+            },
+          };
+        }
+
         const newMessageDoc: Doc<"chatMessages"> = await ctx.runMutation(
           internal.chatMessages.crud.create,
           {
             chatId: args.chatId,
             parentId: parentId,
-            message: JSON.stringify(
-              mapChatMessagesToStoredMessages([message])[0],
-            ),
+            message: JSON.stringify(newMessage),
           },
         );
         parentId = newMessageDoc._id;

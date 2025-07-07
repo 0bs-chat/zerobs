@@ -83,6 +83,7 @@ export const StreamingMessage = memo(() => {
           <AiMessageContent
             message={message}
             messageId={`${messageId}-${index}`}
+            isStreaming={true}
           />
         ) : (
           <ToolMessage message={message!} />
