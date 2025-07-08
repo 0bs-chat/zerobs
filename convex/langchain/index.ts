@@ -87,6 +87,13 @@ export const chat = action({
       chatId: args.chatId,
     });
 
+    let streamDoc = await ctx.runQuery(api.streams.queries.get, {
+      chatId: args.chatId,
+    });
+    if (["pending", "streaming"].includes(streamDoc?.status ?? "")) {
+      return;
+    }
+
     const abortController = new AbortController();
     const project = chat.projectId
       ? await ctx.runQuery(api.projects.queries.get, {
@@ -139,9 +146,6 @@ export const chat = action({
     let buffer: string[] = [];
     let wasCancelled = false;
     let streamCompleted = false;
-    let streamDoc = await ctx.runQuery(api.streams.queries.get, {
-      chatId: args.chatId,
-    });
     let checkpoint: typeof GraphState.State | null = null;
 
     if (!streamDoc) {

@@ -95,14 +95,7 @@ export const StreamingMessage = memo(() => {
   if (streamData?.chunkGroups.length === 0) return null;
 
   return (
-    <>
-      <div className="flex flex-col gap-1">{planningSteps || regularContent}</div>
-      {["streaming", "pending"].includes(streamData?.status ?? "") && (
-        <div className="flex items-center gap-1">
-          <span className="inline-block w-2 h-4 bg-current animate-pulse" />
-        </div>
-      )}
-    </>
+    <div className="flex flex-col gap-1">{planningSteps || regularContent}</div>
   );
 });
 
