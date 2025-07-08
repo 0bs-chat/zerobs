@@ -51,11 +51,7 @@ export const generateTitle = internalAction({
       ],
       args.chat.model,
     );
-    const model = await getModel(
-      ctx,
-      args.chat.model,
-      args.chat.reasoningEffort,
-    );
+    const model = await getModel(ctx, "worker", undefined);
     const titleSchema = z.object({
       title: z
         .string()
