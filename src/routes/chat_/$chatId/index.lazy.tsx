@@ -21,6 +21,8 @@ import {
 import { useEffect } from "react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
+import { motion, AnimatePresence } from "motion/react";
+import { slideInFromRight, slideInFromLeft, layoutTransition } from "@/lib/motion";
 
 export const Route = createLazyFileRoute("/chat_/$chatId/")({
   component: RouteComponent,
@@ -41,36 +43,69 @@ function RouteComponent() {
   }, [chatId, setSelectedArtifact]);
 
   return (
-    <SidebarProvider
-      className="font-sans h-svh relative before:content-[''] before:fixed before:inset-0 before:bg-[url('/images/noise.png')] before:opacity-50 before:pointer-events-none before:z-[-1]"
-      open={sidebarOpen}
-      onOpenChange={() => {
-        setSidebarOpen(!sidebarOpen);
-      }}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
     >
+      <SidebarProvider
+        className="font-sans h-svh relative before:content-[''] before:fixed before:inset-0 before:bg-[url('/images/noise.png')] before:opacity-50 before:pointer-events-none before:z-[-1]"
+        open={sidebarOpen}
+        onOpenChange={() => {
+          setSidebarOpen(!sidebarOpen);
+        }}
+      >
       <TopNav />
-      <AppSidebar />
+      <motion.div
+        variants={slideInFromLeft}
+        initial="initial"
+        animate="animate"
+        transition={layoutTransition}
+      >
+        <AppSidebar />
+      </motion.div>
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel className="flex flex-col gap-1 p-2 pt-4">
-          <div className="flex-1 min-h-0">
+          <motion.div 
+            className="flex-1 min-h-0"
+            layout
+            transition={layoutTransition}
+          >
             <ChatMessages />
-          </div>
-          <div className="flex-none">
+          </motion.div>
+          <motion.div 
+            className="flex-none"
+            layout
+            transition={layoutTransition}
+          >
             <ChatInput />
-          </div>
+          </motion.div>
         </ResizablePanel>
-        {resizePanelOpen && (
-          <>
-            <ResizableHandle />
-            <ResizablePanel defaultSize={40} minSize={25} maxSize={50}>
-              <Panel />
-            </ResizablePanel>
-          </>
-        )}
+        <AnimatePresence mode="wait">
+          {resizePanelOpen && (
+            <>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={40} minSize={25} maxSize={60}>
+                <motion.div
+                  variants={slideInFromRight}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={layoutTransition}
+                  className="h-full"
+                >
+                  <Panel />
+                </motion.div>
+              </ResizablePanel>
+            </>
+          )}
+        </AnimatePresence>
       </ResizablePanelGroup>
       {/* Dialogs */}
       <DocumentDialog />
       <CreateProjectDialog />
     </SidebarProvider>
+    </motion.div>
   );
 }

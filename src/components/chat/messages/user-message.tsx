@@ -1,8 +1,10 @@
 import { memo, useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { motion } from "motion/react";
 import { Markdown } from "@/components/ui/markdown";
 import type { MessageWithBranchInfo } from "./utils-bar/branch-navigation";
 import { Textarea } from "@/components/ui/textarea";
+import { scaleIn, smoothTransition } from "@/lib/motion";
 
 export const UserMessage = memo(
   ({
@@ -35,21 +37,32 @@ export const UserMessage = memo(
 
     if (isEditing) {
       return (
-        <div className="bg-card max-w-full self-end p-4 rounded-md shadow-sm w-full">
+        <motion.div 
+          variants={scaleIn}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={smoothTransition}
+          className="bg-card max-w-full self-end p-4 rounded-md shadow-sm w-full"
+        >
           <Textarea
             value={editedText}
             onChange={(e) => setEditedText(e.target.value)}
             className="bg-background shadow-inner"
             autoFocus
           />
-        </div>
+        </motion.div>
       );
     }
 
     return (
-      <div className="bg-card flex flex-col gap-1 max-w-full self-end p-4 rounded-md shadow-sm">
+      <motion.div 
+        className="bg-card flex flex-col gap-1 max-w-full self-end p-4 rounded-md shadow-sm"
+        whileHover={{ scale: 1.01 }}
+        transition={smoothTransition}
+      >
         {renderedContent}
-      </div>
+      </motion.div>
     );
   },
 );

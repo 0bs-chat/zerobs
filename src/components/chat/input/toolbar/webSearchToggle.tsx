@@ -10,6 +10,8 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { newChatAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
+import { motion } from "motion/react";
+import { buttonHover, smoothTransition } from "@/lib/motion";
 
 export const WebSearchToggle = ({
   chatId,
@@ -23,26 +25,39 @@ export const WebSearchToggle = ({
   return (
     <Tooltip delayDuration={300}>
       <TooltipTrigger asChild>
-        <Toggle
-          variant="outline"
-          className={`hover:transition hover:duration-500 ${webSearch ? "bg-accent text-accent-foreground" : ""}`}
-          aria-pressed={webSearch ?? false}
-          pressed={webSearch ?? false}
-          onPressedChange={() => {
-            if (chatId === "new") {
-              setNewChat((prev) => ({ ...prev, webSearch: !prev.webSearch }));
-            } else {
-              updateChatMutation({
-                chatId,
-                updates: {
-                  webSearch: !webSearch,
-                },
-              });
-            }
-          }}
+        <motion.div
+          variants={buttonHover}
+          initial="rest"
+          whileHover="hover"
+          whileTap="tap"
+          transition={smoothTransition}
         >
-          <Globe2Icon className="h-4 w-4" />
-        </Toggle>
+          <Toggle
+            variant="outline"
+            className={`transition-all duration-300 ${webSearch ? "bg-accent text-accent-foreground" : ""}`}
+            aria-pressed={webSearch ?? false}
+            pressed={webSearch ?? false}
+            onPressedChange={() => {
+              if (chatId === "new") {
+                setNewChat((prev) => ({ ...prev, webSearch: !prev.webSearch }));
+              } else {
+                updateChatMutation({
+                  chatId,
+                  updates: {
+                    webSearch: !webSearch,
+                  },
+                });
+              }
+            }}
+          >
+            <motion.div
+              animate={{ rotate: webSearch ? 360 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Globe2Icon className="h-4 w-4" />
+            </motion.div>
+          </Toggle>
+        </motion.div>
       </TooltipTrigger>
       <TooltipContent>
         <p>Search the web</p>

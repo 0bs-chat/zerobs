@@ -39,6 +39,8 @@ import { ArtifactsToggle } from "./artifatsToggle";
 import { WebSearchToggle } from "./webSearchToggle";
 import { StopButtonIcon } from "./stop-button-icon";
 import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
+import { motion } from "motion/react";
+import { buttonHover, smoothTransition } from "@/lib/motion";
 
 export const ToolBar = ({
   chat,
@@ -203,23 +205,31 @@ export const ToolBar = ({
           </SelectContent>
         </Select>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={async () => {
-            if (!["pending", "streaming"].includes(streamStatus ?? "")) {
-              await handleSubmit(chat, textareaRef);
-            } else {
-              await cancelStreamMutation({ chatId });
-            }
-          }}
+        <motion.div
+          variants={buttonHover}
+          initial="rest"
+          whileHover="hover"
+          whileTap="tap"
+          transition={smoothTransition}
         >
-          {["pending", "streaming"].includes(streamStatus ?? "") ? (
-            <StopButtonIcon className="h-6 w-6 -translate-y-0.5 -translate-x-0.5" />
-          ) : (
-            <ArrowUp className="h-4 w-4" />
-          )}
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={async () => {
+              if (!["pending", "streaming"].includes(streamStatus ?? "")) {
+                await handleSubmit(chat, textareaRef);
+              } else {
+                await cancelStreamMutation({ chatId });
+              }
+            }}
+          >
+            {["pending", "streaming"].includes(streamStatus ?? "") ? (
+              <StopButtonIcon className="h-6 w-6 -translate-y-0.5 -translate-x-0.5" />
+            ) : (
+              <ArrowUp className="h-4 w-4" />
+            )}
+          </Button>
+        </motion.div>
       </div>
     </div>
   );

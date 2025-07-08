@@ -5,6 +5,8 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useSetAtom } from "jotai";
 import { newChatAtom } from "@/store/chatStore";
+import { motion } from "motion/react";
+import { buttonHover, smoothTransition } from "@/lib/motion";
 
 export const ConductorToggle = ({
   chatId,
@@ -17,26 +19,42 @@ export const ConductorToggle = ({
   const updateChatMutation = useMutation(api.chats.mutations.update);
 
   return (
-    <Toggle
-      variant="outline"
-      className="hover:transition hover:duration-500"
-      pressed={conductorMode}
-      onPressedChange={() => {
-        if (chatId === "new") {
-          setNewChat((prev) => ({
-            ...prev,
-            conductorMode: !prev.conductorMode,
-          }));
-        } else {
-          updateChatMutation({
-            chatId,
-            updates: { conductorMode: !conductorMode },
-          });
-        }
-      }}
+    <motion.div
+      variants={buttonHover}
+      initial="rest"
+      whileHover="hover"
+      whileTap="tap"
+      transition={smoothTransition}
     >
-      <Network className="h-4 w-4" />
-      Conductor
-    </Toggle>
+      <Toggle
+        variant="outline"
+        className="transition-all duration-300"
+        pressed={conductorMode}
+        onPressedChange={() => {
+          if (chatId === "new") {
+            setNewChat((prev) => ({
+              ...prev,
+              conductorMode: !prev.conductorMode,
+            }));
+          } else {
+            updateChatMutation({
+              chatId,
+              updates: { conductorMode: !conductorMode },
+            });
+          }
+        }}
+      >
+        <motion.div
+          animate={{ 
+            scale: conductorMode ? 1.1 : 1,
+            rotate: conductorMode ? 360 : 0 
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          <Network className="h-4 w-4" />
+        </motion.div>
+        Conductor
+      </Toggle>
+    </motion.div>
   );
 };

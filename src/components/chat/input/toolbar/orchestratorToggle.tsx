@@ -5,6 +5,8 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useSetAtom } from "jotai";
 import { newChatAtom } from "@/store/chatStore";
+import { motion } from "motion/react";
+import { buttonHover, smoothTransition } from "@/lib/motion";
 
 export const OrchestratorToggle = ({
   chatId,
@@ -16,28 +18,41 @@ export const OrchestratorToggle = ({
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const setNewChat = useSetAtom(newChatAtom);
   return (
-    <Toggle
-      variant="outline"
-      className="hover:transition hover:duration-500"
-      pressed={orchestratorMode}
-      onPressedChange={() => {
-        if (chatId === "new") {
-          setNewChat((prev) => ({
-            ...prev,
-            orchestratorMode: !prev.orchestratorMode,
-          }));
-        } else {
-          updateChatMutation({
-            chatId,
-            updates: {
-              orchestratorMode: !orchestratorMode,
-            },
-          });
-        }
-      }}
+    <motion.div
+      variants={buttonHover}
+      initial="rest"
+      whileHover="hover"
+      whileTap="tap"
+      transition={smoothTransition}
     >
-      <Binoculars className="h-4 w-4" />
-      Orchestrator
-    </Toggle>
+      <Toggle
+        variant="outline"
+        className="transition-all duration-300"
+        pressed={orchestratorMode}
+        onPressedChange={() => {
+          if (chatId === "new") {
+            setNewChat((prev) => ({
+              ...prev,
+              orchestratorMode: !prev.orchestratorMode,
+            }));
+          } else {
+            updateChatMutation({
+              chatId,
+              updates: {
+                orchestratorMode: !orchestratorMode,
+              },
+            });
+          }
+        }}
+      >
+        <motion.div
+          animate={{ scale: orchestratorMode ? 1.1 : 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          <Binoculars className="h-4 w-4" />
+        </motion.div>
+        Orchestrator
+      </Toggle>
+    </motion.div>
   );
 };

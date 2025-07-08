@@ -1,4 +1,5 @@
 import { memo, useMemo } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { AiMessageContent } from "./ai-message/ai-message";
 import { ToolMessage } from "./ai-message/tool-message";
 import { PlanningStep } from "./ai-message/planning-step";
@@ -9,6 +10,7 @@ import {
 } from "@langchain/core/messages";
 import { useAtomValue } from "jotai";
 import { useStreamAtom } from "@/store/chatStore";
+import { streamingVariants, springTransition } from "@/lib/motion";
 
 export const StreamingMessage = memo(() => {
   const streamData = useAtomValue(useStreamAtom);
@@ -78,7 +80,14 @@ export const StreamingMessage = memo(() => {
   // Regular streaming display (no planning mode)
   const regularContent = useMemo(() => {
     return langchainMessages?.map((message, index) => (
-      <div key={index} className="mb-4">
+      <motion.div 
+        key={index} 
+        className="mb-4"
+        variants={streamingVariants}
+        initial="initial"
+        animate="animate"
+        transition={{ delay: index * 0.1, ...springTransition }}
+      >
         {message?.getType() === "ai" ? (
           <AiMessageContent
             message={message}
@@ -88,14 +97,23 @@ export const StreamingMessage = memo(() => {
         ) : (
           <ToolMessage message={message!} />
         )}
-      </div>
+      </motion.div>
     ));
   }, [langchainMessages, messageId, streamData?.status]);
 
   if (streamData?.chunkGroups.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-1">{planningSteps || regularContent}</div>
+    <motion.div 
+      className="flex flex-col gap-1"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={springTransition}
+    >
+      <AnimatePresence mode="wait">
+        {planningSteps || regularContent}
+      </AnimatePresence>
+    </motion.div>
   );
 });
 

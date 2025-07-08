@@ -5,6 +5,8 @@ import type { Id } from "../../../../../convex/_generated/dataModel";
 import { FileIcon } from "lucide-react";
 import { newChatAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
+import { motion } from "motion/react";
+import { buttonHover, smoothTransition } from "@/lib/motion";
 
 export const ArtifactsToggle = ({
   chatId,
@@ -16,25 +18,41 @@ export const ArtifactsToggle = ({
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const setNewChat = useSetAtom(newChatAtom);
   return (
-    <Toggle
-      variant="outline"
-      className="hover:transition hover:duration-500"
-      pressed={artifacts ?? false}
-      onPressedChange={() => {
-        if (chatId === "new") {
-          setNewChat((prev) => ({ ...prev, artifacts: !prev.artifacts }));
-        } else {
-          updateChatMutation({
-            chatId,
-            updates: {
-              artifacts: !artifacts,
-            },
-          });
-        }
-      }}
+    <motion.div
+      variants={buttonHover}
+      initial="rest"
+      whileHover="hover"
+      whileTap="tap"
+      transition={smoothTransition}
     >
-      <FileIcon className="h-4 w-4" />
-      Artifacts
-    </Toggle>
+      <Toggle
+        variant="outline"
+        className="transition-all duration-300"
+        pressed={artifacts ?? false}
+        onPressedChange={() => {
+          if (chatId === "new") {
+            setNewChat((prev) => ({ ...prev, artifacts: !prev.artifacts }));
+          } else {
+            updateChatMutation({
+              chatId,
+              updates: {
+                artifacts: !artifacts,
+              },
+            });
+          }
+        }}
+      >
+        <motion.div
+          animate={{ 
+            scale: artifacts ? 1.1 : 1,
+            y: artifacts ? -2 : 0 
+          }}
+          transition={{ duration: 0.2 }}
+        >
+          <FileIcon className="h-4 w-4" />
+        </motion.div>
+        Artifacts
+      </Toggle>
+    </motion.div>
   );
 };
