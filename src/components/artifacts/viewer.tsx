@@ -282,7 +282,7 @@ export const ArtifactViewer = ({
   return (
     <div className="w-full h-full grid grid-rows-[auto_1fr]">
       {/* Header */}
-      <div className="flex items-center justify-between py-1 px-1">
+      <div className="flex items-center justify-between p-1 pl-3">
         <h2 className="text-lg font-semibold">{artifact.title}</h2>
 
         <div className="flex items-center gap-1">

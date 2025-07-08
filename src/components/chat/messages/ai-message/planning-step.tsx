@@ -32,7 +32,7 @@ export const PlanningStep = memo(
         const [step, _storedMessages] = pastStep;
         return step;
       });
-      return steps?.filter(Boolean) as string[];
+      return steps.length > 0 ? steps?.filter(Boolean) as string[] : ["Planning..."];
     }, [message]);
 
     const pastSteps = useMemo(() => {
@@ -108,7 +108,7 @@ export const PlanningStep = memo(
         : "Planning...";
 
     const streamingContainerClasses = isStreaming
-      ? "bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30 p-0.5 animate-pulse"
+      ? "bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30 p-0.5 pulsing-border-color"
       : "border bg-card";
 
     if (isMinimized) {

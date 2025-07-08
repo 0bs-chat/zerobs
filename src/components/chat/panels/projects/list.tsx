@@ -43,7 +43,7 @@ export const ProjectsList = () => {
           {allProjects?.page.map((project) => (
             <Card
               key={project._id}
-              className="group rounded-md flex-row relative group/card px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-accent/30 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              className="group flex-row relative group/card px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-accent/30 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => {
                 if (chatId !== "new") {
                   updateChatMutation({
