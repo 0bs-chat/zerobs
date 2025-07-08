@@ -140,7 +140,7 @@ export const PlanningStep = memo(
       <div className={`relative rounded-lg ${streamingContainerClasses}`}>
         <div className={`rounded-[7px] p-4 flex flex-row bg-card`}>
           <div className="flex flex-col w-1/3">
-            <div className="text-sm font-semibold">DeepSearch</div>
+            <div className="text-sm font-semibold">Orchestrator</div>
             <Separator className="my-2" />
             <div
               ref={stepsContainerRef}

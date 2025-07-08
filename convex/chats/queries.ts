@@ -48,6 +48,24 @@ export const getAll = query({
   },
 });
 
+export const getByProjectId = query({
+  args: {
+    projectId: v.id("projects"),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const chats = await ctx.db
+      .query("chats")
+      .withIndex("by_user_project", (q) => q
+        .eq("userId", userId)
+        .eq("projectId", args.projectId),
+      ).collect();
+
+    return chats;
+  },
+});
+
 export const getMultiple = query({
   args: {
     chatIds: v.array(v.id("chats")),

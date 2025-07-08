@@ -1,7 +1,7 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/theme-switcher";
 import { resizePanelOpenAtom, selectedArtifactAtom } from "@/store/chatStore";
-import { LogOutIcon, PanelRightCloseIcon } from "lucide-react";
+import { LogOutIcon, PanelRightCloseIcon, GithubIcon } from "lucide-react";
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAuth, useUser } from "@clerk/clerk-react";
@@ -54,6 +54,12 @@ export function TopNav() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => window.open("https://github.com/0bs-chat/zerobs/", "_blank")}
+              >
+                <GithubIcon className="mr-2 h-4 w-4" />
+                <span>GitHub</span>
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
                   signOut();

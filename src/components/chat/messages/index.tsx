@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessagesList } from "./messages";
 import { StreamingMessage } from "./streaming-message";
 import { useScroll } from "@/hooks/chats/use-scroll";
+import { TriangleAlertIcon } from "lucide-react";
 
 export const ChatMessages = () => {
   const params = useParams({ from: "/chat_/$chatId/" });
@@ -78,6 +79,14 @@ export const ChatMessages = () => {
           )}
 
           {streamData.chunkGroups.length > 0 && <StreamingMessage />}
+          {["cancelled", "error"].includes(streamData.status ?? "") && (
+            <div className={`flex flex-row gap-2 items-center justify-start p-2 rounded-lg ${streamData.status === "cancelled" ? "bg-yellow-500/10" : "bg-red-500/10"}`}>
+              <TriangleAlertIcon className="w-4 h-4" />
+              <div className="text-muted-foreground">
+                {streamData.status === "cancelled" ? "Stream cancelled" : "Stream error"}
+              </div>
+            </div>
+          )}
           <div ref={scrollAreaRef} />
         </div>
       </ScrollArea>

@@ -162,37 +162,54 @@ export const chat = action({
 
     // Create a function to handle flushing chunks
     async function flushChunks() {
-      while (!wasCancelled && !streamCompleted) {
+      while (!wasCancelled && !streamCompleted && !abortController.signal.aborted) {
         await new Promise((resolve) => setTimeout(resolve, BUFFER));
 
         if (buffer.length > 0) {
           const chunksToFlush = buffer;
           buffer = [];
-          streamDoc = await ctx.runMutation(
-            internal.streams.mutations.appendChunks,
-            {
-              chatId: args.chatId,
-              chunks: chunksToFlush,
-            },
-          );
+          
+          try {
+            streamDoc = await ctx.runMutation(
+              internal.streams.mutations.appendChunks,
+              {
+                chatId: args.chatId,
+                chunks: chunksToFlush,
+              },
+            );
 
-          // Check if the stream was cancelled during appendChunks
-          if (streamDoc.status === "cancelled") {
-            wasCancelled = true;
-            abortController.abort();
-            break;
+            // Check if the stream was cancelled during appendChunks
+            if (streamDoc.status === "cancelled") {
+              wasCancelled = true;
+              abortController.abort();
+              break;
+            }
+          } catch (error) {
+            // If mutation fails due to cancellation, stop flushing
+            if (abortController.signal.aborted) {
+              break;
+            }
+            throw error;
           }
         }
       }
 
-      if (buffer.length > 0) {
+      // Only flush remaining buffer if not cancelled
+      if (buffer.length > 0 && !wasCancelled && !abortController.signal.aborted) {
         const chunksToFlush = buffer;
         buffer = [];
 
-        await ctx.runMutation(internal.streams.mutations.appendChunks, {
-          chatId: args.chatId,
-          chunks: chunksToFlush,
-        });
+        try {
+          await ctx.runMutation(internal.streams.mutations.appendChunks, {
+            chatId: args.chatId,
+            chunks: chunksToFlush,
+          });
+        } catch (error) {
+          // Ignore errors if already cancelled
+          if (!abortController.signal.aborted) {
+            throw error;
+          }
+        }
       }
     }
 
@@ -201,7 +218,18 @@ export const chat = action({
 
     try {
       for await (const event of stream) {
-        if (streamDoc?.status === "cancelled") {
+        // Check for cancellation early and often
+        if (abortController.signal.aborted) {
+          wasCancelled = true;
+          break;
+        }
+
+        // Refresh stream doc to check for cancellation
+        const currentStreamDoc = await ctx.runQuery(api.streams.queries.get, {
+          chatId: args.chatId,
+        });
+        
+        if (currentStreamDoc?.status === "cancelled") {
           wasCancelled = true;
           abortController.abort();
           break;
@@ -217,20 +245,32 @@ export const chat = action({
           currentCheckpoint.pastSteps?.length !== checkpoint.pastSteps?.length
         ) {
           checkpoint = currentCheckpoint;
-          await ctx.runMutation(internal.streams.mutations.update, {
-            chatId: args.chatId,
-            updates: {
-              completedSteps:
-                currentCheckpoint?.pastSteps?.length > 0
-                  ? currentCheckpoint.pastSteps.map((pastStep) => {
-                      const [step, _messages] = pastStep;
-                      return step as string;
-                    })
-                  : currentCheckpoint?.plan?.length > 0
-                    ? [currentCheckpoint.plan.flat()[0]]
-                    : undefined,
-            },
-          });
+          
+          // Check for cancellation before making mutations
+          if (!wasCancelled && !abortController.signal.aborted) {
+            try {
+              await ctx.runMutation(internal.streams.mutations.update, {
+                chatId: args.chatId,
+                updates: {
+                  completedSteps:
+                    currentCheckpoint?.pastSteps?.length > 0
+                      ? currentCheckpoint.pastSteps.map((pastStep) => {
+                          const [step, _messages] = pastStep;
+                          return step as string;
+                        })
+                      : currentCheckpoint?.plan?.length > 0
+                        ? [currentCheckpoint.plan.flat()[0]]
+                        : undefined,
+                },
+              });
+            } catch (error) {
+              // If mutation fails, check if it's due to cancellation
+              if (!abortController.signal.aborted) {
+                throw error;
+              }
+              break;
+            }
+          }
         }
 
         if (
@@ -244,6 +284,11 @@ export const chat = action({
               event.metadata.checkpoint_ns.startsWith(node),
             )
           ) {
+            // Check for cancellation before processing events
+            if (wasCancelled || abortController.signal.aborted) {
+              break;
+            }
+            
             // Minify the data before sending it to the frontend to reduce bandwidth.
             if (event.event === "on_chat_model_stream") {
               const content = event.data?.chunk?.content ?? "";
@@ -305,22 +350,45 @@ export const chat = action({
       streamCompleted = true;
     } catch (error) {
       wasCancelled = true;
+      abortController.abort();
+      
+      // If already cancelled/aborted, don't throw
       if (abortController.signal.aborted) {
         return;
       }
-      if (streamDoc && streamDoc.status !== "cancelled") {
-        await ctx.runMutation(internal.streams.mutations.update, {
+      
+      // Only update status if not already cancelled
+      try {
+        const currentStreamDoc = await ctx.runQuery(api.streams.queries.get, {
           chatId: args.chatId,
-          updates: {
-            completedSteps: [],
-            status: "error",
-          },
         });
+        
+        if (currentStreamDoc && currentStreamDoc.status !== "cancelled") {
+          await ctx.runMutation(internal.streams.mutations.update, {
+            chatId: args.chatId,
+            updates: {
+              completedSteps: [],
+              status: "error",
+            },
+          });
+        }
+      } catch (updateError) {
+        // Ignore update errors if we're already in an error state
+        console.error("Failed to update stream status:", updateError);
       }
+      
       throw error;
     } finally {
+      // Signal completion to stop the flush loop
+      streamCompleted = true;
+      
       // Wait for any remaining chunks to be flushed
-      await flushPromise;
+      try {
+        await flushPromise;
+      } catch (flushError) {
+        // Ignore flush errors during cleanup
+        console.error("Error during flush cleanup:", flushError);
+      }
     }
 
     const newMessages = checkpoint?.messages?.slice(
