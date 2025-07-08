@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { fadeInUp, smoothTransition } from "@/lib/motion";
 
 export const ChatInput = () => {
-  const params = useParams({ from: "/chat_/$chatId/" });
+  const params = useParams({ from: "/chat/$chatId/" });
   const chatId = params.chatId as Id<"chats">;
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const textareaRef = useRef<AutosizeTextAreaRef>(null);
@@ -82,10 +82,7 @@ export const ChatInput = () => {
       <DocumentList documentIds={chat.documents} model={chat.model} />
 
       {/* Input */}
-      <motion.div
-        whileFocus={{ scale: 1.02 }}
-        transition={smoothTransition}
-      >
+      <motion.div whileFocus={{ scale: 1.02 }} transition={smoothTransition}>
         <AutosizeTextarea
           id="chatInputText"
           maxHeight={192}

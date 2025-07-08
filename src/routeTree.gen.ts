@@ -14,7 +14,7 @@ import { Route as rootRouteImport } from './routes/__root'
 
 const IndexLazyRouteImport = createFileRoute('/')()
 const LandingIndexLazyRouteImport = createFileRoute('/landing/')()
-const ChatChatIdIndexLazyRouteImport = createFileRoute('/chat_/$chatId/')()
+const ChatChatIdIndexLazyRouteImport = createFileRoute('/chat/$chatId/')()
 
 const IndexLazyRoute = IndexLazyRouteImport.update({
   id: '/',
@@ -27,11 +27,11 @@ const LandingIndexLazyRoute = LandingIndexLazyRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/landing/index.lazy').then((d) => d.Route))
 const ChatChatIdIndexLazyRoute = ChatChatIdIndexLazyRouteImport.update({
-  id: '/chat_/$chatId/',
+  id: '/chat/$chatId/',
   path: '/chat/$chatId/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
-  import('./routes/chat_/$chatId/index.lazy').then((d) => d.Route),
+  import('./routes/chat/$chatId/index.lazy').then((d) => d.Route),
 )
 
 export interface FileRoutesByFullPath {
@@ -48,14 +48,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexLazyRoute
   '/landing/': typeof LandingIndexLazyRoute
-  '/chat_/$chatId/': typeof ChatChatIdIndexLazyRoute
+  '/chat/$chatId/': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths: '/' | '/landing' | '/chat/$chatId'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/landing' | '/chat/$chatId'
-  id: '__root__' | '/' | '/landing/' | '/chat_/$chatId/'
+  id: '__root__' | '/' | '/landing/' | '/chat/$chatId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -80,8 +80,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LandingIndexLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/chat_/$chatId/': {
-      id: '/chat_/$chatId/'
+    '/chat/$chatId/': {
+      id: '/chat/$chatId/'
       path: '/chat/$chatId'
       fullPath: '/chat/$chatId'
       preLoaderRoute: typeof ChatChatIdIndexLazyRouteImport
