@@ -6,75 +6,146 @@ export const useScroll = () => {
   const lastScrollTopRef = useRef<number>(0);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const findScrollContainer = useCallback(() => {
+    // Try to find the scroll container with multiple strategies
+    const selectors = [
+      '[data-slot="scroll-area-viewport"]', // Radix scroll area viewport
+      '[data-radix-scroll-area-viewport]', // Alternative Radix selector
+      '.chat-messages-scroll-area', // Our class
+    ];
+
+    for (const selector of selectors) {
+      const elements = document.querySelectorAll(selector);
+      for (const element of elements) {
+        const htmlElement = element as HTMLElement;
+        // Check if this element has content that can scroll
+        if (htmlElement.scrollHeight > htmlElement.clientHeight + 10) {
+          return htmlElement;
+        }
+      }
+    }
+
+    return null;
+  }, []);
+
+  const checkScrollPosition = useCallback(() => {
+    const scrollContainer = findScrollContainer();
+    
+    if (!scrollContainer) {
+      setIsAtBottom(true);
+      return true;
+    }
+
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+    const threshold = 50; // Generous threshold
+    const atBottom = scrollHeight - scrollTop <= clientHeight + threshold;
+    
+    setIsAtBottom(atBottom);
+    lastScrollTopRef.current = scrollTop;
+    
+    return atBottom;
+  }, [findScrollContainer]);
+
   const scrollToBottom = useCallback(
     (behavior: "smooth" | "auto" = "smooth") => {
-      const scrollContainer = document.querySelector(
-        '[data-slot="scroll-area-viewport"]',
-      );
+      const scrollContainer = findScrollContainer();
       if (scrollContainer) {
         scrollContainer.scrollTo({
           top: scrollContainer.scrollHeight,
           behavior,
         });
-        // Reset user scrolled away state when we programmatically scroll
         setUserHasScrolledAway(false);
-        // Also update the isAtBottom state immediately to avoid button flickering
         setIsAtBottom(true);
       }
     },
-    [],
+    [findScrollContainer],
   );
 
   const handleScroll = useCallback(() => {
-    const scrollContainer = document.querySelector(
-      '[data-slot="scroll-area-viewport"]',
-    );
-    if (scrollContainer) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-      const atBottom = scrollHeight - scrollTop <= clientHeight + 5;
+    const scrollContainer = findScrollContainer();
+    if (!scrollContainer) return;
 
-      // Check if user manually scrolled (not programmatic)
-      const scrollDelta = Math.abs(scrollTop - lastScrollTopRef.current);
-      if (scrollDelta > 1) {
-        // Clear any existing timeout
-        if (scrollTimeoutRef.current) {
-          clearTimeout(scrollTimeoutRef.current);
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+    const threshold = 50;
+    const atBottom = scrollHeight - scrollTop <= clientHeight + threshold;
+    const scrollDelta = Math.abs(scrollTop - lastScrollTopRef.current);
+
+    // Only set userHasScrolledAway if it's a significant scroll movement upward
+    if (scrollDelta > 5 && scrollTop < lastScrollTopRef.current) {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      scrollTimeoutRef.current = setTimeout(() => {
+        if (!atBottom) {
+          setUserHasScrolledAway(true);
         }
-
-        // Set a timeout to detect if this was user-initiated scrolling
-        scrollTimeoutRef.current = setTimeout(() => {
-          if (!atBottom) {
-            setUserHasScrolledAway(true);
-          }
-        }, 100);
-      }
-
-      lastScrollTopRef.current = scrollTop;
-      setIsAtBottom(atBottom);
-
-      // If user scrolled back to bottom manually, reset the scrolled away state
-      if (atBottom) {
-        setUserHasScrolledAway(false);
-      }
+      }, 150);
     }
-  }, []);
 
+    lastScrollTopRef.current = scrollTop;
+    setIsAtBottom(atBottom);
+
+    // Reset scrolled away state if user scrolled back to bottom
+    if (atBottom) {
+      setUserHasScrolledAway(false);
+    }
+  }, [findScrollContainer]);
+
+  // Setup effect
   useEffect(() => {
-    const scrollContainer = document.querySelector(
-      '[data-slot="scroll-area-viewport"]',
-    );
-    if (scrollContainer) {
-      scrollContainer.addEventListener("scroll", handleScroll);
-      // Initial check
-      handleScroll();
-      return () => {
-        scrollContainer.removeEventListener("scroll", handleScroll);
-        if (scrollTimeoutRef.current) {
-          clearTimeout(scrollTimeoutRef.current);
-        }
-      };
-    }
-  }, [handleScroll]);
+    let cleanup: (() => void) | undefined;
+
+    const setup = () => {
+      const scrollContainer = findScrollContainer();
+      
+      if (scrollContainer) {
+        // Add scroll listener
+        scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+        
+        // Initial check
+        checkScrollPosition();
+
+        // Watch for content changes
+        const observer = new MutationObserver(() => {
+          // Debounce the check
+          setTimeout(checkScrollPosition, 100);
+        });
+
+        observer.observe(scrollContainer, {
+          childList: true,
+          subtree: true,
+        });
+
+        cleanup = () => {
+          scrollContainer.removeEventListener("scroll", handleScroll);
+          observer.disconnect();
+        };
+      } else {
+        // If no container found, try again later
+        const retryTimeout = setTimeout(setup, 500);
+        cleanup = () => clearTimeout(retryTimeout);
+      }
+    };
+
+    setup();
+
+    return () => {
+      cleanup?.();
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [handleScroll, checkScrollPosition, findScrollContainer]);
+
+  // Force periodic updates to ensure accuracy
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkScrollPosition();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [checkScrollPosition]);
 
   return {
     scrollToBottom,

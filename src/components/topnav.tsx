@@ -28,12 +28,12 @@ export function TopNav() {
       <div className="flex items-center gap-2 justify-center top-0 left-0 pointer-events-auto">
         <SidebarTrigger className="h-8 w-8" />
       </div>
-      <div className="flex items-center gap-2 justify-center top-0 right-0 pointer-events-auto">
+      <div className="flex items-center gap-1 justify-center top-0 right-0 pointer-events-auto">
         {!resizePanelOpen ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-6 w-6">
                   <AvatarImage
                     src={user?.imageUrl}
                     alt={user?.fullName ?? ""}

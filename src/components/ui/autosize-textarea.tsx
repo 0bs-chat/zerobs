@@ -16,30 +16,33 @@ export const useAutosizeTextArea = ({
   maxHeight = Number.MAX_SAFE_INTEGER,
   minHeight = 0,
 }: UseAutosizeTextAreaProps) => {
-  const [init, setInit] = React.useState(true);
   React.useEffect(() => {
-    // We need to reset the height momentarily to get the correct scrollHeight for the textarea
-    const offsetBorder = 6;
     const textAreaElement = textAreaRef.current;
-    if (textAreaElement) {
-      if (init) {
-        textAreaElement.style.minHeight = `${minHeight + offsetBorder}px`;
-        if (maxHeight > minHeight) {
-          textAreaElement.style.maxHeight = `${maxHeight}px`;
-        }
-        setInit(false);
-      }
-      textAreaElement.style.height = `${minHeight + offsetBorder}px`;
-      const scrollHeight = textAreaElement.scrollHeight;
-      // We then set the height directly, outside of the render loop
-      // Trying to set this with state or a ref will product an incorrect value.
+    if (!textAreaElement) return;
+
+    const offsetBorder = 6;
+    
+    // Always set min and max height constraints
+    textAreaElement.style.minHeight = `${minHeight + offsetBorder}px`;
+    if (maxHeight > minHeight) {
+      textAreaElement.style.maxHeight = `${maxHeight}px`;
+    }
+
+    // Reset height to calculate proper scrollHeight
+    textAreaElement.style.height = `${minHeight + offsetBorder}px`;
+    
+    // Get the actual content height
+    const scrollHeight = textAreaElement.scrollHeight;
+    
+    // Apply appropriate height based on content
+    if (scrollHeight > minHeight + offsetBorder) {
       if (scrollHeight > maxHeight) {
         textAreaElement.style.height = `${maxHeight}px`;
       } else {
-        textAreaElement.style.height = `${scrollHeight + offsetBorder}px`;
+        textAreaElement.style.height = `${scrollHeight}px`;
       }
     }
-  }, [textAreaRef.current, triggerAutoSize]);
+  }, [triggerAutoSize, maxHeight, minHeight]);
 };
 
 export type AutosizeTextAreaRef = {
@@ -85,8 +88,10 @@ export const AutosizeTextarea = React.forwardRef<
       minHeight,
     }));
 
+    // Initialize triggerAutoSize with the initial value
     React.useEffect(() => {
-      setTriggerAutoSize(value as string);
+      const initialValue = value || props?.defaultValue || "";
+      setTriggerAutoSize(initialValue as string);
     }, [props?.defaultValue, value]);
 
     return (

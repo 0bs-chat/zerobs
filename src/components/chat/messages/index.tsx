@@ -72,7 +72,7 @@ export const ChatMessages = () => {
     }
 
     return (
-      <ScrollArea className="h-full">
+      <ScrollArea className="h-full chat-messages-scroll-area">
         <div className="flex flex-col gap-1 p-1 max-w-4xl mx-auto">
           {groupedMessages.length > 0 && (
             <MessagesList navigateBranch={navigateBranch} />

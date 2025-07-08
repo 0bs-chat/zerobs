@@ -263,7 +263,7 @@ export const ArtifactViewer = ({
     } else {
       setView("preview");
     }
-  }, [artifact]);
+  }, [artifact.type, artifact.id]);
 
   const handleCopy = () => {
     copy(artifact.content);
