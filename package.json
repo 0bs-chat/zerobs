@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.32.3",
+    "@clerk/nextjs": "^6.24.0",
+    "@clerk/themes": "^2.2.55",
     "@isomorphic-git/lightning-fs": "^4.6.2",
     "@langchain/community": "^0.3.47",
     "@langchain/core": "^0.3.61",

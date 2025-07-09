@@ -46,6 +46,20 @@ export const models: {
     usageRateMultiplier: 1.0,
   },
   {
+    label: "Gemini 2.5 Flash Thinking",
+    model_name: "gemini-2.5-flash-thinking",
+    model: "google/gemini-2.5-flash-preview-05-20:thinking",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image", "pdf"],
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "Gemini 2.5 Flash Thinking is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    usageRateMultiplier: 1.5,
+  },
+  {
     label: "Gemini 2.5 Pro",
     model_name: "gemini-2.5-pro",
     model: "google/gemini-2.5-pro-preview",

@@ -122,6 +122,11 @@ export const Mcps = Table("mcps", {
   updatedAt: v.number(),
 });
 
+export const Usage = Table("usage", {
+  userId: v.string(),
+  messages: v.number(),
+});
+
 export default defineSchema({
   apiKeys: ApiKeys.table
     .index("by_key", ["key"])
@@ -160,4 +165,5 @@ export default defineSchema({
     .index("by_user_updated", ["userId", "updatedAt"])
     .index("by_enabled_user", ["enabled", "userId"]),
   streamChunkRefs: StreamChunkRefs.table.index("by_stream", ["streamId"]),
+  usage: Usage.table.index("by_user", ["userId"]),
 });
