@@ -1,8 +1,9 @@
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { KeyIcon, CreditCardIcon } from "lucide-react";
+import { KeyIcon, CreditCardIcon, PlugIcon } from "lucide-react";
 import { ApiKeysTab } from "./api-keys";
 import { BillingTab } from "./billing";
+import { IntegrationsTab } from "./integrations";
 
 export const SettingsPanel = () => {
   return (
@@ -24,6 +25,12 @@ export const SettingsPanel = () => {
               API Keys
             </div>
           </TabsTrigger>
+          <TabsTrigger value="integrations">
+            <div className="flex flex-row items-center gap-2">
+              <PlugIcon className="h-4 w-4" />
+              Integrations
+            </div>
+          </TabsTrigger>
           <TabsTrigger value="billing">
             <div className="flex flex-row items-center gap-2">
               <CreditCardIcon className="h-4 w-4" />
@@ -34,6 +41,10 @@ export const SettingsPanel = () => {
         
         <TabsContent value="api-keys">
           <ApiKeysTab />
+        </TabsContent>
+        
+        <TabsContent value="integrations">
+          <IntegrationsTab />
         </TabsContent>
         
         <TabsContent value="billing">

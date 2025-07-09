@@ -17,6 +17,7 @@ import {
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { getMCPTools, getRetrievalTools } from "./tools";
+import { getGoogleTools } from "./tools/googleTools";
 import { getModel } from "./models";
 import { createAgentSystemMessage } from "./prompts";
 import { GraphState } from "./state";
@@ -54,10 +55,13 @@ export async function createAgentWithTools(
   const chat = config.chat;
   const tools = await getMCPTools(config.ctx, chat._id);
   const retrievalTools = await getRetrievalTools(state, config, true);
+  const googleTools = await getGoogleTools(config, true);
+
   const allTools = [
     ...(tools.tools.length > 0 ? tools.tools : []),
     ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
     ...(chat.webSearch ? [retrievalTools.webSearch] : []),
+    ...(googleTools.length > 0 ? googleTools : []),
   ];
 
   if (!chat.conductorMode) {

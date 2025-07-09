@@ -47,7 +47,6 @@ export const ConductorToggle = ({
         <motion.div
           animate={{ 
             scale: conductorMode ? 1.1 : 1,
-            rotate: conductorMode ? 360 : 0 
           }}
           transition={{ duration: 0.3 }}
         >

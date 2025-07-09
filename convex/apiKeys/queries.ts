@@ -6,9 +6,10 @@ import { verifyJwt } from "../utils/encryption";
 export const getFromKey = internalQuery({
   args: {
     key: v.string(),
+    userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
+    const { userId } = args.userId ? { userId: args.userId } : await requireAuth(ctx);
 
     const apiKeyDoc = await ctx.db
       .query("apiKeys")

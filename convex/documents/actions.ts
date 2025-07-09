@@ -14,6 +14,7 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 export const addDocument = internalAction({
   args: {
     documentId: v.id("documents"),
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     const document = await ctx.runQuery(internal.documents.crud.read, {
@@ -56,7 +57,7 @@ export const addDocument = internalAction({
 
       // Create embeddings
       const vectorStore = new ConvexVectorStore(
-        await getEmbeddingModel(ctx, "embeddings"),
+        await getEmbeddingModel(ctx, "embeddings", args.userId),
         {
           ctx,
           table: "documentVectors",

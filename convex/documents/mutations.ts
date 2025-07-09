@@ -53,6 +53,7 @@ export const create = mutation({
 
     await ctx.scheduler.runAfter(0, internal.documents.actions.addDocument, {
       documentId: document._id,
+      userId,
     });
 
     return document._id;

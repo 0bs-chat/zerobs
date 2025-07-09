@@ -99,12 +99,20 @@ export const DocumentList = ({
     documentIds,
   });
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
+  const removeDocument = useRemoveDocument();
 
   const handlePreview = useCallback(
     (documentId: Id<"documents">) => {
       setDocumentDialogOpen(documentId);
     },
     [setDocumentDialogOpen],
+  );
+
+  const handleRemove = useCallback(
+    (documentId: Id<"documents">) => {
+      removeDocument(documentId);
+    },
+    [removeDocument],
   );
 
   if (!documents?.length) return null;
@@ -120,7 +128,7 @@ export const DocumentList = ({
             key={doc._id}
             doc={doc}
             onPreview={handlePreview}
-            onRemove={() => useRemoveDocument()(doc._id)}
+            onRemove={() => handleRemove(doc._id)}
             modalities={modalities}
           />
         ))}

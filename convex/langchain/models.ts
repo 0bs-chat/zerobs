@@ -213,7 +213,7 @@ export async function getModel(
   });
 }
 
-export async function getEmbeddingModel(ctx: ActionCtx, model: string) {
+export async function getEmbeddingModel(ctx: ActionCtx, model: string, userId?: string) {
   const modelConfig = models.find((m) => m.model_name === model);
 
   if (!modelConfig || !modelConfig.modalities.includes("text")) {
@@ -227,6 +227,7 @@ export async function getEmbeddingModel(ctx: ActionCtx, model: string) {
           modelConfig.provider === "google"
             ? "GOOGLE_EMBEDDING_API_KEY"
             : "OPENAI_EMBEDDING_API_KEY",
+        userId,
       })
     )?.value ??
     process.env[

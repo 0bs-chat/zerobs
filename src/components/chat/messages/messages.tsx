@@ -66,13 +66,7 @@ export const MessagesList = memo(
                   editedText={editedText}
                   setEditedText={setEditedText}
                 />
-                <motion.div 
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 0, y: 0 }}
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                   <UtilsBar
                     item={group.input}
                     isEditing={editingMessageId === group.input.message._id}
@@ -81,9 +75,9 @@ export const MessagesList = memo(
                     onDone={onDone}
                     navigateBranch={navigateBranch!}
                   />
-                </motion.div>
+                </div>
               </div>
-              <div className="flex flex-col gap-1 group">
+              <div className="group flex flex-col gap-1">
                 {group.response.map((response, index) => {
                   return (
                     <motion.div
@@ -97,19 +91,13 @@ export const MessagesList = memo(
                   );
                 })}
                 {group.response.length > 0 && (
-                  <motion.div 
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 0, y: 0 }}
-                    whileHover={{ opacity: 1 }}
-                    transition={{ duration: 0.2 }}
-                  >
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <UtilsBar
                       item={group.input}
                       isAI={true}
                       navigateBranch={navigateBranch!}
                     />
-                  </motion.div>
+                  </div>
                 )}
               </div>
             </motion.div>
