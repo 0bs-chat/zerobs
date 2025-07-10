@@ -52,23 +52,41 @@ export const IntegrationsTab = () => {
       }
 
       const redirectUrl = window.location.href;
+      const googleAccount = findGoogleAccount();
 
-      // Create new Google external account with required scopes
-      const result = await user.createExternalAccount({
-        strategy: "oauth_custom_google",
-        redirectUrl: redirectUrl,
-        oidcPrompt: "consent",
-      });
+      if (googleAccount) {
+        // Reauthorize if account is already connected
+        const result = await googleAccount.reauthorize({
+          redirectUrl: redirectUrl,
+          oidcPrompt: "consent",
+          additionalScopes: [],
+        });
 
-      // Redirect to the external verification URL
-      if (result.verification?.externalVerificationRedirectURL?.href) {
-        window.location.href =
-          result.verification.externalVerificationRedirectURL.href;
+        if (result.verification?.externalVerificationRedirectURL?.href) {
+          window.location.href =
+            result.verification.externalVerificationRedirectURL.href;
+        } else {
+          await user.reload();
+          toast.success("Google connection refreshed successfully.");
+        }
       } else {
-        toast.error("No verification URL provided by Clerk");
+        // Create new Google external account if not connected
+        const result = await user.createExternalAccount({
+          strategy: "oauth_custom_google",
+          redirectUrl: redirectUrl,
+          oidcPrompt: "consent",
+        });
+
+        // Redirect to the external verification URL
+        if (result.verification?.externalVerificationRedirectURL?.href) {
+          window.location.href =
+            result.verification.externalVerificationRedirectURL.href;
+        } else {
+          toast.error("No verification URL provided by Clerk");
+        }
       }
     } catch (error: any) {
-      console.error("Error connecting Google account:", error);
+      console.error("Error with Google account:", error);
 
       if (
         error?.errors?.[0]?.code === "verification_required" ||
