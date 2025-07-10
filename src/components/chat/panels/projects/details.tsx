@@ -80,7 +80,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between ">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold">Documents</h3>
           </div>

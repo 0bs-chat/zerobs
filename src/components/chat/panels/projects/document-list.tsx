@@ -41,7 +41,7 @@ export function ProjectDocumentList({
   }
 
   return (
-    <div className="flex flex-col gap-2 bg-card rounded-md shadow-sm border p-4">
+    <div className="flex flex-col gap-2 bg-card rounded-xl shadow-sm border p-4">
       <div className="flex items-center px-3 gap-3">
         <Checkbox
           checked={projectDocuments.projectDocuments.every(
