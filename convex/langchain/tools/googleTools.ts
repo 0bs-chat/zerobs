@@ -12,12 +12,10 @@ const clerkClient = createClerkClient({
 // Helper function to get Google OAuth token from user's external account
 async function getGoogleAccessToken(config: ExtendedRunnableConfig) {
   try {
-    console.log("Getting Google access token for user:", config.chat.userId);
     const externalAccount = await clerkClient.users.getUserOauthAccessToken(
       config.chat.userId,
       "custom_google",
     );
-    console.log("External account:", JSON.stringify(externalAccount, null, 2));
     return externalAccount.data.length > 0
       ? externalAccount.data[0].token
       : undefined;
