@@ -1,6 +1,6 @@
 import { ThemeProvider } from "@/components/theme-provider";
+import { authClient } from "@/lib/auth-client";
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { SignInButton } from "@clerk/clerk-react";
 
 export const Route = createLazyFileRoute("/landing/")({
   component: RouteComponent,
@@ -31,15 +31,16 @@ function RouteComponent() {
               >
                 github
               </a>
-              <SignInButton mode="modal">
-                <button
-                  className="hover:cursor-pointer dark:text-black 
+              <button
+                className="hover:cursor-pointer dark:text-black 
                 text-black hover:text-white dark:bg-white 
                 px-2 transition duration-500 font-medium"
-                >
-                  try now
-                </button>
-              </SignInButton>
+                onClick={() => authClient.signIn.social({
+                  provider: "google"
+                })}
+              >
+                try now
+              </button>
             </div>
           </div>
         </div>

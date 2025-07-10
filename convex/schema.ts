@@ -1,4 +1,4 @@
-import { defineSchema } from "convex/server";
+import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { Table } from "convex-helpers/server";
 
@@ -25,7 +25,7 @@ export const Documents = Table("documents", {
     v.literal("done"),
     v.literal("error"),
   ),
-  userId: v.string(),
+  userId: v.id("users"),
 });
 
 export const DocumentVectors = Table("documentVectors", {
@@ -35,7 +35,7 @@ export const DocumentVectors = Table("documentVectors", {
 });
 
 export const Chats = Table("chats", {
-  userId: v.string(),
+  userId: v.id("users"),
   name: v.string(),
   pinned: v.boolean(),
   documents: v.array(v.id("documents")),
@@ -62,7 +62,7 @@ export const ChatMessages = Table("chatMessages", {
 });
 
 export const Streams = Table("streams", {
-  userId: v.string(),
+  userId: v.id("users"),
   chatId: v.id("chats"),
   completedSteps: v.array(v.string()),
   status: v.union(
@@ -88,7 +88,7 @@ export const Projects = Table("projects", {
   name: v.string(),
   description: v.optional(v.string()),
   systemPrompt: v.string(),
-  userId: v.string(),
+  userId: v.id("users"),
   updatedAt: v.number(),
 });
 
@@ -118,16 +118,19 @@ export const Mcps = Table("mcps", {
     v.literal("error"),
   ),
   restartOnNewChat: v.boolean(),
-  userId: v.optional(v.string()),
+  userId: v.optional(v.id("users")),
   updatedAt: v.number(),
 });
 
 export const Usage = Table("usage", {
-  userId: v.string(),
+  userId: v.id("users"),
   messages: v.number(),
 });
 
 export default defineSchema({
+  users: defineTable({
+    // Fields are optional
+  }),
   apiKeys: ApiKeys.table
     .index("by_key", ["key"])
     .index("by_user_key", ["userId", "key"])

@@ -15,13 +15,14 @@ import {
   zCustomQuery,
 } from "convex-helpers/server/zod";
 import { NoOp } from "convex-helpers/server/customFunctions";
+import type { Id } from "../_generated/dataModel";
 
 export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
   const user = await ctx.auth.getUserIdentity();
   if (!user) {
     throw new ConvexError("Unauthorized");
   }
-  const userId = user.subject;
+  const userId = user.subject as Id<"users">;
   return { userId, user };
 }
 

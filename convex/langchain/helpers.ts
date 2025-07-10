@@ -56,7 +56,6 @@ export async function createAgentWithTools(
   const tools = await getMCPTools(config.ctx, chat._id);
   const retrievalTools = await getRetrievalTools(state, config, true);
   const googleTools = await getGoogleTools(config, true);
-
   const allTools = [
     ...(tools.tools.length > 0 ? tools.tools : []),
     ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
@@ -101,7 +100,6 @@ export async function createAgentWithTools(
           prompt: `You are a ${groupName} assistant`,
         }),
     );
-    console.log(agents.length);
     return createSupervisor({
       agents: [
         ...agents,

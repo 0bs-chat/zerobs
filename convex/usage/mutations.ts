@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 export const incrementUsage = internalMutation({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
     messageCount: v.optional(v.number()),
   },
   returns: v.null(),

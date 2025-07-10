@@ -3,22 +3,14 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import type { ExtendedRunnableConfig } from "../helpers";
-import { createClerkClient } from "@clerk/backend";
-
-const clerkClient = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY,
-});
+import { api } from "../../_generated/api";
 
 // Helper function to get Google OAuth token from user's external account
 async function getGoogleAccessToken(config: ExtendedRunnableConfig) {
-  const externalAccount = await clerkClient.users.getUserOauthAccessToken(
-    config.chat.userId,
-    "google",
-  );
-  console.log(JSON.stringify(externalAccount, null, 2));
-  return externalAccount.data.length > 0
-    ? externalAccount.data[0].token
-    : undefined;
+  const token = await config.ctx.runQuery(api.auth.getToken, {
+    providerId: "google",
+  });
+  return token.token;
 }
 
 // Helper function to make authenticated Google API requests

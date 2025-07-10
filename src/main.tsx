@@ -9,14 +9,11 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
 import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
-import { ClerkProvider, useAuth } from "@clerk/clerk-react";
-import { ConvexProviderWithClerk } from "convex/react-clerk";
-
-// Import the generated route tree
+import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { routeTree } from "./routeTree.gen";
-
-import "./styles.css";
 import reportWebVitals from "./reportWebVitals.ts";
+import { authClient } from "./lib/auth-client.ts";
+import "./styles.css";
 
 // Create a new router instance
 const router = createRouter({
@@ -47,20 +44,13 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ClerkProvider
-        publishableKey={import.meta.env.VITE_PUBLIC_CLERK_PUBLISHABLE_KEY}
-      >
-        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-          <ConvexQueryCacheProvider>
-            <RouterProvider router={router} />
-          </ConvexQueryCacheProvider>
-        </ConvexProviderWithClerk>
-      </ClerkProvider>
+      <ConvexBetterAuthProvider client={convex} authClient={authClient}>
+        <ConvexQueryCacheProvider>
+          <RouterProvider router={router} />
+        </ConvexQueryCacheProvider>
+      </ConvexBetterAuthProvider>
     </StrictMode>,
   );
 }
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
