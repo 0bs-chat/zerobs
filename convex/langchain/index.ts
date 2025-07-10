@@ -160,6 +160,10 @@ export const chat = action({
       },
     });
 
+    // Signal to wake the flush loop early
+    let wakeFlush: () => void = () => {};
+    const flushSignal = new Promise<void>((resolve) => (wakeFlush = resolve));
+
     // Create a function to handle flushing chunks
     async function flushChunks() {
       while (
@@ -167,7 +171,10 @@ export const chat = action({
         !streamCompleted &&
         !abortController.signal.aborted
       ) {
-        await new Promise((resolve) => setTimeout(resolve, BUFFER));
+        await Promise.race([
+          new Promise((resolve) => setTimeout(resolve, BUFFER)),
+          flushSignal,
+        ]);
 
         if (buffer.length > 0) {
           const chunksToFlush = buffer;
@@ -324,7 +331,7 @@ export const chat = action({
               let processedOutput = outputContent;
 
               if (Array.isArray(outputContent)) {
-                processedOutput = await Promise.all(
+                processedOutput =await Promise.all(
                   outputContent.map(async (item) => {
                     if (
                       item.type === "image_url" &&
@@ -352,6 +359,9 @@ export const chat = action({
 
               buffer.push(JSON.stringify(toolChunk));
             }
+
+            // Wake the flush loop after pushing to buffer
+            wakeFlush();
           }
         }
       }
