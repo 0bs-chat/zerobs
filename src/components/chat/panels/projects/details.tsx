@@ -73,7 +73,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
         <AutosizeTextarea
           defaultValue={project.systemPrompt}
           onChange={(e) => debouncedUpdateSystemPrompt(e.target.value)}
-          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-2"
+          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-2 rounded-xl"
           minHeight={80}
           maxHeight={200}
         />

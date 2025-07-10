@@ -145,7 +145,7 @@ export const IntegrationsTab = () => {
       ) {
         // For verification required errors, show a more helpful message
         toast.error(
-          "To disconnect Google, please verify your identity first. Try signing out and back in, then attempt to disconnect again.",
+          "Cannot disconnect Google: verification is required. Please sign out and back in, then try again.",
         );
       } else {
         toast.error(

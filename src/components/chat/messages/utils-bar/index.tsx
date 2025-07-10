@@ -76,7 +76,7 @@ export const UtilsBar = memo(
       }
       updateMessage({
         id: item.message._id as Id<"chatMessages">,
-        updates: { text: editedText },
+        updates: { text: editedText!, documents: [] },
         applySame: applySame,
       }).then(() => {
         if (applySame === false) {

@@ -14,8 +14,8 @@ export const updateInput = mutation({
   args: {
     id: v.id("chatMessages"),
     updates: v.object({
-      text: v.optional(v.string()),
-      documents: v.optional(v.array(v.id("documents"))),
+      text: v.string(),
+      documents: v.array(v.id("documents")),
     }),
     applySame: v.optional(v.boolean()),
   },
@@ -23,7 +23,7 @@ export const updateInput = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    if (!args.updates.text && !args.updates.documents) {
+    if (args.updates.text === "" && args.updates.documents.length === 0) {
       throw new Error("No updates provided");
     }
 
@@ -38,7 +38,7 @@ export const updateInput = mutation({
         mapChatMessagesToStoredMessages([
           new HumanMessage({
             content: [
-              ...(args.updates.text
+              ...(args.updates.text !== ""
                 ? [
                     {
                       type: "text",
@@ -46,7 +46,7 @@ export const updateInput = mutation({
                     },
                   ]
                 : []),
-              ...(args.updates.documents
+              ...(args.updates.documents.length > 0
                 ? args.updates.documents.map((documentId) => ({
                     type: "file",
                     file: {
@@ -81,6 +81,10 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
+
+    if (args.text === "" && args.documents.length === 0) {
+      throw new Error("No text or documents provided");
+    }
 
     // Verify ownership
     await ctx.runQuery(api.chats.queries.get, {
