@@ -27,7 +27,7 @@ export const AiMessageContent = memo(
       if (type !== "ai") {
         return [];
       }
-      const parsed = parseContent(content as string, 0);
+      const parsed = parseContent(content as string);
       return parsed;
     }, [content, type]);
 

@@ -15,12 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCopy } from "@/hooks/use-copy";
 import type { Artifact } from "./utils";
-import { useAtom, useSetAtom } from "jotai";
-import {
-  selectedArtifactAtom,
-  selectedPanelTabAtom,
-  resizePanelOpenAtom,
-} from "@/store/chatStore";
+import { useAtomValue } from "jotai";
+import { selectedArtifactAtom } from "@/store/chatStore";
+import { useArtifactView } from "@/hooks/use-artifact-view";
 
 // Get appropriate icon for artifact type
 const getArtifactIcon = (type: string, _language?: string) => {
@@ -64,10 +61,9 @@ const getTypeName = (type: string, language?: string): string => {
 
 export const ArtifactCard = React.memo(
   ({ artifact }: { artifact: Artifact }) => {
-    const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
-    const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
-    const [selectedArtifact, setSelectedArtifact] =
-      useAtom(selectedArtifactAtom);
+    const selectedArtifact = useAtomValue(selectedArtifactAtom);
+    const { viewArtifact } = useArtifactView();
+
     const { Icon, className } = getArtifactIcon(
       artifact.type,
       artifact.language,
@@ -79,9 +75,7 @@ export const ArtifactCard = React.memo(
     };
 
     const handleView = () => {
-      setResizePanelOpen(true);
-      setSelectedPanelTab("artifacts");
-      setSelectedArtifact(artifact);
+      viewArtifact(artifact);
     };
 
     return (

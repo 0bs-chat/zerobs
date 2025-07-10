@@ -74,7 +74,7 @@ export const allArtifactsAtom = atom((get) => {
         if (msg.getType() === "ai") {
           const content = msg.content;
           if (typeof content === "string") {
-            const parts = parseContent(content, 0);
+            const parts = parseContent(content);
             const messageArtifacts = parts
               .filter(
                 (part): part is Extract<ContentPart, { type: "artifact" }> =>
@@ -94,7 +94,7 @@ export const allArtifactsAtom = atom((get) => {
       .filter((g) => g.type === "ai")
       .map((g) => (g.type === "ai" ? g.content : ""))
       .join("");
-    const streamParts = parseContent(streamContent, 0);
+    const streamParts = parseContent(streamContent);
     const streamArtifacts = streamParts
       .filter(
         (part): part is Extract<ContentPart, { type: "artifact" }> =>

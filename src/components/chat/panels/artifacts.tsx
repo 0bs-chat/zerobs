@@ -25,7 +25,7 @@ const ArtifactsList = ({ artifacts }: { artifacts: Artifact[] }) => {
         <div className="flex flex-col gap-3">
           {artifacts.map((artifact) => (
             <ArtifactCard
-              key={`${artifact.id}-${artifact.messageIndex}`}
+              key={`${artifact.id}`}
               artifact={artifact}
             />
           ))}
