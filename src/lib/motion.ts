@@ -182,11 +182,13 @@ export const getRandomDelay = (min: number = 0, max: number = 0.2) => {
   return Math.random() * (max - min) + min;
 };
 
-export const createStaggerVariants = (staggerDelay: number = 0.1): Variants => ({
+export const createStaggerVariants = (
+  staggerDelay: number = 0.1,
+): Variants => ({
   initial: {},
   animate: {
     transition: {
       staggerChildren: staggerDelay,
     },
   },
-}); 
+});

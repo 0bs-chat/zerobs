@@ -12,7 +12,8 @@ const DOC_PROCESSOR_URL =
   process.env.DOC_PROCESSOR_URL ?? "http://127.0.0.1:7861";
 const SERVICE_PASSWORD = process.env.SERVICE_PASSWORD ?? "";
 const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
-const RUNPOD_DOC_PROCESSOR_ENDPOINT_ID = process.env.RUNPOD_DOC_PROCESSOR_ENDPOINT_ID;
+const RUNPOD_DOC_PROCESSOR_ENDPOINT_ID =
+  process.env.RUNPOD_DOC_PROCESSOR_ENDPOINT_ID;
 
 export const processFile = internalAction({
   args: {
@@ -33,11 +34,11 @@ export const processFile = internalAction({
       }
     } else {
       const fileUrl = await getUrl(ctx, document.key);
-      
+
       if (!fileUrl) {
         throw new Error("Unable to get file URL");
       }
-      
+
       // Use RunPod if both API key and endpoint ID are available
       if (RUNPOD_API_KEY && RUNPOD_DOC_PROCESSOR_ENDPOINT_ID) {
         try {
@@ -48,9 +49,9 @@ export const processFile = internalAction({
               document_url: fileUrl,
             },
           };
-          
+
           const response = await runpod.endpoint(endpointId)?.runSync(input)!;
-          
+
           if (response.status === "COMPLETED" && response.output?.content) {
             result = response.output.content;
           } else {

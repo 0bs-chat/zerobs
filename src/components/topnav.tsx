@@ -55,7 +55,9 @@ export function TopNav() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => window.open("https://github.com/0bs-chat/zerobs/", "_blank")}
+                onClick={() =>
+                  window.open("https://github.com/0bs-chat/zerobs/", "_blank")
+                }
               >
                 <GithubIcon className="mr-2 h-4 w-4" />
                 <span>GitHub</span>

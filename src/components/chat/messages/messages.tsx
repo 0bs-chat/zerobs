@@ -6,7 +6,11 @@ import { UtilsBar } from "./utils-bar";
 import { useAtomValue } from "jotai";
 import { groupedMessagesAtom } from "@/store/chatStore";
 import type { NavigateBranch } from "@/hooks/chats/use-messages";
-import { messageListVariants, chatMessageVariants, springTransition } from "@/lib/motion";
+import {
+  messageListVariants,
+  chatMessageVariants,
+  springTransition,
+} from "@/lib/motion";
 
 export const MessagesList = memo(
   ({ navigateBranch }: { navigateBranch: NavigateBranch }) => {

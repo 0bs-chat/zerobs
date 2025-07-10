@@ -52,7 +52,8 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
   {
     key: "OPENAI_BASE_URL",
     title: "OpenAI Base URL",
-    description: "Custom base URL for OpenAI-compatible APIs (e.g., OpenRouter, local deployments). Defaults to OpenRouter if not set.",
+    description:
+      "Custom base URL for OpenAI-compatible APIs (e.g., OpenRouter, local deployments). Defaults to OpenRouter if not set.",
     icon: (
       <div className="w-6 h-6 bg-purple-500 rounded-sm flex items-center justify-center">
         <GlobeIcon className="h-3 w-3 text-white" />
@@ -63,7 +64,8 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
   {
     key: "OPENAI_EMBEDDING_BASE_URL",
     title: "OpenAI Embedding Base URL",
-    description: "Custom base URL for OpenAI embedding models. Leave empty to use the same as OpenAI Base URL.",
+    description:
+      "Custom base URL for OpenAI embedding models. Leave empty to use the same as OpenAI Base URL.",
     icon: (
       <div className="w-6 h-6 bg-indigo-500 rounded-sm flex items-center justify-center">
         <SettingsIcon className="h-3 w-3 text-white" />
@@ -74,7 +76,8 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
   {
     key: "GOOGLE_EMBEDDING_API_KEY",
     title: "Google Embedding API Key",
-    description: "Required for Google embedding models. Get your API key from Google Cloud Console.",
+    description:
+      "Required for Google embedding models. Get your API key from Google Cloud Console.",
     icon: (
       <div className="w-6 h-6 bg-red-500 rounded-sm flex items-center justify-center">
         <span className="text-white text-xs font-bold">G</span>
@@ -86,7 +89,8 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
   {
     key: "OPENAI_EMBEDDING_API_KEY",
     title: "OpenAI Embedding API Key",
-    description: "Required for OpenAI embedding models. Get your API key from OpenAI Platform.",
+    description:
+      "Required for OpenAI embedding models. Get your API key from OpenAI Platform.",
     icon: (
       <div className="w-6 h-6 bg-indigo-500 rounded-sm flex items-center justify-center">
         <SettingsIcon className="h-3 w-3 text-white" />
@@ -130,7 +134,7 @@ export const ApiKeysTab = () => {
   const removeApiKey = useMutation(api.apiKeys.mutations.remove);
 
   const updateInputValue = (key: string, value: string) => {
-    setInputValues(prev => ({ ...prev, [key]: value }));
+    setInputValues((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSave = async (config: ApiKeyConfig) => {
@@ -190,17 +194,25 @@ export const ApiKeysTab = () => {
               <div className="flex items-center gap-1 truncate">
                 <span className="text-sm font-medium">Current Value:</span>
                 <span className="text-sm font-mono ">
-                  {config.isPassword ? maskKey(existingKey.value) : existingKey.value}
+                  {config.isPassword
+                    ? maskKey(existingKey.value)
+                    : existingKey.value}
                 </span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => handleRemove(config)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleRemove(config)}
+              >
                 <TrashIcon className="h-4 w-4" />
               </Button>
             </div>
           ) : (
             <div className="flex flex-col gap-1.5">
               <div className="flex flex-col gap-1">
-                <Label className="text-xs text-muted-foreground">{config.title}</Label>
+                <Label className="text-xs text-muted-foreground">
+                  {config.title}
+                </Label>
                 <Input
                   type={config.isPassword ? "password" : "text"}
                   placeholder={config.placeholder}

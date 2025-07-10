@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { XIcon, RefreshCwIcon } from "lucide-react";
-import { useAuth, useUser, useReverification } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
 
 export const IntegrationsTab = () => {
@@ -18,101 +18,140 @@ export const IntegrationsTab = () => {
 
   const isLoaded = authLoaded && userLoaded;
 
-  // Use reverification hook for secure operations
-  const createExternalAccount = useReverification((params: any) =>
-    user?.createExternalAccount(params)
-  );
+  // Check if user has alternative authentication methods
+  const hasAlternativeAuth = () => {
+    if (!user) return false;
+    const hasPassword = user.passwordEnabled;
+    const hasOtherExternalAccounts = (user.externalAccounts?.length || 0) > 1;
+    const hasBackupCodes = user.backupCodeEnabled;
+
+    return hasPassword || hasOtherExternalAccounts || hasBackupCodes;
+  };
 
   // Helper function to find Google account with flexible provider matching
   const findGoogleAccount = () => {
     if (!isLoaded || !user) return null;
-    return user.externalAccounts?.find((account) => 
-      account.provider === "custom_google_poogle"
+    return user.externalAccounts?.find(
+      (account) => account.provider === "custom_google",
     );
   };
 
   // Check if user has Google connected via custom provider
   const isGoogleConnected = () => {
     const googleAccount = findGoogleAccount();
-    return googleAccount && googleAccount.verification?.status === "verified";
+    return googleAccount !== null && googleAccount !== undefined;
   };
 
   const handleConnect = async () => {
     setIsConnecting(true);
-    
+
     try {
-      if (!user) throw new Error("User not found");
-      
+      if (!user) {
+        toast.error("User not found");
+        return;
+      }
+
       const redirectUrl = window.location.href;
-      const existingGoogleAccount = findGoogleAccount();
 
-      if (existingGoogleAccount) {
-        // User has Google connected but needs additional scopes
-        const result = await existingGoogleAccount.reauthorize({
-          additionalScopes: [
-            'https://www.googleapis.com/auth/gmail.readonly',
-            'https://www.googleapis.com/auth/gmail.modify',
-            'https://www.googleapis.com/auth/calendar.readonly',
-            'https://www.googleapis.com/auth/calendar.events'
-          ],
-          redirectUrl: redirectUrl,
-        });
+      // Create new Google external account with required scopes
+      const result = await user.createExternalAccount({
+        strategy: "oauth_custom_google",
+        redirectUrl: redirectUrl,
+        oidcPrompt: "consent",
+      });
 
-        if (result?.verification?.externalVerificationRedirectURL) {
-          window.location.href = result.verification.externalVerificationRedirectURL.href;
-        } else {
-          throw new Error("No redirect URL received for reauthorization");
-        }
+      // Redirect to the external verification URL
+      if (result.verification?.externalVerificationRedirectURL?.href) {
+        window.location.href =
+          result.verification.externalVerificationRedirectURL.href;
       } else {
-        // Create new Google external account with required scopes using reverification
-        const result = await createExternalAccount({
-          strategy: "oauth_custom_google_poogle" as any,
-          redirectUrl: redirectUrl,
-          additionalScopes: [
-            'https://www.googleapis.com/auth/gmail.readonly',
-            'https://www.googleapis.com/auth/gmail.modify',
-            'https://www.googleapis.com/auth/calendar.readonly',
-            'https://www.googleapis.com/auth/calendar.events'
-          ]
-        });
-        
-        if (result?.verification?.externalVerificationRedirectURL) {
-          window.location.href = result.verification.externalVerificationRedirectURL.href;
-        } else {
-          throw new Error("No redirect URL received");
-        }
+        toast.error("No verification URL provided by Clerk");
       }
     } catch (error: any) {
-      console.error("Connection failed:", error);
-      
-      // Handle specific Clerk errors
-      if (error?.errors?.[0]?.code === "verification_required") {
-        toast.error("Please complete verification to connect Google account.");
-      } else if (error?.errors?.[0]?.code === "external_account_exists") {
-        toast.error("Google account is already connected. Try refreshing the page.");
+      console.error("Error connecting Google account:", error);
+
+      if (
+        error?.errors?.[0]?.code === "verification_required" ||
+        error?.message?.includes("verification") ||
+        error?.message?.includes("additional verification")
+      ) {
+        toast.error(
+          "Additional verification required. Please sign out and back in, then try connecting Google again.",
+        );
+      } else if (
+        error?.errors?.[0]?.code === "external_account_already_exists"
+      ) {
+        toast.error("Google account is already connected to another user.");
+      } else if (error?.errors?.[0]?.code === "oauth_access_denied") {
+        toast.error(
+          "Google access was denied. Please try again and grant the necessary permissions.",
+        );
       } else {
-        toast.error("Google OAuth connection failed. Please try again.");
+        toast.error(
+          `Failed to connect Google: ${error.message || "Unknown error"}`,
+        );
       }
+    } finally {
       setIsConnecting(false);
     }
   };
 
   const handleDisconnect = async () => {
     setIsConnecting(true);
-    
+
     try {
-      if (!user) throw new Error("User not found");
-      
-      const googleAccount = findGoogleAccount();
-      
-      if (googleAccount) {
-        await googleAccount.destroy();
-        toast.success("Google disconnected");
-        await user.reload();
+      if (!user) {
+        toast.error("User not found");
+        return;
       }
-    } catch (error) {
-      console.error("Disconnect failed:", error);
-      toast.error("Failed to disconnect Google");
+
+      const googleAccount = findGoogleAccount();
+
+      if (!googleAccount) {
+        toast.error("No Google account found to disconnect");
+        return;
+      }
+
+      // Check if user has alternative authentication methods
+      if (!hasAlternativeAuth()) {
+        toast.error(
+          "Cannot disconnect Google account. Please set up a password in your account settings first to maintain access to your account.",
+        );
+        return;
+      }
+
+      await googleAccount.destroy();
+
+      await user.reload();
+
+      toast.success("Google disconnected successfully");
+    } catch (error: any) {
+      if (error?.errors?.[0]?.code === "external_account_not_found") {
+        toast.error(
+          "Google account not found. It may already be disconnected.",
+        );
+      } else if (
+        error?.errors?.[0]?.code === "external_account_cannot_be_deleted"
+      ) {
+        toast.error(
+          "Cannot disconnect Google account. It may be required for your sign-in method.",
+        );
+      } else if (error?.errors?.[0]?.code === "form_password_pwned") {
+        toast.error("Cannot disconnect. This account is required for sign-in.");
+      } else if (
+        error?.errors?.[0]?.code === "verification_required" ||
+        error?.message?.includes("verification") ||
+        error?.message?.includes("additional verification")
+      ) {
+        // For verification required errors, show a more helpful message
+        toast.error(
+          "To disconnect Google, please verify your identity first. Try signing out and back in, then attempt to disconnect again.",
+        );
+      } else {
+        toast.error(
+          `Failed to disconnect Google: ${error.message || "Unknown error"}`,
+        );
+      }
     } finally {
       setIsConnecting(false);
     }
@@ -140,10 +179,9 @@ export const IntegrationsTab = () => {
               <div>
                 <CardTitle className="text-base">Google Workspace</CardTitle>
                 <CardDescription>
-                  {connected ? 
-                    "Gmail and Calendar integration with read/write access" :
-                    "Gmail and Calendar integration with read/write access"
-                  }
+                  {connected
+                    ? "Gmail and Calendar integration with read/write access"
+                    : "Gmail and Calendar integration with read/write access"}
                 </CardDescription>
               </div>
             </div>
@@ -166,13 +204,18 @@ export const IntegrationsTab = () => {
                   )}
                   Disconnect
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleConnect}
+                  disabled={isConnecting}
+                >
+                  <RefreshCwIcon className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
               </>
             ) : (
-              <Button
-                onClick={handleConnect}
-                disabled={isConnecting}
-                size="sm"
-              >
+              <Button onClick={handleConnect} disabled={isConnecting} size="sm">
                 {isConnecting ? (
                   <RefreshCwIcon className="h-4 w-4 mr-2 animate-spin" />
                 ) : null}
@@ -184,4 +227,4 @@ export const IntegrationsTab = () => {
       </Card>
     </div>
   );
-}; 
+};

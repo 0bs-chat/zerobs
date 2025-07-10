@@ -24,18 +24,23 @@ function TabsList({
   children,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.List>) {
-  const [indicatorStyle, setIndicatorStyle] = React.useState({ left: 0, width: 0 });
+  const [indicatorStyle, setIndicatorStyle] = React.useState({
+    left: 0,
+    width: 0,
+  });
   const listRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     const updateIndicator = () => {
       if (!listRef.current) return;
-      
-      const activeElement = listRef.current.querySelector('[data-state="active"]') as HTMLElement;
+
+      const activeElement = listRef.current.querySelector(
+        '[data-state="active"]',
+      ) as HTMLElement;
       if (activeElement) {
         const listRect = listRef.current.getBoundingClientRect();
         const activeRect = activeElement.getBoundingClientRect();
-        
+
         setIndicatorStyle({
           left: activeRect.left - listRect.left,
           width: activeRect.width,
@@ -44,7 +49,7 @@ function TabsList({
     };
 
     updateIndicator();
-    
+
     // Use ResizeObserver to handle dynamic sizing
     const resizeObserver = new ResizeObserver(updateIndicator);
     if (listRef.current) {
@@ -97,7 +102,7 @@ function TabsTrigger({
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
   const [isActive, setIsActive] = React.useState(false);
-  
+
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
@@ -111,13 +116,13 @@ function TabsTrigger({
     >
       <motion.span
         initial={{ scale: 0.95, opacity: 0.8 }}
-        animate={{ 
-          scale: isActive ? 1.02 : 1, 
+        animate={{
+          scale: isActive ? 1.02 : 1,
           opacity: 1,
         }}
-        transition={{ 
-          duration: 0.2, 
-          ease: "easeOut"
+        transition={{
+          duration: 0.2,
+          ease: "easeOut",
         }}
       >
         {props.children}
@@ -144,7 +149,7 @@ function TabsContent({
           exit={{ opacity: 0, x: -10 }}
           transition={{
             duration: 0.2,
-            ease: "easeInOut"
+            ease: "easeInOut",
           }}
         >
           {props.children}

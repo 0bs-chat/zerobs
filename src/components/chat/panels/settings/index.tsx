@@ -38,15 +38,15 @@ export const SettingsPanel = () => {
             </div>
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="api-keys">
           <ApiKeysTab />
         </TabsContent>
-        
+
         <TabsContent value="integrations">
           <IntegrationsTab />
         </TabsContent>
-        
+
         <TabsContent value="billing">
           <BillingTab />
         </TabsContent>

@@ -5,7 +5,14 @@ import { mapStoredMessagesToChatMessages } from "@langchain/core/messages";
 import type { BaseMessage } from "@langchain/core/messages";
 import { Separator } from "@/components/ui/separator";
 import { Check, Loader2, ChevronDown, ChevronUp } from "lucide-react";
-import { scaleIn, fadeInUp, staggerContainer, buttonHover, iconSpinVariants, smoothTransition } from "@/lib/motion";
+import {
+  scaleIn,
+  fadeInUp,
+  staggerContainer,
+  buttonHover,
+  iconSpinVariants,
+  smoothTransition,
+} from "@/lib/motion";
 
 interface PlanningStepProps {
   message?: BaseMessage;
@@ -17,10 +24,16 @@ export const PlanningStep = memo(
   ({ message, messageId, isStreaming }: PlanningStepProps) => {
     const [isMinimized, setIsMinimized] = useState(false);
     const [userHasScrolledSteps, setUserHasScrolledSteps] = useState(false);
-    const [userHasScrolledMessages, setUserHasScrolledMessages] = useState(false);
-    
+    const [userHasScrolledMessages, setUserHasScrolledMessages] =
+      useState(false);
+
     // Debug log to check streaming state
-    console.log('PlanningStep - isStreaming:', isStreaming, 'messageId:', messageId);
+    console.log(
+      "PlanningStep - isStreaming:",
+      isStreaming,
+      "messageId:",
+      messageId,
+    );
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const stepsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -36,7 +49,9 @@ export const PlanningStep = memo(
         const [step, _storedMessages] = pastStep;
         return step;
       });
-      return steps.length > 0 ? steps?.filter(Boolean) as string[] : ["Planning..."];
+      return steps.length > 0
+        ? (steps?.filter(Boolean) as string[])
+        : ["Planning..."];
     }, [message]);
 
     const pastSteps = useMemo(() => {
@@ -96,7 +111,8 @@ export const PlanningStep = memo(
     // Handle scroll events to detect user interaction
     const handleStepsScroll = () => {
       if (stepsContainerRef.current) {
-        const { scrollTop, scrollHeight, clientHeight } = stepsContainerRef.current;
+        const { scrollTop, scrollHeight, clientHeight } =
+          stepsContainerRef.current;
         const isAtBottom = scrollTop + clientHeight >= scrollHeight - 5; // 5px tolerance
         setUserHasScrolledSteps(!isAtBottom);
       }
@@ -104,7 +120,8 @@ export const PlanningStep = memo(
 
     const handleMessagesScroll = () => {
       if (scrollContainerRef.current) {
-        const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+        const { scrollTop, scrollHeight, clientHeight } =
+          scrollContainerRef.current;
         const isAtBottom = scrollTop + clientHeight >= scrollHeight - 5; // 5px tolerance
         setUserHasScrolledMessages(!isAtBottom);
       }
@@ -122,7 +139,14 @@ export const PlanningStep = memo(
             stepsContainerRef.current.scrollHeight;
         }
       }
-    }, [isStreaming, isMinimized, stepMessages, pastSteps, userHasScrolledSteps, userHasScrolledMessages]);
+    }, [
+      isStreaming,
+      isMinimized,
+      stepMessages,
+      pastSteps,
+      userHasScrolledSteps,
+      userHasScrolledMessages,
+    ]);
 
     // Reset scroll tracking when streaming stops
     useEffect(() => {
@@ -182,7 +206,7 @@ export const PlanningStep = memo(
     }
 
     return (
-      <motion.div 
+      <motion.div
         className={`relative rounded-lg ${streamingContainerClasses}`}
         variants={fadeInUp}
         initial="initial"
@@ -191,7 +215,7 @@ export const PlanningStep = memo(
         transition={smoothTransition}
       >
         <div className={`rounded-[7px] p-4 flex flex-row bg-card`}>
-          <motion.div 
+          <motion.div
             className="flex flex-col w-1/3"
             variants={staggerContainer}
             initial="initial"
@@ -204,9 +228,7 @@ export const PlanningStep = memo(
               className="flex flex-col gap-1 pr-4 max-h-[36rem] overflow-y-auto"
               onScroll={handleStepsScroll}
             >
-              <AnimatePresence>
-                {pastSteps}
-              </AnimatePresence>
+              <AnimatePresence>{pastSteps}</AnimatePresence>
             </div>
           </motion.div>
           <div className="border-l" />
@@ -218,9 +240,7 @@ export const PlanningStep = memo(
             animate="animate"
             onScroll={handleMessagesScroll}
           >
-            <AnimatePresence>
-              {stepMessages}
-            </AnimatePresence>
+            <AnimatePresence>{stepMessages}</AnimatePresence>
           </motion.div>
         </div>
         <motion.button

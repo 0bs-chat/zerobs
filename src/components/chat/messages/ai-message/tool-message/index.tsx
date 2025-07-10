@@ -60,6 +60,8 @@ export const ToolMessage = memo(({ message }: ToolMessageProps) => {
     return { type: "generic" as const, content: message.content };
   }, [message]);
 
+  const input = message.additional_kwargs?.input as Record<string, any>;
+
   if (!message || !parsedContent) return null;
 
   if (parsedContent.type === "searchWeb") {
@@ -84,6 +86,15 @@ export const ToolMessage = memo(({ message }: ToolMessageProps) => {
             </span>
           </AccordionTrigger>
           <AccordionContent className="bg-card rounded-md p-2 border mt-2 max-h-[36rem] overflow-y-auto">
+            {input && (
+              <>
+                <h4 className="text-xs font-semibold mb-1">Input</h4>
+                <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto mb-2 whitespace-pre-wrap">
+                  {JSON.stringify(input, null, 2)}
+                </pre>
+                <h4 className="text-xs font-semibold mb-1">Output</h4>
+              </>
+            )}
             <div className="flex flex-col gap-4">
               {parsedContent.content.map((item, index) => {
                 if (item.type === "file" && item.file?.file_id) {
@@ -117,7 +128,16 @@ export const ToolMessage = memo(({ message }: ToolMessageProps) => {
           </span>
         </AccordionTrigger>
         <AccordionContent className="bg-card rounded-md p-2 border mt-2 max-h-[36rem] overflow-y-auto">
-          <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto">
+          {input && (
+            <>
+              <h4 className="text-xs font-semibold mb-1">Input</h4>
+              <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto mb-2 whitespace-pre-wrap">
+                {JSON.stringify(input, null, 2)}
+              </pre>
+              <h4 className="text-xs font-semibold mb-1">Output</h4>
+            </>
+          )}
+          <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
             {JSON.stringify(parsedContent.content, null, 2)}
           </pre>
         </AccordionContent>

@@ -44,7 +44,6 @@ import type * as schemaUtils from "../schemaUtils.js";
 import type * as streams_crud from "../streams/crud.js";
 import type * as streams_mutations from "../streams/mutations.js";
 import type * as streams_queries from "../streams/queries.js";
-import type * as usage_actions from "../usage/actions.js";
 import type * as usage_mutations from "../usage/mutations.js";
 import type * as usage_queries from "../usage/queries.js";
 import type * as utils_encryption from "../utils/encryption.js";
@@ -104,7 +103,6 @@ declare const fullApi: ApiFromModules<{
   "streams/crud": typeof streams_crud;
   "streams/mutations": typeof streams_mutations;
   "streams/queries": typeof streams_queries;
-  "usage/actions": typeof usage_actions;
   "usage/mutations": typeof usage_mutations;
   "usage/queries": typeof usage_queries;
   "utils/encryption": typeof utils_encryption;

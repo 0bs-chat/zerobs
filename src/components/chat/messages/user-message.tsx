@@ -10,17 +10,20 @@ import { api } from "../../../../convex/_generated/api";
 import { useQuery } from "convex/react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
-const DocumentButton = ({ fileId, setDocumentDialogOpen }: { 
-  fileId: string; 
-  setDocumentDialogOpen: (id: Id<"documents"> | undefined) => void 
+const DocumentButton = ({
+  fileId,
+  setDocumentDialogOpen,
+}: {
+  fileId: string;
+  setDocumentDialogOpen: (id: Id<"documents"> | undefined) => void;
 }) => {
   const documentData = useQuery(api.documents.queries.get, {
     documentId: fileId as Id<"documents">,
   });
 
   return (
-    <Button 
-      className="py-7 cursor-pointer" 
+    <Button
+      className="py-7 cursor-pointer"
       onClick={() => setDocumentDialogOpen(fileId as Id<"documents">)}
     >
       {documentData?.name}
@@ -42,7 +45,7 @@ export const UserMessage = memo(
   }) => {
     const content = item?.message?.message?.content;
     const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
-    
+
     // Memoize the content rendering to avoid unnecessary calculations
     const renderedContent = useMemo(() => {
       if (Array.isArray(content)) {
@@ -52,8 +55,8 @@ export const UserMessage = memo(
               <Markdown content={entry.text} id={item.message._id} />
             ) : null}
             {entry.type === "file" ? (
-              <DocumentButton 
-                fileId={entry.file.file_id} 
+              <DocumentButton
+                fileId={entry.file.file_id}
                 setDocumentDialogOpen={setDocumentDialogOpen}
               />
             ) : null}

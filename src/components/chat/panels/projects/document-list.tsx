@@ -32,7 +32,7 @@ export function ProjectDocumentList({
 
   if (!projectDocuments || projectDocuments.projectDocuments.length === 0) {
     return (
-              <Card className="p-4">
+      <Card className="p-4">
         <p className="text-muted-foreground text-center">
           No documents added yet
         </p>

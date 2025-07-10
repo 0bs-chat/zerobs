@@ -11,7 +11,7 @@ export const useRemoveDocument = () => {
   const chatId = params.chatId as Id<"chats">;
   const chatInputQuery = useQuery(
     api.chats.queries.get,
-    chatId !== "new" ? { chatId } : "skip"
+    chatId !== "new" ? { chatId } : "skip",
   );
   const updateChatInputMutation = useMutation(api.chats.mutations.update);
   const setNewChat = useSetAtom(newChatAtom);
@@ -23,7 +23,7 @@ export const useRemoveDocument = () => {
       }
 
       const filteredDocuments = chatInputQuery.documents.filter(
-        (id) => id !== documentId
+        (id) => id !== documentId,
       );
 
       updateChatInputMutation({
@@ -35,7 +35,7 @@ export const useRemoveDocument = () => {
     } else {
       setNewChat((prev) => {
         const filteredDocuments = prev.documents.filter(
-          (id) => id !== documentId
+          (id) => id !== documentId,
         );
         return { ...prev, documents: filteredDocuments };
       });
@@ -50,13 +50,13 @@ export const useUploadDocuments = (
   }: {
     type: "file" | "url" | "site" | "youtube" | "text" | "github";
     chat?: Doc<"chats">;
-  } = { type: "file" }
+  } = { type: "file" },
 ) => {
   const params = useParams({ from: "/chat/$chatId/" });
   const chatId = params.chatId as Id<"chats">;
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const generateUploadUrlMutation = useMutation(
-    api.documents.mutations.generateUploadUrl
+    api.documents.mutations.generateUploadUrl,
   );
   const createMutation = useMutation(api.documents.mutations.create);
   const setNewChat = useSetAtom(newChatAtom);
@@ -95,7 +95,7 @@ export const useUploadDocuments = (
             size: file.size,
             key: storageId,
           });
-        })
+        }),
       );
 
       // Update chat input with new documents
@@ -116,7 +116,7 @@ export const useUploadDocuments = (
       }
 
       toast(
-        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`
+        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`,
       );
 
       return documentIds;

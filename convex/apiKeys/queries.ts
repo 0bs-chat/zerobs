@@ -9,7 +9,9 @@ export const getFromKey = internalQuery({
     userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { userId } = args.userId ? { userId: args.userId } : await requireAuth(ctx);
+    const { userId } = args.userId
+      ? { userId: args.userId }
+      : await requireAuth(ctx);
 
     const apiKeyDoc = await ctx.db
       .query("apiKeys")

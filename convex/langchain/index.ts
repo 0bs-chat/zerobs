@@ -162,13 +162,17 @@ export const chat = action({
 
     // Create a function to handle flushing chunks
     async function flushChunks() {
-      while (!wasCancelled && !streamCompleted && !abortController.signal.aborted) {
+      while (
+        !wasCancelled &&
+        !streamCompleted &&
+        !abortController.signal.aborted
+      ) {
         await new Promise((resolve) => setTimeout(resolve, BUFFER));
 
         if (buffer.length > 0) {
           const chunksToFlush = buffer;
           buffer = [];
-          
+
           try {
             streamDoc = await ctx.runMutation(
               internal.streams.mutations.appendChunks,
@@ -195,7 +199,11 @@ export const chat = action({
       }
 
       // Only flush remaining buffer if not cancelled
-      if (buffer.length > 0 && !wasCancelled && !abortController.signal.aborted) {
+      if (
+        buffer.length > 0 &&
+        !wasCancelled &&
+        !abortController.signal.aborted
+      ) {
         const chunksToFlush = buffer;
         buffer = [];
 
@@ -228,7 +236,7 @@ export const chat = action({
         const currentStreamDoc = await ctx.runQuery(api.streams.queries.get, {
           chatId: args.chatId,
         });
-        
+
         if (currentStreamDoc?.status === "cancelled") {
           wasCancelled = true;
           abortController.abort();
@@ -245,7 +253,7 @@ export const chat = action({
           currentCheckpoint.pastSteps?.length !== checkpoint.pastSteps?.length
         ) {
           checkpoint = currentCheckpoint;
-          
+
           // Check for cancellation before making mutations
           if (!wasCancelled && !abortController.signal.aborted) {
             try {
@@ -288,7 +296,7 @@ export const chat = action({
             if (wasCancelled || abortController.signal.aborted) {
               break;
             }
-            
+
             // Minify the data before sending it to the frontend to reduce bandwidth.
             if (event.event === "on_chat_model_stream") {
               const content = event.data?.chunk?.content ?? "";
@@ -351,18 +359,18 @@ export const chat = action({
     } catch (error) {
       wasCancelled = true;
       abortController.abort();
-      
+
       // If already cancelled/aborted, don't throw
       if (abortController.signal.aborted) {
         return;
       }
-      
+
       // Only update status if not already cancelled
       try {
         const currentStreamDoc = await ctx.runQuery(api.streams.queries.get, {
           chatId: args.chatId,
         });
-        
+
         if (currentStreamDoc && currentStreamDoc.status !== "cancelled") {
           await ctx.runMutation(internal.streams.mutations.update, {
             chatId: args.chatId,
@@ -376,12 +384,12 @@ export const chat = action({
         // Ignore update errors if we're already in an error state
         console.error("Failed to update stream status:", updateError);
       }
-      
+
       throw error;
     } finally {
       // Signal completion to stop the flush loop
       streamCompleted = true;
-      
+
       // Wait for any remaining chunks to be flushed
       try {
         await flushPromise;

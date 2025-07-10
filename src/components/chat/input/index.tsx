@@ -49,7 +49,7 @@ export const ChatInput = () => {
   }, 300);
 
   return (
-    <motion.div 
+    <motion.div
       className="relative flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg"
       variants={fadeInUp}
       initial="initial"

@@ -21,7 +21,7 @@ export const useAutosizeTextArea = ({
     if (!textAreaElement) return;
 
     const offsetBorder = 6;
-    
+
     // Always set min and max height constraints
     textAreaElement.style.minHeight = `${minHeight + offsetBorder}px`;
     if (maxHeight > minHeight) {
@@ -30,10 +30,10 @@ export const useAutosizeTextArea = ({
 
     // Reset height to calculate proper scrollHeight
     textAreaElement.style.height = `${minHeight + offsetBorder}px`;
-    
+
     // Get the actual content height
     const scrollHeight = textAreaElement.scrollHeight;
-    
+
     // Apply appropriate height based on content
     if (scrollHeight > minHeight + offsetBorder) {
       if (scrollHeight > maxHeight) {

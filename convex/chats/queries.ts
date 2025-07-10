@@ -57,10 +57,10 @@ export const getByProjectId = query({
 
     const chats = await ctx.db
       .query("chats")
-      .withIndex("by_user_project", (q) => q
-        .eq("userId", userId)
-        .eq("projectId", args.projectId),
-      ).collect();
+      .withIndex("by_user_project", (q) =>
+        q.eq("userId", userId).eq("projectId", args.projectId),
+      )
+      .collect();
 
     return chats;
   },

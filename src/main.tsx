@@ -45,8 +45,6 @@ const convex = new ConvexReactClient(
 const rootElement = document.getElementById("app");
 if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
-  console.log("VITE_CONVEX_URL", import.meta.env.VITE_CONVEX_URL);
-  console.log("VITE_PUBLIC_CLERK_PUBLISHABLE_KEY", import.meta.env.VITE_PUBLIC_CLERK_PUBLISHABLE_KEY);
   root.render(
     <StrictMode>
       <ClerkProvider

@@ -213,7 +213,11 @@ export async function getModel(
   });
 }
 
-export async function getEmbeddingModel(ctx: ActionCtx, model: string, userId?: string) {
+export async function getEmbeddingModel(
+  ctx: ActionCtx,
+  model: string,
+  userId?: string,
+) {
   const modelConfig = models.find((m) => m.model_name === model);
 
   if (!modelConfig || !modelConfig.modalities.includes("text")) {

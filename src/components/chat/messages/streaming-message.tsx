@@ -18,7 +18,7 @@ export const StreamingMessage = memo(() => {
 
   const langchainMessages = useMemo(() => {
     return streamData?.chunkGroups
-      .map((chunk) => {
+      .map((chunk, index, array) => {
         if (chunk?.type === "ai") {
           return new AIMessage({
             content: chunk.content,
@@ -33,6 +33,15 @@ export const StreamingMessage = memo(() => {
               content: chunk.output as string,
               name: chunk.toolName,
               tool_call_id: `streaming-tool-${chunk.toolName}`,
+              additional_kwargs: {
+                input:
+                  array[index - 1]?.type === "tool" &&
+                  (array[index - 1] as any).input
+                    ? JSON.parse(
+                        JSON.stringify((array[index - 1] as any).input),
+                      )
+                    : undefined,
+              },
             });
           } else {
             // return new AIMessage({
@@ -75,14 +84,18 @@ export const StreamingMessage = memo(() => {
         messageId={messageId}
       />
     );
-  }, [streamData?.completedSteps, langchainMessages, messageId, streamData?.status]);
+  }, [
+    streamData?.completedSteps,
+    langchainMessages,
+    messageId,
+    streamData?.status,
+  ]);
 
   // Regular streaming display (no planning mode)
   const regularContent = useMemo(() => {
     return langchainMessages?.map((message, index) => (
-      <motion.div 
-        key={index} 
-        className="mb-4"
+      <motion.div
+        key={index}
         variants={streamingVariants}
         initial="initial"
         animate="animate"
@@ -104,7 +117,7 @@ export const StreamingMessage = memo(() => {
   if (streamData?.chunkGroups.length === 0) return null;
 
   return (
-    <motion.div 
+    <motion.div
       className="flex flex-col gap-1"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}

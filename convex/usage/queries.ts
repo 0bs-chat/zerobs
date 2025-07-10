@@ -7,9 +7,9 @@ export const getCurrentUsage = query({
   returns: v.object({
     totalMessages: v.number(),
   }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const { userId } = await requireAuth(ctx);
-    
+
     const usage = await ctx.db
       .query("usage")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -19,4 +19,4 @@ export const getCurrentUsage = query({
       totalMessages: usage?.messages || 0,
     };
   },
-}); 
+});

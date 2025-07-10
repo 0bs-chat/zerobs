@@ -43,9 +43,9 @@ export const ArtifactsToggle = ({
         }}
       >
         <motion.div
-          animate={{ 
+          animate={{
             scale: artifacts ? 1.1 : 1,
-            y: artifacts ? -2 : 0 
+            y: artifacts ? -2 : 0,
           }}
           transition={{ duration: 0.2 }}
         >

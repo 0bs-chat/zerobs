@@ -4,9 +4,11 @@ import { PricingTable } from "@clerk/clerk-react";
 export const BillingTab = () => {
   return (
     <div>
-      <PricingTable appearance={{
-        baseTheme: dark,
-      }} />
+      <PricingTable
+        appearance={{
+          baseTheme: dark,
+        }}
+      />
     </div>
   );
 };

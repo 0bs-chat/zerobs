@@ -3,6 +3,8 @@ import {
   mapStoredMessageToChatMessage,
   type BaseMessage,
   type StoredMessage,
+  AIMessage,
+  ToolMessage,
 } from "@langchain/core/messages";
 
 export type ParsedMessage = Omit<Doc<"chatMessages">, "message"> & {
@@ -56,7 +58,7 @@ export const groupMessages = (currentThread: MessageWithBranchInfo[]) => {
   const groups: MessageGroup[] = [];
   let currentGroup: MessageGroup | null = null;
 
-  for (const item of currentThread) {
+  currentThread.forEach((item, index, array) => {
     const messageType = item.message.message.getType();
 
     if (messageType === "human") {
@@ -71,10 +73,31 @@ export const groupMessages = (currentThread: MessageWithBranchInfo[]) => {
     } else if (messageType === "ai" || messageType === "tool") {
       // Add to current group's responses
       if (currentGroup) {
+        if (item.message.message.getType() === "tool") {
+          const prevItem = index > 0 ? array[index - 1] : null;
+          if (
+            prevItem &&
+            prevItem.message.message.getType() === "ai" &&
+            (prevItem.message.message as AIMessage).tool_calls
+          ) {
+            const toolCallId = (item.message.message as ToolMessage)
+              .tool_call_id;
+            const toolCall = (
+              prevItem.message.message as AIMessage
+            ).tool_calls?.find((tc) => tc.id === toolCallId);
+
+            if (toolCall) {
+              item.message.message.additional_kwargs = {
+                ...item.message.message.additional_kwargs,
+                input: toolCall.args,
+              };
+            }
+          }
+        }
         currentGroup.response.push(item);
       }
     }
-  }
+  });
 
   if (currentGroup) {
     groups.push(currentGroup);

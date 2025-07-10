@@ -9,7 +9,7 @@ export const incrementUsage = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const increment = args.messageCount || 1;
-    
+
     // Check if user has existing usage record
     const existingUsage = await ctx.db
       .query("usage")

@@ -10,8 +10,8 @@ export const useScroll = () => {
     // Try to find the scroll container with multiple strategies
     const selectors = [
       '[data-slot="scroll-area-viewport"]', // Radix scroll area viewport
-      '[data-radix-scroll-area-viewport]', // Alternative Radix selector
-      '.chat-messages-scroll-area', // Our class
+      "[data-radix-scroll-area-viewport]", // Alternative Radix selector
+      ".chat-messages-scroll-area", // Our class
     ];
 
     for (const selector of selectors) {
@@ -30,7 +30,7 @@ export const useScroll = () => {
 
   const checkScrollPosition = useCallback(() => {
     const scrollContainer = findScrollContainer();
-    
+
     if (!scrollContainer) {
       setIsAtBottom(true);
       return true;
@@ -39,10 +39,10 @@ export const useScroll = () => {
     const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
     const threshold = 50; // Generous threshold
     const atBottom = scrollHeight - scrollTop <= clientHeight + threshold;
-    
+
     setIsAtBottom(atBottom);
     lastScrollTopRef.current = scrollTop;
-    
+
     return atBottom;
   }, [findScrollContainer]);
 
@@ -98,11 +98,13 @@ export const useScroll = () => {
 
     const setup = () => {
       const scrollContainer = findScrollContainer();
-      
+
       if (scrollContainer) {
         // Add scroll listener
-        scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
-        
+        scrollContainer.addEventListener("scroll", handleScroll, {
+          passive: true,
+        });
+
         // Initial check
         checkScrollPosition();
 
