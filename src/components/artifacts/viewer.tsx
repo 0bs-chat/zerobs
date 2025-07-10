@@ -22,12 +22,62 @@ import { useAtomValue } from "jotai";
 import { themeAtom } from "@/store/settings";
 
 const prepareReactCode = (code: string): string => {
-  const withoutImports = code.replace(
-    /import\s+(?:React(?:,\s*)?)?(?:\{[^}]*\})?\s+from\s+['"]react['"];?/g,
-    "",
-  );
-  const withoutExports = withoutImports.replace(/export\s+default\s+App;?/, "");
-  return withoutExports;
+  const importRegex = /import\s+(.*?)\s+from\s+['"](.*?)['"];?/g;
+  const importedIdentifiers = new Set<string>();
+
+  const codeWithoutImportsAndExports = code
+    .replace(importRegex, (match, specifiers, module) => {
+      if (
+        module !== "react" &&
+        module !== "react-dom" &&
+        !module.startsWith("https://")
+      ) {
+        if (specifiers) {
+          specifiers
+            .replace(/\{|\}/g, "")
+            .split(",")
+            .forEach((spec: string) => {
+              const trimmed = spec.trim();
+              if (trimmed) {
+                // handles "MyComponent as MyAlias"
+                const asParts = trimmed.split(/\s+as\s+/);
+                const identifier = asParts[asParts.length - 1];
+                if (identifier && identifier !== "default") {
+                  importedIdentifiers.add(identifier);
+                }
+              }
+            });
+        }
+      }
+      // Remove all imports except for http-based ones for CDNs
+      if (!module.startsWith("https://")) {
+        return "";
+      }
+      return match;
+    })
+    .replace(/export\s+default\s+App;?/, "");
+
+  const mockDefinitions = Array.from(importedIdentifiers)
+    .map(
+      (id) =>
+        `const ${id} = ({ children, ...props }) => {
+      const style = {
+        border: '1px dashed #d8dde7',
+        padding: '0.5rem',
+        margin: '0.25rem',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '0.25rem',
+        color: '#4b5563'
+      };
+      // Simple mock: render a box with the component name.
+      return <div style={style} {...props}><strong>${id}</strong>{children && <span style={{ marginLeft: '0.25rem' }}>{children}</span>}</div>;
+    };`,
+    )
+    .join("\n");
+
+  return mockDefinitions + "\n" + codeWithoutImportsAndExports;
 };
 
 const ReactComponentRenderer = ({ content }: { content: string }) => {
@@ -185,8 +235,8 @@ const SVGRenderer = ({ content }: { content: string }) => {
 
 const MarkdownRenderer = ({ content }: { content: string }) => {
   return (
-    <div className="h-full border px-1 bg-background overflow-y-auto">
-      <Markdown content={content} id={`artifact-${Date.now()}`} />
+    <div className="h-full border p-4 bg-background overflow-y-auto">
+      <Markdown content={content} id={`artifact-${Date.now()}`} className="text-sm text-muted-foreground"/>
     </div>
   );
 };

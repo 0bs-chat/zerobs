@@ -152,12 +152,13 @@ export const MarkdownBlock = memo(
           );
         },
       }),
-      [copy, copied, wrapLongLines, setWrapLongLines],
+      [copy, copied, wrapLongLines, setWrapLongLines, theme],
     );
 
     return (
       <article
-        className={`prose max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 ${className}`}
+        className={`prose max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent
+          prose-pre:p-0 prose-h1:mb-2 prose-h2:mb-2 prose-h3:my-2 prose-h4:my-2 prose-h5:my-2 prose-h6:my-2${className}`}
         style={{
           fontFamily: "Rubik",
         }}

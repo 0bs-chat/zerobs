@@ -57,7 +57,7 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "Gemini 2.5 Flash Thinking is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
-    usageRateMultiplier: 1.5,
+    usageRateMultiplier: 1,
   },
   {
     label: "Gemini 2.5 Pro",
@@ -71,7 +71,7 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
-    usageRateMultiplier: 1.0,
+    usageRateMultiplier: 1.5,
   },
   {
     label: "GPT-4.1",
@@ -88,6 +88,34 @@ export const models: {
     usageRateMultiplier: 1.0,
   },
   {
+    label: "o4 mini",
+    model_name: "o4-mini",
+    model: "openai/o4-mini",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image"],
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "o4 mini is a state-of-the-art language model capable of understanding and generating human-like text.",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "o3",
+    model_name: "o3",
+    model: "openai/o3",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image"],
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "o3 is a state-of-the-art language model capable of understanding and generating human-like text.",
+    usageRateMultiplier: 1.5,
+  },
+  {
     label: "Claude 4",
     model_name: "claude-4",
     model: "anthropic/claude-sonnet-4",
@@ -99,7 +127,7 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSCRxLvQkYbi8sZjauXl0P9cm7wv6oqd4TkgLy",
     description:
       "Claude 4 is a versatile model that excels in various text and image processing tasks.",
-    usageRateMultiplier: 1.0,
+    usageRateMultiplier: 2.0,
   },
   {
     label: "Worker",
@@ -158,7 +186,21 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
-    usageRateMultiplier: 1.0,
+    usageRateMultiplier: 1.5,
+  },
+  {
+    label: "Grok 4",
+    model_name: "grok-4",
+    model: "x-ai/grok-4",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image"],
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "Grok 4 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    usageRateMultiplier: 2.0,
   },
   {
     label: "Cypher Alpha",

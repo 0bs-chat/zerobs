@@ -1,16 +1,14 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { CalendarIcon, UserIcon, GlobeIcon } from "lucide-react";
-import { Favicon } from "@/components/ui/favicon";
-import { Link } from "@tanstack/react-router";
 import {
   Accordion,
-  AccordionTrigger,
-  AccordionItem,
   AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Favicon } from "@/components/ui/favicon";
 import { Markdown } from "@/components/ui/markdown";
-import { formatDate, extractDomain } from "@/lib/utils";
+import { extractDomain } from "@/lib/utils";
+import { Link } from "@tanstack/react-router";
+import { ExternalLinkIcon, GlobeIcon } from "lucide-react";
 
 // Type definition for search results output
 export type SearchResultMetadata = {
@@ -42,7 +40,7 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
   }
 
   return (
-    <Accordion type="multiple" className="w-full">
+    <Accordion type="multiple" className="w-full" defaultValue={["web-search-results"]}>
       <AccordionItem value="web-search-results" className="px-0 border-none">
         <AccordionTrigger className="flex items-center justify-start gap-2 text-sm text-muted-foreground py-0">
           <div className="flex items-center gap-2">
@@ -52,87 +50,52 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
             </span>
           </div>
         </AccordionTrigger>
-        <AccordionContent className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[36rem] overflow-y-auto">
-          {results.map((result, index) => (
-            <Card key={index} className="hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-col gap-2">
-                <div className="flex flex-row items-start justify-between w-full">
-                  <div className="flex flex-col gap-1 items-start flex-1 min-w-0">
-                    <div className="flex flex-row items-center gap-2">
+        <AccordionContent>
+          <div className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border flex gap-4 overflow-x-auto p-2">
+            {results.map((result, index) => (
+              <Link
+                key={index}
+                to={result.metadata.source}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex flex-col flex-shrink-0 rounded-lg border bg-card text-left transition-all duration-200 hover:shadow-lg hover:border-primary/20 hover:bg-accent/50 w-64 min-w-64 overflow-hidden"
+                aria-label={`Open ${result.metadata.title} in new tab`}
+              >
+                <img
+                  alt=""
+                  className="aspect-video h-36 overflow-hidden object-cover"
+                  src={`https://api.microlink.io/?url=${encodeURIComponent(
+                    result.metadata.source,
+                  )}&screenshot=true&meta=false&embed=screenshot.url`}
+                  style={{ margin: "0px auto", maxHeight: "100%" }}
+                />
+                <div className="flex flex-1 flex-col p-2">
+                  <div className="flex items-center justify-start gap-2">
                       {result.metadata.favicon && (
                         <Favicon
                           url={result.metadata.source}
-                          className="w-4 h-4 flex-shrink-0"
+                          className="w-6 h-6 rounded-full object-contain"
                         />
                       )}
-                      <h3 className="font-medium text-sm leading-tight text-foreground truncate break-words whitespace-pre-wrap">
-                        {result.metadata.title || "Untitled"}
-                      </h3>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
-                      <span className="flex items-center gap-1">
-                        <GlobeIcon className="h-3 w-3" />
-                        <Link
-                          to={result.metadata.source}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:underline truncate"
-                        >
-                          {extractDomain(result.metadata.source)}
-                        </Link>
-                      </span>
-
-                      {result.metadata.publishedDate && (
-                        <>
-                          <Separator orientation="vertical" className="h-3" />
-                          <span className="flex items-center gap-1">
-                            <CalendarIcon className="h-3 w-3" />
-                            {formatDate(result.metadata.publishedDate)}
-                          </span>
-                        </>
-                      )}
-
-                      {result.metadata.author && (
-                        <>
-                          <Separator orientation="vertical" className="h-3" />
-                          <span className="flex items-center gap-1 truncate">
-                            <UserIcon className="h-3 w-3" />
-                            <span className="truncate">
-                              {result.metadata.author}
-                            </span>
-                          </span>
-                        </>
-                      )}
-                    </div>
+                    <h1 className="leading m-0 mb-0 truncate font-semibold text-base text-foreground">
+                      {result.metadata.title}
+                    </h1>
                   </div>
-
-                  {result.metadata.image && (
-                    <div className="flex-shrink-0 ml-2">
-                      <div className="w-12 h-12 rounded border overflow-hidden bg-muted">
-                        <img
-                          src={result.metadata.image}
-                          alt="Preview"
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = "none";
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
+                  <Markdown
+                    content={`${result.pageContent.slice(0, 100)}...`}
+                    id={result.metadata.source}
+                    className="line-clamp-3 text-sm leading-relaxed text-muted-foreground"
+                  />
+                  <div className="mt-auto flex items-center gap-1.5 border-t border-border/50 pt-2">
+                    <span className="flex-1 truncate text-xs text-muted-foreground/70">
+                      {extractDomain(result.metadata.source)}
+                    </span>
+                    <ExternalLinkIcon className="lucide lucide-external-link size-3 flex-shrink-0 text-muted-foreground/50" />
+                  </div>
                 </div>
-              </CardHeader>
-
-              <CardContent>
-                <Markdown
-                  content={`${result.pageContent.slice(0, 300)}...`}
-                  id={result.metadata.source}
-                  className="text-xs text-muted-foreground"
-                />
-              </CardContent>
-            </Card>
-          ))}
+              </Link>
+            ))}
+          </div>
         </AccordionContent>
       </AccordionItem>
     </Accordion>
