@@ -44,7 +44,7 @@ export const createAuth = (ctx: GenericCtx) =>
       },
     },
     plugins: [
-      crossDomain({ siteUrl: "http://localhost:3000" }),
+      crossDomain({ siteUrl: process.env.SITE_URL ?? "http://localhost:3000" }),
       convex(),
       polar({
         client: polarClient,
