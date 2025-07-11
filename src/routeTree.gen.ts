@@ -11,21 +11,41 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
+import { Route as SettingsBillingRouteImport } from './routes/settings/billing'
+import { Route as SettingsApiKeysRouteImport } from './routes/settings/apiKeys'
 
+const SettingsRouteLazyRouteImport = createFileRoute('/settings')()
 const IndexLazyRouteImport = createFileRoute('/')()
-const LandingIndexLazyRouteImport = createFileRoute('/landing/')()
 const ChatChatIdIndexLazyRouteImport = createFileRoute('/chat/$chatId/')()
 
+const SettingsRouteLazyRoute = SettingsRouteLazyRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/settings/route.lazy').then((d) => d.Route),
+)
 const IndexLazyRoute = IndexLazyRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
-const LandingIndexLazyRoute = LandingIndexLazyRouteImport.update({
-  id: '/landing/',
-  path: '/landing/',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/landing/index.lazy').then((d) => d.Route))
+const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => SettingsRouteLazyRoute,
+} as any)
+const SettingsBillingRoute = SettingsBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => SettingsRouteLazyRoute,
+} as any)
+const SettingsApiKeysRoute = SettingsApiKeysRouteImport.update({
+  id: '/apiKeys',
+  path: '/apiKeys',
+  getParentRoute: () => SettingsRouteLazyRoute,
+} as any)
 const ChatChatIdIndexLazyRoute = ChatChatIdIndexLazyRouteImport.update({
   id: '/chat/$chatId/',
   path: '/chat/$chatId/',
@@ -36,36 +56,71 @@ const ChatChatIdIndexLazyRoute = ChatChatIdIndexLazyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
-  '/landing': typeof LandingIndexLazyRoute
+  '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/settings/apiKeys': typeof SettingsApiKeysRoute
+  '/settings/billing': typeof SettingsBillingRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/chat/$chatId': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexLazyRoute
-  '/landing': typeof LandingIndexLazyRoute
+  '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/settings/apiKeys': typeof SettingsApiKeysRoute
+  '/settings/billing': typeof SettingsBillingRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/chat/$chatId': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexLazyRoute
-  '/landing/': typeof LandingIndexLazyRoute
+  '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/settings/apiKeys': typeof SettingsApiKeysRoute
+  '/settings/billing': typeof SettingsBillingRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
   '/chat/$chatId/': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/landing' | '/chat/$chatId'
+  fullPaths:
+    | '/'
+    | '/settings'
+    | '/settings/apiKeys'
+    | '/settings/billing'
+    | '/settings/integrations'
+    | '/chat/$chatId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/landing' | '/chat/$chatId'
-  id: '__root__' | '/' | '/landing/' | '/chat/$chatId/'
+  to:
+    | '/'
+    | '/settings'
+    | '/settings/apiKeys'
+    | '/settings/billing'
+    | '/settings/integrations'
+    | '/chat/$chatId'
+  id:
+    | '__root__'
+    | '/'
+    | '/settings'
+    | '/settings/apiKeys'
+    | '/settings/billing'
+    | '/settings/integrations'
+    | '/chat/$chatId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
-  LandingIndexLazyRoute: typeof LandingIndexLazyRoute
+  SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren
   ChatChatIdIndexLazyRoute: typeof ChatChatIdIndexLazyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -73,12 +128,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/landing/': {
-      id: '/landing/'
-      path: '/landing'
-      fullPath: '/landing'
-      preLoaderRoute: typeof LandingIndexLazyRouteImport
-      parentRoute: typeof rootRouteImport
+    '/settings/integrations': {
+      id: '/settings/integrations'
+      path: '/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof SettingsIntegrationsRouteImport
+      parentRoute: typeof SettingsRouteLazyRoute
+    }
+    '/settings/billing': {
+      id: '/settings/billing'
+      path: '/billing'
+      fullPath: '/settings/billing'
+      preLoaderRoute: typeof SettingsBillingRouteImport
+      parentRoute: typeof SettingsRouteLazyRoute
+    }
+    '/settings/apiKeys': {
+      id: '/settings/apiKeys'
+      path: '/apiKeys'
+      fullPath: '/settings/apiKeys'
+      preLoaderRoute: typeof SettingsApiKeysRouteImport
+      parentRoute: typeof SettingsRouteLazyRoute
     }
     '/chat/$chatId/': {
       id: '/chat/$chatId/'
@@ -90,9 +159,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface SettingsRouteLazyRouteChildren {
+  SettingsApiKeysRoute: typeof SettingsApiKeysRoute
+  SettingsBillingRoute: typeof SettingsBillingRoute
+  SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
+}
+
+const SettingsRouteLazyRouteChildren: SettingsRouteLazyRouteChildren = {
+  SettingsApiKeysRoute: SettingsApiKeysRoute,
+  SettingsBillingRoute: SettingsBillingRoute,
+  SettingsIntegrationsRoute: SettingsIntegrationsRoute,
+}
+
+const SettingsRouteLazyRouteWithChildren =
+  SettingsRouteLazyRoute._addFileChildren(SettingsRouteLazyRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
-  LandingIndexLazyRoute: LandingIndexLazyRoute,
+  SettingsRouteLazyRoute: SettingsRouteLazyRouteWithChildren,
   ChatChatIdIndexLazyRoute: ChatChatIdIndexLazyRoute,
 }
 export const routeTree = rootRouteImport

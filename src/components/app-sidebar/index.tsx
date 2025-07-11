@@ -54,7 +54,7 @@ export function AppSidebar() {
         root: null,
         rootMargin: "0px",
         threshold: 0.1,
-      },
+      }
     );
 
     observer.observe(loadMoreElement);
@@ -78,7 +78,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="flex items-center w-full font-bold text-xl py-3">
+      <SidebarHeader className="flex items-center w-full font-bold text-xl py-3.5 px-2">
         0bs
       </SidebarHeader>
       <SidebarContent className="overflow-hidden">

@@ -3,7 +3,6 @@ import { selectedPanelTabAtom, selectedArtifactAtom } from "@/store/chatStore";
 import { ProjectsPanel } from "./projects";
 import { MCPPanel } from "./mcp/index";
 import { ArtifactsPanel } from "./artifacts";
-import { SettingsPanel } from "./settings";
 import { useAtomValue, useSetAtom } from "jotai";
 
 export const Panel = () => {
@@ -21,12 +20,11 @@ export const Panel = () => {
       className="h-full bg-background w-full"
     >
       {!hideTabHeader && ( // Hide the tab list when previewing an artifact
-        <div className="flex items-center justify-between gap-2 m-2 pr-10">
+        <div className="flex items-center justify-between gap-2 m-2.5 pr-13">
           <TabsList className="w-full flex justify-center h-10">
             <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="mcp">MCP</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
         </div>
       )}
@@ -45,10 +43,6 @@ export const Panel = () => {
 
         <TabsContent value="mcp" className="h-full w-full px-2">
           <MCPPanel />
-        </TabsContent>
-
-        <TabsContent value="settings" className="h-full w-full px-2">
-          <SettingsPanel />
         </TabsContent>
       </>
     </Tabs>

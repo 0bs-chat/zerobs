@@ -1,6 +1,3 @@
 export const BillingTab = () => {
-  return (
-    <div>
-    </div>
-  );
+  return <div></div>;
 };
