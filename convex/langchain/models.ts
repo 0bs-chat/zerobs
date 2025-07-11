@@ -222,6 +222,7 @@ export async function getModel(
   ctx: ActionCtx,
   model: string,
   reasoningEffort: "low" | "medium" | "high" | undefined,
+  userId?: string,
 ): Promise<BaseChatModel> {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -233,12 +234,14 @@ export async function getModel(
     (
       await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
         key: "OPENAI_API_KEY",
+        userId,
       })
     )?.value ?? process.env.OPENAI_API_KEY;
   const OPENAI_BASE_URL =
     (
       await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
         key: "OPENAI_BASE_URL",
+        userId,
       })
     )?.value ?? "https://openrouter.ai/api/v1";
 

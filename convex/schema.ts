@@ -108,6 +108,7 @@ export const Mcps = Table("mcps", {
   type: v.union(v.literal("http"), v.literal("stdio"), v.literal("docker")),
   dockerImage: v.optional(v.string()),
   dockerPort: v.optional(v.number()),
+  dockerCommand: v.optional(v.string()),
   command: v.optional(v.string()),
   url: v.optional(v.string()),
   env: v.optional(v.record(v.string(), v.string())),

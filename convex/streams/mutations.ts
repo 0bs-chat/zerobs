@@ -47,10 +47,11 @@ export const update = internalMutation({
   },
 });
 
-export const appendChunks = internalMutation({
+export const flush = internalMutation({
   args: {
     chatId: v.id("chats"),
     chunks: v.array(v.string()),
+    completedSteps: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args): Promise<Doc<"streams">> => {
     let stream = await ctx.runQuery(api.streams.queries.get, {
@@ -63,21 +64,24 @@ export const appendChunks = internalMutation({
       return stream;
     }
 
-    await ctx.runMutation(internal.streams.crud.update, {
+    if (args.chunks.length > 0) {
+      const chunkDocId = await ctx.db.insert("streamChunks", {
+        streamId: stream._id,
+        chunks: args.chunks,
+      });
+      await ctx.db.insert("streamChunkRefs", {
+        streamId: stream._id,
+        chunkId: chunkDocId,
+      });
+    }
+
+    stream = (await ctx.runMutation(internal.streams.crud.update, {
       id: stream._id,
       patch: {
         status: "streaming",
+        ...(args.completedSteps && { completedSteps: args.completedSteps }),
       },
-    });
-    stream.status = "streaming";
-    const chunkDocId = await ctx.db.insert("streamChunks", {
-      streamId: stream._id,
-      chunks: args.chunks,
-    });
-    await ctx.db.insert("streamChunkRefs", {
-      streamId: stream._id,
-      chunkId: chunkDocId,
-    });
+    }))!;
 
     return stream;
   },
