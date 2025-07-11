@@ -9,7 +9,7 @@ import { components, internal } from "./_generated/api";
 import { query, type GenericCtx } from "./_generated/server";
 import type { Id, DataModel } from "./_generated/dataModel";
 import { v } from "convex/values";
-import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
+import { polar, checkout } from "@polar-sh/better-auth";
 import { Polar } from "@polar-sh/sdk";
 
 const polarClient = new Polar({
@@ -74,7 +74,7 @@ export const {
 } =
   betterAuthComponent.createAuthFunctions<DataModel>({
     // Must create a user and return the user id
-    onCreateUser: async (ctx, user) => {
+    onCreateUser: async (ctx, _user) => {
       return ctx.db.insert("users", {});
     },
 
