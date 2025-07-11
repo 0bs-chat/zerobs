@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { action, internalAction } from "../_generated/server";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Id } from "../_generated/dataModel";
 import { agentGraph } from "./agent";
 import { api, internal } from "../_generated/api";
 import {
@@ -227,8 +227,14 @@ export const chat = action({
 
     const newMessages = checkpoint?.messages?.slice(thread.length);
     if (newMessages?.length) {
-      let parent: Id<"chatMessages"> | null =
+      const parent: Id<"chatMessages"> | null =
         thread.length ? thread[thread.length - 1]._id : null;
+
+      // Process all messages and prepare them for batch creation
+      const messagesToCreate: Array<{
+        message: string;
+        parentId?: Id<"chatMessages">;
+      }> = [];
 
       for (const m of newMessages) {
         let stored = mapChatMessagesToStoredMessages([m])[0];
@@ -266,15 +272,18 @@ export const chat = action({
           };
         }
 
-        const created: Doc<"chatMessages"> = await ctx.runMutation(
-          internal.chatMessages.crud.createInternal,
-          {
-            chatId,
-            parentId: parent,
-            message: JSON.stringify(stored),
-          }
-        );
-        parent = created._id;
+        messagesToCreate.push({
+          message: JSON.stringify(stored),
+          parentId: parent ?? undefined,
+        });
+      }
+
+      // Create all messages in a single batch operation
+      if (messagesToCreate.length > 0) {
+        await ctx.runMutation(internal.chats.mutations.createRaw, {
+          chatId,
+          messages: messagesToCreate,
+        });
       }
     }
 

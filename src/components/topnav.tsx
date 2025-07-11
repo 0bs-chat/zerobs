@@ -8,14 +8,13 @@ import {
 import {
   LogOutIcon,
   PanelRightCloseIcon,
-  GithubIcon,
   SettingsIcon,
   PlusIcon,
 } from "lucide-react";
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -31,7 +30,7 @@ import { useNavigate } from "@tanstack/react-router";
 export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
   const { data: session } = authClient.useSession();
-  const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
+  const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
   const navigate = useNavigate();
   const [sidebarOpen] = useAtom(sidebarOpenAtom);
   return (

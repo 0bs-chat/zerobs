@@ -101,7 +101,6 @@ export async function createAgentWithTools(
           prompt: `You are a ${groupName} assistant`,
         }),
     );
-    console.log(agents.length);
     return createSupervisor({
       agents: [
         ...agents,

@@ -1,7 +1,7 @@
 import { v } from "convex/values";
-import { mutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import { partial } from "convex-helpers/validators";
 import * as schema from "../schema";
 
@@ -64,6 +64,35 @@ export const remove = mutation({
 
     await ctx.db.delete(args.chatId);
 
+    return null;
+  },
+});
+
+export const createRaw = internalMutation({
+  args: {
+    chatId: v.id("chats"),
+    messages: v.array(v.object({
+      message: v.string(),
+      parentId: v.optional(v.id("chatMessages")),
+    })),
+  },
+  handler: async (ctx, args) => {
+    // Create messages sequentially to maintain parent-child relationships
+    let currentParent = args.messages[0]?.parentId ?? null;
+    
+    for (const message of args.messages) {
+      const created = await ctx.runMutation(
+        internal.chatMessages.crud.createInternal,
+        {
+          chatId: args.chatId,
+          parentId: currentParent,
+          message: message.message,
+        }
+      );
+      // Set the current message as parent for the next message
+      currentParent = created._id;
+    }
+    
     return null;
   },
 });

@@ -174,15 +174,6 @@ const ReactComponentRenderer = ({ content }: { content: string }) => {
       className="w-full h-full"
       title="React Preview"
       sandbox="allow-scripts allow-same-origin"
-      onLoad={(e) => {
-        console.log("Iframe loaded");
-        const iframe = e.target as HTMLIFrameElement;
-        try {
-          console.log("Iframe content window:", iframe.contentWindow);
-        } catch (err) {
-          console.log("Cannot access iframe content:", err);
-        }
-      }}
     />
   );
 };

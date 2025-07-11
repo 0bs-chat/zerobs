@@ -7,7 +7,6 @@ import {
 import { Favicon } from "@/components/ui/favicon";
 import { Markdown } from "@/components/ui/markdown";
 import { extractDomain } from "@/lib/utils";
-import { Link } from "@tanstack/react-router";
 import { ExternalLinkIcon, GlobeIcon } from "lucide-react";
 
 // Type definition for search results output
@@ -53,23 +52,33 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
         <AccordionContent>
           <div className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border flex gap-4 overflow-x-auto p-2">
             {results.map((result, index) => (
-              <Link
+              <div
                 key={index}
-                to={result.metadata.source}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative flex flex-col flex-shrink-0 rounded-lg border bg-card text-left transition-all duration-200 hover:shadow-lg hover:border-primary/20 hover:bg-accent/50 w-64 min-w-64 overflow-hidden"
+                onClick={() => window.open(result.metadata.source, '_blank', 'noopener,noreferrer')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    window.open(result.metadata.source, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+                tabIndex={0}
+                role="button"
+                className="group relative flex flex-col flex-shrink-0 rounded-lg border bg-card text-left transition-all
+                  duration-200 hover:shadow-lg hover:border-primary/20 hover:bg-accent/50 w-64 min-w-64 overflow-hidden
+                  [&:hover]:shadow-lg [&:hover]:border-primary/20 [&:hover]:bg-accent/50 h-96 cursor-pointer
+                  focus:outline-none focus:ring-2 focus:ring-primary/50"
                 aria-label={`Open ${result.metadata.title} in new tab`}
               >
-                <img
-                  alt=""
-                  className="aspect-video h-36 overflow-hidden object-cover"
-                  src={`https://api.microlink.io/?url=${encodeURIComponent(
-                    result.metadata.source,
-                  )}&screenshot=true&meta=false&embed=screenshot.url`}
-                  style={{ margin: "0px auto", maxHeight: "100%" }}
-                />
-                <div className="flex flex-1 flex-col p-2">
+                <div className="w-full h-36 overflow-hidden flex-shrink-0">
+                  <img
+                    alt=""
+                    className="w-full h-full object-cover"
+                    src={`https://api.microlink.io/?url=${encodeURIComponent(
+                      result.metadata.source,
+                    )}&screenshot=true&meta=false&embed=screenshot.url`}
+                  />
+                </div>
+                <div className="flex flex-1 flex-col p-2 min-h-0">
                   <div className="flex items-center justify-start gap-2">
                       {result.metadata.favicon && (
                         <Favicon
@@ -81,11 +90,13 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
                       {result.metadata.title}
                     </h1>
                   </div>
-                  <Markdown
-                    content={`${result.pageContent.slice(0, 100)}...`}
-                    id={result.metadata.source}
-                    className="line-clamp-3 text-sm leading-relaxed text-muted-foreground"
-                  />
+                  <div className="flex-1 min-h-0 overflow-hidden">
+                    <Markdown
+                      content={`${result.pageContent.slice(0, 100)}...`}
+                      id={result.metadata.source}
+                      className="line-clamp-3 text-xs leading-relaxed text-muted-foreground overflow-hidden"
+                    />
+                  </div>
                   <div className="mt-auto flex items-center gap-1.5 border-t border-border/50 pt-2">
                     <span className="flex-1 truncate text-xs text-muted-foreground/70">
                       {extractDomain(result.metadata.source)}
@@ -93,7 +104,7 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
                     <ExternalLinkIcon className="lucide lucide-external-link size-3 flex-shrink-0 text-muted-foreground/50" />
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </AccordionContent>

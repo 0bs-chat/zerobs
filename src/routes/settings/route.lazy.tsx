@@ -12,17 +12,9 @@ import {
   ArrowLeft,
   KeyIcon,
   Plug,
-  Wallet,
   Wallet2,
-  Wallet2Icon,
 } from "lucide-react";
-import { type ReactNode, useEffect } from "react";
-
-interface SettingsLayoutProps {
-  children?: ReactNode;
-  title?: string;
-  description?: string;
-}
+import { useEffect } from "react";
 
 const settingsNavItems = [
   {

@@ -10,11 +10,7 @@ import { DocumentResultDisplay, type DocumentResult } from "./document-results";
 import type { BaseMessage } from "@langchain/core/messages";
 import { FileDisplay } from "./file-result";
 
-interface ToolMessageProps {
-  message: BaseMessage;
-}
-
-export const ToolMessage = memo(({ message }: ToolMessageProps) => {
+export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
   // Memoize the parsed content to avoid unnecessary parsing
   const parsedContent = useMemo(() => {
     if (!message) return null;

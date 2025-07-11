@@ -27,13 +27,6 @@ export const PlanningStep = memo(
     const [userHasScrolledMessages, setUserHasScrolledMessages] =
       useState(false);
 
-    // Debug log to check streaming state
-    console.log(
-      "PlanningStep - isStreaming:",
-      isStreaming,
-      "messageId:",
-      messageId,
-    );
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const stepsContainerRef = useRef<HTMLDivElement>(null);
 

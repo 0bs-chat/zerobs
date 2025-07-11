@@ -105,12 +105,17 @@ export const getToken = query({
   handler: async (ctx, args) => {
     const auth = createAuth(ctx);
     const headers = await betterAuthComponent.getHeaders(ctx);
-    const token = await auth.api.getAccessToken({
-      body: {
-        providerId: args.providerId,
-      },
-      headers,
-    });
-    return { token: token.accessToken, scopes: token.scopes };
+    try {
+      const token = await auth.api.getAccessToken({
+        body: {
+          providerId: args.providerId,
+        },
+        headers,
+      });
+      return { token: token.accessToken, scopes: token.scopes, expiresAt: token.accessTokenExpiresAt?.toISOString() };
+    } catch (error) {
+      console.error("Error getting token:", error);
+      return undefined;
+    }
   },
 });

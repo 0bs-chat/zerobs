@@ -93,25 +93,29 @@ export const StreamingMessage = memo(() => {
 
   // Regular streaming display (no planning mode)
   const regularContent = useMemo(() => {
-    return langchainMessages?.map((message, index) => (
-      <motion.div
-        key={index}
-        variants={streamingVariants}
-        initial="initial"
-        animate="animate"
-        transition={{ delay: index * 0.1, ...springTransition }}
-      >
-        {message?.getType() === "ai" ? (
-          <AiMessageContent
-            message={message}
-            messageId={`${messageId}-${index}`}
-            isStreaming={true}
-          />
-        ) : (
-          <ToolMessage message={message!} />
-        )}
-      </motion.div>
-    ));
+    return langchainMessages?.map((message, index) => {
+      const isLastAiMessage = index === langchainMessages.length - 1 && message?.getType() === "ai";
+      
+      return (
+        <motion.div
+          key={index}
+          variants={streamingVariants}
+          initial="initial"
+          animate="animate"
+          transition={{ delay: index * 0.1, ...springTransition }}
+        >
+          {message?.getType() === "ai" ? (
+            <AiMessageContent
+              message={message}
+              messageId={`${messageId}-${index}`}
+              isStreaming={isLastAiMessage}
+            />
+          ) : (
+            <ToolMessage message={message!} />
+          )}
+        </motion.div>
+      );
+    });
   }, [langchainMessages, messageId, streamData?.status]);
 
   if (streamData?.chunkGroups.length === 0) return null;
@@ -123,7 +127,7 @@ export const StreamingMessage = memo(() => {
       animate={{ opacity: 1 }}
       transition={springTransition}
     >
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {planningSteps || regularContent}
       </AnimatePresence>
     </motion.div>

@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 
 export const IntegrationsTab = () => {
@@ -17,6 +18,12 @@ export const IntegrationsTab = () => {
     "https://mail.google.com/"
   ]
   const hasRequiredScopes = requiredScopes.every(scope => googleToken?.scopes?.includes(scope));
+
+  useEffect(() => {
+    if (googleToken?.expiresAt && new Date(googleToken.expiresAt) < new Date()) {
+      authClient.refreshToken({ providerId: "google" });
+    }
+  }, [googleToken]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -30,7 +37,7 @@ export const IntegrationsTab = () => {
           ) : (
             <Button onClick={() => authClient.linkSocial({
               provider: "google",
-              scopes: requiredScopes
+              scopes: requiredScopes,
             })}>Connect</Button>
           )}
         </CardContent>
