@@ -4,7 +4,6 @@ import { resizePanelOpenAtom, selectedArtifactAtom } from "@/store/chatStore";
 import { LogOutIcon, PanelRightCloseIcon, GithubIcon } from "lucide-react";
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
-import { useAuth, useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { useAtom } from "jotai";
 import {
@@ -16,11 +15,11 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { authClient } from "@/lib/auth-client";
 
 export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
-  const { signOut } = useAuth();
-  const { user } = useUser();
+  const { data: session } = authClient.useSession();
   const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
 
   return (
@@ -35,10 +34,10 @@ export function TopNav() {
               <Button variant="ghost" size="icon" className="relative">
                 <Avatar className="h-6 w-6">
                   <AvatarImage
-                    src={user?.imageUrl}
-                    alt={user?.fullName ?? ""}
+                    src={session?.user?.image ?? ""}
+                    alt={session?.user?.name ?? ""}
                   />
-                  <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
+                  <AvatarFallback>{session?.user?.name?.[0]}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -46,10 +45,10 @@ export function TopNav() {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    {user?.fullName}
+                    {session?.user?.name}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {user?.primaryEmailAddress?.emailAddress}
+                    {session?.user?.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -64,7 +63,7 @@ export function TopNav() {
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
-                  signOut();
+                  authClient.signOut();
                   toast.success("Signed out");
                 }}
               >
