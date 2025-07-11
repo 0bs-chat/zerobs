@@ -36,12 +36,12 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
   };
 
   const addEnvVar = () => {
-    // This will be handled by the display logic automatically
-    const newEnvVars = [...envVarArray, { key: "", value: "" }];
-    onUpdate(convertToRecord(newEnvVars));
+    // Add another empty row to the existing env vars
+    onUpdate(convertToRecord([...envVarArray, { key: "", value: "" }]));
   };
 
   const removeEnvVar = (index: number) => {
+    // Remove the env var at the given index from the actual env vars array
     const newEnvVars = envVarArray.filter((_, i) => i !== index);
     onUpdate(convertToRecord(newEnvVars));
   };
@@ -53,31 +53,43 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
   ) => {
     const newEnvVars = [...displayEnvVars];
     newEnvVars[index] = { ...newEnvVars[index], [field]: value };
-    onUpdate(convertToRecord(newEnvVars));
+    
+    // Filter out the last empty row before converting to record
+    const envVarsToUpdate = newEnvVars.slice(0, -1);
+    
+    // If we're updating the last (empty) row and it now has content, include it
+    if (index === newEnvVars.length - 1 && (newEnvVars[index].key.trim() || newEnvVars[index].value.trim())) {
+      envVarsToUpdate.push(newEnvVars[index]);
+    }
+    
+    onUpdate(convertToRecord(envVarsToUpdate));
   };
 
   const handlePaste = (
     e: React.ClipboardEvent<HTMLInputElement>,
     index: number,
   ) => {
-    // Only process paste if the input is empty
+    // Only try bulk parsing if pasting into an empty row's key field
     const currentEnvVar = displayEnvVars[index];
-    if (currentEnvVar.key !== "" || currentEnvVar.value !== "") {
+    const isEmptyRow = currentEnvVar.key === "" && currentEnvVar.value === "";
+    const isKeyField = (e.target as HTMLInputElement).placeholder === "Key";
+    
+    if (!isEmptyRow || !isKeyField) {
+      // Allow normal paste behavior
       return;
     }
-
-    // Prevent default paste behavior
-    e.preventDefault();
 
     // Get pasted text
     const pastedText = e.clipboardData.getData("text");
     if (!pastedText.trim()) return;
 
-    // Try to parse as environment variables
+    // Try to parse as environment variables (only if it looks like env vars)
     const parsedEnvVars = parseEnvVars(pastedText);
 
-    // If we have parsed env vars, update state with them
-    if (parsedEnvVars.length > 0) {
+    // Only prevent default paste if we successfully parsed multiple env vars
+    if (parsedEnvVars.length > 1) {
+      e.preventDefault();
+      
       // Replace the current empty env var with the parsed ones
       const newEnvVars = [
         ...displayEnvVars.slice(0, index),
@@ -86,6 +98,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
       ];
       onUpdate(convertToRecord(newEnvVars));
     }
+    // If parsedEnvVars.length <= 1, allow normal paste behavior
   };
 
   const parseEnvVars = (text: string): EnvVar[] => {
@@ -101,12 +114,33 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
       if (!trimmedLine || trimmedLine.startsWith("#")) continue;
 
       // Try to match KEY=VALUE pattern
-      const match = trimmedLine.match(/^([^=]+)=(.*)$/);
-      if (match) {
+      const keyValueMatch = trimmedLine.match(/^([^=]+)=(.*)$/);
+      if (keyValueMatch) {
         result.push({
-          key: match[1].trim(),
-          value: match[2].trim(),
+          key: keyValueMatch[1].trim(),
+          value: keyValueMatch[2].trim(),
         });
+        continue;
+      }
+
+      // Try to match JSON-style "KEY": "VALUE" pattern (with or without trailing comma)
+      const jsonMatch = trimmedLine.match(/^"([^"]+)"\s*:\s*"([^"]*)"[,]?$/);
+      if (jsonMatch) {
+        result.push({
+          key: jsonMatch[1].trim(),
+          value: jsonMatch[2].trim(),
+        });
+        continue;
+      }
+
+      // Try to match JSON-style "KEY": value pattern (for non-string values like numbers, booleans)
+      const jsonValueMatch = trimmedLine.match(/^"([^"]+)"\s*:\s*([^,\s]+)[,]?$/);
+      if (jsonValueMatch) {
+        result.push({
+          key: jsonValueMatch[1].trim(),
+          value: jsonValueMatch[2].trim(),
+        });
+        continue;
       }
     }
 

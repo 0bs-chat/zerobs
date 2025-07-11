@@ -51,7 +51,7 @@ export const generateTitle = internalAction({
       ],
       args.chat.model,
     );
-    const model = await getModel(ctx, "worker", undefined);
+    const model = await getModel(ctx, "worker", undefined, args.chat.userId);
     const titleSchema = z.object({
       title: z
         .string()
@@ -75,407 +75,212 @@ export const generateTitle = internalAction({
 });
 
 export const chat = action({
-  args: v.object({
-    chatId: v.id("chats"),
-  }),
-  handler: async (ctx, args) => {
-    let chat = await ctx.runQuery(api.chats.queries.get, {
-      chatId: args.chatId,
-    });
-
-    let streamDoc = await ctx.runQuery(api.streams.queries.get, {
-      chatId: args.chatId,
-    });
-    if (["pending", "streaming"].includes(streamDoc?.status ?? "")) {
-      return;
-    }
-
-    const abortController = new AbortController();
-    const project = chat.projectId
-      ? await ctx.runQuery(api.projects.queries.get, {
-          projectId: chat.projectId,
-        })
-      : null;
-
-    const customPrompt =
-      project?.systemPrompt && project.systemPrompt.trim() !== ""
-        ? project.systemPrompt
-        : undefined;
-
-    const messages = await ctx.runQuery(api.chatMessages.queries.get, {
-      chatId: args.chatId,
-    });
-
-    if (messages?.length === 1) {
-      ctx.runAction(internal.langchain.index.generateTitle, {
-        chat: chat,
-        message: messages[0],
-      });
-    }
-
-    const message = messages.slice(-1)[0];
-    if (!message) {
-      throw new Error("Message not found");
-    }
+  args: v.object({ chatId: v.id("chats") }),
+  handler: async (ctx, { chatId }) => {
+    const prep = await ctx.runMutation(
+      internal.langchain.utils.prepareChat,
+      { chatId }
+    );
+    const { chat, message, messages, customPrompt } = prep!;
     const { messageMap } = buildMessageLookups(messages);
-    const currentThread = getThreadFromMessage(message, messageMap);
+    const thread = getThreadFromMessage(message, messageMap);
 
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
 
+    const abort = new AbortController();
     const stream = agent.streamEvents(
-      { messages: currentThread.map((message) => message.message) },
+      { messages: thread.map(m => m.message) },
       {
         version: "v2",
-        configurable: {
-          ctx,
-          chat: chat,
-          customPrompt,
-          thread_id: args.chatId,
-        },
-        recursionLimit: 100,
-        signal: abortController.signal,
-      },
+        configurable: { ctx, chat, customPrompt, thread_id: chatId },
+        recursionLimit: 30,
+        signal: abort.signal,
+      }
     );
 
-    const BUFFER = 300; // ms
     let buffer: string[] = [];
-    let wasCancelled = false;
-    let streamCompleted = false;
     let checkpoint: typeof GraphState.State | null = null;
-
-    if (!streamDoc) {
-      streamDoc = await ctx.runMutation(internal.streams.crud.create, {
-        userId: chat.userId,
-        status: "pending",
-        chatId: args.chatId,
-        completedSteps: [],
-      });
-    }
-
-    await ctx.runMutation(internal.streams.mutations.update, {
-      chatId: args.chatId,
-      updates: {
-        status: "pending",
-      },
-    });
-
-    // Create a function to handle flushing chunks
-    async function flushChunks() {
-      while (
-        !wasCancelled &&
-        !streamCompleted &&
-        !abortController.signal.aborted
-      ) {
-        await new Promise((resolve) => setTimeout(resolve, BUFFER));
-
-        if (buffer.length > 0) {
-          const chunksToFlush = buffer;
-          buffer = [];
-
-          try {
-            streamDoc = await ctx.runMutation(
-              internal.streams.mutations.appendChunks,
-              {
-                chatId: args.chatId,
-                chunks: chunksToFlush,
-              },
-            );
-
-            // Check if the stream was cancelled during appendChunks
-            if (streamDoc.status === "cancelled") {
-              wasCancelled = true;
-              abortController.abort();
-              break;
-            }
-          } catch (error) {
-            // If mutation fails due to cancellation, stop flushing
-            if (abortController.signal.aborted) {
-              break;
-            }
-            throw error;
-          }
+    let lastFlushCheckpoint: typeof GraphState.State | null = null;
+    let finished = false;
+    const flush = async () => {
+      while (true) {
+        if (finished) break;
+        if (!buffer.length && !checkpoint) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+          continue;
         }
-      }
 
-      // Only flush remaining buffer if not cancelled
-      if (
-        buffer.length > 0 &&
-        !wasCancelled &&
-        !abortController.signal.aborted
-      ) {
-        const chunksToFlush = buffer;
+        const chunks = buffer
         buffer = [];
+        const currentCheckpoint = checkpoint;
+        const isSameCheckpoint = lastFlushCheckpoint && currentCheckpoint &&
+          lastFlushCheckpoint.pastSteps.length === currentCheckpoint.pastSteps.length &&
+          lastFlushCheckpoint.pastSteps.every(([s], i) => s === currentCheckpoint.pastSteps[i][0]);
+        lastFlushCheckpoint = currentCheckpoint;
 
-        try {
-          await ctx.runMutation(internal.streams.mutations.appendChunks, {
-            chatId: args.chatId,
-            chunks: chunksToFlush,
-          });
-        } catch (error) {
-          // Ignore errors if already cancelled
-          if (!abortController.signal.aborted) {
-            throw error;
-          }
-        }
+        await ctx
+          .runMutation(internal.streams.mutations.flush, {
+            chatId,
+            chunks,
+            ...(isSameCheckpoint ? {} : {
+              completedSteps:
+                currentCheckpoint!.pastSteps?.length > 0
+                  ? currentCheckpoint!.pastSteps.map((pastStep) => {
+                      const [step, _messages] = pastStep;
+                      return step as string;
+                    })
+                  : currentCheckpoint!.plan?.length > 0
+                    ? [currentCheckpoint!.plan.flat()[0]]
+                    : undefined,
+            }),
+          })
       }
-    }
+    };
+    flush();
 
-    // Start the flush loop in parallel
-    const flushPromise = flushChunks();
-
+    let lastToolInput: unknown | undefined = undefined;
     try {
-      for await (const event of stream) {
-        // Check for cancellation early and often
-        if (abortController.signal.aborted) {
-          wasCancelled = true;
-          break;
-        }
-
-        // Refresh stream doc to check for cancellation
-        const currentStreamDoc = await ctx.runQuery(api.streams.queries.get, {
-          chatId: args.chatId,
-        });
-
-        if (currentStreamDoc?.status === "cancelled") {
-          wasCancelled = true;
-          abortController.abort();
-          break;
-        }
-
-        const currentCheckpoint = (
-          await agent.getState({ configurable: { thread_id: args.chatId } })
+      for await (const evt of stream) {
+        checkpoint = (
+          await agent.getState({
+            configurable: { thread_id: chatId },
+          })
         ).values as typeof GraphState.State;
-        if (
-          checkpoint === null ||
-          currentCheckpoint.messages?.length !== checkpoint.messages?.length ||
-          currentCheckpoint.plan?.length !== checkpoint.plan?.length ||
-          currentCheckpoint.pastSteps?.length !== checkpoint.pastSteps?.length
-        ) {
-          checkpoint = currentCheckpoint;
 
-          // Check for cancellation before making mutations
-          if (!wasCancelled && !abortController.signal.aborted) {
-            try {
-              await ctx.runMutation(internal.streams.mutations.update, {
-                chatId: args.chatId,
-                updates: {
-                  completedSteps:
-                    currentCheckpoint?.pastSteps?.length > 0
-                      ? currentCheckpoint.pastSteps.map((pastStep) => {
-                          const [step, _messages] = pastStep;
-                          return step as string;
-                        })
-                      : currentCheckpoint?.plan?.length > 0
-                        ? [currentCheckpoint.plan.flat()[0]]
-                        : undefined,
-                },
-              });
-            } catch (error) {
-              // If mutation fails, check if it's due to cancellation
-              if (!abortController.signal.aborted) {
-                throw error;
-              }
-              break;
-            }
-          }
-        }
-
+        const allowedNodes = ["baseAgent", "simple", "plannerAgent"];
         if (
-          ["on_chat_model_stream", "on_tool_start", "on_tool_end"].includes(
-            event.event,
+          allowedNodes.some((node) =>
+            evt.metadata?.checkpoint_ns?.startsWith(node),
           )
         ) {
-          const allowedNodes = ["baseAgent", "simple", "plannerAgent"];
-          if (
-            allowedNodes.some((node) =>
-              event.metadata.checkpoint_ns.startsWith(node),
-            )
-          ) {
-            // Check for cancellation before processing events
-            if (wasCancelled || abortController.signal.aborted) {
-              break;
-            }
-
-            // Minify the data before sending it to the frontend to reduce bandwidth.
-            if (event.event === "on_chat_model_stream") {
-              const content = event.data?.chunk?.content ?? "";
-              const reasoning =
-                event.data?.chunk?.additional_kwargs?.reasoning_content ?? "";
-
-              const aiChunk: AIChunkGroup = {
+          if (evt.event === "on_chat_model_stream") {
+            buffer.push(
+              JSON.stringify({
                 type: "ai",
-                content,
-                ...(reasoning ? { reasoning } : {}),
-              };
-
-              buffer.push(JSON.stringify(aiChunk));
-            } else if (event.event === "on_tool_start") {
-              const toolChunk: ToolChunkGroup = {
+                content: evt.data?.chunk?.content ?? "",
+                reasoning:
+                  evt.data?.chunk?.additional_kwargs?.reasoning_content,
+              })
+            );
+          } else if (evt.event === "on_tool_start") {
+            lastToolInput = evt.data?.input;
+            buffer.push(
+              JSON.stringify({
                 type: "tool",
-                toolName: event.name ?? "Tool",
-                input: JSON.stringify(event.data?.input),
+                toolName: evt.name,
+                input: evt.data?.input,
                 isComplete: false,
-              } as ToolChunkGroup;
+              })
+            );
+          } else if (evt.event === "on_tool_end") {
+            let output = evt.data?.output.content;
 
-              buffer.push(JSON.stringify(toolChunk));
-            } else if (event.event === "on_tool_end") {
-              const outputContent = event.data?.output.content;
-              let processedOutput = outputContent;
-
-              if (Array.isArray(outputContent)) {
-                processedOutput = await Promise.all(
-                  outputContent.map(async (item) => {
-                    if (
-                      item.type === "image_url" &&
-                      item.image_url &&
-                      item.image_url.url
-                    ) {
-                      return {
-                        type: "image_url",
-                        image_url: {
-                          url: "https://t3.chat/images/noise.png",
-                        },
-                      };
-                    }
-                    return item;
-                  }),
-                );
-              }
-
-              const toolChunk: ToolChunkGroup = {
-                type: "tool",
-                toolName: event.name ?? "Tool",
-                output: processedOutput,
-                isComplete: true,
-              } as ToolChunkGroup;
-
-              buffer.push(JSON.stringify(toolChunk));
+            if (Array.isArray(output)) {
+              output = await Promise.all(
+                output.map(async (item: any) => {
+                  if (
+                    item.type === "image_url" &&
+                    item.image_url &&
+                    item.image_url.url
+                  ) {
+                    return {
+                      type: "image_url",
+                      image_url: {
+                        url: "https://t3.chat/images/noise.png",
+                      },
+                    };
+                  }
+                  return item;
+                })
+              );
             }
+
+            buffer.push(
+              JSON.stringify({
+                type: "tool",
+                toolName: evt.name,
+                input: lastToolInput,
+                output,
+                isComplete: true,
+              })
+            );
           }
         }
       }
-      streamCompleted = true;
-    } catch (error) {
-      wasCancelled = true;
-      abortController.abort();
-
+    } catch (e) {
       // If already cancelled/aborted, don't throw
-      if (abortController.signal.aborted) {
+      if (abort.signal.aborted) {
         return;
       }
-
-      // Only update status if not already cancelled
-      try {
-        const currentStreamDoc = await ctx.runQuery(api.streams.queries.get, {
-          chatId: args.chatId,
-        });
-
-        if (currentStreamDoc && currentStreamDoc.status !== "cancelled") {
-          await ctx.runMutation(internal.streams.mutations.update, {
-            chatId: args.chatId,
-            updates: {
-              completedSteps: [],
-              status: "error",
-            },
-          });
-        }
-      } catch (updateError) {
-        // Ignore update errors if we're already in an error state
-        console.error("Failed to update stream status:", updateError);
-      }
-
-      throw error;
-    } finally {
-      // Signal completion to stop the flush loop
-      streamCompleted = true;
-
-      // Wait for any remaining chunks to be flushed
-      try {
-        await flushPromise;
-      } catch (flushError) {
-        // Ignore flush errors during cleanup
-        console.error("Error during flush cleanup:", flushError);
-      }
+      await ctx.runMutation(internal.streams.mutations.update, {
+        chatId,
+        updates: {
+          completedSteps: [],
+          status: "error",
+        },
+      });
+      throw e;
     }
 
-    const newMessages = checkpoint?.messages?.slice(
-      currentThread.length,
-      checkpoint.messages.length,
-    );
-    if (newMessages) {
-      let parentId: Id<"chatMessages"> | null =
-        currentThread.length > 0
-          ? currentThread[currentThread.length - 1]._id
-          : null;
-      for (const message of newMessages) {
-        let newMessage = mapChatMessagesToStoredMessages([message])[0];
-        if (message instanceof ToolMessage && Array.isArray(message.content)) {
-          const newContent = await Promise.all(
-            message.content.map(async (content) => {
-              if (
-                typeof content === "object" &&
-                content?.type === "image_url" &&
-                content.image_url?.url
-              ) {
-                const matches = content.image_url.url.match(
-                  /^data:(.+);base64,(.+)$/,
-                );
-                if (matches) {
-                  const mimeType = matches[1];
-                  const base64 = matches[2];
-                  const blob = await (
-                    await fetch(`data:${mimeType};base64,${base64}`)
-                  ).blob();
-                  const storageId = await ctx.storage.store(blob);
-                  const documentId = await ctx.runMutation(
-                    api.documents.mutations.create,
-                    {
-                      name: "Image Upload - " + new Date().toISOString(),
-                      type: "file",
-                      key: storageId,
-                      size: blob.size,
-                    },
-                  );
-                  return {
-                    type: "file",
-                    file: {
-                      file_id: documentId,
-                    },
-                  };
-                }
-              }
-              return content;
-            }),
-          );
+    finished = true;
 
-          newMessage = {
-            ...newMessage,
-            data: {
-              ...newMessage.data,
-              content: JSON.stringify(newContent),
-            },
+    const newMessages = checkpoint?.messages?.slice(thread.length);
+    if (newMessages?.length) {
+      let parent: Id<"chatMessages"> | null =
+        thread.length ? thread[thread.length - 1]._id : null;
+
+      for (const m of newMessages) {
+        let stored = mapChatMessagesToStoredMessages([m])[0];
+
+        if (m instanceof ToolMessage && Array.isArray(m.content)) {
+          const patched = await Promise.all(
+            m.content.map(async item => {
+              if (
+                item.type === "image_url" &&
+                item.image_url?.url?.startsWith("data:")
+              ) {
+                const [, mime, base64] =
+                  item.image_url.url.match(/^data:(.+);base64,(.+)$/) ?? [];
+                const blob = await (
+                  await fetch(`data:${mime};base64,${base64}`)
+                ).blob();
+                const key = await ctx.storage.store(blob);
+                const docId = await ctx.runMutation(
+                  api.documents.mutations.create,
+                  {
+                    name: "Image Upload - " + new Date().toISOString(),
+                    type: "file",
+                    key,
+                    size: blob.size,
+                  }
+                );
+                return { type: "file", file: { file_id: docId } };
+              }
+              return item;
+            })
+          );
+          stored = {
+            ...stored,
+            data: { ...stored.data, content: JSON.stringify(patched) },
           };
         }
 
-        const newMessageDoc: Doc<"chatMessages"> = await ctx.runMutation(
-          internal.chatMessages.crud.create,
+        const created: Doc<"chatMessages"> = await ctx.runMutation(
+          internal.chatMessages.crud.createInternal,
           {
-            chatId: args.chatId,
-            parentId: parentId,
-            message: JSON.stringify(newMessage),
-          },
+            chatId,
+            parentId: parent,
+            message: JSON.stringify(stored),
+          }
         );
-        parentId = newMessageDoc._id;
+        parent = created._id;
       }
     }
 
     await ctx.runMutation(internal.streams.mutations.update, {
-      chatId: args.chatId,
-      updates: {
-        completedSteps: [],
-        status: wasCancelled ? "cancelled" : "done",
-      },
+      chatId,
+      updates: { status: "done", completedSteps: [] },
     });
   },
 });

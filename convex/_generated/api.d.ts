@@ -33,6 +33,7 @@ import type * as langchain_prompts from "../langchain/prompts.js";
 import type * as langchain_state from "../langchain/state.js";
 import type * as langchain_tools_googleTools from "../langchain/tools/googleTools.js";
 import type * as langchain_tools_index from "../langchain/tools/index.js";
+import type * as langchain_utils from "../langchain/utils.js";
 import type * as mcps_actions from "../mcps/actions.js";
 import type * as mcps_crud from "../mcps/crud.js";
 import type * as mcps_mutations from "../mcps/mutations.js";
@@ -94,6 +95,7 @@ declare const fullApi: ApiFromModules<{
   "langchain/state": typeof langchain_state;
   "langchain/tools/googleTools": typeof langchain_tools_googleTools;
   "langchain/tools/index": typeof langchain_tools_index;
+  "langchain/utils": typeof langchain_utils;
   "mcps/actions": typeof mcps_actions;
   "mcps/crud": typeof mcps_crud;
   "mcps/mutations": typeof mcps_mutations;

@@ -24,22 +24,25 @@ interface CreateDialogProps {
 }
 
 export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
+  const initialMcp = {
+    name: "",
+    type: "http" as const,
+    command: "",
+    url: "",
+    dockerImage: "",
+    dockerPort: 0,
+    dockerCommand: "",
+    restartOnNewChat: false,
+    env: {},
+    status: "creating" as const,
+  };
+
   const [mcp, setMcp] = useState<
     Omit<
       Doc<"mcps">,
       "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
     >
-  >({
-    name: "",
-    type: "http",
-    command: "",
-    url: "",
-    dockerImage: "",
-    dockerPort: 0,
-    restartOnNewChat: false,
-    env: {},
-    status: "creating",
-  });
+  >(initialMcp);
   const { handleCreate } = useMCPs();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -78,7 +81,13 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
 
     setIsLoading(true);
     try {
-      await handleCreate(mcp, onOpenChange);
+      await handleCreate(mcp, (open) => {
+        if (!open) {
+          // Reset form state when dialog closes after successful creation
+          setMcp(initialMcp);
+        }
+        onOpenChange(open);
+      });
     } catch (error) {
       console.error("Failed to create MCP:", error);
       toast.error("Failed to create MCP");
@@ -88,7 +97,17 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange} modal>
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open && !isLoading) {
+          // Reset form state when dialog closes
+          setMcp(initialMcp);
+        }
+        onOpenChange(open);
+      }} 
+      modal
+    >
       <DialogTrigger asChild>
         <Button variant="default" size="sm" className="cursor-pointer">
           <PlusIcon className="size-4" />
@@ -124,6 +143,7 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
                   url: type === "http" ? prev.url : "",
                   dockerImage: type === "docker" ? prev.dockerImage : "",
                   dockerPort: type === "docker" ? prev.dockerPort : 0,
+                  dockerCommand: type === "docker" ? prev.dockerCommand : "",
                 }))
               }
             />
@@ -185,6 +205,17 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
                   }
                 />
               </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="mcp-docker-command">Docker Command</Label>
+                <Input
+                  id="mcp-docker-command"
+                  placeholder="Command to run in container (optional)"
+                  value={mcp.dockerCommand}
+                  onChange={(e) =>
+                    setMcp((prev) => ({ ...prev, dockerCommand: e.target.value }))
+                  }
+                />
+              </div>
             </>
           )}
 
@@ -212,7 +243,10 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              setMcp(initialMcp);
+              onOpenChange(false);
+            }}
             disabled={isLoading}
           >
             Cancel
