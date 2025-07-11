@@ -31,12 +31,12 @@ export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
 export const resizePanelOpenAtom = atomWithStorage("resizePanelOpen", false);
 export const selectedPanelTabAtom = atomWithStorage(
   "selectedPanelTab",
-  "projects",
+  "projects"
 );
 export const resizePanelWidthAtom = atomWithStorage("resizePanelWidth", 40);
 
 export const documentDialogOpenAtom = atom<Id<"documents"> | undefined>(
-  undefined,
+  undefined
 );
 export const createProjectDialogOpenAtom = atom(false);
 export const createMCPServerDialogOpenAtom = atom(false);
@@ -44,7 +44,7 @@ export const createMCPServerDialogOpenAtom = atom(false);
 export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", false);
 
 export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
-  undefined,
+  undefined
 );
 export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
 
@@ -52,21 +52,29 @@ export const groupedMessagesAtom = atom<
   ReturnType<typeof groupMessages> | undefined
 >(undefined);
 export const lastChatMessageAtom = atom<Id<"chatMessages"> | undefined>(
-  undefined,
+  undefined
 );
 
 export const useStreamAtom = atom<ReturnType<typeof useStream> | undefined>(
-  undefined,
+  undefined
 );
 export const streamStatusAtom = selectAtom(
   useStreamAtom,
-  (stream) => stream?.status,
+  (stream) => stream?.status
 );
 
+// Create a more stable derived atom
 export const allArtifactsAtom = atom((get) => {
   const artifacts: Artifact[] = [];
 
   const groupedMessages = get(groupedMessagesAtom);
+  const streamData = get(useStreamAtom);
+
+  // Only process if we have data
+  if (!groupedMessages && !streamData?.chunkGroups) {
+    return artifacts;
+  }
+
   if (groupedMessages) {
     groupedMessages.forEach((group) => {
       group.response.forEach((responseMessage) => {
@@ -78,7 +86,7 @@ export const allArtifactsAtom = atom((get) => {
             const messageArtifacts = parts
               .filter(
                 (part): part is Extract<ContentPart, { type: "artifact" }> =>
-                  part.type === "artifact",
+                  part.type === "artifact"
               )
               .map((part) => part.artifact);
             artifacts.push(...messageArtifacts);
@@ -88,7 +96,6 @@ export const allArtifactsAtom = atom((get) => {
     });
   }
 
-  const streamData = get(useStreamAtom);
   if (streamData?.chunkGroups) {
     const streamContent = streamData.chunkGroups
       .filter((g) => g.type === "ai")
@@ -98,7 +105,7 @@ export const allArtifactsAtom = atom((get) => {
     const streamArtifacts = streamParts
       .filter(
         (part): part is Extract<ContentPart, { type: "artifact" }> =>
-          part.type === "artifact",
+          part.type === "artifact"
       )
       .map((part) => part.artifact);
 

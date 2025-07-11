@@ -113,12 +113,12 @@ export function AppSidebar() {
                   style={{ backgroundColor: "transparent" }}
                 />
                 {searchQuery && (
-                  <button
+                  <Button
                     onClick={() => setSearchQuery("")}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <XIcon className="w-4 h-4" />
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>

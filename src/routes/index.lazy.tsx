@@ -2,12 +2,37 @@ import { createLazyFileRoute } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
+import { Loader2 } from "lucide-react";
+import { Navigate } from "@tanstack/react-router";
 
 export const Route = createLazyFileRoute("/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const { data: session, isPending, error, refetch } = authClient.useSession();
+
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-12 h-12 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div>an error occurred, try again</div>
+        <Button onClick={refetch}>try again</Button>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Navigate to="/" />;
+  }
+
   return (
     <main className="flex min-h-full items-center w-full selection:none  select-none justify-center font-mono ">
       <motion.div

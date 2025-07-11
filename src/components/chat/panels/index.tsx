@@ -20,7 +20,7 @@ export const Panel = () => {
       className="h-full bg-background w-full"
     >
       {!hideTabHeader && ( // Hide the tab list when previewing an artifact
-        <div className="flex items-center justify-between gap-2 m-2.5 pr-13">
+        <div className="flex items-center justify-between gap-2 m-2.5 pr-11">
           <TabsList className="w-full flex justify-center h-10">
             <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
@@ -32,16 +32,16 @@ export const Panel = () => {
       <>
         <TabsContent
           value="artifacts"
-          className={`h-full w-full ${hideTabHeader ? "px-0" : "px-2"}`}
+          className={`h-full w-full ${hideTabHeader ? "px-0" : "px-3"}`}
         >
           <ArtifactsPanel />
         </TabsContent>
 
-        <TabsContent value="projects" className="h-full w-full px-2">
+        <TabsContent value="projects" className="h-full w-full px-3">
           <ProjectsPanel />
         </TabsContent>
 
-        <TabsContent value="mcp" className="h-full w-full px-2">
+        <TabsContent value="mcp" className="h-full w-full px-3">
           <MCPPanel />
         </TabsContent>
       </>

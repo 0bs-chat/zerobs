@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { UserMessage } from "./user-message";
 import { AiMessage } from "./ai-message";
@@ -16,14 +16,14 @@ export const MessagesList = memo(
   ({ navigateBranch }: { navigateBranch: NavigateBranch }) => {
     const groupedMessages = useAtomValue(groupedMessagesAtom);
     const [editingMessageId, setEditingMessageId] = useState<string | null>(
-      null,
+      null
     );
     const [editedText, setEditedText] = useState("");
 
     useEffect(() => {
       if (editingMessageId) {
         const messageToEdit = groupedMessages?.find(
-          (g) => g.input.message._id === editingMessageId,
+          (g) => g.input.message._id === editingMessageId
         );
         if (messageToEdit) {
           const content = messageToEdit.input.message.message.content;
@@ -109,7 +109,7 @@ export const MessagesList = memo(
         </AnimatePresence>
       </motion.div>
     );
-  },
+  }
 );
 
 MessagesList.displayName = "MessagesList";

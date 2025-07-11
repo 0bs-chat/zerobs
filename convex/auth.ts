@@ -13,18 +13,15 @@ import { polar, checkout } from "@polar-sh/better-auth";
 import { Polar } from "@polar-sh/sdk";
 
 const polarClient = new Polar({
-    accessToken: process.env.POLAR_ACCESS_TOKEN
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
 });
 // Typesafe way to pass Convex functions defined in this file
 const authFunctions: AuthFunctions = internal.auth;
 
 // Initialize the component
-export const betterAuthComponent = new BetterAuth(
-  components.betterAuth,
-  {
-    authFunctions,
-  }
-);
+export const betterAuthComponent = new BetterAuth(components.betterAuth, {
+  authFunctions,
+});
 
 export const createAuth = (ctx: GenericCtx) =>
   // Configure your Better Auth instance here
@@ -33,6 +30,15 @@ export const createAuth = (ctx: GenericCtx) =>
     baseURL: "http://localhost:3001",
     database: convexAdapter(ctx, betterAuthComponent),
 
+    session: {
+      rateLimit: {
+        window: 60, // time window in seconds
+        max: 10, // max requests in the window
+      },
+      cookieCache: {
+        maxAge: 60 * 60, // in seconds so 1 hour
+      },
+    },
     // Simple non-verified email/password to get started
     socialProviders: {
       google: {
@@ -54,24 +60,19 @@ export const createAuth = (ctx: GenericCtx) =>
             products: [
               {
                 productId: "36f31c4e-fcf4-46be-9565-017f1bf872b0",
-                slug: "zerobs"
-              }
+                slug: "zerobs",
+              },
             ],
             successUrl: `${process.env.CONVEX_SITE_URL}/checkout/success`,
-            authenticatedUsersOnly: true
-          })
-      ],
+            authenticatedUsersOnly: true,
+          }),
+        ],
       }),
     ],
   });
 
 // These are required named exports
-export const {
-  createUser,
-  updateUser,
-  deleteUser,
-  createSession,
-} =
+export const { createUser, updateUser, deleteUser, createSession } =
   betterAuthComponent.createAuthFunctions<DataModel>({
     // Must create a user and return the user id
     onCreateUser: async (ctx, _user) => {
@@ -112,7 +113,11 @@ export const getToken = query({
         },
         headers,
       });
-      return { token: token.accessToken, scopes: token.scopes, expiresAt: token.accessTokenExpiresAt?.toISOString() };
+      return {
+        token: token.accessToken,
+        scopes: token.scopes,
+        expiresAt: token.accessTokenExpiresAt?.toISOString(),
+      };
     } catch (error) {
       console.error("Error getting token:", error);
       return undefined;

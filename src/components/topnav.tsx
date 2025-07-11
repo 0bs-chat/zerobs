@@ -14,7 +14,7 @@ import {
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -33,12 +33,16 @@ export function TopNav() {
   const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
   const navigate = useNavigate();
   const [sidebarOpen] = useAtom(sidebarOpenAtom);
+  const selectedArtifact = useAtomValue(selectedArtifactAtom);
+
   return (
-    <div className="fixed right-0 py-2 px-4 flex items-center gap-4 w-full bg-transparent justify-between pointer-events-none z-50">
+    <div
+      className={`fixed right-0 py-2  flex items-center w-full bg-transparent justify-between pointer-events-none z-50 ${resizePanelOpen ? "px-2" : "px-4"}`}
+    >
       <div
         className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/20 border bg-accent/20 dark:bg-accent/35"}`}
       >
-        <SidebarTrigger className="h-9 w-9" />
+        <SidebarTrigger className="h-8 w-8 " />
         <Button
           variant="ghost"
           className={`${sidebarOpen ? "hidden" : ""}`}
@@ -56,8 +60,12 @@ export function TopNav() {
         {!resizePanelOpen ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Avatar className="h-8 w-8">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative rounded-full"
+              >
+                <Avatar className="h-6 w-6 rounded-full cursor-pointer">
                   <AvatarImage
                     src={session?.user?.image ?? ""}
                     alt={session?.user?.name ?? ""}
@@ -66,11 +74,7 @@ export function TopNav() {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              className="w-56 font-mono"
-              align="end"
-              forceMount
-            >
+            <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
@@ -95,6 +99,7 @@ export function TopNav() {
                 className="cursor-pointer gap-3 font-medium"
                 onClick={() => {
                   authClient.signOut();
+                  navigate({ to: "/" });
                   toast.success("Signed out");
                 }}
               >
@@ -108,7 +113,7 @@ export function TopNav() {
         <Button
           variant="ghost"
           size="icon"
-          className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent" : "bg-transparent"} `}
+          className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent" : "bg-transparent"} ${selectedArtifact ? "hidden" : ""}`}
           onClick={() => {
             setResizePanelOpen(!resizePanelOpen);
             setSelectedArtifact(undefined);

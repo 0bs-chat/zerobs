@@ -16,18 +16,18 @@ export type { MessageWithBranchInfo, BranchPath };
 
 export type NavigateBranch = (
   depth: number,
-  direction: "prev" | "next" | number,
+  direction: "prev" | "next" | number
 ) => void;
 
 export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   // Fetch message tree from Convex
   const messages = useQuery(
     api.chatMessages.queries.get,
-    chatId !== "new" ? { chatId } : "skip",
+    chatId !== "new" ? { chatId } : "skip"
   );
   const messageTree = useMemo(
     () => (messages ? buildMessageTree(messages) : []),
-    [messages],
+    [messages]
   );
   const setLastMessageId = useSetAtom(lastChatMessageAtom);
 
@@ -37,14 +37,14 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   // Calculate the current thread with branch information
   const currentThread = useMemo(
     () => buildThread(messageTree, branchPath),
-    [messageTree, branchPath],
+    [messageTree, branchPath]
   );
 
   // Group messages by human message + responses
   useMemo(() => {
     const thread = buildThread(messageTree, branchPath);
     setLastMessageId(
-      thread.length > 0 ? thread[thread.length - 1].message._id : undefined,
+      thread.length > 0 ? thread[thread.length - 1].message._id : undefined
     );
   }, [messageTree, branchPath, setLastMessageId]);
 
@@ -83,7 +83,7 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
 
       changeBranch(depth, newIndex);
     },
-    [currentThread, branchPath, changeBranch],
+    [currentThread, branchPath, changeBranch]
   );
 
   const resetBranches = useCallback(() => {
@@ -101,7 +101,7 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
         hasBranches: threadItem.totalBranches > 1,
       };
     },
-    [currentThread],
+    [currentThread]
   );
 
   const isOnDefaultPath = branchPath.length === 0;
@@ -109,7 +109,7 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const totalBranches = useMemo(() => {
     return currentThread.reduce(
       (sum, item) => sum + (item.totalBranches - 1),
-      0,
+      0
     );
   }, [currentThread]);
 

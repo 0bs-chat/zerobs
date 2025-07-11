@@ -56,12 +56,8 @@ function TabsList({
       resizeObserver.observe(listRef.current);
     }
 
-    // Also listen for tab changes
-    const interval = setInterval(updateIndicator, 100);
-
     return () => {
       resizeObserver.disconnect();
-      clearInterval(interval);
     };
   }, [children]);
 
