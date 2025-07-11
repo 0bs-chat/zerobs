@@ -74,7 +74,7 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
                     alt=""
                     className="w-full h-full object-cover"
                     src={`https://api.microlink.io/?url=${encodeURIComponent(
-                      result.metadata.source,
+                      result.metadata.image || result.metadata.source,
                     )}&screenshot=true&meta=false&embed=screenshot.url`}
                   />
                 </div>
@@ -92,9 +92,9 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
                   </div>
                   <div className="flex-1 min-h-0 overflow-hidden">
                     <Markdown
-                      content={`${result.pageContent.slice(0, 100)}...`}
+                      content={`${result.pageContent.slice(0, 500)}...`}
                       id={result.metadata.source}
-                      className="line-clamp-3 text-xs leading-relaxed text-muted-foreground overflow-hidden"
+                      className="prose prose-h1:text-xs prose-h2:text-xs prose-h3:text-xs prose-h4:text-xs prose-h5:text-xs prose-h6:text-xs prose-p:text-xs prose-li:text-xs prose-ul:text-xs prose-ol:text-xs prose-blockquote:text-xs prose-img:text-xs prose-strong:text-xs prose-em:text-xs prose-a:text-xs prose-a:underline prose-a:text-primary overflow-hidden"
                     />
                   </div>
                   <div className="mt-auto flex items-center gap-1.5 border-t border-border/50 pt-2">

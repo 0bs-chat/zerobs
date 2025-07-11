@@ -106,7 +106,7 @@ export const chat = action({
     const flush = async () => {
       while (true) {
         if (finished) break;
-        if (!buffer.length && !checkpoint) {
+        if (buffer.length === 0 && !checkpoint) {
           await new Promise(resolve => setTimeout(resolve, 300));
           continue;
         }
