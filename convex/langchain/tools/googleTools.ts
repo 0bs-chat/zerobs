@@ -1,5 +1,3 @@
-"use node";
-
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import type { ExtendedRunnableConfig } from "../helpers";

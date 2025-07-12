@@ -1,5 +1,3 @@
-"use node";
-
 import { SystemMessage } from "@langchain/core/messages";
 import {
   ChatPromptTemplate,
