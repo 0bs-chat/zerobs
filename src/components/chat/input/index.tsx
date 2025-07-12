@@ -40,13 +40,21 @@ export const ChatInput = () => {
     textareaRef?.current?.textArea.focus();
   }, [chatId]);
 
-  // Debounced draft saving (separate from UI updates)
-  const debouncedSaveDraft = useDebouncedCallback((text: string) => {
-    updateChatMutation({
-      chatId,
-      updates: { text },
-    });
-  }, 300);
+  const handleChange = useDebouncedCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setNewChat((prev) => ({
+        ...prev,
+        text: e.target.value,
+      }));
+      if (chatId !== "new") {
+        updateChatMutation({
+          chatId,
+          updates: { text: e.target.value },
+        });
+      }
+    },
+    300
+  );
 
   return (
     <motion.div
@@ -91,13 +99,7 @@ export const ChatInput = () => {
           defaultValue={chat.text}
           className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
           onChange={(e) => {
-            setNewChat((prev) => ({
-              ...prev,
-              text: e.target.value,
-            }));
-            if (chatId !== "new") {
-              debouncedSaveDraft(e.target.value);
-            }
+            handleChange(e);
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -110,9 +112,13 @@ export const ChatInput = () => {
                 toast.error("Please enter a message");
                 return;
               }
+              if (textareaRef?.current?.textArea.value.trim() === "") {
+                toast.error("Please enter a message before sending");
+                return;
+              }
 
               if (textareaRef?.current) {
-                handleSubmit(chat, textareaRef);
+                handleSubmit(chat);
               }
             }
           }}
@@ -120,7 +126,7 @@ export const ChatInput = () => {
         />
       </motion.div>
 
-      <ToolBar chat={chat} textareaRef={textareaRef} />
+      <ToolBar chat={chat} />
     </motion.div>
   );
 };

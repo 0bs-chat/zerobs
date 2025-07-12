@@ -42,10 +42,10 @@ export function TopNav() {
 
   return (
     <div
-      className={`fixed right-0 py-2  flex items-center w-full bg-transparent justify-between pointer-events-none z-50 ${resizePanelOpen ? "px-2" : "px-4"}`}
+      className={`fixed right-0 py-2  flex items-center w-full bg-transparent justify-between pointer-events-none z-50 px-4`}
     >
       <div
-        className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/20 border bg-accent/20 dark:bg-accent/35"}`}
+        className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/20 border bg-accent/25 dark:bg-accent/35"}`}
       >
         <SidebarTrigger />
         <Button
@@ -60,7 +60,7 @@ export function TopNav() {
         </Button>
       </div>
       <div
-        className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent" : "border-border/20 border bg-accent/20 dark:bg-accent/35"} `}
+        className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent" : "border-border/20 border bg-accent/25 dark:bg-accent/35"} `}
       >
         {!resizePanelOpen ? (
           <DropdownMenu>

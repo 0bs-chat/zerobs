@@ -7,25 +7,21 @@ import {
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { motion } from "motion/react";
 import { sidebarOpenAtom } from "@/store/chatStore";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useConvexAuth } from "convex/react";
-import { useAuthActions } from "@convex-dev/auth/react";
 
 export const Route = createRootRoute({
   component: () => {
     const location = useLocation();
-    const { signIn } = useAuthActions();
     const { isLoading, isAuthenticated } = useConvexAuth();
 
     const publicRoutes = ["/"];
     const sidebarOpen = useAtomValue(sidebarOpenAtom);
     const setSidebarOpen = useSetAtom(sidebarOpenAtom);
 
-    // Show loading spinner while Clerk is initializing
     if (isLoading) {
       return (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -36,13 +32,8 @@ export const Route = createRootRoute({
       );
     }
 
-    // Show sign-in page for unauthenticated users on private routes
     if (!isAuthenticated && !publicRoutes.includes(location.pathname)) {
-      return (
-        <div className="flex justify-center items-center h-screen">
-          <Button onClick={() => signIn("google")}>Sign in</Button>
-        </div>
-      );
+      return <Navigate to="/" />;
     }
 
     return (

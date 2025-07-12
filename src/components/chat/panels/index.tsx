@@ -20,7 +20,7 @@ export const Panel = () => {
       className="h-full bg-background w-full"
     >
       {!hideTabHeader && ( // Hide the tab list when previewing an artifact
-        <div className="flex items-center justify-between gap-2 m-2.5 pr-11">
+        <div className="flex items-center justify-between gap-2 m-2.5 pr-12">
           <TabsList className="w-full flex justify-center h-10">
             <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>

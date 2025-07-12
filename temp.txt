@@ -1,2 +1,9 @@
 --ui changes need to be made  --
-1. make settings page.
+1. make settings page. [done]
+
+
+-------- todo --------------------
+1. projects page.
+
+
+

@@ -78,15 +78,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="flex items-center w-full font-bold text-xl py-3.5 px-2">
+      <SidebarHeader className="flex items-center w-full font-bold font-mono text-xl py-3.5 px-2">
         0bs
       </SidebarHeader>
       <SidebarContent className="overflow-hidden">
         <SidebarGroup>
           <SidebarGroupContent>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 px-2 ">
               <Button
-                variant="default"
+                variant="outline"
                 className="w-full cursor-pointer"
                 onClick={handleNewChat}
               >
@@ -96,11 +96,13 @@ export function AppSidebar() {
                 </div>
               </Button>
 
-              <div className="flex items-center border-b border-border relative">
-                <SearchIcon className="w-4 h-4 text-foreground ml-2 text-muted-foreground" />
+              <div className="flex items-center border-b border-border px-1 py-1 gap-2">
+                <span className="flex items-center justify-center">
+                  <SearchIcon className="w-4 h-4 text-muted-foreground" />
+                </span>
                 <Input
                   placeholder="Search chats"
-                  className="border-none focus-visible:border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 pl-2 pr-8"
+                  className="flex-1 bg-transparent border-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none text-base px-0"
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -113,9 +115,12 @@ export function AppSidebar() {
                   style={{ backgroundColor: "transparent" }}
                 />
                 {searchQuery && (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md p-1 transition-colors"
+                    className="flex items-center justify-center"
+                    tabIndex={-1}
                   >
                     <XIcon className="w-4 h-4" />
                   </button>

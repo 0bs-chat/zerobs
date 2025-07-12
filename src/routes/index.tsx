@@ -1,4 +1,4 @@
-import { createLazyFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import { Loader2 } from "lucide-react";
@@ -6,7 +6,7 @@ import { Navigate } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 
-export const Route = createLazyFileRoute("/")({
+export const Route = createFileRoute("/")({
   component: RouteComponent,
 });
 

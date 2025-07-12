@@ -11,12 +11,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
 import { Route as SettingsBillingRouteImport } from './routes/settings/billing'
 import { Route as SettingsApiKeysRouteImport } from './routes/settings/apiKeys'
 
 const SettingsRouteLazyRouteImport = createFileRoute('/settings')()
-const IndexLazyRouteImport = createFileRoute('/')()
 const ChatChatIdIndexLazyRouteImport = createFileRoute('/chat/$chatId/')()
 
 const SettingsRouteLazyRoute = SettingsRouteLazyRouteImport.update({
@@ -26,11 +26,11 @@ const SettingsRouteLazyRoute = SettingsRouteLazyRouteImport.update({
 } as any).lazy(() =>
   import('./routes/settings/route.lazy').then((d) => d.Route),
 )
-const IndexLazyRoute = IndexLazyRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
+} as any)
 const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
   id: '/integrations',
   path: '/integrations',
@@ -55,7 +55,7 @@ const ChatChatIdIndexLazyRoute = ChatChatIdIndexLazyRouteImport.update({
 )
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexLazyRoute
+  '/': typeof IndexRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
@@ -63,7 +63,7 @@ export interface FileRoutesByFullPath {
   '/chat/$chatId': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexLazyRoute
+  '/': typeof IndexRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
@@ -72,7 +72,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexLazyRoute
+  '/': typeof IndexRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
@@ -107,7 +107,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexLazyRoute: typeof IndexLazyRoute
+  IndexRoute: typeof IndexRoute
   SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren
   ChatChatIdIndexLazyRoute: typeof ChatChatIdIndexLazyRoute
 }
@@ -125,7 +125,7 @@ declare module '@tanstack/react-router' {
       id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexLazyRouteImport
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/integrations': {
@@ -175,7 +175,7 @@ const SettingsRouteLazyRouteWithChildren =
   SettingsRouteLazyRoute._addFileChildren(SettingsRouteLazyRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexLazyRoute: IndexLazyRoute,
+  IndexRoute: IndexRoute,
   SettingsRouteLazyRoute: SettingsRouteLazyRouteWithChildren,
   ChatChatIdIndexLazyRoute: ChatChatIdIndexLazyRoute,
 }
