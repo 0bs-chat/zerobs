@@ -1,9 +1,11 @@
+import { ConvexError } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import {
   type QueryCtx,
   type MutationCtx,
   type ActionCtx,
 } from "../_generated/server.js";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export async function getUrl(
   ctx: ActionCtx | MutationCtx,
@@ -16,10 +18,10 @@ export async function getUrl(
   }
 }
 
-export const requireAuth = async (ctx: ActionCtx | MutationCtx | QueryCtx) => {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) {
-    throw new Error('Unauthenticated call to function requiring authentication');
+export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    throw new ConvexError("Unauthorized");
   }
-  return { userId: identity.subject };
-};
+  return { userId };
+}

@@ -1,6 +1,7 @@
-import { defineSchema, defineTable } from "convex/server";
+import { defineSchema } from "convex/server";
 import { v } from "convex/values";
 import { Table } from "convex-helpers/server";
+import { authTables } from "@convex-dev/auth/server";
 
 export const ApiKeys = Table("apiKeys", {
   userId: v.string(),
@@ -129,9 +130,7 @@ export const Usage = Table("usage", {
 });
 
 export default defineSchema({
-  users: defineTable({
-    // Fields are optional
-  }),
+  ...authTables,
   apiKeys: ApiKeys.table
     .index("by_key", ["key"])
     .index("by_user_key", ["userId", "key"])

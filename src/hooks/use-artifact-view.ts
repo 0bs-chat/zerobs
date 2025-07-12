@@ -18,4 +18,4 @@ export const useArtifactView = () => {
   };
 
   return { viewArtifact };
-}; 
+};

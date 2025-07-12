@@ -24,12 +24,17 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { authClient } from "@/lib/auth-client";
 import { useNavigate } from "@tanstack/react-router";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import { useAuthActions } from "@convex-dev/auth/react";
 
 export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
-  const { data: session } = authClient.useSession();
+
+  const user = useQuery(api.auth.getUser);
+  const { signOut } = useAuthActions();
+
   const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
   const navigate = useNavigate();
   const [sidebarOpen] = useAtom(sidebarOpenAtom);
@@ -66,11 +71,8 @@ export function TopNav() {
                 className="relative rounded-full"
               >
                 <Avatar className="h-6 w-6 rounded-full cursor-pointer">
-                  <AvatarImage
-                    src={session?.user?.image ?? ""}
-                    alt={session?.user?.name ?? ""}
-                  />
-                  <AvatarFallback>{session?.user?.name?.[0]}</AvatarFallback>
+                  <AvatarImage src={user?.image} alt={user?.name ?? ""} />
+                  <AvatarFallback>{user?.name?.[0]}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -78,10 +80,10 @@ export function TopNav() {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    {session?.user?.name}
+                    {user?.name}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {session?.user?.email}
+                    {user?.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -98,7 +100,7 @@ export function TopNav() {
               <DropdownMenuItem
                 className="cursor-pointer gap-3 font-medium"
                 onClick={() => {
-                  authClient.signOut();
+                  signOut();
                   navigate({ to: "/" });
                   toast.success("Signed out");
                 }}

@@ -12,8 +12,7 @@ import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
 import { routeTree } from "./routeTree.gen";
 import "./styles.css";
 import reportWebVitals from "./reportWebVitals.ts";
-import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
-import { authClient } from "@/lib/auth-client";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
 
 // Create a new router instance
 const router = createRouter({
@@ -44,11 +43,11 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ConvexBetterAuthProvider client={convex} authClient={authClient}>
+      <ConvexAuthProvider client={convex}>
         <ConvexQueryCacheProvider>
           <RouterProvider router={router} />
         </ConvexQueryCacheProvider>
-      </ConvexBetterAuthProvider>
+      </ConvexAuthProvider>
     </StrictMode>,
   );
 }

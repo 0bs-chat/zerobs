@@ -80,10 +80,9 @@ export const chat = action({
   }),
   handler: async (ctx, args) => {
     const { chatId } = args;
-    const prep = await ctx.runMutation(
-      internal.langchain.utils.prepareChat,
-      { chatId }
-    );
+    const prep = await ctx.runMutation(internal.langchain.utils.prepareChat, {
+      chatId,
+    });
     const { chat, message, messages, customPrompt } = prep!;
     const { messageMap } = buildMessageLookups(messages);
     const thread = getThreadFromMessage(message, messageMap);
@@ -93,25 +92,26 @@ export const chat = action({
 
     const abort = new AbortController();
     const stream = agent.streamEvents(
-      { messages: thread.map(m => m.message) },
+      { messages: thread.map((m) => m.message) },
       {
         version: "v2",
         configurable: { ctx, chat, customPrompt, thread_id: chatId },
         recursionLimit: 30,
         signal: abort.signal,
-      }
+      },
     );
 
     let buffer: string[] = [];
     let checkpoint: typeof GraphState.State | null = null;
     let finished = false;
 
-    const flushAndStream = async (): Promise<typeof GraphState.State | null> => {
+    const flushAndStream = async (): Promise<
+      typeof GraphState.State | null
+    > => {
       let localCheckpoint: typeof GraphState.State | null = null;
 
       const flusher = async () => {
         while (!finished) {
-          await new Promise((resolve) => setTimeout(resolve, 300));
           if (buffer.length > 0) {
             const chunks = buffer;
             buffer = [];
@@ -119,13 +119,16 @@ export const chat = action({
               chatId,
               chunks,
               completedSteps: [
-                ...(localCheckpoint?.pastSteps?.map((pastStep) => pastStep[0]) ??
-                  []),
+                ...(localCheckpoint?.pastSteps?.map(
+                  (pastStep) => pastStep[0],
+                ) ?? []),
                 ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
                   ? [localCheckpoint.plan[0]]
                   : []),
               ],
             });
+          } else {
+            await new Promise((resolve) => setTimeout(resolve, 300));
           }
         }
       };
@@ -227,8 +230,9 @@ export const chat = action({
 
     const newMessages = checkpoint?.messages?.slice(thread.length);
     if (newMessages?.length) {
-      const parent: Id<"chatMessages"> | null =
-        thread.length ? thread[thread.length - 1]._id : null;
+      const parent: Id<"chatMessages"> | null = thread.length
+        ? thread[thread.length - 1]._id
+        : null;
 
       // Process all messages and prepare them for batch creation
       const messagesToCreate: Array<{
@@ -241,7 +245,7 @@ export const chat = action({
 
         if (m instanceof ToolMessage && Array.isArray(m.content)) {
           const patched = await Promise.all(
-            m.content.map(async item => {
+            m.content.map(async (item) => {
               if (
                 item.type === "image_url" &&
                 item.image_url?.url?.startsWith("data:")
@@ -259,12 +263,12 @@ export const chat = action({
                     type: "file",
                     key,
                     size: blob.size,
-                  }
+                  },
                 );
                 return { type: "file", file: { file_id: docId } };
               }
               return item;
-            })
+            }),
           );
           stored = {
             ...stored,
@@ -289,8 +293,8 @@ export const chat = action({
 
     await ctx.runMutation(internal.streams.mutations.update, {
       chatId,
-        updates: { status: "done", completedSteps: [] },
-      });
+      updates: { status: "done", completedSteps: [] },
+    });
   },
 });
 

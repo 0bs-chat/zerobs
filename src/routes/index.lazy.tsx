@@ -1,18 +1,20 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import { Loader2 } from "lucide-react";
 import { Navigate } from "@tanstack/react-router";
+import { useConvexAuth } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
 
 export const Route = createLazyFileRoute("/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { data: session, isPending, error, refetch } = authClient.useSession();
+  const { isLoading, isAuthenticated } = useConvexAuth();
+  const { signIn } = useAuthActions();
 
-  if (isPending) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="w-12 h-12 animate-spin" />
@@ -20,16 +22,7 @@ function RouteComponent() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div>an error occurred, try again</div>
-        <Button onClick={refetch}>try again</Button>
-      </div>
-    );
-  }
-
-  if (!session) {
+  if (!isAuthenticated) {
     return <Navigate to="/" />;
   }
 
@@ -55,11 +48,7 @@ function RouteComponent() {
           variant="default"
           size="lg"
           className="font-mono text-lg py-6 px-8 cursor-pointer font-medium"
-          onClick={() =>
-            authClient.signIn.social({
-              provider: "google",
-            })
-          }
+          onClick={() => signIn("google")}
         >
           Sign in with Google
         </Button>

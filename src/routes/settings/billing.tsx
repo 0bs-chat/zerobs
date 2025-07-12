@@ -5,8 +5,5 @@ export const Route = createFileRoute("/settings/billing")({
 });
 
 function RouteComponent() {
-  return (
-    <div>
-    </div>
-  );
+  return <div></div>;
 }

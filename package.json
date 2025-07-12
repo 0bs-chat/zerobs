@@ -13,9 +13,10 @@
     "lint": "bunx prettier --write ."
   },
   "dependencies": {
+    "@auth/core": "0.37.0",
     "@codesandbox/sandpack-react": "^2.20.0",
     "@codesandbox/sandpack-themes": "^2.0.21",
-    "@convex-dev/better-auth": "^0.7.0",
+    "@convex-dev/auth": "^0.0.87",
     "@isomorphic-git/lightning-fs": "^4.6.2",
     "@langchain/community": "^0.3.47",
     "@langchain/core": "^0.3.61",
@@ -24,7 +25,6 @@
     "@langchain/langgraph-supervisor": "0.0.15",
     "@langchain/mcp-adapters": "^0.5.2",
     "@langchain/openai": "https://raw.githubusercontent.com/0bs-chat/langchainjs/main/libs/langchain-openai/langchain-openai-0.5.16.tgz",
-    "@polar-sh/better-auth": "^1.0.4",
     "@polar-sh/sdk": "^0.34.3",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -59,7 +59,6 @@
     "@tanstack/react-router-devtools": "^1.114.3",
     "@tanstack/react-virtual": "^3.13.12",
     "@tanstack/router-plugin": "^1.114.3",
-    "better-auth": "^1.2.12",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

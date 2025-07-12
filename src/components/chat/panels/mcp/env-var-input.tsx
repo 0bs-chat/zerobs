@@ -53,15 +53,18 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
   ) => {
     const newEnvVars = [...displayEnvVars];
     newEnvVars[index] = { ...newEnvVars[index], [field]: value };
-    
+
     // Filter out the last empty row before converting to record
     const envVarsToUpdate = newEnvVars.slice(0, -1);
-    
+
     // If we're updating the last (empty) row and it now has content, include it
-    if (index === newEnvVars.length - 1 && (newEnvVars[index].key.trim() || newEnvVars[index].value.trim())) {
+    if (
+      index === newEnvVars.length - 1 &&
+      (newEnvVars[index].key.trim() || newEnvVars[index].value.trim())
+    ) {
       envVarsToUpdate.push(newEnvVars[index]);
     }
-    
+
     onUpdate(convertToRecord(envVarsToUpdate));
   };
 
@@ -73,7 +76,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
     const currentEnvVar = displayEnvVars[index];
     const isEmptyRow = currentEnvVar.key === "" && currentEnvVar.value === "";
     const isKeyField = (e.target as HTMLInputElement).placeholder === "Key";
-    
+
     if (!isEmptyRow || !isKeyField) {
       // Allow normal paste behavior
       return;
@@ -89,7 +92,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
     // Only prevent default paste if we successfully parsed multiple env vars
     if (parsedEnvVars.length > 1) {
       e.preventDefault();
-      
+
       // Replace the current empty env var with the parsed ones
       const newEnvVars = [
         ...displayEnvVars.slice(0, index),
@@ -134,7 +137,9 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
       }
 
       // Try to match JSON-style "KEY": value pattern (for non-string values like numbers, booleans)
-      const jsonValueMatch = trimmedLine.match(/^"([^"]+)"\s*:\s*([^,\s]+)[,]?$/);
+      const jsonValueMatch = trimmedLine.match(
+        /^"([^"]+)"\s*:\s*([^,\s]+)[,]?$/,
+      );
       if (jsonValueMatch) {
         result.push({
           key: jsonValueMatch[1].trim(),

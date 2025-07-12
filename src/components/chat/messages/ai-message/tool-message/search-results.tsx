@@ -39,7 +39,11 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
   }
 
   return (
-    <Accordion type="multiple" className="w-full" defaultValue={["web-search-results"]}>
+    <Accordion
+      type="multiple"
+      className="w-full"
+      defaultValue={["web-search-results"]}
+    >
       <AccordionItem value="web-search-results" className="px-0 border-none">
         <AccordionTrigger className="flex items-center justify-start gap-2 text-sm text-muted-foreground py-0">
           <div className="flex items-center gap-2">
@@ -54,11 +58,21 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
             {results.map((result, index) => (
               <div
                 key={index}
-                onClick={() => window.open(result.metadata.source, '_blank', 'noopener,noreferrer')}
+                onClick={() =>
+                  window.open(
+                    result.metadata.source,
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    window.open(result.metadata.source, '_blank', 'noopener,noreferrer');
+                    window.open(
+                      result.metadata.source,
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
                   }
                 }}
                 tabIndex={0}
@@ -80,12 +94,12 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
                 </div>
                 <div className="flex flex-1 flex-col p-2 min-h-0">
                   <div className="flex items-center justify-start gap-2">
-                      {result.metadata.favicon && (
-                        <Favicon
-                          url={result.metadata.source}
-                          className="w-6 h-6 rounded-full object-contain"
-                        />
-                      )}
+                    {result.metadata.favicon && (
+                      <Favicon
+                        url={result.metadata.source}
+                        className="w-6 h-6 rounded-full object-contain"
+                      />
+                    )}
                     <h1 className="leading m-0 mb-0 truncate font-semibold text-base text-foreground">
                       {result.metadata.title}
                     </h1>
@@ -94,7 +108,9 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
                     <Markdown
                       content={`${result.pageContent.slice(0, 500)}...`}
                       id={result.metadata.source}
-                      className="prose prose-h1:text-xs prose-h2:text-xs prose-h3:text-xs prose-h4:text-xs prose-h5:text-xs prose-h6:text-xs prose-p:text-xs prose-li:text-xs prose-ul:text-xs prose-ol:text-xs prose-blockquote:text-xs prose-img:text-xs prose-strong:text-xs prose-em:text-xs prose-a:text-xs prose-a:underline prose-a:text-primary overflow-hidden"
+                      className="prose prose-h1:text-xs prose-h2:text-xs prose-h3:text-xs prose-h4:text-xs prose-h5:text-xs prose-h6:text-xs
+                        prose-p:text-xs prose-li:text-xs prose-ul:text-xs prose-ol:text-xs prose-blockquote:text-xs prose-img:text-xs
+                        prose-strong:text-xs prose-em:text-xs prose-a:text-xs prose-a:underline prose-a:text-primary text-muted-foreground overflow-hidden"
                     />
                   </div>
                   <div className="mt-auto flex items-center gap-1.5 border-t border-border/50 pt-2">

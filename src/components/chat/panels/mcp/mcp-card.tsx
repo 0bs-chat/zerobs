@@ -25,7 +25,9 @@ export const MCPCard = ({
         return mcp.url;
       case "docker":
         const dockerInfo = `${mcp.dockerImage}:${mcp.dockerPort}`;
-        return mcp.dockerCommand ? `${dockerInfo} - ${mcp.dockerCommand}` : dockerInfo;
+        return mcp.dockerCommand
+          ? `${dockerInfo} - ${mcp.dockerCommand}`
+          : dockerInfo;
       default:
         return "";
     }

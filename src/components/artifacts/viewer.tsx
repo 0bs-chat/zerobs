@@ -227,7 +227,11 @@ const SVGRenderer = ({ content }: { content: string }) => {
 const MarkdownRenderer = ({ content }: { content: string }) => {
   return (
     <div className="h-full border p-4 bg-background overflow-y-auto">
-      <Markdown content={content} id={`artifact-${Date.now()}`} className="text-sm text-muted-foreground"/>
+      <Markdown
+        content={content}
+        id={`artifact-${Date.now()}`}
+        className="text-sm text-muted-foreground"
+      />
     </div>
   );
 };

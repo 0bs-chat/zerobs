@@ -32,7 +32,10 @@ export const prepareChat = internalMutation({
     }
 
     if (streamDoc) {
-      await ctx.db.patch(streamDoc._id, { status: "pending", completedSteps: [] });
+      await ctx.db.patch(streamDoc._id, {
+        status: "pending",
+        completedSteps: [],
+      });
     } else {
       await ctx.db.insert("streams", {
         userId: chat.userId,

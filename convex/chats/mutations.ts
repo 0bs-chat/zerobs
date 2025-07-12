@@ -71,15 +71,17 @@ export const remove = mutation({
 export const createRaw = internalMutation({
   args: {
     chatId: v.id("chats"),
-    messages: v.array(v.object({
-      message: v.string(),
-      parentId: v.optional(v.id("chatMessages")),
-    })),
+    messages: v.array(
+      v.object({
+        message: v.string(),
+        parentId: v.optional(v.id("chatMessages")),
+      }),
+    ),
   },
   handler: async (ctx, args) => {
     // Create messages sequentially to maintain parent-child relationships
     let currentParent = args.messages[0]?.parentId ?? null;
-    
+
     for (const message of args.messages) {
       const created = await ctx.runMutation(
         internal.chatMessages.crud.createInternal,
@@ -87,12 +89,12 @@ export const createRaw = internalMutation({
           chatId: args.chatId,
           parentId: currentParent,
           message: message.message,
-        }
+        },
       );
       // Set the current message as parent for the next message
       currentParent = created._id;
     }
-    
+
     return null;
   },
 });

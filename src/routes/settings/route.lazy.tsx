@@ -8,12 +8,7 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import {
-  ArrowLeft,
-  KeyIcon,
-  Plug,
-  Wallet2,
-} from "lucide-react";
+import { ArrowLeft, KeyIcon, Plug, Wallet2 } from "lucide-react";
 import { useEffect } from "react";
 
 const settingsNavItems = [
@@ -97,7 +92,7 @@ function SettingsPage() {
                       "flex w-full items-center gap-3 rounded-lg px-3 py-2 font-medium text-sm transition-colors",
                       isActive
                         ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                     )}
                   >
                     <Icon className="h-5 w-5" />

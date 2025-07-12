@@ -10,9 +10,7 @@ export type ContentPart =
   | { type: "text"; content: string }
   | { type: "artifact"; artifact: Artifact };
 
-export const parseContent = (
-  rawContent: string,
-): ContentPart[] => {
+export const parseContent = (rawContent: string): ContentPart[] => {
   const parts: ContentPart[] = [];
   const chunks = rawContent.split(/<artifact/);
 
@@ -61,9 +59,7 @@ export const parseContent = (
 };
 
 // Parse artifacts from AI message content
-export const parseArtifacts = (
-  content: string,
-): Artifact[] => {
+export const parseArtifacts = (content: string): Artifact[] => {
   return parseContent(content)
     .filter(
       (part): part is { type: "artifact"; artifact: Artifact } =>

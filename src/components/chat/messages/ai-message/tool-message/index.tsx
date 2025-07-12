@@ -10,6 +10,41 @@ import { DocumentResultDisplay, type DocumentResult } from "./document-results";
 import type { BaseMessage } from "@langchain/core/messages";
 import { FileDisplay } from "./file-result";
 
+// DRY: Shared accordion for tool call output
+function ToolAccordion({
+  messageName,
+  input,
+  children,
+}: {
+  messageName: string;
+  input?: Record<string, any>;
+  children: React.ReactNode;
+}) {
+  return (
+    <Accordion type="multiple" className="w-full">
+      <AccordionItem value="tool-call" className="px-0 border-none">
+        <AccordionTrigger className="py-1 gap-2 text-xs font-semibold items-center justify-start">
+          <span className="text-muted-foreground translate-y-[.1rem]">
+            Tool Call ({messageName})
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="bg-card rounded-md p-2 border mt-2 max-h-[36rem] overflow-y-auto">
+          {input && (
+            <>
+              <h4 className="text-xs font-semibold mb-1">Input</h4>
+              <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto mb-2 whitespace-pre-wrap">
+                {JSON.stringify(input, null, 2)}
+              </pre>
+              <h4 className="text-xs font-semibold mb-1">Output</h4>
+            </>
+          )}
+          {children}
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+}
+
 export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
   // Memoize the parsed content to avoid unnecessary parsing
   const parsedContent = useMemo(() => {
@@ -74,71 +109,36 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
 
   if (parsedContent.type === "mixed") {
     return (
-      <Accordion type="multiple" className="w-full">
-        <AccordionItem value="tool-call" className="px-0 border-none">
-          <AccordionTrigger className="py-1 gap-2 text-xs font-semibold items-center justify-start">
-            <span className="text-muted-foreground translate-y-[.1rem]">
-              Tool Call ({message.name})
-            </span>
-          </AccordionTrigger>
-          <AccordionContent className="bg-card rounded-md p-2 border mt-2 max-h-[36rem] overflow-y-auto">
-            {input && (
-              <>
-                <h4 className="text-xs font-semibold mb-1">Input</h4>
-                <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto mb-2 whitespace-pre-wrap">
-                  {JSON.stringify(input, null, 2)}
+      <ToolAccordion messageName={message.name ?? 'unknown'} input={input ?? {}}>
+        <div className="flex flex-col gap-4">
+          {parsedContent.content.map((item, index) => {
+            if (item.type === "file" && item.file?.file_id) {
+              return <FileDisplay key={index} fileId={item.file.file_id} />;
+            }
+            if (item.type === "text" && item.text) {
+              return (
+                <pre
+                  key={index}
+                  className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap"
+                >
+                  {item.text}
                 </pre>
-                <h4 className="text-xs font-semibold mb-1">Output</h4>
-              </>
-            )}
-            <div className="flex flex-col gap-4">
-              {parsedContent.content.map((item, index) => {
-                if (item.type === "file" && item.file?.file_id) {
-                  return <FileDisplay key={index} fileId={item.file.file_id} />;
-                }
-                if (item.type === "text" && item.text) {
-                  return (
-                    <pre
-                      key={index}
-                      className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap"
-                    >
-                      {item.text}
-                    </pre>
-                  );
-                }
-                return null;
-              })}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+              );
+            }
+            return null;
+          })}
+        </div>
+      </ToolAccordion>
     );
   }
 
+  // Default (generic)
   return (
-    <Accordion type="multiple" className="w-full">
-      <AccordionItem value="tool-call" className="px-0 border-none">
-        <AccordionTrigger className="py-1 gap-2 text-xs font-semibold items-center justify-start">
-          <span className="text-muted-foreground translate-y-[.1rem]">
-            Tool Call ({message.name})
-          </span>
-        </AccordionTrigger>
-        <AccordionContent className="bg-card rounded-md p-2 border mt-2 max-h-[36rem] overflow-y-auto">
-          {input && (
-            <>
-              <h4 className="text-xs font-semibold mb-1">Input</h4>
-              <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto mb-2 whitespace-pre-wrap">
-                {JSON.stringify(input, null, 2)}
-              </pre>
-              <h4 className="text-xs font-semibold mb-1">Output</h4>
-            </>
-          )}
-          <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-            {JSON.stringify(parsedContent.content, null, 2)}
-          </pre>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+    <ToolAccordion messageName={message.name ?? 'unknown'} input={input ?? {}}>
+      <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+        {JSON.stringify(parsedContent.content, null, 2)}
+      </pre>
+    </ToolAccordion>
   );
 });
 

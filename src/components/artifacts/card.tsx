@@ -1,4 +1,4 @@
-import React from "react";
+import { memo } from "react";
 import {
   FileIcon,
   CodeIcon,
@@ -59,7 +59,7 @@ const getTypeName = (type: string, language?: string): string => {
   }
 };
 
-export const ArtifactCard = React.memo(
+export const ArtifactCard = memo(
   ({ artifact }: { artifact: Artifact }) => {
     const selectedArtifact = useAtomValue(selectedArtifactAtom);
     const { viewArtifact } = useArtifactView();

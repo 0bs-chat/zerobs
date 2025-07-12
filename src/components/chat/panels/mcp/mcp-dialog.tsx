@@ -37,12 +37,13 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
     status: "creating" as const,
   };
 
-  const [mcp, setMcp] = useState<
-    Omit<
-      Doc<"mcps">,
-      "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
-    >
-  >(initialMcp);
+  const [mcp, setMcp] =
+    useState<
+      Omit<
+        Doc<"mcps">,
+        "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
+      >
+    >(initialMcp);
   const { handleCreate } = useMCPs();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -97,15 +98,15 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
   };
 
   return (
-    <Dialog 
-      open={isOpen} 
+    <Dialog
+      open={isOpen}
       onOpenChange={(open) => {
         if (!open && !isLoading) {
           // Reset form state when dialog closes
           setMcp(initialMcp);
         }
         onOpenChange(open);
-      }} 
+      }}
       modal
     >
       <DialogTrigger asChild>
@@ -212,7 +213,10 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
                   placeholder="Command to run in container (optional)"
                   value={mcp.dockerCommand}
                   onChange={(e) =>
-                    setMcp((prev) => ({ ...prev, dockerCommand: e.target.value }))
+                    setMcp((prev) => ({
+                      ...prev,
+                      dockerCommand: e.target.value,
+                    }))
                   }
                 />
               </div>

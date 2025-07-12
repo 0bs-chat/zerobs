@@ -1,20 +1,10 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import type { ExtendedRunnableConfig } from "../helpers";
-import { api } from "../../_generated/api";
 
 // Helper function to get Google OAuth token from user's external account
-async function getGoogleAccessToken(config: ExtendedRunnableConfig) {
-  const token = await config.ctx.runQuery(api.auth.getToken, {
-    providerId: "google",
-  });
-  const requiredScopes = ["https://www.googleapis.com/auth/calendar", "https://mail.google.com/"];
-  const tokenScopes = token?.scopes;
-  const hasRequiredScopes = requiredScopes.every((scope) => tokenScopes?.includes(scope));
-  if (!hasRequiredScopes) {
-    return undefined;
-  }
-  return token?.token;
+async function getGoogleAccessToken(_config: ExtendedRunnableConfig) {
+  return undefined;
 }
 
 // Helper function to make authenticated Google API requests
