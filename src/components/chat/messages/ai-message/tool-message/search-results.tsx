@@ -55,7 +55,7 @@ export const SearchResultDisplay = ({ results, input }: SearchResultDisplayProps
               </span>
             </div>
             <div className="text-xs text-muted-foreground">
-              {JSON.stringify(input, null, 2)}
+              {input?.query as string}
             </div>
           </div>
         </AccordionTrigger>

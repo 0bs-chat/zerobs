@@ -219,26 +219,16 @@ export function createReplannerPrompt() {
     new MessagesPlaceholder("pastSteps"),
     [
       "system",
-      `Update your plan accordingly. If no more steps are needed and you can return to the user, set action to "respond_to_user" and provide the response. ` +
-        `Otherwise, set action to "continue_planning" and fill out the plan. Only add steps to the plan that still NEED to be done. Do not return previously done steps as part of the plan.`,
+      `\n\n**MANDATORY ANALYSIS & REPLANNING:**\n\n` +
+      `1. **Re-evaluate the Original Objective:** Look at the user's first message. What were the core components of their request? (e.g., For "Vancouver news scope", the components are the concept 'news scope' and the context 'Vancouver').\n\n` +
+      `2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.\n\n` +
+      `3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.\n\n` +
+      `4. **Update Your Plan:**\n` +
+      ` - **If ready to respond:** Set \`action\` to \`"respond_to_user"\` and formulate the complete, synthesized response.\n` +
+      ` - **If not ready:** Set \`action\` to \`"continue_planning"\` and provide a new plan containing **only the remaining steps needed** to fill the gaps you identified. The next step should be the most direct action to address the missing information.`,
     ],
   ]);
 }
-
-// Zod schemas for structured outputs
-export const generateQueriesSchema = z.object({
-  queries: z
-    .array(z.string())
-    .describe("Queries for the vector store or web search.")
-    .max(3)
-    .min(1),
-});
-
-export const gradeDocumentSchema = z.object({
-  relevant: z
-    .boolean()
-    .describe("Whether the document is relevant to the user question"),
-});
 
 export const replannerOutputSchema = (artifacts: boolean) =>
   z.union([

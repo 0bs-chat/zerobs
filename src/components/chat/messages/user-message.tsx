@@ -68,7 +68,7 @@ export const UserMessage = memo(
 
     if (isEditing) {
       return (
-        <div className="bg-card max-w-full bg-red-500 self-end p-4 rounded-md shadow-sm w-full">
+        <div className="bg-card max-w-full self-end p-4 rounded-md shadow-sm w-full">
           <Textarea
             value={editedText}
             onChange={(e) => setEditedText(e.target.value)}
