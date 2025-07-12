@@ -105,19 +105,6 @@ interface AccordionItemProps {
   children?: React.ReactNode;
 }
 
-function AccordionItem({ value, className, children, ...props }: AccordionItemProps) {
-  return (
-    <div
-      data-slot="accordion-item"
-      className={cn("border-b", className)}
-      data-value={value}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-}
-
 interface AccordionTriggerProps {
   className?: string;
   children?: React.ReactNode;
