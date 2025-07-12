@@ -163,8 +163,7 @@ export const chatHandlers = () => {
   const handleDelete = async (chatId: string) => {
     if (params.chatId === chatId) {
       navigate({
-        to: "/chat/$chatId",
-        params: { chatId: "new" },
+        to: "/",
         replace: true,
       });
     }

@@ -52,7 +52,11 @@ export const UserMessage = memo(
         return content.map((entry) => (
           <>
             {entry.type === "text" ? (
-              <Markdown content={entry.text} id={item.message._id} className="prose [&_p]:mb-0" />
+              <Markdown
+                content={entry.text}
+                id={item.message._id}
+                className="prose [&_p]:mb-0"
+              />
             ) : null}
             {entry.type === "file" ? (
               <DocumentButton
@@ -84,7 +88,7 @@ export const UserMessage = memo(
         {renderedContent}
       </div>
     );
-  },
+  }
 );
 
 UserMessage.displayName = "UserMessage";

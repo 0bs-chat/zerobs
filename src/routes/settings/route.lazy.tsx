@@ -55,12 +55,16 @@ function SettingsPage() {
         {/* Header */}
         <div className="mb-8 max-md:px-2">
           <div className="mb-6 flex items-center justify-between">
-            <Link to="/chat/$chatId" params={{ chatId: "new" }}>
-              <Button variant="ghost" className=" cursor-pointer">
-                <ArrowLeft className="h-6 w-6" />
-                Back to chat
-              </Button>
-            </Link>
+            <Button
+              variant="ghost"
+              className=" cursor-pointer"
+              onClick={() => {
+                navigate({ to: "/" });
+              }}
+            >
+              <ArrowLeft className="h-6 w-6" />
+              Back to chat
+            </Button>
             <ModeToggle />
           </div>
 

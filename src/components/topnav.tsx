@@ -28,8 +28,13 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useLocation } from "@tanstack/react-router";
 
 export function TopNav() {
+  const location = useLocation();
+
+  const isSettingsPage = location.pathname.startsWith("/settings");
+
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
 
   const user = useQuery(api.auth.getUser);
@@ -42,7 +47,7 @@ export function TopNav() {
 
   return (
     <div
-      className={`fixed right-0 py-2  flex items-center w-full bg-transparent justify-between pointer-events-none z-50 px-4`}
+      className={`fixed right-0 py-2  flex items-center w-full bg-transparent justify-between pointer-events-none z-50 px-2 ${isSettingsPage ? "hidden" : ""}`}
     >
       <div
         className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/20 border bg-accent/25 dark:bg-accent/35"}`}
@@ -53,7 +58,7 @@ export function TopNav() {
           className={`${sidebarOpen ? "hidden" : ""} size-8`}
           size="icon"
           onClick={() => {
-            navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
+            navigate({ to: "/" });
           }}
         >
           <PlusIcon />

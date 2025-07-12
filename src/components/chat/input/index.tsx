@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { fadeInUp, smoothTransition } from "@/lib/motion";
 
 export const ChatInput = () => {
-  const params = useParams({ from: "/chat/$chatId/" });
+  const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const textareaRef = useRef<AutosizeTextAreaRef>(null);
@@ -46,7 +46,7 @@ export const ChatInput = () => {
         ...prev,
         text: e.target.value,
       }));
-      if (chatId !== "new") {
+      if (chatId !== undefined && chatId !== null && chatId !== "") {
         updateChatMutation({
           chatId,
           updates: { text: e.target.value },

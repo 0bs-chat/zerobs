@@ -8,20 +8,30 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { motion } from "motion/react";
-import { sidebarOpenAtom } from "@/store/chatStore";
+import { AnimatePresence, motion } from "motion/react";
+import { resizePanelOpenAtom, sidebarOpenAtom } from "@/store/chatStore";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useConvexAuth } from "convex/react";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { slideInFromLeft, slideInFromRight } from "@/lib/motion";
+import { layoutTransition } from "@/lib/motion";
+import { AppSidebar } from "@/components/app-sidebar";
+import { TopNav } from "@/components/topnav";
+import { Panel } from "@/components/chat/panels";
 
 export const Route = createRootRoute({
   component: () => {
     const location = useLocation();
     const { isLoading, isAuthenticated } = useConvexAuth();
 
-    const publicRoutes = ["/"];
+    const publicRoutes = ["/auth"];
     const sidebarOpen = useAtomValue(sidebarOpenAtom);
     const setSidebarOpen = useSetAtom(sidebarOpenAtom);
-
+    const resizePanelOpen = useAtomValue(resizePanelOpenAtom);
     if (isLoading) {
       return (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -33,7 +43,7 @@ export const Route = createRootRoute({
     }
 
     if (!isAuthenticated && !publicRoutes.includes(location.pathname)) {
-      return <Navigate to="/" />;
+      return <Navigate to="/auth" />;
     }
 
     return (
@@ -51,17 +61,39 @@ export const Route = createRootRoute({
               setSidebarOpen(!sidebarOpen);
             }}
           >
-            {/* Redirect authenticated users away from public routes */}
-            {isAuthenticated && publicRoutes.includes(location.pathname) && (
-              <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
-            )}
-
-            {/* Redirect authenticated users from root to chat */}
-            {isAuthenticated && location.pathname === "/" && (
-              <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
-            )}
-            {/* Render the appropriate outlet */}
-            <Outlet />
+            <TopNav />
+            <motion.div
+              variants={slideInFromLeft}
+              initial="initial"
+              animate="animate"
+              transition={layoutTransition}
+            >
+              <AppSidebar />
+            </motion.div>
+            <ResizablePanelGroup direction="horizontal">
+              <ResizablePanel className="flex flex-col gap-1 p-2 pt-4">
+                <Outlet />
+              </ResizablePanel>
+              <AnimatePresence mode="wait">
+                {resizePanelOpen && (
+                  <>
+                    <ResizableHandle />
+                    <ResizablePanel defaultSize={40} minSize={25} maxSize={60}>
+                      <motion.div
+                        variants={slideInFromRight}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        transition={layoutTransition}
+                        className="h-full"
+                      >
+                        <Panel />
+                      </motion.div>
+                    </ResizablePanel>
+                  </>
+                )}
+              </AnimatePresence>
+            </ResizablePanelGroup>
           </SidebarProvider>
         </motion.div>
         <Toaster />

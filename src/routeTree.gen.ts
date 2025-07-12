@@ -11,6 +11,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
 import { Route as SettingsBillingRouteImport } from './routes/settings/billing'
@@ -26,6 +27,11 @@ const SettingsRouteLazyRoute = SettingsRouteLazyRouteImport.update({
 } as any).lazy(() =>
   import('./routes/settings/route.lazy').then((d) => d.Route),
 )
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -56,6 +62,7 @@ const ChatChatIdIndexLazyRoute = ChatChatIdIndexLazyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
@@ -73,6 +81,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
@@ -83,6 +92,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/settings'
     | '/settings/apiKeys'
     | '/settings/billing'
@@ -91,6 +101,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/settings'
     | '/settings/apiKeys'
     | '/settings/billing'
@@ -99,6 +110,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/settings'
     | '/settings/apiKeys'
     | '/settings/billing'
@@ -108,6 +120,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren
   ChatChatIdIndexLazyRoute: typeof ChatChatIdIndexLazyRoute
 }
@@ -119,6 +132,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -176,6 +196,7 @@ const SettingsRouteLazyRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   SettingsRouteLazyRoute: SettingsRouteLazyRouteWithChildren,
   ChatChatIdIndexLazyRoute: ChatChatIdIndexLazyRoute,
 }
