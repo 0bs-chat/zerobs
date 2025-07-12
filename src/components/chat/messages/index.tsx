@@ -81,7 +81,7 @@ export const ChatMessages = () => {
       return (
         <div className="flex items-center justify-center h-full flex-col gap-4">
           <div className="flex flex-col items-center gap-2 text-5xl font-semibold text-muted-foreground/40 font-serif">
-            how can i help you {user?.name} ?
+            How can i help you, {user?.name} ?
           </div>
         </div>
       );

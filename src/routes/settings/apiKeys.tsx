@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { SaveIcon, TrashIcon, SettingsIcon, GlobeIcon } from "lucide-react";
+import { SaveIcon, TrashIcon } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
@@ -44,8 +44,8 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
       </>
     ),
     icon: (
-      <div className="w-6 h-6 bg-green-500 rounded-sm flex items-center justify-center">
-        <span className="text-white text-xs font-bold">AI</span>
+      <div className="w-6 h-6 rounded-sm flex items-center justify-center">
+        <img src="/openai.svg" alt="OpenAI" className="w-4 h-4 dark:invert" />
       </div>
     ),
     placeholder: "sk-...",
@@ -57,8 +57,8 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     description:
       "Custom base URL for OpenAI-compatible APIs (e.g., OpenRouter, local deployments). Defaults to OpenRouter if not set.",
     icon: (
-      <div className="w-6 h-6 bg-purple-500 rounded-sm flex items-center justify-center">
-        <GlobeIcon className="h-3 w-3 text-white" />
+      <div className="w-6 h-6 rounded-sm flex items-center justify-center">
+        <img src="/openai.svg" alt="OpenAI" className="w-4 h-4 dark:invert" />
       </div>
     ),
     placeholder: "https://api.openai.com/v1",
@@ -69,8 +69,8 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     description:
       "Custom base URL for OpenAI embedding models. Leave empty to use the same as OpenAI Base URL.",
     icon: (
-      <div className="w-6 h-6 bg-indigo-500 rounded-sm flex items-center justify-center">
-        <SettingsIcon className="h-3 w-3 text-white" />
+      <div className="w-6 h-6 rounded-sm flex items-center justify-center">
+        <img src="/openai.svg" alt="OpenAI" className="w-4 h-4 dark:invert" />
       </div>
     ),
     placeholder: "https://api.openai.com/v1",
@@ -81,8 +81,8 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     description:
       "Required for Google embedding models. Get your API key from Google Cloud Console.",
     icon: (
-      <div className="w-6 h-6 bg-red-500 rounded-sm flex items-center justify-center">
-        <span className="text-white text-xs font-bold">G</span>
+      <div className="w-6 h-6 rounded-sm flex items-center justify-center">
+        <img src="/google.svg" alt="Google" className="w-4 h-4" />
       </div>
     ),
     placeholder: "sk-...",
@@ -94,8 +94,8 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     description:
       "Required for OpenAI embedding models. Get your API key from OpenAI Platform.",
     icon: (
-      <div className="w-6 h-6 bg-indigo-500 rounded-sm flex items-center justify-center">
-        <SettingsIcon className="h-3 w-3 text-white" />
+      <div className="w-6 h-6 rounded-sm flex items-center justify-center">
+        <img src="/openai.svg" alt="OpenAI" className="w-4 h-4 dark:invert" />
       </div>
     ),
     placeholder: "sk-...",
@@ -118,8 +118,8 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
       </>
     ),
     icon: (
-      <div className="w-6 h-6 bg-blue-500 rounded-sm flex items-center justify-center">
-        <span className="text-white text-xs font-bold">E</span>
+      <div className="w-6 h-6 bg-[#03037A] rounded-sm flex items-center justify-center">
+        <span className=" text-xs text-white font-bold">E</span>
       </div>
     ),
     placeholder: "Enter your Exa API key...",
@@ -188,7 +188,7 @@ function RouteComponent() {
     return (
       <Card key={config.key}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-1.5">
             {config.icon}
             {config.title}
           </CardTitle>
@@ -214,9 +214,9 @@ function RouteComponent() {
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex flex-col gap-1">
-                <Label className="text-xs text-muted-foreground">
+            <div className="flex flex-row gap-1.5 w-full items-end">
+              <div className="flex flex-col flex-[3]">
+                <Label className="text-xs text-muted-foreground py-2">
                   {config.title}
                 </Label>
                 <Input
@@ -224,9 +224,15 @@ function RouteComponent() {
                   placeholder={config.placeholder}
                   value={inputValue}
                   onChange={(e) => updateInputValue(config.key, e.target.value)}
+                  className="w-full focus:ring-0 focus:ring-offset-0 border-border focus-visible:ring-0 focus-visible:ring-offset-0 outline-none"
                 />
               </div>
-              <Button onClick={() => handleSave(config)} className="w-full">
+              <Button
+                variant="default"
+                onClick={() => handleSave(config)}
+                className="flex-1 min-w-0"
+                style={{ flexBasis: "25%" }}
+              >
                 <SaveIcon className="h-4 w-4 mr-2" />
                 Save {config.title}
               </Button>

@@ -56,11 +56,7 @@ function SettingsPage() {
         <div className="mb-8 max-md:px-2">
           <div className="mb-6 flex items-center justify-between">
             <Link to="/chat/$chatId" params={{ chatId: "new" }}>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground"
-              >
+              <Button variant="ghost" className=" cursor-pointer">
                 <ArrowLeft className="h-6 w-6" />
                 Back to chat
               </Button>
@@ -92,7 +88,7 @@ function SettingsPage() {
                       "flex w-full items-center gap-3 rounded-lg px-3 py-2 font-medium text-sm transition-colors",
                       isActive
                         ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                   >
                     <Icon className="h-5 w-5" />

@@ -10,7 +10,7 @@ export function ModeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      className="h-9 w-9"
+      className="h-9 w-9 cursor-pointer"
       onClick={() => {
         setTheme(theme === "dark" ? "light" : "dark");
       }}

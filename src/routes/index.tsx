@@ -22,8 +22,8 @@ function RouteComponent() {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/" />;
+  if (isAuthenticated) {
+    return <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />;
   }
 
   return (
