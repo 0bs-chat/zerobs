@@ -81,53 +81,49 @@ export function AppSidebar() {
       <SidebarHeader className="flex items-center w-full font-bold font-mono text-xl py-3.5 px-2">
         0bs
       </SidebarHeader>
-      <SidebarContent className="overflow-hidden">
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <div className="flex flex-col gap-2 px-2 ">
-              <Button
-                variant="outline"
-                className="w-full cursor-pointer"
-                onClick={handleNewChat}
-              >
-                <div className="flex items-center gap-2">
-                  <PlusIcon className="w-4 h-4" />
-                  New chat
-                </div>
-              </Button>
-
-              <div className="flex items-center border-b border-border px-1 py-1 gap-2">
-                <span className="flex items-center justify-center">
-                  <SearchIcon className="w-4 h-4 text-muted-foreground" />
-                </span>
-                <Input
-                  placeholder="Search chats"
-                  className="flex-1 bg-transparent border-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none text-base px-0"
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      setSearchQuery("");
-                      e.currentTarget.blur();
-                    }
-                  }}
-                  style={{ backgroundColor: "transparent" }}
-                />
-                {searchQuery && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSearchQuery("")}
-                    className="flex items-center justify-center"
-                    tabIndex={-1}
-                  >
-                    <XIcon className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+      <SidebarContent className="overflow-hidden gap-0">
+        <SidebarGroup className="gap-2">
+          <Button
+            variant="outline"
+            className="w-full cursor-pointer"
+            onClick={handleNewChat}
+          >
+            <div className="flex items-center gap-2">
+              <PlusIcon className="w-4 h-4" />
+              New chat
             </div>
-          </SidebarGroupContent>
+          </Button>
+
+          <div className="flex items-center border-b border-border gap-2">
+            <span className="flex items-center justify-center">
+              <SearchIcon className="w-4 h-4 text-muted-foreground" />
+            </span>
+            <Input
+              placeholder="Search chats"
+              className="flex-1 bg-transparent border-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none text-base px-0"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setSearchQuery("");
+                  e.currentTarget.blur();
+                }
+              }}
+              style={{ backgroundColor: "transparent" }}
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSearchQuery("")}
+                className="flex items-center justify-center size-5"
+                tabIndex={-1}
+              >
+                <XIcon className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </SidebarGroup>
 
         {displayPinnedChats.length > 0 && (
