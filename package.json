@@ -100,7 +100,7 @@
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
-    "runpod-sdk": "^1.1.1",
+    "runpod-sdk": "1.1.1",
     "scheduler": "^0.26.0",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.0.2",

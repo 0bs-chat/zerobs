@@ -75,8 +75,11 @@ export const generateTitle = internalAction({
 });
 
 export const chat = action({
-  args: v.object({ chatId: v.id("chats") }),
-  handler: async (ctx, { chatId }) => {
+  args: v.object({
+    chatId: v.id("chats"),
+  }),
+  handler: async (ctx, args) => {
+    const { chatId } = args;
     const prep = await ctx.runMutation(
       internal.langchain.utils.prepareChat,
       { chatId }
@@ -101,115 +104,114 @@ export const chat = action({
 
     let buffer: string[] = [];
     let checkpoint: typeof GraphState.State | null = null;
-    let lastFlushCheckpoint: typeof GraphState.State | null = null;
     let finished = false;
-    const flush = async () => {
-      while (true) {
-        if (finished) break;
-        if (buffer.length === 0 && !checkpoint) {
-          await new Promise(resolve => setTimeout(resolve, 300));
-          continue;
-        }
 
-        const chunks = buffer
-        buffer = [];
-        const currentCheckpoint = checkpoint;
-        const isSameCheckpoint = lastFlushCheckpoint && currentCheckpoint &&
-          lastFlushCheckpoint.pastSteps.length === currentCheckpoint.pastSteps.length &&
-          lastFlushCheckpoint.pastSteps.every(([s], i) => s === currentCheckpoint.pastSteps[i][0]);
-        lastFlushCheckpoint = currentCheckpoint;
+    const flushAndStream = async (): Promise<typeof GraphState.State | null> => {
+      let localCheckpoint: typeof GraphState.State | null = null;
 
-        await ctx
-          .runMutation(internal.streams.mutations.flush, {
-            chatId,
-            chunks,
-            ...(isSameCheckpoint ? {} : {
-              completedSteps:
-                currentCheckpoint!.pastSteps?.length > 0
-                  ? currentCheckpoint!.pastSteps.map((pastStep) => {
-                      const [step, _messages] = pastStep;
-                      return step as string;
-                    })
-                  : currentCheckpoint!.plan?.length > 0
-                    ? [currentCheckpoint!.plan.flat()[0]]
-                    : undefined,
-            }),
-          })
-      }
-    };
-    flush();
-
-    let lastToolInput: unknown | undefined = undefined;
-    try {
-      for await (const evt of stream) {
-        checkpoint = (
-          await agent.getState({
-            configurable: { thread_id: chatId },
-          })
-        ).values as typeof GraphState.State;
-
-        const allowedNodes = ["baseAgent", "simple", "plannerAgent"];
-        if (
-          allowedNodes.some((node) =>
-            evt.metadata?.checkpoint_ns?.startsWith(node),
-          )
-        ) {
-          if (evt.event === "on_chat_model_stream") {
-            buffer.push(
-              JSON.stringify({
-                type: "ai",
-                content: evt.data?.chunk?.content ?? "",
-                reasoning:
-                  evt.data?.chunk?.additional_kwargs?.reasoning_content,
-              })
-            );
-          } else if (evt.event === "on_tool_start") {
-            lastToolInput = evt.data?.input;
-            buffer.push(
-              JSON.stringify({
-                type: "tool",
-                toolName: evt.name,
-                input: evt.data?.input,
-                isComplete: false,
-              })
-            );
-          } else if (evt.event === "on_tool_end") {
-            let output = evt.data?.output.content;
-
-            if (Array.isArray(output)) {
-              output = await Promise.all(
-                output.map(async (item: any) => {
-                  if (
-                    item.type === "image_url" &&
-                    item.image_url &&
-                    item.image_url.url
-                  ) {
-                    return {
-                      type: "image_url",
-                      image_url: {
-                        url: "https://t3.chat/images/noise.png",
-                      },
-                    };
-                  }
-                  return item;
-                })
-              );
-            }
-
-            buffer.push(
-              JSON.stringify({
-                type: "tool",
-                toolName: evt.name,
-                input: lastToolInput,
-                output,
-                isComplete: true,
-              })
-            );
+      const flusher = async () => {
+        while (!finished) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          if (buffer.length > 0) {
+            const chunks = buffer;
+            buffer = [];
+            await ctx.runMutation(internal.streams.mutations.flush, {
+              chatId,
+              chunks,
+              completedSteps: [
+                ...(localCheckpoint?.pastSteps?.map((pastStep) => pastStep[0]) ??
+                  []),
+                ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
+                  ? [localCheckpoint.plan[0]]
+                  : []),
+              ],
+            });
           }
         }
-      }
+      };
+
+      let lastToolInput: unknown | undefined = undefined;
+      const streamer = async () => {
+        try {
+          for await (const evt of stream) {
+            localCheckpoint = (
+              await agent.getState({
+                configurable: { thread_id: chatId },
+              })
+            ).values as typeof GraphState.State;
+
+            const allowedNodes = ["baseAgent", "simple", "plannerAgent"];
+            if (
+              allowedNodes.some((node) =>
+                evt.metadata?.checkpoint_ns?.startsWith(node),
+              )
+            ) {
+              if (evt.event === "on_chat_model_stream") {
+                buffer.push(
+                  JSON.stringify({
+                    type: "ai",
+                    content: evt.data?.chunk?.content ?? "",
+                    reasoning:
+                      evt.data?.chunk?.additional_kwargs?.reasoning_content,
+                  }),
+                );
+              } else if (evt.event === "on_tool_start") {
+                lastToolInput = evt.data?.input;
+                buffer.push(
+                  JSON.stringify({
+                    type: "tool",
+                    toolName: evt.name,
+                    input: evt.data?.input,
+                    isComplete: false,
+                  }),
+                );
+              } else if (evt.event === "on_tool_end") {
+                let output = evt.data?.output.content;
+
+                if (Array.isArray(output)) {
+                  output = await Promise.all(
+                    output.map(async (item: any) => {
+                      if (
+                        item.type === "image_url" &&
+                        item.image_url &&
+                        item.image_url.url
+                      ) {
+                        return {
+                          type: "image_url",
+                          image_url: {
+                            url: "https://t3.chat/images/noise.png",
+                          },
+                        };
+                      }
+                      return item;
+                    }),
+                  );
+                }
+
+                buffer.push(
+                  JSON.stringify({
+                    type: "tool",
+                    toolName: evt.name,
+                    input: lastToolInput,
+                    output,
+                    isComplete: true,
+                  }),
+                );
+              }
+            }
+          }
+        } finally {
+          finished = true;
+        }
+      };
+
+      await Promise.all([flusher(), streamer()]);
+      return localCheckpoint;
+    };
+
+    try {
+      checkpoint = await flushAndStream();
     } catch (e) {
-      // If already cancelled/aborted, don't throw
       if (abort.signal.aborted) {
         return;
       }
@@ -222,8 +224,6 @@ export const chat = action({
       });
       throw e;
     }
-
-    finished = true;
 
     const newMessages = checkpoint?.messages?.slice(thread.length);
     if (newMessages?.length) {
@@ -289,8 +289,8 @@ export const chat = action({
 
     await ctx.runMutation(internal.streams.mutations.update, {
       chatId,
-      updates: { status: "done", completedSteps: [] },
-    });
+        updates: { status: "done", completedSteps: [] },
+      });
   },
 });
 

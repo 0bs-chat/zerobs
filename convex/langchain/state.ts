@@ -1,5 +1,3 @@
-"use node";
-
 import { z } from "zod";
 import { Annotation } from "@langchain/langgraph/web";
 import { BaseMessage } from "@langchain/core/messages";
