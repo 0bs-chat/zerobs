@@ -49,10 +49,10 @@ export const UserMessage = memo(
     // Memoize the content rendering to avoid unnecessary calculations
     const renderedContent = useMemo(() => {
       if (Array.isArray(content)) {
-        return content.map((entry, idx) => (
-          <div key={`${item.message._id}-${idx}`}>
+        return content.map((entry) => (
+          <>
             {entry.type === "text" ? (
-              <Markdown content={entry.text} id={item.message._id} />
+              <Markdown content={entry.text} id={item.message._id} className="prose [&_p]:mb-0" />
             ) : null}
             {entry.type === "file" ? (
               <DocumentButton
@@ -60,7 +60,7 @@ export const UserMessage = memo(
                 setDocumentDialogOpen={setDocumentDialogOpen}
               />
             ) : null}
-          </div>
+          </>
         ));
       }
       return content;
@@ -68,7 +68,7 @@ export const UserMessage = memo(
 
     if (isEditing) {
       return (
-        <div className="bg-card max-w-full self-end p-4 rounded-md shadow-sm w-full">
+        <div className="bg-card max-w-full bg-red-500 self-end p-4 rounded-md shadow-sm w-full">
           <Textarea
             value={editedText}
             onChange={(e) => setEditedText(e.target.value)}

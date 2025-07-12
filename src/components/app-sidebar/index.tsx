@@ -97,7 +97,7 @@ export function AppSidebar() {
               </Button>
 
               <div className="flex items-center border-b border-border relative">
-                <SearchIcon className="w-4 h-4 text-foreground ml-2" />
+                <SearchIcon className="w-4 h-4 text-foreground ml-2 text-muted-foreground" />
                 <Input
                   placeholder="Search chats"
                   className="border-none focus-visible:border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 pl-2 pr-8"
@@ -113,12 +113,12 @@ export function AppSidebar() {
                   style={{ backgroundColor: "transparent" }}
                 />
                 {searchQuery && (
-                  <Button
+                  <button
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md p-1 transition-colors"
                   >
                     <XIcon className="w-4 h-4" />
-                  </Button>
+                  </button>
                 )}
               </div>
             </div>
@@ -129,7 +129,7 @@ export function AppSidebar() {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarGroupLabel>Pinned</SidebarGroupLabel>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col">
                 {displayPinnedChats.map((chat) => renderChatItem(chat))}
               </div>
             </SidebarGroupContent>
@@ -142,7 +142,7 @@ export function AppSidebar() {
               {isSearching ? "Search Results" : "History"}
             </SidebarGroupLabel>
             <div className="flex-1 overflow-y-auto scrollbar-none">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col">
                 {displayHistoryChats.map((chat) => renderChatItem(chat))}
                 {!isSearching && status === "CanLoadMore" && (
                   <Button

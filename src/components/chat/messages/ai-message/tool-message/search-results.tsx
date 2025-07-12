@@ -26,10 +26,11 @@ export type SearchResult = {
 };
 
 interface SearchResultDisplayProps {
+  input: Record<string, any> | undefined;
   results: SearchResult[];
 }
 
-export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
+export const SearchResultDisplay = ({ results, input }: SearchResultDisplayProps) => {
   if (!results || results.length === 0) {
     return (
       <div className="text-sm text-muted-foreground">
@@ -45,12 +46,17 @@ export const SearchResultDisplay = ({ results }: SearchResultDisplayProps) => {
       defaultValue={["web-search-results"]}
     >
       <AccordionItem value="web-search-results" className="px-0 border-none">
-        <AccordionTrigger className="flex items-center justify-start gap-2 text-sm text-muted-foreground py-0">
-          <div className="flex items-center gap-2">
-            <GlobeIcon className="h-4 w-4" />
-            <span className="text-muted-foreground translate-y-[.1rem]">
-              Web Search Results ({results.length})
-            </span>
+        <AccordionTrigger className={`flex items-center gap-2 text-sm text-muted-foreground py-0 justify-start`}>
+          <div className="flex flex-row items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <GlobeIcon className="h-4 w-4" />
+              <span className="text-muted-foreground translate-y-[.1rem]">
+                Web Search Results ({results.length})
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {JSON.stringify(input, null, 2)}
+            </div>
           </div>
         </AccordionTrigger>
         <AccordionContent>

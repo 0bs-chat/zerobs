@@ -47,16 +47,16 @@ export function TopNav() {
       <div
         className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/20 border bg-accent/20 dark:bg-accent/35"}`}
       >
-        <SidebarTrigger className="h-8 w-8 " />
+        <SidebarTrigger />
         <Button
           variant="ghost"
-          className={`${sidebarOpen ? "hidden" : ""}`}
+          className={`${sidebarOpen ? "hidden" : ""} size-8`}
           size="icon"
           onClick={() => {
             navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
           }}
         >
-          <PlusIcon className="h-6 w-6" />
+          <PlusIcon />
         </Button>
       </div>
       <div

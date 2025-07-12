@@ -158,7 +158,9 @@ export const MarkdownBlock = memo(
     return (
       <article
         className={`prose max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent
-          prose-pre:p-0 prose-h1:mb-2 prose-h2:mb-2 prose-h3:my-2 prose-h4:my-2 prose-h5:my-2 prose-h6:my-2${className}`}
+          prose-pre:p-0 prose-h1:mb-2 prose-h2:mb-2 prose-h3:mb-2 prose-h3:mt-6 prose-h4:my-2 prose-h5:my-2 prose-h6:my-2
+          prose-p:mb-5 prose-hr:my-12 prose-hr:border-primary/20 prose-blockquote:border-primary/20
+          ${className}`}
         style={{
           fontFamily: "Rubik",
         }}
