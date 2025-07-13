@@ -18,9 +18,10 @@ export const StreamingMessage = memo(() => {
 
   let lastAiMessage: AIMessage | null = null;
   const langchainMessages = useMemo(() => {
-    return streamData?.chunkGroups
+    if (!streamData?.chunkGroups) return [];
+    return streamData.chunkGroups
       .map((chunk) => {
-        if (chunk?.type === "ai") {
+        if (chunk.type === "ai") {
           lastAiMessage = new AIMessage({
             content: chunk.content,
             additional_kwargs: chunk.reasoning
@@ -29,7 +30,7 @@ export const StreamingMessage = memo(() => {
           });
           return lastAiMessage;
         }
-        if (chunk?.type === "tool") {
+        if (chunk.type === "tool") {
           if (chunk.isComplete) {
             return new LangChainToolMessage({
               content: chunk.output as string,
@@ -39,23 +40,11 @@ export const StreamingMessage = memo(() => {
                 input: lastAiMessage?.additional_kwargs?.input as Record<string, unknown>,
               },
             });
-          } else {
-            // return new AIMessage({
-            //   content: "",
-            //   tool_calls: [
-            //     {
-            //       id: `streaming-tool-${chunk.toolName}`,
-            //       type: "tool_call",
-            //       name: chunk.toolName,
-            //       args: JSON.parse(JSON.stringify(chunk.input)),
-            //     },
-            //   ],
-            // });
           }
         }
-        return null;
+        return undefined;
       })
-      .filter((m): m is AIMessage | LangChainToolMessage => !!m);
+      .filter(Boolean) as (AIMessage | LangChainToolMessage)[];
   }, [streamData?.chunkGroups]);
 
   const planningSteps = useMemo(() => {

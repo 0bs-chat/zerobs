@@ -26,59 +26,67 @@ export const useHandleSubmit = () => {
     chat: Doc<"chats">,
     textareaRef: RefObject<AutosizeTextAreaRef | null>,
   ) => {
-    if (textareaRef?.current) {
-      textareaRef.current.textArea.value = "";
-    }
-    if (chat._id === "new") {
-      setNewChat((prev) => ({
-        ...prev,
-        text: "",
-        documents: [],
-        projectId: null,
-        orchestratorMode: false,
-        webSearch: false,
-        artifacts: false,
-        conductorMode: false,
-      }));
-      chat._id = await createChatMutation({
-        name: chat.name,
-        model: chat.model,
-        reasoningEffort: chat.reasoningEffort,
-        projectId: chat.projectId,
-        conductorMode: chat.conductorMode,
-        orchestratorMode: chat.orchestratorMode,
-        webSearch: chat.webSearch,
-        artifacts: chat.artifacts,
-      });
-      await createMessageMutation({
-        chatId: chat._id,
-        documents: chat.documents,
-        text: chat.text,
-        parentId: null,
-      });
-      navigate({
-        to: "/chat/$chatId",
-        params: { chatId: chat._id },
-      });
-      await sendAction({ chatId: chat._id });
-    } else {
-      await updateChatMutation({
-        chatId: chat._id,
-        updates: { text: "", documents: [] },
-      });
-      await createMessageMutation({
-        chatId: chat._id,
-        documents: chat.documents,
-        text: newChat.text !== "" ? newChat.text : chat.text,
-        parentId: lastChatMessage ?? null,
-      });
-      setNewChat((prev) => ({
-        ...prev,
-        text: "",
-        documents: [],
-        projectId: null,
-      }));
-      await sendAction({ chatId: chat._id });
+    try {
+      if (textareaRef?.current) {
+        textareaRef.current.textArea.value = "";
+      }
+      if (chat._id === "new") {
+        setNewChat((prev) => ({
+          ...prev,
+          text: "",
+          documents: [],
+          projectId: null,
+          orchestratorMode: false,
+          webSearch: false,
+          artifacts: false,
+          conductorMode: false,
+        }));
+        chat._id = await createChatMutation({
+          name: chat.name,
+          model: chat.model,
+          reasoningEffort: chat.reasoningEffort,
+          projectId: chat.projectId,
+          conductorMode: chat.conductorMode,
+          orchestratorMode: chat.orchestratorMode,
+          webSearch: chat.webSearch,
+          artifacts: chat.artifacts,
+        });
+        await createMessageMutation({
+          chatId: chat._id,
+          documents: chat.documents,
+          text: chat.text,
+          parentId: null,
+        });
+        navigate({
+          to: "/chat/$chatId",
+          params: { chatId: chat._id },
+        });
+        await sendAction({ chatId: chat._id });
+      } else {
+        await updateChatMutation({
+          chatId: chat._id,
+          updates: { text: "", documents: [] },
+        });
+        await createMessageMutation({
+          chatId: chat._id,
+          documents: chat.documents,
+          text: newChat.text !== "" ? newChat.text : chat.text,
+          parentId: lastChatMessage ?? null,
+        });
+        setNewChat((prev) => ({
+          ...prev,
+          text: "",
+          documents: [],
+          projectId: null,
+        }));
+        await sendAction({ chatId: chat._id });
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to send message. Please try again."
+      );
     }
   };
 
