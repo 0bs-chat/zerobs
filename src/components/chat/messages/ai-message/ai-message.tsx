@@ -66,7 +66,7 @@ export const AiMessageContent = memo(
             <Reasoning
               reasoning={reasoning}
               messageId={messageId}
-              isStreaming={isStreaming}
+              isStreaming={renderedContent.length > 0 ? false : isStreaming}
             />
             <div className={className}>{renderedContent}</div>
           </>

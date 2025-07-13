@@ -135,39 +135,55 @@ async function plannerAgent(
   const remainingPlan = state.plan.slice(1);
   const pastSteps = state.pastSteps || [];
 
-  const formattedPastSteps = pastSteps
-    .map((pastStep) => {
-      const [step, messages] = pastStep;
-      const stepMessage = new HumanMessage(step as string);
-      return [stepMessage, ...messages];
-    })
-    .flat();
-
   const plannerAgentChain = await createAgentWithTools(
     state,
     formattedConfig,
     true,
   );
-  const response = await plannerAgentChain.invoke(
-    {
-      messages: [
-        ...formattedPastSteps,
-        new HumanMessage(`Task: ${currentPlanItem}`),
-      ],
-    },
-    config,
-  );
 
-  const newMessages = response.messages.slice(
-    formattedPastSteps.length + 1,
-    response.messages.length,
-  );
-  const completedStep: CompletedStep = [currentPlanItem, newMessages];
+  const invoke = async ({
+    planItem,
+  }: {
+    planItem: typeof currentPlanItem;
+  }) => {
+    if (!Array.isArray(planItem)) {
+      const response = await plannerAgentChain.invoke(
+        {
+          messages: [
+            new HumanMessage(`Task: ${planItem.step}\nContext: ${planItem.context}`),
+          ],
+        },
+        config,
+      );
 
-  return {
-    plan: remainingPlan,
-    pastSteps: [...pastSteps, completedStep],
-  };
+      const newMessages = response.messages.slice(1, response.messages.length);
+      const completedStep: CompletedStep = [planItem.step, newMessages];
+
+      return completedStep;
+    }
+  }
+
+  if (!Array.isArray(currentPlanItem)) {
+    const response = await invoke({
+      planItem: currentPlanItem,
+    });
+
+    return {
+      plan: remainingPlan,
+      pastSteps: [...pastSteps, response],
+    };
+  } else {
+    const responses = await Promise.all(currentPlanItem.map(async (planItem) => {
+      return await invoke({
+        planItem,
+      });
+    }));
+
+    return {
+      plan: remainingPlan,
+      pastSteps: [...pastSteps, ...responses],
+    };
+  }
 }
 
 async function replanner(
@@ -188,10 +204,9 @@ async function replanner(
     ),
   );
 
-  const inputMessage = getLastMessage(state.messages, "human")?.message;
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
-    [inputMessage!],
+    state.messages,
     formattedConfig.chat.model!,
   );
 
