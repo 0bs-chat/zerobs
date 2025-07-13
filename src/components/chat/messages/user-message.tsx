@@ -52,7 +52,7 @@ export const UserMessage = memo(
         return content.map((entry, idx) => (
           <div key={entry.type === "file" ? entry.file.file_id : `text-${idx}`}>
             {entry.type === "text" ? (
-              <Markdown content={entry.text} id={item.message._id} className="prose [&_p]:mb-0" />
+              <Markdown content={entry.text} id={item.message._id} className="prose [&_p]:mt-0" />
             ) : null}
             {entry.type === "file" ? (
               <DocumentButton
