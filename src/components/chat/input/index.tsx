@@ -37,15 +37,14 @@ export const ChatInput = () => {
   setSelectedProjectId(chat.projectId ?? undefined);
 
   useEffect(() => {
-    textareaRef?.current?.textArea.focus();
-  }, [chatId]);
+    if (textareaRef?.current) {
+      textareaRef.current.textArea.focus();
+      textareaRef.current.textArea.value = chat.text;
+    }
+  }, [chat._id]);
 
   const handleChange = useDebouncedCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setNewChat((prev) => ({
-        ...prev,
-        text: e.target.value,
-      }));
       if (chatId !== "new") {
         updateChatMutation({
           chatId,
@@ -92,13 +91,17 @@ export const ChatInput = () => {
       {/* Input */}
       <motion.div whileFocus={{ scale: 1.02 }} transition={smoothTransition}>
         <AutosizeTextarea
-          id="chatInputText"
+          key={chatId}
           maxHeight={192}
           minHeight={56}
           ref={textareaRef}
           defaultValue={chat.text}
           className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
           onChange={(e) => {
+            setNewChat((prev) => ({
+              ...prev,
+              text: e.target.value,
+            }));
             handleChange(e);
           }}
           onKeyDown={(e) => {
@@ -118,7 +121,7 @@ export const ChatInput = () => {
               }
 
               if (textareaRef?.current) {
-                handleSubmit(chat);
+                handleSubmit(chat, textareaRef);
               }
             }
           }}
@@ -126,7 +129,7 @@ export const ChatInput = () => {
         />
       </motion.div>
 
-      <ToolBar chat={chat} />
+      <ToolBar chat={chat} textareaRef={textareaRef} />
     </motion.div>
   );
 };
