@@ -216,6 +216,20 @@ export const models: {
       "Cypher Alpha is a stealth mode model that can be used to generate text.",
     usageRateMultiplier: 0.0,
   },
+  {
+    label: "Kimi K2",
+    model_name: "kimi-k2",
+    model: "moonshotai/kimi-k2",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text"],
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "Kimi K2 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    usageRateMultiplier: 1.0,
+  },
 ];
 
 export async function getModel(
