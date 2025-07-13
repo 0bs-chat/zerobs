@@ -96,8 +96,8 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
     (
       await getModel(
         formattedConfig.ctx,
-        "worker",
-        undefined,
+        formattedConfig.chat.model!,
+        formattedConfig.chat.reasoningEffort,
       )
     ).withStructuredOutput(planSchema),
   );
@@ -105,7 +105,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
     state.messages,
-    "worker",
+    formattedConfig.chat.model!,
   );
 
   const response = (await modelWithOutputParser.invoke(
@@ -140,16 +140,14 @@ async function plannerAgent(
     true,
   );
 
-  const invoke = async ({
-    planItem,
-  }: {
-    planItem: typeof currentPlanItem;
-  }) => {
+  const invoke = async ({ planItem }: { planItem: typeof currentPlanItem }) => {
     if (!Array.isArray(planItem)) {
       const response = await plannerAgentChain.invoke(
         {
           messages: [
-            new HumanMessage(`Task: ${planItem.step}\nContext: ${planItem.context}`),
+            new HumanMessage(
+              `Task: ${planItem.step}\nContext: ${planItem.context}`,
+            ),
           ],
         },
         config,
@@ -160,7 +158,7 @@ async function plannerAgent(
 
       return completedStep;
     }
-  }
+  };
 
   if (!Array.isArray(currentPlanItem)) {
     const response = await invoke({
@@ -172,11 +170,13 @@ async function plannerAgent(
       pastSteps: [...pastSteps, response],
     };
   } else {
-    const responses = await Promise.all(currentPlanItem.map(async (planItem) => {
-      return await invoke({
-        planItem,
-      });
-    }));
+    const responses = await Promise.all(
+      currentPlanItem.map(async (planItem) => {
+        return await invoke({
+          planItem,
+        });
+      }),
+    );
 
     return {
       plan: remainingPlan,
@@ -195,8 +195,8 @@ async function replanner(
     (
       await getModel(
         formattedConfig.ctx,
-        "worker",
-        undefined,
+        formattedConfig.chat.model!,
+        formattedConfig.chat.reasoningEffort,
       )
     ).withStructuredOutput(
       replannerOutputSchema(formattedConfig.chat.artifacts),
@@ -206,7 +206,7 @@ async function replanner(
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
     state.messages,
-    "worker",
+    formattedConfig.chat.model!,
   );
 
   const response = (await modelWithOutputParser.invoke(

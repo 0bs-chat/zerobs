@@ -39,7 +39,6 @@ export const documentDialogOpenAtom = atom<Id<"documents"> | undefined>(
   undefined,
 );
 export const createProjectDialogOpenAtom = atom(false);
-export const createMCPServerDialogOpenAtom = atom(false);
 
 export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", false);
 

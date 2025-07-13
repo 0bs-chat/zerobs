@@ -80,12 +80,17 @@ export const ChatMessages = () => {
     if (chatId === "new") {
       return (
         <div className="flex items-center justify-center h-full flex-col gap-4 -translate-y-30">
-          <div className="flex flex-col items-center gap-2 text-5xl font-semibold text-muted-foreground/40" style={{
-            fontFamily: "Rubik",
-          }}>
-            how can i help you<br />{user?.name} ?
+          <div
+            className="flex flex-col items-center gap-2 text-5xl font-semibold text-muted-foreground/40"
+            style={{
+              fontFamily: "Rubik",
+            }}
+          >
+            how can i help you
+            <br />
+            {user?.name} ?
           </div>
-        </div >
+        </div>
       );
     }
 

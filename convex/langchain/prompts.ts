@@ -192,7 +192,7 @@ export function createPlannerPrompt() {
         `- Use nested arrays for steps that can be executed in parallel.\n` +
         `- Scale the number of steps and parallelism to the complexity of the query.\n` +
         `- Do not add superfluous steps. The result of the final step should be the final answer.\n` +
-        `- Make the plan technical and specific to the topic.\n`
+        `- Make the plan technical and specific to the topic.\n`,
     ],
     new MessagesPlaceholder("messages"),
   ]);
@@ -221,12 +221,12 @@ export function createReplannerPrompt() {
     [
       "system",
       `\n\n**MANDATORY ANALYSIS & REPLANNING:**\n\n` +
-      `1. **Re-evaluate the Original Objective:** Look at the user's first message. What were the core components of their request?\n\n` +
-      `2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.\n\n` +
-      `3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.\n\n` +
-      `4. **Update Your Plan:**\n` +
-      ` - **If ready to respond:** Set \`action\` to \`"respond_to_user"\` and formulate the complete, synthesized response.\n` +
-      ` - **If not ready:** Set \`action\` to \`"continue_planning"\` and provide a new plan containing **only the remaining steps needed** to fill the gaps you identified, using the planArray conventions. The next step should be the most direct action to address the missing information.\n`
+        `1. **Re-evaluate the Original Objective:** Look at the user's first message. What were the core components of their request?\n\n` +
+        `2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.\n\n` +
+        `3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.\n\n` +
+        `4. **Update Your Plan:**\n` +
+        ` - **If ready to respond:** Set \`action\` to \`"respond_to_user"\` and formulate the complete, synthesized response.\n` +
+        ` - **If not ready:** Set \`action\` to \`"continue_planning"\` and provide a new plan containing **only the remaining steps needed** to fill the gaps you identified, using the planArray conventions. The next step should be the most direct action to address the missing information.\n`,
     ],
   ]);
 }
@@ -243,7 +243,7 @@ export const replannerOutputSchema = (artifacts: boolean) =>
         .string()
         .describe(
           "A comprehensive, final response to the user. Synthesize the results of all completed steps into a single, coherent answer. This is the only thing the user will see, so it must be complete and detailed." +
-          `${artifacts ? `Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`,
+            `${artifacts ? `Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`,
         ),
     }),
   ]);

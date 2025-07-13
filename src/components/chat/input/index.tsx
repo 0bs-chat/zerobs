@@ -52,7 +52,7 @@ export const ChatInput = () => {
         });
       }
     },
-    300
+    300,
   );
 
   return (

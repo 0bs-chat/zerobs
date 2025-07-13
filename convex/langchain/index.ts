@@ -124,10 +124,10 @@ export const chat = action({
                 ) ?? []),
                 ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
                   ? [
-                    ...(Array.isArray(localCheckpoint.plan[0]) ?
-                      localCheckpoint.plan[0].map((step) => step.step) :
-                      [localCheckpoint.plan[0].step]),
-                  ]
+                      ...(Array.isArray(localCheckpoint.plan[0])
+                        ? localCheckpoint.plan[0].map((step) => step.step)
+                        : [localCheckpoint.plan[0].step]),
+                    ]
                   : []),
               ],
             });

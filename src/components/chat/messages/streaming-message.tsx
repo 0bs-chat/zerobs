@@ -26,7 +26,7 @@ export const StreamingMessage = memo(() => {
             additional_kwargs: chunk.reasoning
               ? { reasoning_content: chunk.reasoning }
               : {},
-          });;
+          });
         }
         if (chunk.type === "tool") {
           if (chunk.isComplete) {

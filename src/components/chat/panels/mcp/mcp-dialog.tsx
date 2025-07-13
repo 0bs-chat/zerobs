@@ -18,12 +18,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { Doc } from "../../../../../convex/_generated/dataModel";
 
-interface CreateDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
+export const MCPDialog = () => {
   const initialMcp = {
     name: "",
     type: "http" as const,
@@ -46,40 +41,9 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
     >(initialMcp);
   const { handleCreate } = useMCPs();
   const [isLoading, setIsLoading] = useState(false);
-
-  const validateMCP = () => {
-    if (!mcp.name.trim()) {
-      toast.error("MCP name is required");
-      return false;
-    }
-
-    if (mcp.type === "stdio" && !mcp.command?.trim()) {
-      toast.error("Command is required for STDIO type");
-      return false;
-    }
-
-    if (mcp.type === "http" && !mcp.url?.trim()) {
-      toast.error("URL is required for HTTP type");
-      return false;
-    }
-
-    if (mcp.type === "docker") {
-      if (!mcp.dockerImage?.trim()) {
-        toast.error("Docker image is required for Docker type");
-        return false;
-      }
-      if (!mcp.dockerPort || mcp.dockerPort <= 0) {
-        toast.error("Valid Docker port is required for Docker type");
-        return false;
-      }
-    }
-
-    return true;
-  };
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleSubmit = async () => {
-    if (!validateMCP()) return;
-
     setIsLoading(true);
     try {
       await handleCreate(mcp, (open) => {
@@ -87,7 +51,7 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
           // Reset form state when dialog closes after successful creation
           setMcp(initialMcp);
         }
-        onOpenChange(open);
+        setIsOpen(open);
       });
     } catch (error) {
       console.error("Failed to create MCP:", error);
@@ -105,7 +69,7 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
           // Reset form state when dialog closes
           setMcp(initialMcp);
         }
-        onOpenChange(open);
+        setIsOpen(open);
       }}
       modal
     >
@@ -249,7 +213,7 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
             variant="outline"
             onClick={() => {
               setMcp(initialMcp);
-              onOpenChange(false);
+              setIsOpen(false);
             }}
             disabled={isLoading}
           >
