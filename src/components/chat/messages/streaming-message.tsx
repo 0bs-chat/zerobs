@@ -16,19 +16,17 @@ export const StreamingMessage = memo(() => {
   const streamData = useAtomValue(useStreamAtom);
   const messageId = "streaming-message";
 
-  let lastAiMessage: AIMessage | null = null;
   const langchainMessages = useMemo(() => {
     if (!streamData?.chunkGroups) return [];
     return streamData.chunkGroups
       .map((chunk) => {
         if (chunk.type === "ai") {
-          lastAiMessage = new AIMessage({
+          return new AIMessage({
             content: chunk.content,
             additional_kwargs: chunk.reasoning
               ? { reasoning_content: chunk.reasoning }
               : {},
-          });
-          return lastAiMessage;
+          });;
         }
         if (chunk.type === "tool") {
           if (chunk.isComplete) {
@@ -37,7 +35,7 @@ export const StreamingMessage = memo(() => {
               name: chunk.toolName,
               tool_call_id: `streaming-tool-${chunk.toolName}`,
               additional_kwargs: {
-                input: lastAiMessage?.additional_kwargs?.input as Record<string, unknown>,
+                input: JSON.parse(JSON.stringify(chunk.input)),
               },
             });
           }

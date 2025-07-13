@@ -96,8 +96,8 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
     (
       await getModel(
         formattedConfig.ctx,
-        formattedConfig.chat.model!,
-        formattedConfig.chat.reasoningEffort,
+        "worker",
+        undefined,
       )
     ).withStructuredOutput(planSchema),
   );
@@ -105,7 +105,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
     state.messages,
-    formattedConfig.chat.model!,
+    "worker",
   );
 
   const response = (await modelWithOutputParser.invoke(
@@ -195,8 +195,8 @@ async function replanner(
     (
       await getModel(
         formattedConfig.ctx,
-        formattedConfig.chat.model!,
-        formattedConfig.chat.reasoningEffort,
+        "worker",
+        undefined,
       )
     ).withStructuredOutput(
       replannerOutputSchema(formattedConfig.chat.artifacts),
@@ -206,7 +206,7 @@ async function replanner(
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
     state.messages,
-    formattedConfig.chat.model!,
+    "worker",
   );
 
   const response = (await modelWithOutputParser.invoke(
