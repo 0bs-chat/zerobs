@@ -8,7 +8,6 @@ import {
 } from "./helpers";
 import { type CompletedStep, GraphState, planSchema } from "./state";
 import { modelSupportsTools, formatMessages, getModel } from "./models";
-import { getLastMessage } from "./helpers";
 import {
   BaseMessage,
   AIMessage,
