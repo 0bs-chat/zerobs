@@ -19,6 +19,7 @@ import {
   newChatOrchestratorModeAtom,
   newChatArtifactsAtom,
   newChatReasoningEffortAtom,
+  selectedProjectIdAtom,
 } from "@/store/chatStore";
 import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
 
@@ -35,6 +36,7 @@ export const useHandleSubmit = () => {
   const newChatOrchestratorMode = useAtomValue(newChatOrchestratorModeAtom);
   const newChatWebSearch = useAtomValue(newChatWebSearchAtom);
   const newChatArtifacts = useAtomValue(newChatArtifactsAtom);
+  const selectedProjectId = useAtomValue(selectedProjectIdAtom);
   const sendAction = useAction(api.langchain.index.chat);
   const navigate = useNavigate();
   const lastChatMessage = useAtomValue(lastChatMessageAtom);
@@ -50,13 +52,12 @@ export const useHandleSubmit = () => {
       return;
     }
 
-    // here we were just using textarearef to make it empty
     if (chatId === "" || chatId === undefined || chatId === null) {
       const newChatId = await createChatMutation({
         name: "New Chat",
         model: newChatModel,
         reasoningEffort: newChatReasoningEffort,
-        projectId: null,
+        projectId: selectedProjectId,
         conductorMode: newChatConductorMode,
         orchestratorMode: newChatOrchestratorMode,
         webSearch: newChatWebSearch,

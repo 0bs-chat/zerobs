@@ -1,29 +1,23 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { XIcon } from "lucide-react";
+import { Folder, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { useDebouncedCallback } from "use-debounce";
 import { AddDocumentControls } from "./add-document-controls";
 import { ProjectDocumentList } from "./document-list";
 import type { ProjectDetailsProps } from "./types";
-import { useParams } from "@tanstack/react-router";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import { selectedProjectIdAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
-import { newChatAtom } from "@/store/chatStore";
 
 export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats">;
   const project = useQuery(
     api.projects.queries.get,
     projectId ? { projectId } : "skip"
   );
   const updateProject = useMutation(api.projects.mutations.update);
-  const updateChatInput = useMutation(api.chats.mutations.update);
-  const setNewChat = useSetAtom(newChatAtom);
-
+  const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
   const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
     updateProject({
       projectId: projectId!,
@@ -36,36 +30,29 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   if (!project) return null;
 
   return (
-    <div className="flex flex-col gap-4 h-full ">
-      <div className="flex flex-col gap-0 ">
+    <div className="flex flex-col gap-5 h-full ">
+      <div className="flex flex-col gap-1 ">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">{project.name}</h2>
+          <div className="flex gap-2 items-center justify-start w-full">
+            <Folder className="w-6 h-6 fill-accent text-accent-foreground" />
+            <h3 className="font-medium text-lg">{project.name}</h3>
+          </div>
           <Button
             variant="outline"
             size="icon"
             className="cursor-pointer"
             onClick={() => {
-              if (chatId !== undefined && chatId !== null && chatId !== "") {
-                updateChatInput({
-                  chatId,
-                  updates: {
-                    projectId: null,
-                  },
-                });
-              } else {
-                setNewChat((prev) => ({
-                  ...prev,
-                  projectId: null,
-                }));
-              }
+              setSelectedProjectId(null);
             }}
           >
             <XIcon className="size-5" />
           </Button>
         </div>
-        {project.description && (
-          <p className="text-muted-foreground">{project.description}</p>
-        )}
+        <div>
+          {project.description && (
+            <p className="text-muted-foreground">{project.description}</p>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -73,20 +60,20 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
         <AutosizeTextarea
           defaultValue={project.systemPrompt}
           onChange={(e) => debouncedUpdateSystemPrompt(e.target.value)}
-          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-2 rounded-xl"
+          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-2 opacity-90"
           minHeight={80}
           maxHeight={200}
         />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 ">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold">Documents</h3>
           </div>
           <AddDocumentControls projectId={project._id} />
         </div>
-        <ScrollArea className="h-[calc(100vh-19rem)]">
+        <ScrollArea className="h-[calc(100vh-19rem)] ">
           <ProjectDocumentList projectId={project._id} />
         </ScrollArea>
       </div>

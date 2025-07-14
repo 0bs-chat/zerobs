@@ -1,30 +1,11 @@
 import { atom } from "jotai";
-import type { Doc, Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
 import { atomWithStorage, selectAtom } from "jotai/utils";
 import { useStream } from "@/hooks/chats/use-stream";
 import type { Artifact } from "@/components/artifacts/utils";
 import { groupMessages } from "../../convex/chatMessages/helpers";
 import type { ContentPart } from "@/components/artifacts/utils";
 import { parseContent } from "@/components/artifacts/utils";
-
-export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
-  _id: "new" as Id<"chats">,
-  _creationTime: 0,
-  userId: "",
-  name: "New Chat",
-  pinned: false,
-  documents: [],
-  text: "",
-  model: "gemini-2.5-flash",
-  reasoningEffort: "low",
-  projectId: null,
-  conductorMode: false,
-  orchestratorMode: false,
-  webSearch: false,
-  artifacts: false,
-  updatedAt: 0,
-  public: false,
-});
 
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
 
@@ -43,9 +24,6 @@ export const createMCPServerDialogOpenAtom = atom(false);
 
 export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", false);
 
-export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
-  undefined
-);
 export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
 
 export const groupedMessagesAtom = atom<
@@ -152,7 +130,7 @@ export const newChatArtifactsAtom = atomWithStorage<boolean>(
   false
 );
 
-export const newChatProjectIdAtom = atomWithStorage<Id<"projects"> | undefined>(
-  "newChatProjectId",
-  undefined
+export const selectedProjectIdAtom = atomWithStorage<Id<"projects"> | null>(
+  "selectedProjectId",
+  null
 );

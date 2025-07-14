@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, PlusIcon, TimerReset } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 
 import {
@@ -23,8 +23,8 @@ import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/theme-switcher";
-import { ArrowLeft } from "lucide-react";
+import { selectedProjectIdAtom } from "@/store/chatStore";
+import { useSetAtom } from "jotai";
 
 export const Route = createFileRoute("/projects/$projectId")({
   component: RouteComponent,
@@ -41,7 +41,7 @@ function ProjectDetails() {
   const projectDetails = useQuery(api.projects.queries.get, {
     projectId,
   });
-
+  const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
   const updateProject = useMutation(api.projects.mutations.update);
   const projectChats = useQuery(api.chats.queries.getByProjectId, {
     projectId,
@@ -109,11 +109,29 @@ function ProjectDetails() {
             </div>
           </div>
 
-          <div className="py-4">
+          <div className="py-2">
             <Separator className="h-1 text-accent-foreground" />
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center w-full py-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <TimerReset className="h-4 w-4" />
+              Recent Chats
+            </div>
+            <Button
+              variant="outline"
+              className=" cursor-pointer"
+              onClick={() => {
+                setSelectedProjectId(projectId);
+                navigate({ to: "/" });
+              }}
+            >
+              <PlusIcon className="h-6 w-6" />
+              New chat
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-4 h-full overflow-y-auto pb-8 scrollbar-hide">
             {projectChats?.map((chat) => (
               <Card
                 key={chat._id}
