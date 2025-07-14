@@ -8,7 +8,7 @@ import {
   getAvailableToolsDescription,
 } from "./helpers";
 import { type CompletedStep, GraphState, planSchema } from "./state";
-import { modelSupportsTools, formatMessages, getModel } from "./models";
+import { modelSupportsTools, formatMessages, getModel, models } from "./models";
 import {
   BaseMessage,
   AIMessage,
@@ -94,14 +94,21 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
   const availableToolsDescription = await getAvailableToolsDescription(state, formattedConfig);
   const promptTemplate = createPlannerPrompt(availableToolsDescription);
+
+  const model = await getModel(
+    formattedConfig.ctx,
+    formattedConfig.chat.model!,
+    formattedConfig.chat.reasoningEffort,
+  );
+
+  // Get model config to check if it's anthropic
+  const modelConfig = models.find((m) => m.model_name === formattedConfig.chat.model!);
+  const isAnthropic = modelConfig?.parser === "anthropic";
+
   const modelWithOutputParser = promptTemplate.pipe(
-    (
-      await getModel(
-        formattedConfig.ctx,
-        formattedConfig.chat.model!,
-        formattedConfig.chat.reasoningEffort,
-      )
-    ).withStructuredOutput(planSchema),
+    isAnthropic
+      ? model.withStructuredOutput(planSchema, { method: "functionCalling" })
+      : model.withStructuredOutput(planSchema)
   );
 
   const formattedMessages = await formatMessages(
@@ -194,16 +201,21 @@ async function replanner(
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
   const availableToolsDescription = await getAvailableToolsDescription(state, formattedConfig);
   const promptTemplate = createReplannerPrompt(availableToolsDescription);
+
+  const model = await getModel(
+    formattedConfig.ctx,
+    formattedConfig.chat.model!,
+    formattedConfig.chat.reasoningEffort,
+  );
+
+  // Get model config to check if it's anthropic
+  const modelConfig = models.find((m) => m.model_name === formattedConfig.chat.model!);
+  const isAnthropic = modelConfig?.parser === "anthropic";
+
   const modelWithOutputParser = promptTemplate.pipe(
-    (
-      await getModel(
-        formattedConfig.ctx,
-        formattedConfig.chat.model!,
-        formattedConfig.chat.reasoningEffort,
-      )
-    ).withStructuredOutput(
-      replannerOutputSchema(formattedConfig.chat.artifacts),
-    ),
+    isAnthropic
+      ? model.withStructuredOutput(replannerOutputSchema(formattedConfig.chat.artifacts), { method: "functionCalling" })
+      : model.withStructuredOutput(replannerOutputSchema(formattedConfig.chat.artifacts))
   );
 
   const formattedMessages = await formatMessages(
