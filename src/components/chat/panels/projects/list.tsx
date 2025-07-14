@@ -6,10 +6,10 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { useAtom, useSetAtom } from "jotai";
+import { useSetAtom } from "jotai";
 import {
   createProjectDialogOpenAtom,
-  newChatAtom,
+  newChatProjectIdAtom,
   resizePanelOpenAtom,
 } from "@/store/chatStore";
 
@@ -24,9 +24,9 @@ export const ProjectsList = () => {
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const removeProjectMutation = useMutation(api.projects.mutations.remove);
   const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
-  const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
+  const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
 
-  const setNewChat = useSetAtom(newChatAtom);
+  const setNewChatProjectId = useSetAtom(newChatProjectIdAtom);
 
   return (
     <div className="flex flex-col gap-3 h-full ">
@@ -59,10 +59,7 @@ export const ProjectsList = () => {
                     },
                   });
                 } else {
-                  setNewChat((prev) => ({
-                    ...prev,
-                    projectId: project._id,
-                  }));
+                  setNewChatProjectId(project._id);
                 }
               }}
             >
@@ -74,7 +71,7 @@ export const ProjectsList = () => {
                   </p>
                 )}
               </div>
-              <div className=" hidden items-center justify-center z-10 absolute right-2 group-hover/card:flex">
+              <div className=" hidden gap-2 items-center justify-center z-10 absolute right-2 group-hover/card:flex">
                 <Button
                   variant="outline"
                   size="icon"

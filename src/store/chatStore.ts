@@ -151,3 +151,8 @@ export const newChatArtifactsAtom = atomWithStorage<boolean>(
   "newChatArtifacts",
   false
 );
+
+export const newChatProjectIdAtom = atomWithStorage<Id<"projects"> | undefined>(
+  "newChatProjectId",
+  undefined
+);

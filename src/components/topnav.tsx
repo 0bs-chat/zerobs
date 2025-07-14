@@ -50,7 +50,7 @@ export function TopNav() {
           <Button
             variant="ghost"
             size="icon"
-            className=""
+            className="cursor-pointer"
             onClick={() => {
               navigate({ to: "/settings/profile" });
             }}
