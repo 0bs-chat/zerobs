@@ -14,19 +14,15 @@ import { MessagesList } from "./messages";
 import { StreamingMessage } from "./streaming-message";
 import { useScroll } from "@/hooks/chats/use-scroll";
 import { TriangleAlertIcon } from "lucide-react";
-import { useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
 
 export const ChatMessages = () => {
-  const params = useParams({ from: "/chat/$chatId/" });
+  const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const setGroupedMessagesAtom = useSetAtom(groupedMessagesAtom);
   const setLastChatMessageAtom = useSetAtom(lastChatMessageAtom);
   const setUseStreamAtom = useSetAtom(useStreamAtom);
   const { scrollToBottom, shouldAutoScroll } = useScroll();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  const user = useQuery(api.auth.getUser);
 
   const { groupedMessages, lastMessageId, navigateBranch, isLoading, isEmpty } =
     useMessages({ chatId });
@@ -73,23 +69,6 @@ export const ChatMessages = () => {
       return (
         <div className="flex items-center justify-center h-full">
           <div className="text-muted-foreground">No messages</div>
-        </div>
-      );
-    }
-
-    if (chatId === "new") {
-      return (
-        <div className="flex items-center justify-center h-full flex-col gap-4 -translate-y-30">
-          <div
-            className="flex flex-col items-center gap-2 text-5xl font-semibold text-muted-foreground/40"
-            style={{
-              fontFamily: "Rubik",
-            }}
-          >
-            how can i help you
-            <br />
-            {user?.name} ?
-          </div>
         </div>
       );
     }

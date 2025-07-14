@@ -8,35 +8,49 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { motion } from "motion/react";
-import { sidebarOpenAtom } from "@/store/chatStore";
+import { AnimatePresence, motion } from "motion/react";
+import { resizePanelOpenAtom, sidebarOpenAtom } from "@/store/chatStore";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useConvexAuth } from "convex/react";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { slideInFromLeft, slideInFromRight } from "@/lib/motion";
+import { layoutTransition } from "@/lib/motion";
+import { AppSidebar } from "@/components/app-sidebar";
+import { TopNav } from "@/components/topnav";
+import { Panel } from "@/components/chat/panels";
 
 export const Route = createRootRoute({
-  component: () => {
-    const location = useLocation();
-    const { isLoading, isAuthenticated } = useConvexAuth();
+  component: RootRouteComponent,
+});
 
-    const publicRoutes = ["/"];
-    const sidebarOpen = useAtomValue(sidebarOpenAtom);
-    const setSidebarOpen = useSetAtom(sidebarOpenAtom);
+function RootRouteComponent() {
+  const location = useLocation();
+  const { isLoading, isAuthenticated } = useConvexAuth();
 
-    if (isLoading) {
-      return (
+  const publicRoutes = ["/auth"];
+
+  const sidebarOpen = useAtomValue(sidebarOpenAtom);
+  const setSidebarOpen = useSetAtom(sidebarOpenAtom);
+  const resizePanelOpen = useAtomValue(resizePanelOpenAtom);
+
+  return (
+    <>
+      {isLoading && (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <div className="flex justify-center items-center h-screen font-sans bg-background">
             <Loader2 className="w-10 h-10 animate-spin [animation-duration:0.3s]" />
           </div>
         </ThemeProvider>
-      );
-    }
+      )}
 
-    if (!isAuthenticated && !publicRoutes.includes(location.pathname)) {
-      return <Navigate to="/" />;
-    }
+      {!isAuthenticated && !publicRoutes.includes(location.pathname) && (
+        <Navigate to="/auth" />
+      )}
 
-    return (
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <motion.div
           initial={{ opacity: 0 }}
@@ -51,21 +65,43 @@ export const Route = createRootRoute({
               setSidebarOpen(!sidebarOpen);
             }}
           >
-            {/* Redirect authenticated users away from public routes */}
-            {isAuthenticated && publicRoutes.includes(location.pathname) && (
-              <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
-            )}
-
-            {/* Redirect authenticated users from root to chat */}
-            {isAuthenticated && location.pathname === "/" && (
-              <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
-            )}
-            {/* Render the appropriate outlet */}
-            <Outlet />
+            {isAuthenticated && <TopNav />}
+            <motion.div
+              variants={slideInFromLeft}
+              initial="initial"
+              animate="animate"
+              transition={layoutTransition}
+            >
+              {isAuthenticated && <AppSidebar />}
+            </motion.div>
+            <ResizablePanelGroup direction="horizontal">
+              <ResizablePanel className="flex flex-col gap-1 p-2 pt-4">
+                <Outlet />
+              </ResizablePanel>
+              <AnimatePresence mode="wait">
+                {resizePanelOpen && (
+                  <>
+                    <ResizableHandle />
+                    <ResizablePanel defaultSize={40} minSize={25} maxSize={60}>
+                      <motion.div
+                        variants={slideInFromRight}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        transition={layoutTransition}
+                        className="h-full"
+                      >
+                        <Panel />
+                      </motion.div>
+                    </ResizablePanel>
+                  </>
+                )}
+              </AnimatePresence>
+            </ResizablePanelGroup>
           </SidebarProvider>
         </motion.div>
         <Toaster />
       </ThemeProvider>
-    );
-  },
-});
+    </>
+  );
+}

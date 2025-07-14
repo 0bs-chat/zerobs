@@ -17,10 +17,10 @@ export function ProjectDocumentList({
           projectId,
           paginationOpts: { numItems: 50, cursor: null },
         }
-      : "skip",
+      : "skip"
   );
   const toggleSelectAll = useMutation(
-    api.projectDocuments.mutations.toggleSelect,
+    api.projectDocuments.mutations.toggleSelect
   );
 
   const handleSelectAll = async (checked: boolean) => {
@@ -32,7 +32,7 @@ export function ProjectDocumentList({
 
   if (!projectDocuments || projectDocuments.projectDocuments.length === 0) {
     return (
-      <Card className="p-4">
+      <Card className="p-4 rounded-lg">
         <p className="text-muted-foreground text-center">
           No documents added yet
         </p>
@@ -41,11 +41,11 @@ export function ProjectDocumentList({
   }
 
   return (
-    <div className="flex flex-col gap-2 bg-card rounded-xl shadow-sm border p-4">
+    <div className="flex flex-col gap-2 bg-card shadow-sm border p-4 rounded-lg">
       <div className="flex items-center px-3 gap-3">
         <Checkbox
           checked={projectDocuments.projectDocuments.every(
-            (projectDocument) => projectDocument.selected,
+            (projectDocument) => projectDocument.selected
           )}
           onCheckedChange={(checked) =>
             handleSelectAll(checked.valueOf() as boolean)
@@ -55,7 +55,7 @@ export function ProjectDocumentList({
           Select All (
           {
             projectDocuments.projectDocuments.filter(
-              (projectDocument) => projectDocument.selected,
+              (projectDocument) => projectDocument.selected
             ).length
           }
           /{projectDocuments.projectDocuments.length})

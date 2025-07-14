@@ -5,11 +5,11 @@ import {
 } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useAtom, useSetAtom } from "jotai";
-import { newChatAtom, selectedProjectIdAtom } from "@/store/chatStore";
+import { useAtom } from "jotai";
+import { newChatDocumentsAtom, newChatTextAtom } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
-import { useQuery, useMutation } from "convex/react";
-import { useEffect, useRef } from "react";
+import { useMutation } from "convex/react";
+import { useRef, type RefObject } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
 import { useParams } from "@tanstack/react-router";
@@ -18,51 +18,28 @@ import { useScroll } from "@/hooks/chats/use-scroll";
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { fadeInUp, smoothTransition } from "@/lib/motion";
+import { smoothTransition } from "@/lib/motion";
 
 export const ChatInput = () => {
-  const params = useParams({ from: "/chat/$chatId/" });
+  const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const textareaRef = useRef<AutosizeTextAreaRef>(null);
-  const [newChat, setNewChat] = useAtom(newChatAtom);
   const handleSubmit = useHandleSubmit();
-  const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
   const { scrollToBottom, isAtBottom } = useScroll();
 
-  const chat =
-    useQuery(api.chats.queries.get, chatId !== "new" ? { chatId } : "skip") ??
-    newChat;
+  const [newChatText, setNewChatText] = useAtom(newChatTextAtom);
+  const [newChatDocuments] = useAtom(newChatDocumentsAtom);
 
-  setSelectedProjectId(chat.projectId ?? undefined);
-
-  useEffect(() => {
-    if (textareaRef?.current) {
-      textareaRef.current.textArea.focus();
-      textareaRef.current.textArea.value = chat.text;
-    }
-  }, [chat._id]);
-
-  const handleChange = useDebouncedCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      if (chatId !== "new") {
-        updateChatMutation({
-          chatId,
-          updates: { text: e.target.value },
-        });
-      }
-    },
-    300,
-  );
+  const debouncedUpdateChatMutation = useDebouncedCallback((text: string) => {
+    updateChatMutation({
+      chatId,
+      updates: { text },
+    });
+  }, 300);
 
   return (
-    <motion.div
-      className="relative flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg"
-      variants={fadeInUp}
-      initial="initial"
-      animate="animate"
-      transition={smoothTransition}
-    >
+    <div className="relative flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">
       <AnimatePresence>
         {!isAtBottom && (
           <motion.div
@@ -86,50 +63,44 @@ export const ChatInput = () => {
       </AnimatePresence>
 
       {/* Document List */}
-      <DocumentList documentIds={chat.documents} model={chat.model} />
+      <DocumentList documentIds={newChatDocuments} />
 
       {/* Input */}
-      <motion.div whileFocus={{ scale: 1.02 }} transition={smoothTransition}>
+      <div>
         <AutosizeTextarea
           key={chatId}
           maxHeight={192}
           minHeight={56}
           ref={textareaRef}
-          defaultValue={chat.text}
+          defaultValue={newChatText}
           className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
           onChange={(e) => {
-            setNewChat((prev) => ({
-              ...prev,
-              text: e.target.value,
-            }));
-            handleChange(e);
+            if (chatId === undefined || chatId === null || chatId === "") {
+              setNewChatText(e.target.value);
+            } else {
+              if (textareaRef?.current) {
+                debouncedUpdateChatMutation(textareaRef.current.textArea.value);
+              }
+            }
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
 
-              if (
-                (!newChat.text || newChat.text.trim() === "") &&
-                chat.documents.length === 0
-              ) {
-                toast.error("Please enter a message");
-                return;
-              }
               if (textareaRef?.current?.textArea.value.trim() === "") {
                 toast.error("Please enter a message before sending");
                 return;
               }
-
-              if (textareaRef?.current) {
-                handleSubmit(chat, textareaRef);
-              }
+              handleSubmit(
+                chatId,
+                textareaRef as RefObject<AutosizeTextAreaRef>
+              );
             }
           }}
           placeholder="Type a message..."
         />
-      </motion.div>
-
-      <ToolBar chat={chat} textareaRef={textareaRef} />
-    </motion.div>
+      </div>
+      <ToolBar textareaRef={textareaRef as RefObject<AutosizeTextAreaRef>} />
+    </div>
   );
 };

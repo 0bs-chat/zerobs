@@ -10,7 +10,7 @@ export const create = mutation({
     name: v.string(),
     model: v.string(),
     reasoningEffort: v.optional(
-      v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+      v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
     ),
     projectId: v.union(v.id("projects"), v.null()),
     conductorMode: v.boolean(),
@@ -75,7 +75,7 @@ export const createRaw = internalMutation({
       v.object({
         message: v.string(),
         parentId: v.optional(v.id("chatMessages")),
-      }),
+      })
     ),
   },
   handler: async (ctx, args) => {
@@ -89,7 +89,7 @@ export const createRaw = internalMutation({
           chatId: args.chatId,
           parentId: currentParent,
           message: message.message,
-        },
+        }
       );
       // Set the current message as parent for the next message
       currentParent = created._id;
