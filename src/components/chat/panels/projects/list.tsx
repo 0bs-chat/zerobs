@@ -22,7 +22,6 @@ export const ProjectsList = () => {
     paginationOpts: { numItems: 20, cursor: null },
   });
 
-  const updateChatMutation = useMutation(api.chats.mutations.update);
   const removeProjectMutation = useMutation(api.projects.mutations.remove);
   const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
@@ -54,38 +53,16 @@ export const ProjectsList = () => {
           {allProjects?.page.map((project) => (
             <Card
               key={project._id}
-              className={`group flex-col relative group/card px-4 py-4 flex items-center justify-between hover:bg-accent duration-300 transition-colors gap-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer`}
+              className={`group flex-col relative group/card px-4 py-4 flex items-center justify-between hover:bg-accent duration-300 transition-colors gap-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer ${
+                selectedProjectId === project._id
+                  ? "bg-primary/20 dark:bg-primary/30"
+                  : ""
+              }`}
               onClick={() => {
-                if (chatId !== undefined && chatId !== null && chatId !== "") {
-                  if (selectedProjectId === project._id) {
-                    setSelectedProjectId(null);
-                    if (
-                      chatId !== undefined &&
-                      chatId !== null &&
-                      chatId !== ""
-                    ) {
-                      updateChatMutation({
-                        chatId,
-                        updates: {
-                          projectId: null,
-                        },
-                      });
-                    }
-                  } else {
-                    setSelectedProjectId(project._id);
-                    if (
-                      chatId !== undefined &&
-                      chatId !== null &&
-                      chatId !== ""
-                    ) {
-                      updateChatMutation({
-                        chatId,
-                        updates: {
-                          projectId: project._id,
-                        },
-                      });
-                    }
-                  }
+                if (chatId === undefined || chatId === null || chatId === "") {
+                  setSelectedProjectId(
+                    selectedProjectId === project._id ? null : project._id
+                  );
                 }
               }}
             >

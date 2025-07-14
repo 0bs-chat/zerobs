@@ -9,15 +9,22 @@ import { AddDocumentControls } from "./add-document-controls";
 import { ProjectDocumentList } from "./document-list";
 import type { ProjectDetailsProps } from "./types";
 import { selectedProjectIdAtom } from "@/store/chatStore";
-import { useSetAtom } from "jotai";
+import { useAtom } from "jotai";
+import { useParams } from "@tanstack/react-router";
+import type { Id } from "node_modules/convex/dist/esm-types/values/value";
 
 export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const project = useQuery(
     api.projects.queries.get,
     projectId ? { projectId } : "skip"
   );
+  const params = useParams({ strict: false });
+  const chatId = params.chatId as Id<"chats">;
   const updateProject = useMutation(api.projects.mutations.update);
-  const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const [selectedProjectId, setSelectedProjectId] = useAtom(
+    selectedProjectIdAtom
+  );
   const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
     updateProject({
       projectId: projectId!,
@@ -42,7 +49,37 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
             size="icon"
             className="cursor-pointer"
             onClick={() => {
-              setSelectedProjectId(null);
+              if (chatId !== undefined && chatId !== null && chatId !== "") {
+                if (selectedProjectId === project._id) {
+                  setSelectedProjectId(null);
+                  if (
+                    chatId !== undefined &&
+                    chatId !== null &&
+                    chatId !== ""
+                  ) {
+                    updateChatMutation({
+                      chatId,
+                      updates: {
+                        projectId: null,
+                      },
+                    });
+                  }
+                } else {
+                  setSelectedProjectId(project._id);
+                  if (
+                    chatId !== undefined &&
+                    chatId !== null &&
+                    chatId !== ""
+                  ) {
+                    updateChatMutation({
+                      chatId,
+                      updates: {
+                        projectId: project._id,
+                      },
+                    });
+                  }
+                }
+              }
             }}
           >
             <XIcon className="size-5" />
