@@ -1,16 +1,10 @@
---ui changes need to be made  --
+-------- todo -------------------------------------------------------------------------
+
 1. make settings page. [done]
-
-
--------- todo --------------------
-
-1. projects page.
-2. one click mcp install component(after mantra tests the mcp)
+2. projects page & rendering issues. [done]
 3. orchestrator (where it searches more and longer)
 4. regenerate n branch chat wth model selector,
 5. default mcps (gonna work on a proper jupyter for code exec, memory mcp, v0 like mcp)
 6. special ui for our mcps (mainly v0 and memory)
-
-
 
 

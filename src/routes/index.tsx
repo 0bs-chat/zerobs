@@ -12,6 +12,7 @@ export const Route = createFileRoute("/")({
 
 function RouteComponent() {
   const user = useQuery(api.auth.getUser);
+
   return (
     <>
       <Unauthenticated>

@@ -29,9 +29,15 @@ export const Route = createRootRoute({
     const { isLoading, isAuthenticated } = useConvexAuth();
 
     const publicRoutes = ["/auth"];
+
+    if (!isAuthenticated && !publicRoutes.includes(location.pathname)) {
+      return <Navigate to="/auth" />;
+    }
+
     const sidebarOpen = useAtomValue(sidebarOpenAtom);
     const setSidebarOpen = useSetAtom(sidebarOpenAtom);
     const resizePanelOpen = useAtomValue(resizePanelOpenAtom);
+
     if (isLoading) {
       return (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -40,10 +46,6 @@ export const Route = createRootRoute({
           </div>
         </ThemeProvider>
       );
-    }
-
-    if (!isAuthenticated && !publicRoutes.includes(location.pathname)) {
-      return <Navigate to="/auth" />;
     }
 
     return (
@@ -68,7 +70,7 @@ export const Route = createRootRoute({
               animate="animate"
               transition={layoutTransition}
             >
-              <AppSidebar />
+              {isAuthenticated && <AppSidebar />}
             </motion.div>
             <ResizablePanelGroup direction="horizontal">
               <ResizablePanel className="flex flex-col gap-1 p-2 pt-4">
