@@ -124,10 +124,10 @@ export const chat = action({
                 ) ?? []),
                 ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
                   ? [
-                      ...(Array.isArray(localCheckpoint.plan[0])
-                        ? localCheckpoint.plan[0].map((step) => step.step)
-                        : [localCheckpoint.plan[0].step]),
-                    ]
+                    ...(Array.isArray(localCheckpoint.plan[0])
+                      ? localCheckpoint.plan[0].map((step) => step.step)
+                      : [localCheckpoint.plan[0].step]),
+                  ]
                   : []),
               ],
             });
@@ -140,6 +140,9 @@ export const chat = action({
       const streamer = async () => {
         try {
           for await (const evt of stream) {
+            if (abort.signal.aborted) {
+              return;
+            }
             localCheckpoint = (
               await agent.getState({
                 configurable: { thread_id: chatId },
