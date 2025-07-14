@@ -15,7 +15,7 @@ interface AccordionContextType {
 }
 
 const AccordionContext = createContext<AccordionContextType | undefined>(
-  undefined
+  undefined,
 );
 
 function useAccordion() {
@@ -54,7 +54,7 @@ function Accordion({
 
   const currentValue = value !== undefined ? value : internalValue;
   const expandedItems = new Set(
-    Array.isArray(currentValue) ? currentValue : [currentValue].filter(Boolean)
+    Array.isArray(currentValue) ? currentValue : [currentValue].filter(Boolean),
   );
 
   const toggleItem = (itemValue: string) => {
@@ -119,7 +119,7 @@ function AccordionTrigger({
 }: AccordionTriggerProps) {
   const { expandedItems, toggleItem } = useAccordion();
   const accordionItem = React.useContext(AccordionItemContext);
-  
+
   if (!accordionItem) {
     throw new Error("AccordionTrigger must be used within an AccordionItem");
   }
@@ -167,7 +167,7 @@ function AccordionContent({
 }: AccordionContentProps) {
   const { expandedItems } = useAccordion();
   const accordionItem = React.useContext(AccordionItemContext);
-  
+
   if (!accordionItem) {
     throw new Error("AccordionContent must be used within an AccordionItem");
   }
@@ -185,7 +185,7 @@ function AccordionContent({
           exit="collapsed"
           variants={{
             open: { opacity: 1, height: "auto" },
-            collapsed: { opacity: 0, height: 0 }
+            collapsed: { opacity: 0, height: 0 },
           }}
           transition={{ duration: 0.2, ease: [0.04, 0.62, 0.23, 0.98] }}
           {...props}
@@ -198,10 +198,17 @@ function AccordionContent({
 }
 
 // Context for AccordionItem to pass value to children
-const AccordionItemContext = createContext<{ value: string } | undefined>(undefined);
+const AccordionItemContext = createContext<{ value: string } | undefined>(
+  undefined,
+);
 
 // Enhanced AccordionItem with context
-function AccordionItemEnhanced({ value, className, children, ...props }: AccordionItemProps) {
+function AccordionItemEnhanced({
+  value,
+  className,
+  children,
+  ...props
+}: AccordionItemProps) {
   return (
     <AccordionItemContext.Provider value={{ value }}>
       <div
@@ -216,9 +223,9 @@ function AccordionItemEnhanced({ value, className, children, ...props }: Accordi
   );
 }
 
-export { 
-  Accordion, 
-  AccordionItemEnhanced as AccordionItem, 
-  AccordionTrigger, 
-  AccordionContent 
+export {
+  Accordion,
+  AccordionItemEnhanced as AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
 };

@@ -43,6 +43,7 @@ export const create = internalAction({
           env: {
             ...(await verifyEnv(mcp.env!)),
             MCP_COMMAND: mcp.command || "",
+            HOST: "https://" + appName + ".fly.dev",
           },
           guest: { cpus: 1, memory_mb: 1024, cpu_kind: "shared" },
           services: [

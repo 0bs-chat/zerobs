@@ -44,7 +44,7 @@ export function TopNav() {
         </Button>
       </div>
       <div
-        className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent" : "border-border/20 border bg-accent/25 dark:bg-accent/35"} `}
+        className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "border-border/20 border bg-accent/25 dark:bg-accent/35"} `}
       >
         {!resizePanelOpen ? (
           <Button

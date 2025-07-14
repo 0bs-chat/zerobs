@@ -25,11 +25,15 @@ function ToolAccordion({ messageName, input, children }: ToolAccordionProps) {
           </span>
         </AccordionTrigger>
         <AccordionContent className="bg-card rounded-md p-2 border mt-2 max-h-[36rem] overflow-y-auto">
-          <h4 className="text-xs font-semibold mb-1 text-muted-foreground">Input</h4>
+          <h4 className="text-xs font-semibold mb-1 text-muted-foreground">
+            Input
+          </h4>
           <pre className="text-xs bg-input/50 p-2 rounded overflow-x-auto mb-2 whitespace-pre-wrap">
             {JSON.stringify(input, null, 2)}
           </pre>
-          <h4 className="text-xs font-semibold mb-1 text-muted-foreground">Output</h4>
+          <h4 className="text-xs font-semibold mb-1 text-muted-foreground">
+            Output
+          </h4>
           <div className="bg-input/50 rounded overflow-x-auto whitespace-pre-wrap">
             {children}
           </div>
@@ -96,7 +100,9 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
 
   // Search/Web calls render in their own specialized component
   if (parsedContent.type === "searchWeb") {
-    return <SearchResultDisplay results={parsedContent.results} input={input} />;
+    return (
+      <SearchResultDisplay results={parsedContent.results} input={input} />
+    );
   }
   if (parsedContent.type === "document") {
     return <DocumentResultDisplay results={parsedContent.results} />;

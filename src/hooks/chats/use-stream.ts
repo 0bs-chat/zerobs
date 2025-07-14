@@ -47,7 +47,7 @@ export function useStream(chatId: Id<"chats">) {
           const result = await convex.query(api.streams.queries.getChunks, {
             chatId: stream.chatId,
             lastChunkTime: lastTimeRef.current,
-            paginationOpts: { numItems: 50, cursor: null },
+            paginationOpts: { numItems: 200, cursor: null },
           });
 
           if (cancelled) return;

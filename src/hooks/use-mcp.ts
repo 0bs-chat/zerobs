@@ -8,6 +8,36 @@ export type MCPFormState = Omit<
   "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
 >;
 
+function validateMCP(mcp: MCPFormState): boolean {
+  if (!mcp.name.trim()) {
+    toast.error("MCP name is required");
+    return false;
+  }
+
+  if (mcp.type === "stdio" && !mcp.command?.trim()) {
+    toast.error("Command is required for STDIO type");
+    return false;
+  }
+
+  if (mcp.type === "http" && !mcp.url?.trim()) {
+    toast.error("URL is required for HTTP type");
+    return false;
+  }
+
+  if (mcp.type === "docker") {
+    if (!mcp.dockerImage?.trim()) {
+      toast.error("Docker image is required for Docker type");
+      return false;
+    }
+    if (!mcp.dockerPort || mcp.dockerPort <= 0) {
+      toast.error("Valid Docker port is required for Docker type");
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function useMCPs() {
   const getAllMCPs = () => {
     const mcps = useQuery(api.mcps.queries.getAll, {
@@ -28,6 +58,7 @@ export function useMCPs() {
     newMCPData: MCPFormState,
     setMcpEditDialogOpen: (open: boolean) => void,
   ) => {
+    if (!validateMCP(newMCPData)) return;
     try {
       const { command, url, dockerImage, dockerPort, env, ...rest } =
         newMCPData;
@@ -97,5 +128,6 @@ export function useMCPs() {
     toggleMCP,
     handleDelete,
     restartMCP,
+    validateMCP,
   };
 }

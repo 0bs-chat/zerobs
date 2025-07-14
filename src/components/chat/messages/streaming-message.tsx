@@ -17,9 +17,10 @@ export const StreamingMessage = memo(() => {
   const messageId = "streaming-message";
 
   const langchainMessages = useMemo(() => {
-    return streamData?.chunkGroups
-      .map((chunk, index, array) => {
-        if (chunk?.type === "ai") {
+    if (!streamData?.chunkGroups) return [];
+    return streamData.chunkGroups
+      .map((chunk) => {
+        if (chunk.type === "ai") {
           return new AIMessage({
             content: chunk.content,
             additional_kwargs: chunk.reasoning
@@ -27,39 +28,21 @@ export const StreamingMessage = memo(() => {
               : {},
           });
         }
-        if (chunk?.type === "tool") {
+        if (chunk.type === "tool") {
           if (chunk.isComplete) {
             return new LangChainToolMessage({
               content: chunk.output as string,
               name: chunk.toolName,
               tool_call_id: `streaming-tool-${chunk.toolName}`,
               additional_kwargs: {
-                input:
-                  array[index - 1]?.type === "tool" &&
-                  (array[index - 1] as any).input
-                    ? JSON.parse(
-                        JSON.stringify((array[index - 1] as any).input),
-                      )
-                    : undefined,
+                input: JSON.parse(JSON.stringify(chunk.input)),
               },
             });
-          } else {
-            // return new AIMessage({
-            //   content: "",
-            //   tool_calls: [
-            //     {
-            //       id: `streaming-tool-${chunk.toolName}`,
-            //       type: "tool_call",
-            //       name: chunk.toolName,
-            //       args: JSON.parse(JSON.stringify(chunk.input)),
-            //     },
-            //   ],
-            // });
           }
         }
-        return null;
+        return undefined;
       })
-      .filter((m): m is AIMessage | LangChainToolMessage => !!m);
+      .filter(Boolean) as (AIMessage | LangChainToolMessage)[];
   }, [streamData?.chunkGroups]);
 
   const planningSteps = useMemo(() => {

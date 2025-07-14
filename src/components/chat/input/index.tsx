@@ -100,7 +100,6 @@ export const ChatInput = () => {
           placeholder="Type a message..."
         />
       </div>
-
       <ToolBar textareaRef={textareaRef as RefObject<AutosizeTextAreaRef>} />
     </div>
   );
