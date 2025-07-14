@@ -8,10 +8,15 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, KeyIcon, Plug, Wallet2 } from "lucide-react";
+import { ArrowLeft, KeyIcon, Plug, User2Icon, Wallet2 } from "lucide-react";
 import { useEffect } from "react";
 
 const settingsNavItems = [
+  {
+    title: "Profile",
+    href: "/settings/profile",
+    icon: User2Icon,
+  },
   {
     title: "API Keys",
     href: "/settings/apiKeys",

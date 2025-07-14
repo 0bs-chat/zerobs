@@ -42,10 +42,6 @@ export const update = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    if (args.chatId === "new") {
-      return null;
-    }
-
     await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });

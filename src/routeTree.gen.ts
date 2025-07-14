@@ -13,9 +13,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
 import { Route as SettingsBillingRouteImport } from './routes/settings/billing'
 import { Route as SettingsApiKeysRouteImport } from './routes/settings/apiKeys'
+import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
 
 const SettingsRouteLazyRouteImport = createFileRoute('/settings')()
 const ChatChatIdIndexLazyRouteImport = createFileRoute('/chat/$chatId/')()
@@ -37,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsProfileRoute = SettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => SettingsRouteLazyRoute,
+} as any)
 const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
   id: '/integrations',
   path: '/integrations',
@@ -52,6 +59,11 @@ const SettingsApiKeysRoute = SettingsApiKeysRouteImport.update({
   path: '/apiKeys',
   getParentRoute: () => SettingsRouteLazyRoute,
 } as any)
+const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatChatIdIndexLazyRoute = ChatChatIdIndexLazyRouteImport.update({
   id: '/chat/$chatId/',
   path: '/chat/$chatId/',
@@ -64,18 +76,22 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/profile': typeof SettingsProfileRoute
   '/chat/$chatId': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/profile': typeof SettingsProfileRoute
   '/chat/$chatId': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRoutesById {
@@ -83,9 +99,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/settings/profile': typeof SettingsProfileRoute
   '/chat/$chatId/': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRouteTypes {
@@ -94,27 +112,33 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/settings'
+    | '/projects/$projectId'
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
+    | '/settings/profile'
     | '/chat/$chatId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/settings'
+    | '/projects/$projectId'
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
+    | '/settings/profile'
     | '/chat/$chatId'
   id:
     | '__root__'
     | '/'
     | '/auth'
     | '/settings'
+    | '/projects/$projectId'
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
+    | '/settings/profile'
     | '/chat/$chatId/'
   fileRoutesById: FileRoutesById
 }
@@ -122,6 +146,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren
+  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ChatChatIdIndexLazyRoute: typeof ChatChatIdIndexLazyRoute
 }
 
@@ -148,6 +173,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/profile': {
+      id: '/settings/profile'
+      path: '/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof SettingsProfileRouteImport
+      parentRoute: typeof SettingsRouteLazyRoute
+    }
     '/settings/integrations': {
       id: '/settings/integrations'
       path: '/integrations'
@@ -169,6 +201,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsApiKeysRouteImport
       parentRoute: typeof SettingsRouteLazyRoute
     }
+    '/projects/$projectId': {
+      id: '/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof ProjectsProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat/$chatId/': {
       id: '/chat/$chatId/'
       path: '/chat/$chatId'
@@ -183,12 +222,14 @@ interface SettingsRouteLazyRouteChildren {
   SettingsApiKeysRoute: typeof SettingsApiKeysRoute
   SettingsBillingRoute: typeof SettingsBillingRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
+  SettingsProfileRoute: typeof SettingsProfileRoute
 }
 
 const SettingsRouteLazyRouteChildren: SettingsRouteLazyRouteChildren = {
   SettingsApiKeysRoute: SettingsApiKeysRoute,
   SettingsBillingRoute: SettingsBillingRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
+  SettingsProfileRoute: SettingsProfileRoute,
 }
 
 const SettingsRouteLazyRouteWithChildren =
@@ -198,6 +239,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   SettingsRouteLazyRoute: SettingsRouteLazyRouteWithChildren,
+  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ChatChatIdIndexLazyRoute: ChatChatIdIndexLazyRoute,
 }
 export const routeTree = rootRouteImport

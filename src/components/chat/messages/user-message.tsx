@@ -49,8 +49,8 @@ export const UserMessage = memo(
     // Memoize the content rendering to avoid unnecessary calculations
     const renderedContent = useMemo(() => {
       if (Array.isArray(content)) {
-        return content.map((entry) => (
-          <>
+        return content.map((entry, idx) => (
+          <div key={entry.type === "file" ? entry.file.file_id : `text-${idx}`}>
             {entry.type === "text" ? (
               <Markdown
                 content={entry.text}
@@ -64,7 +64,7 @@ export const UserMessage = memo(
                 setDocumentDialogOpen={setDocumentDialogOpen}
               />
             ) : null}
-          </>
+          </div>
         ));
       }
       return content;

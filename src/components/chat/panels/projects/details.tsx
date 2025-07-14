@@ -18,7 +18,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const chatId = params.chatId as Id<"chats">;
   const project = useQuery(
     api.projects.queries.get,
-    projectId ? { projectId } : "skip",
+    projectId ? { projectId } : "skip"
   );
   const updateProject = useMutation(api.projects.mutations.update);
   const updateChatInput = useMutation(api.chats.mutations.update);
@@ -45,7 +45,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
             size="icon"
             className="cursor-pointer"
             onClick={() => {
-              if (chatId !== "new") {
+              if (chatId !== undefined && chatId !== null && chatId !== "") {
                 updateChatInput({
                   chatId,
                   updates: {

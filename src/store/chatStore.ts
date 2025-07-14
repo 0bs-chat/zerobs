@@ -118,3 +118,36 @@ export const allArtifactsAtom = atom((get) => {
 
   return artifacts;
 });
+
+// --------------------------------
+//   the new chat atom structure.
+// --------------------------------
+
+export const newChatTextAtom = atomWithStorage<string>("newChatText", "");
+export const newChatDocumentsAtom = atom<Id<"documents">[]>([]);
+export const newChatModelAtom = atomWithStorage<string>(
+  "newChatModel",
+  "gemini-2.5-flash"
+);
+export const newChatReasoningEffortAtom = atom<"low" | "medium" | "high">(
+  "medium"
+);
+
+// independent atoms
+export const newChatConductorModeAtom = atomWithStorage<boolean>(
+  "newChatConductorMode",
+  false
+);
+export const newChatOrchestratorModeAtom = atomWithStorage<boolean>(
+  "newChatOrchestratorMode",
+  false
+);
+export const newChatWebSearchAtom = atomWithStorage<boolean>(
+  "newChatWebSearch",
+  false
+);
+
+export const newChatArtifactsAtom = atomWithStorage<boolean>(
+  "newChatArtifacts",
+  false
+);
