@@ -24,31 +24,33 @@ import { TopNav } from "@/components/topnav";
 import { Panel } from "@/components/chat/panels";
 
 export const Route = createRootRoute({
-  component: () => {
-    const location = useLocation();
-    const { isLoading, isAuthenticated } = useConvexAuth();
+  component: RootRouteComponent,
+});
 
-    const publicRoutes = ["/auth"];
+function RootRouteComponent() {
+  const location = useLocation();
+  const { isLoading, isAuthenticated } = useConvexAuth();
 
-    if (!isAuthenticated && !publicRoutes.includes(location.pathname)) {
-      return <Navigate to="/auth" />;
-    }
+  const publicRoutes = ["/auth"];
 
-    const sidebarOpen = useAtomValue(sidebarOpenAtom);
-    const setSidebarOpen = useSetAtom(sidebarOpenAtom);
-    const resizePanelOpen = useAtomValue(resizePanelOpenAtom);
+  const sidebarOpen = useAtomValue(sidebarOpenAtom);
+  const setSidebarOpen = useSetAtom(sidebarOpenAtom);
+  const resizePanelOpen = useAtomValue(resizePanelOpenAtom);
 
-    if (isLoading) {
-      return (
+  return (
+    <>
+      {isLoading && (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <div className="flex justify-center items-center h-screen font-sans bg-background">
             <Loader2 className="w-10 h-10 animate-spin [animation-duration:0.3s]" />
           </div>
         </ThemeProvider>
-      );
-    }
+      )}
 
-    return (
+      {!isAuthenticated && !publicRoutes.includes(location.pathname) && (
+        <Navigate to="/auth" />
+      )}
+
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <motion.div
           initial={{ opacity: 0 }}
@@ -63,7 +65,7 @@ export const Route = createRootRoute({
               setSidebarOpen(!sidebarOpen);
             }}
           >
-            <TopNav />
+            {isAuthenticated && <TopNav />}
             <motion.div
               variants={slideInFromLeft}
               initial="initial"
@@ -100,6 +102,6 @@ export const Route = createRootRoute({
         </motion.div>
         <Toaster />
       </ThemeProvider>
-    );
-  },
-});
+    </>
+  );
+}
