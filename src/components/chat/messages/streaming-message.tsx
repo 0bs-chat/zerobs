@@ -3,11 +3,6 @@ import { motion, AnimatePresence } from "motion/react";
 import { AiMessageContent } from "./ai-message/ai-message";
 import { ToolMessage } from "./ai-message/tool-message";
 import { PlanningStep } from "./ai-message/planning-step";
-import {
-  AIMessage,
-  ToolMessage as LangChainToolMessage,
-  mapChatMessagesToStoredMessages,
-} from "@langchain/core/messages";
 import { useAtomValue } from "jotai";
 import { useStreamAtom } from "@/store/chatStore";
 import { streamingVariants, springTransition } from "@/lib/motion";
@@ -16,69 +11,25 @@ export const StreamingMessage = memo(() => {
   const streamData = useAtomValue(useStreamAtom);
   const messageId = "streaming-message";
 
-  const langchainMessages = useMemo(() => {
-    if (!streamData?.chunkGroups) return [];
-    return streamData.chunkGroups
-      .map((chunk) => {
-        if (chunk.type === "ai") {
-          return new AIMessage({
-            content: chunk.content,
-            additional_kwargs: chunk.reasoning
-              ? { reasoning_content: chunk.reasoning }
-              : {},
-          });
-        }
-        if (chunk.type === "tool") {
-          if (chunk.isComplete) {
-            return new LangChainToolMessage({
-              content: chunk.output as string,
-              name: chunk.toolName,
-              tool_call_id: `streaming-tool-${chunk.toolName}`,
-              additional_kwargs: {
-                input: JSON.parse(JSON.stringify(chunk.input)),
-              },
-            });
-          }
-        }
-        return undefined;
-      })
-      .filter(Boolean) as (AIMessage | LangChainToolMessage)[];
-  }, [streamData?.chunkGroups]);
-
   const planningSteps = useMemo(() => {
-    if (!streamData?.completedSteps || streamData.completedSteps.length === 0)
-      return null;
-    const message = new AIMessage({
-      content: "",
-      additional_kwargs: {
-        pastSteps: [
-          [
-            streamData.completedSteps[0],
-            mapChatMessagesToStoredMessages(langchainMessages!),
-          ],
-          ...streamData.completedSteps.slice(1).map((step) => [step, []]),
-        ],
-      },
-    });
+    if (!streamData?.planningStepsMessage) return null;
+
     return (
       <PlanningStep
-        message={message}
-        isStreaming={streamData?.status === "streaming"}
+        message={streamData.planningStepsMessage}
+        isStreaming={streamData.isStreaming}
         messageId={messageId}
       />
     );
-  }, [
-    streamData?.completedSteps,
-    langchainMessages,
-    messageId,
-    streamData?.status,
-  ]);
+  }, [streamData?.planningStepsMessage, streamData?.isStreaming, messageId]);
 
   // Regular streaming display (no planning mode)
   const regularContent = useMemo(() => {
-    return langchainMessages?.map((message, index) => {
+    if (!streamData?.langchainMessages) return [];
+
+    return streamData.langchainMessages.map((message, index) => {
       const isLastAiMessage =
-        index === langchainMessages.length - 1 && message?.getType() === "ai";
+        index === streamData.langchainMessages!.length - 1 && message?.getType() === "ai";
 
       // Use message.id if available, otherwise fallback to type+index
       const key = message.id || `${message?.getType?.() ?? "msg"}-${index}`;
@@ -103,9 +54,9 @@ export const StreamingMessage = memo(() => {
         </motion.div>
       );
     });
-  }, [langchainMessages, messageId, streamData?.status]);
+  }, [streamData?.langchainMessages, messageId, streamData?.isStreaming]);
 
-  if (streamData?.chunkGroups.length === 0) return null;
+  if (!streamData?.chunkGroups || streamData.chunkGroups.length === 0) return null;
 
   return (
     <motion.div

@@ -1,21 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useQuery, useConvex } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-
-export interface AIChunkGroup {
-  type: "ai";
-  content: string;
-  reasoning?: string;
-}
-
-export interface ToolChunkGroup {
-  type: "tool";
-  toolName: string;
-  input?: unknown;
-  output?: unknown;
-  isComplete: boolean;
-}
+import type { ToolChunkGroup, AIChunkGroup } from "../../../convex/langchain/state";
+import {
+  AIMessage,
+  ToolMessage as LangChainToolMessage,
+  mapChatMessagesToStoredMessages,
+} from "@langchain/core/messages";
 
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 
@@ -104,9 +96,61 @@ export function useStream(chatId: Id<"chats"> | "new") {
     };
   }, [convex, stream]);
 
+  // Convert chunk groups to LangChain messages
+  const langchainMessages = useMemo(() => {
+    if (!groupedChunks || groupedChunks.length === 0) return [];
+    return groupedChunks
+      .map((chunk) => {
+        if (chunk.type === "ai") {
+          return new AIMessage({
+            content: chunk.content,
+            additional_kwargs: chunk.reasoning
+              ? { reasoning_content: chunk.reasoning }
+              : {},
+          });
+        }
+        if (chunk.type === "tool") {
+          if (chunk.isComplete) {
+            return new LangChainToolMessage({
+              content: chunk.output as string,
+              name: chunk.toolName,
+              tool_call_id: `streaming-tool-${chunk.toolName}`,
+              additional_kwargs: {
+                input: JSON.parse(JSON.stringify(chunk.input)),
+              },
+            });
+          }
+        }
+        return undefined;
+      })
+      .filter(Boolean) as (AIMessage | LangChainToolMessage)[];
+  }, [groupedChunks]);
+
+  // Generate planning steps message
+  const planningStepsMessage = useMemo(() => {
+    if (!stream?.completedSteps || stream.completedSteps.length === 0)
+      return null;
+
+    return new AIMessage({
+      content: "",
+      additional_kwargs: {
+        pastSteps: [
+          [
+            stream.completedSteps[0],
+            mapChatMessagesToStoredMessages(langchainMessages),
+          ],
+          ...stream.completedSteps.slice(1).map((step) => [step, []]),
+        ],
+      },
+    });
+  }, [stream?.completedSteps, langchainMessages]);
+
   return {
     chunkGroups: groupedChunks,
     status: stream?.status,
     completedSteps: stream?.completedSteps,
+    langchainMessages,
+    planningStepsMessage,
+    isStreaming: stream?.status === "streaming",
   };
 }

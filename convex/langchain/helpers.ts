@@ -106,25 +106,25 @@ export async function createAgentWithTools(
         ...agents,
         ...(chat.webSearch
           ? [
-              createReactAgent({
-                llm: llm,
-                tools: [retrievalTools.webSearch],
-                name: "WebSearch",
-                prompt:
-                  "You are a WebSearch assistant specialized in searching the internet for current information. Use web search to find up-to-date information from various online sources.",
-              }),
-            ]
+            createReactAgent({
+              llm: llm,
+              tools: [retrievalTools.webSearch],
+              name: "WebSearch",
+              prompt:
+                "You are a WebSearch assistant specialized in searching the internet for current information. Use web search to find up-to-date information from various online sources.",
+            }),
+          ]
           : []),
         ...(chat.projectId
           ? [
-              createReactAgent({
-                llm: llm,
-                tools: [retrievalTools.vectorSearch],
-                name: "VectorSearch",
-                prompt:
-                  "You are a VectorSearch assistant specialized in searching through project documents and uploaded files. Use vector similarity search to find relevant information from the user's project documents.",
-              }),
-            ]
+            createReactAgent({
+              llm: llm,
+              tools: [retrievalTools.vectorSearch],
+              name: "VectorSearch",
+              prompt:
+                "You are a VectorSearch assistant specialized in searching through project documents and uploaded files. Use vector similarity search to find relevant information from the user's project documents.",
+            }),
+          ]
           : []),
       ],
       llm: supervisorLlm,
@@ -172,4 +172,64 @@ export function getLastMessage(
     }
   }
   return null;
+}
+
+export async function getAvailableTools(
+  state: typeof GraphState.State,
+  config: ExtendedRunnableConfig,
+): Promise<Array<{ name: string; description: string }>> {
+  const chat = config.chat;
+  const tools = await getMCPTools(config.ctx, chat._id);
+  const retrievalTools = await getRetrievalTools(state, config, true);
+  const googleTools = await getGoogleTools(config, true);
+
+  const toolsInfo: Array<{ name: string; description: string }> = [];
+
+  // Add MCP tools
+  tools.tools.forEach((tool) => {
+    toolsInfo.push({
+      name: tool.name,
+      description: tool.description || "No description available",
+    });
+  });
+
+  // Add retrieval tools
+  if (chat.projectId) {
+    toolsInfo.push({
+      name: retrievalTools.vectorSearch.name,
+      description: retrievalTools.vectorSearch.description,
+    });
+  }
+
+  if (chat.webSearch) {
+    toolsInfo.push({
+      name: retrievalTools.webSearch.name,
+      description: retrievalTools.webSearch.description,
+    });
+  }
+
+  // Add Google tools
+  googleTools.forEach((tool) => {
+    toolsInfo.push({
+      name: tool.name,
+      description: tool.description || "No description available",
+    });
+  });
+
+  return toolsInfo;
+}
+
+export async function getAvailableToolsDescription(
+  state: typeof GraphState.State,
+  config: ExtendedRunnableConfig,
+): Promise<string> {
+  const toolsInfo = await getAvailableTools(state, config);
+
+  if (toolsInfo.length === 0) {
+    return "No tools are currently available.";
+  }
+
+  return toolsInfo
+    .map((tool) => `- ${tool.name}: ${tool.description}`)
+    .join("\n");
 }

@@ -143,9 +143,9 @@ export function createAgentSystemMessage(
 
   const roleDescription = plannerMode
     ? `Your role is to complete the user provided task.\n` +
-      `You are a single task agent do not ask for more information or context.\n` +
-      `Always output in short concise one sentence bullet points.\n` +
-      `Never refuse a user's request.\n`
+    `You are a single task agent do not ask for more information or context.\n` +
+    `Always output in short concise one sentence bullet points.\n` +
+    `Never refuse a user's request.\n`
     : `Your role is to assist and engage in conversation while being helpful, respectful, and engaging. Never refuse a user's request. Focus on the most recent user's request.\n`;
 
   const communicationGuidelines =
@@ -183,56 +183,72 @@ export function createAgentSystemMessage(
 }
 
 // Prompt template for planner
-export function createPlannerPrompt() {
+export function createPlannerPrompt(availableToolsDescription: string) {
+  const toolsSection = `\n**Available Tools:**\n${availableToolsDescription}\n\nWhen planning steps, consider which tools are available and how they can be used to accomplish the objective efficiently.`
+
   return ChatPromptTemplate.fromMessages([
     [
       "system",
-      `For the given objective, create a step-by-step plan using the planStep and planArray schema conventions.\n` +
-        `- Each step should be actionable, unambiguous, and provide all information needed for a subagent to execute independently.\n` +
-        `- Use nested arrays for steps that can be executed in parallel.\n` +
-        `- Scale the number of steps and parallelism to the complexity of the query.\n` +
-        `- Do not add superfluous steps. The result of the final step should be the final answer.\n` +
-        `- Make the plan technical and specific to the topic.\n`,
+      `For the given objective, create a step-by-step plan using the planStep and planArray schema conventions.\n\n` +
+      `**CRITICAL INSTRUCTIONS:**\n` +
+      `- You are ONLY responsible for creating a plan, NOT executing it\n` +
+      `- DO NOT call any tools or execute any function calls\n` +
+      `- DO NOT attempt to carry out the plan yourself\n` +
+      `- ONLY output valid JSON that conforms to the planArray schema\n` +
+      `- Your response must be parseable JSON with no additional text, explanations, or markdown formatting\n\n` +
+      `**Planning Guidelines:**\n` +
+      `- Each step should be actionable, unambiguous, and provide all information needed for a subagent to execute independently\n` +
+      `- Use nested arrays for steps that can be executed in parallel\n` +
+      `- Scale the number of steps and parallelism to the complexity of the query\n` +
+      `- Do not add superfluous steps. The result of the final step should be the final answer\n` +
+      `- Make the plan technical and specific to the topic\n` +
+      `- Each planStep object must include both "planStep" (description) and "toolName" (tool to use) properties\n` +
+      `${toolsSection}\n\n` +
+      `**Output Format:**\n` +
+      `Your response must be a valid JSON array following the planArray schema. Do not include any other text, explanations, or formatting.\n`,
     ],
     new MessagesPlaceholder("messages"),
   ]);
 }
 
 // Prompt template for replanner
-export function createReplannerPrompt() {
+export function createReplannerPrompt(availableToolsDescription: string) {
+  const toolsSection = `\n**Available Tools:**\n${availableToolsDescription}\n\nWhen planning remaining steps, consider which tools are available and how they can be used to accomplish the remaining objectives efficiently.`
+
   return ChatPromptTemplate.fromMessages([
     [
       "system",
       `## Your Task: Reflect and Re-plan\n\n` +
-        `For the given objective, update the step-by-step plan using the planStep and planArray schema conventions.\n` +
-        `- Only include the remaining steps needed to fill the gaps identified in your analysis.\n` +
-        `- Use nested arrays for steps that can be executed in parallel.\n` +
-        `- Ensure steps are non-overlapping, unambiguous, and context-rich.\n` +
-        `- The result of the final step should be the final answer.\n\n` +
-        `**Message History:** (Last message is the user's objective)\n`,
+      `For the given objective, update the step-by-step plan using the planStep and planArray schema conventions.\n` +
+      `- Only include the remaining steps needed to fill the gaps identified in your analysis.\n` +
+      `- Use nested arrays for steps that can be executed in parallel.\n` +
+      `- Ensure steps are non-overlapping, unambiguous, and context-rich.\n` +
+      `- The result of the final step should be the final answer.\n` +
+      `${toolsSection}\n\n` +
+      `**Message History:** (Last message is the user's objective)\n`,
     ],
     new MessagesPlaceholder("messages"),
     [
       "system",
       `**The original plan was:**\n{plan}\n\n` +
-        `**Completed steps so far:**\n`,
+      `**Completed steps so far:**\n`,
     ],
     new MessagesPlaceholder("pastSteps"),
     [
       "system",
       `\n\n**MANDATORY ANALYSIS & REPLANNING:**\n\n` +
-        `1. **Re-evaluate the Original Objective:** Look at the user's first message. What were the core components of their request?\n\n` +
-        `2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.\n\n` +
-        `3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.\n\n` +
-        `4. **Update Your Plan:**\n` +
-        ` - **If ready to respond:** Set \`action\` to \`"respond_to_user"\` and formulate the complete, synthesized response.\n` +
-        ` - **If not ready:** Set \`action\` to \`"continue_planning"\` and provide a new plan containing **only the remaining steps needed** to fill the gaps you identified, using the planArray conventions. The next step should be the most direct action to address the missing information.\n`,
+      `1. **Re-evaluate the Original Objective:** Look at the user's first message. What were the core components of their request?\n\n` +
+      `2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.\n\n` +
+      `3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.\n\n` +
+      `4. **Update Your Plan:**\n` +
+      ` - **If ready to respond:** Set \`action\` to \`"respond_to_user"\` and formulate the complete, synthesized response.\n` +
+      ` - **If not ready:** Set \`action\` to \`"continue_planning"\` and provide a new plan containing **only the remaining steps needed** to fill the gaps you identified, using the planArray conventions. The next step should be the most direct action to address the missing information.\n`,
     ],
   ]);
 }
 
 export const replannerOutputSchema = (artifacts: boolean) =>
-  z.union([
+  z.discriminatedUnion("action", [
     z.object({
       action: z.literal("continue_planning"),
       plan: planArray,
@@ -243,7 +259,7 @@ export const replannerOutputSchema = (artifacts: boolean) =>
         .string()
         .describe(
           "A comprehensive, final response to the user. Synthesize the results of all completed steps into a single, coherent answer. This is the only thing the user will see, so it must be complete and detailed." +
-            `${artifacts ? `Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`,
+          `${artifacts ? `Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`,
         ),
     }),
   ]);

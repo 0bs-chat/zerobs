@@ -5,6 +5,7 @@ import {
   type ExtendedRunnableConfig,
   createSimpleAgent,
   createAgentWithTools,
+  getAvailableToolsDescription,
 } from "./helpers";
 import { type CompletedStep, GraphState, planSchema } from "./state";
 import { modelSupportsTools, formatMessages, getModel } from "./models";
@@ -91,7 +92,8 @@ async function baseAgent(
 
 async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
-  const promptTemplate = createPlannerPrompt();
+  const availableToolsDescription = await getAvailableToolsDescription(state, formattedConfig);
+  const promptTemplate = createPlannerPrompt(availableToolsDescription);
   const modelWithOutputParser = promptTemplate.pipe(
     (
       await getModel(
@@ -141,12 +143,12 @@ async function plannerAgent(
   );
 
   const invoke = async ({ planItem }: { planItem: typeof currentPlanItem }) => {
-    if (!Array.isArray(planItem)) {
+    if (planItem.type === "single") {
       const response = await plannerAgentChain.invoke(
         {
           messages: [
             new HumanMessage(
-              `Task: ${planItem.step}\nContext: ${planItem.context}`,
+              `Task: ${planItem.data.step}\nContext: ${planItem.data.context}`,
             ),
           ],
         },
@@ -154,13 +156,13 @@ async function plannerAgent(
       );
 
       const newMessages = response.messages.slice(1, response.messages.length);
-      const completedStep: CompletedStep = [planItem.step, newMessages];
+      const completedStep: CompletedStep = [planItem.data.step, newMessages];
 
       return completedStep;
     }
   };
 
-  if (!Array.isArray(currentPlanItem)) {
+  if (currentPlanItem.type === "single") {
     const response = await invoke({
       planItem: currentPlanItem,
     });
@@ -169,11 +171,11 @@ async function plannerAgent(
       plan: remainingPlan,
       pastSteps: [...pastSteps, response],
     };
-  } else {
+  } else if (currentPlanItem.type === "parallel") {
     const responses = await Promise.all(
-      currentPlanItem.map(async (planItem) => {
+      currentPlanItem.data.map(async (planStep) => {
         return await invoke({
-          planItem,
+          planItem: { type: "single" as const, data: planStep },
         });
       }),
     );
@@ -190,7 +192,8 @@ async function replanner(
   config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
-  const promptTemplate = createReplannerPrompt();
+  const availableToolsDescription = await getAvailableToolsDescription(state, formattedConfig);
+  const promptTemplate = createReplannerPrompt(availableToolsDescription);
   const modelWithOutputParser = promptTemplate.pipe(
     (
       await getModel(
