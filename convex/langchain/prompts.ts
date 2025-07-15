@@ -6,7 +6,7 @@ import {
 import { z } from "zod";
 import { planArray } from "./state";
 
-const artifactsGuidelines =
+export const artifactsGuidelines =
   `## Artifacts\n` +
   `### **1. Artifact Generation Framework**\n` +
   `You have the ability to create rich, interactive "Artifacts" (also known as Canvases or Immersive Documents). These are self-contained blocks of content like code, documents, or visual applications.\n\n` +
@@ -198,11 +198,12 @@ export function createPlannerPrompt(availableToolsDescription: string) {
       `- Your response must be parseable JSON with no additional text, explanations, or markdown formatting\n\n` +
       `**Planning Guidelines:**\n` +
       `- Each step should be actionable, unambiguous, and provide all information needed for a subagent to execute independently\n` +
-      `- Use nested arrays for steps that can be executed in parallel\n` +
+      `- Use the discriminated union format with nested arrays for parallel execution\n` +
       `- Scale the number of steps and parallelism to the complexity of the query\n` +
       `- Do not add superfluous steps. The result of the final step should be the final answer\n` +
       `- Make the plan technical and specific to the topic\n` +
-      `- Each planStep object must include both "planStep" (description) and "toolName" (tool to use) properties\n` +
+      `- Each planStep object must include both "step" (short instruction) and "context" (detailed explanation) properties\n` +
+      `- Use the discriminated union format: {{ type: "single", data: planStep }} for single steps or {{ type: "parallel", data: planStep[] }} for parallel execution\n` +
       `${toolsSection}\n\n` +
       `**Output Format:**\n` +
       `Your response must be a valid JSON array following the planArray schema. Do not include any other text, explanations, or formatting.\n`,
@@ -221,7 +222,7 @@ export function createReplannerPrompt(availableToolsDescription: string) {
       `## Your Task: Reflect and Re-plan\n\n` +
       `For the given objective, update the step-by-step plan using the planStep and planArray schema conventions.\n` +
       `- Only include the remaining steps needed to fill the gaps identified in your analysis.\n` +
-      `- Use nested arrays for steps that can be executed in parallel.\n` +
+      `- Use the discriminated union format with nested arrays for parallel execution.\n` +
       `- Ensure steps are non-overlapping, unambiguous, and context-rich.\n` +
       `- The result of the final step should be the final answer.\n` +
       `${toolsSection}\n\n` +
@@ -241,21 +242,21 @@ export function createReplannerPrompt(availableToolsDescription: string) {
       `2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.\n\n` +
       `3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.\n\n` +
       `4. **Update Your Plan:**\n` +
-      ` - **If ready to respond:** Set \`action\` to \`"respond_to_user"\` and formulate the complete, synthesized response.\n` +
-      ` - **If not ready:** Set \`action\` to \`"continue_planning"\` and provide a new plan containing **only the remaining steps needed** to fill the gaps you identified, using the planArray conventions. The next step should be the most direct action to address the missing information.\n`,
+      ` - **If ready to respond:** Set {{ action: "respond_to_user", data: <<response>> }} and formulate the complete, synthesized response.\n` +
+      ` - **If not ready:** Set {{ action: "continue_planning", data: <<newPlan>> }} and provide a new plan containing **only the remaining steps needed** to fill the gaps you identified, using the planArray conventions with the discriminated union format: {{ type: "single", data: planStep }} for single steps or {{ type: "parallel", data: planStep[] }} for parallel execution. The next step should be the most direct action to address the missing information.\n`,
     ],
   ]);
 }
 
 export const replannerOutputSchema = (artifacts: boolean) =>
-  z.discriminatedUnion("action", [
+  z.discriminatedUnion("type", [
     z.object({
-      action: z.literal("continue_planning"),
-      plan: planArray,
+      type: z.literal("continue_planning"),
+      data: planArray,
     }),
     z.object({
-      action: z.literal("respond_to_user"),
-      response: z
+      type: z.literal("respond_to_user"),
+      data: z
         .string()
         .describe(
           "A comprehensive, final response to the user. Synthesize the results of all completed steps into a single, coherent answer. This is the only thing the user will see, so it must be complete and detailed." +
