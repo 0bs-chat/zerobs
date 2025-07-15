@@ -23,8 +23,6 @@ export const createProjectDialogOpenAtom = atom(false);
 
 export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", false);
 
-export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
-
 export const groupedMessagesAtom = atom<
   ReturnType<typeof groupMessages> | undefined
 >(undefined);
@@ -131,5 +129,10 @@ export const newChatArtifactsAtom = atomWithStorage<boolean>(
 
 export const selectedProjectIdAtom = atomWithStorage<Id<"projects"> | null>(
   "selectedProjectId",
+  null
+);
+
+export const selectedArtifactAtom = atomWithStorage<Artifact | null>(
+  "selectedArtifact",
   null
 );

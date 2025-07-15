@@ -46,7 +46,7 @@ export const ArtifactsPanel = () => {
   }, [selectedArtifact, memoizedArtifacts]);
 
   const handleCloseViewer = () => {
-    setSelectedArtifact(undefined);
+    setSelectedArtifact(null);
   };
 
   if (artifactToView) {

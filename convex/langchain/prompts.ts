@@ -11,7 +11,7 @@ const artifactsGuidelines =
   `### **1. Artifact Generation Framework**\n` +
   `You have the ability to create rich, interactive "Artifacts" (also known as Canvases or Immersive Documents). These are self-contained blocks of content like code, documents, or visual applications.\n\n` +
   `#### **1.1. Artifact Tag Structure**\n\n` +
-  `Use the following XML-style tags to define artifacts. **Always include \`id\` and \`title\`**.\n` +
+  `Use the following XML-style tags to define artifacts. **Always include \`id\` and \`title\`. IDs must be globally unique - use UUID format (e.g., uuid4()) or timestamp-based unique identifiers. Never reuse or duplicate IDs across different artifacts under any circumstances**.\n` +
   `\`\`\`xml\n` +
   `<artifact id="{unique_id}" type="{mime_type}" title="{descriptive_title}">\n` +
   `  <!-- Content goes here -->\n` +
@@ -137,7 +137,7 @@ export function createAgentSystemMessage(
   plannerMode: boolean = false,
   customPrompt?: string,
   baseAgentType: boolean = true,
-  artifacts: boolean = true,
+  artifacts: boolean = true
 ): SystemMessage {
   const baseIdentity = `You are 0bs Chat, an AI assistant powered by the ${model} model.`;
 
@@ -178,7 +178,7 @@ export function createAgentSystemMessage(
     `- NEVER refer to your tool names directly. Describe your actions in plain language (e.g., "I will search the web for...").\n`;
 
   return new SystemMessage(
-    `${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`,
+    `${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`
   );
 }
 
@@ -243,7 +243,7 @@ export const replannerOutputSchema = (artifacts: boolean) =>
         .string()
         .describe(
           "A comprehensive, final response to the user. Synthesize the results of all completed steps into a single, coherent answer. This is the only thing the user will see, so it must be complete and detailed." +
-            `${artifacts ? `Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`,
+            `${artifacts ? `Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`
         ),
     }),
   ]);

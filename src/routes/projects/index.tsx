@@ -1,8 +1,8 @@
 import { chatMessageVariants, layoutTransition } from "@/lib/motion";
-import { createLazyFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "motion/react";
 
-export const Route = createLazyFileRoute("/projects")({
+export const Route = createFileRoute("/projects/")({
   component: RouteComponent,
 });
 
