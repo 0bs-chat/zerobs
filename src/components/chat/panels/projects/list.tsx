@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ExternalLinkIcon, Folder, PlusIcon, TrashIcon } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useNavigate, useParams } from "@tanstack/react-router";
@@ -13,14 +13,13 @@ import {
   resizePanelOpenAtom,
 } from "@/store/chatStore";
 import { CreateProjectDialog } from "@/components/chat/panels/projects/create-project-dialog";
+import { useProjects } from "@/hooks/use-projects";
 
 export const ProjectsList = () => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const navigate = useNavigate();
-  const allProjects = useQuery(api.projects.queries.getAll, {
-    paginationOpts: { numItems: 20, cursor: null },
-  });
+  const { projects: allProjects } = useProjects(20);
 
   const removeProjectMutation = useMutation(api.projects.mutations.remove);
   const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
