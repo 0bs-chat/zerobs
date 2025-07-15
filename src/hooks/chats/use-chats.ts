@@ -9,7 +9,7 @@ import { useEffect, useState, type RefObject } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import {
   lastChatMessageAtom,
   newChatModelAtom,
@@ -20,6 +20,7 @@ import {
   newChatArtifactsAtom,
   newChatReasoningEffortAtom,
   selectedProjectIdAtom,
+  newChatTextAtom,
 } from "@/store/chatStore";
 import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
 
@@ -40,6 +41,7 @@ export const useHandleSubmit = () => {
   const sendAction = useAction(api.langchain.index.chat);
   const navigate = useNavigate();
   const lastChatMessage = useAtomValue(lastChatMessageAtom);
+  const setNewChatText = useSetAtom(newChatTextAtom);
 
   const handleSubmit = async (
     chatId: Id<"chats">,
@@ -70,6 +72,7 @@ export const useHandleSubmit = () => {
         parentId: null,
       });
       textareaRef.current.textArea.value = "";
+      setNewChatText("");
       navigate({
         to: "/chat/$chatId",
         params: { chatId: newChatId },
@@ -87,6 +90,7 @@ export const useHandleSubmit = () => {
         parentId: lastChatMessage ?? null,
       });
       textareaRef.current.textArea.value = "";
+      setNewChatText("");
       await sendAction({ chatId: chatId });
     }
   };

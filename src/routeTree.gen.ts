@@ -20,6 +20,7 @@ import { Route as SettingsApiKeysRouteImport } from './routes/settings/apiKeys'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
 
 const SettingsRouteLazyRouteImport = createFileRoute('/settings')()
+const ProjectsRouteLazyRouteImport = createFileRoute('/projects')()
 const ChatChatIdIndexLazyRouteImport = createFileRoute('/chat/$chatId/')()
 
 const SettingsRouteLazyRoute = SettingsRouteLazyRouteImport.update({
@@ -28,6 +29,13 @@ const SettingsRouteLazyRoute = SettingsRouteLazyRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
   import('./routes/settings/route.lazy').then((d) => d.Route),
+)
+const ProjectsRouteLazyRoute = ProjectsRouteLazyRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/projects/route.lazy').then((d) => d.Route),
 )
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -60,9 +68,9 @@ const SettingsApiKeysRoute = SettingsApiKeysRouteImport.update({
   getParentRoute: () => SettingsRouteLazyRoute,
 } as any)
 const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
-  id: '/projects/$projectId',
-  path: '/projects/$projectId',
-  getParentRoute: () => rootRouteImport,
+  id: '/$projectId',
+  path: '/$projectId',
+  getParentRoute: () => ProjectsRouteLazyRoute,
 } as any)
 const ChatChatIdIndexLazyRoute = ChatChatIdIndexLazyRouteImport.update({
   id: '/chat/$chatId/',
@@ -75,6 +83,7 @@ const ChatChatIdIndexLazyRoute = ChatChatIdIndexLazyRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/projects': typeof ProjectsRouteLazyRouteWithChildren
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
@@ -86,6 +95,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/projects': typeof ProjectsRouteLazyRouteWithChildren
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
@@ -98,6 +108,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/projects': typeof ProjectsRouteLazyRouteWithChildren
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/projects'
     | '/settings'
     | '/projects/$projectId'
     | '/settings/apiKeys'
@@ -122,6 +134,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/projects'
     | '/settings'
     | '/projects/$projectId'
     | '/settings/apiKeys'
@@ -133,6 +146,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth'
+    | '/projects'
     | '/settings'
     | '/projects/$projectId'
     | '/settings/apiKeys'
@@ -145,8 +159,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  ProjectsRouteLazyRoute: typeof ProjectsRouteLazyRouteWithChildren
   SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren
-  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ChatChatIdIndexLazyRoute: typeof ChatChatIdIndexLazyRoute
 }
 
@@ -157,6 +171,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -203,10 +224,10 @@ declare module '@tanstack/react-router' {
     }
     '/projects/$projectId': {
       id: '/projects/$projectId'
-      path: '/projects/$projectId'
+      path: '/$projectId'
       fullPath: '/projects/$projectId'
       preLoaderRoute: typeof ProjectsProjectIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ProjectsRouteLazyRoute
     }
     '/chat/$chatId/': {
       id: '/chat/$chatId/'
@@ -217,6 +238,17 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface ProjectsRouteLazyRouteChildren {
+  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
+}
+
+const ProjectsRouteLazyRouteChildren: ProjectsRouteLazyRouteChildren = {
+  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
+}
+
+const ProjectsRouteLazyRouteWithChildren =
+  ProjectsRouteLazyRoute._addFileChildren(ProjectsRouteLazyRouteChildren)
 
 interface SettingsRouteLazyRouteChildren {
   SettingsApiKeysRoute: typeof SettingsApiKeysRoute
@@ -238,8 +270,8 @@ const SettingsRouteLazyRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  ProjectsRouteLazyRoute: ProjectsRouteLazyRouteWithChildren,
   SettingsRouteLazyRoute: SettingsRouteLazyRouteWithChildren,
-  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ChatChatIdIndexLazyRoute: ChatChatIdIndexLazyRoute,
 }
 export const routeTree = rootRouteImport

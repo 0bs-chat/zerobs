@@ -2,12 +2,13 @@
 
 1. make settings page. [done]
 2. projects page & rendering issues. [done]
-3. artifacts bug + projects page
-4. add opening and closing animations to planner step accordion.
-5. better model selector.
-5. add more models.
-5. auto upload images if user pastes from clipboard + allow attaching/removing files as well in the user edit mode.
-6. orchestrator (where it searches more and longer)
-7. regenerate n branch chat wth model selector.
-8. default mcps (gonna work on a proper jupyter for code exec, memory mcp, v0 like mcp)
-9. special ui for our mcps (mainly v0 and memory)
+3. artifacts bug + projects page.
+4. uploaded files not getting shown.
+5. add opening and closing animations to planner step accordion.
+6. better model selector.
+7. add more models.
+8. auto upload images if user pastes from clipboard + allow attaching/removing files as well in the user edit mode.
+9. orchestrator (where it searches more and longer)
+10. regenerate n branch chat wth model selector.
+11. default mcps (gonna work on a proper jupyter for code exec, memory mcp, v0 like mcp)
+12. special ui for our mcps (mainly v0 and memory)

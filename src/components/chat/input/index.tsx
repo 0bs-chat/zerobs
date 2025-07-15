@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { newChatDocumentsAtom, newChatTextAtom } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
@@ -28,7 +28,7 @@ export const ChatInput = () => {
   const handleSubmit = useHandleSubmit();
   const { scrollToBottom, isAtBottom } = useScroll();
 
-  const [newChatText, setNewChatText] = useAtom(newChatTextAtom);
+  const setNewChatText = useSetAtom(newChatTextAtom);
   const [newChatDocuments] = useAtom(newChatDocumentsAtom);
 
   const debouncedUpdateChatMutation = useDebouncedCallback((text: string) => {
@@ -72,7 +72,6 @@ export const ChatInput = () => {
           maxHeight={192}
           minHeight={56}
           ref={textareaRef}
-          defaultValue={newChatText}
           className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
           onChange={(e) => {
             if (chatId === undefined || chatId === null || chatId === "") {
