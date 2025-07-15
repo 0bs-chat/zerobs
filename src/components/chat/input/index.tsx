@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { newChatDocumentsAtom, newChatTextAtom } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
@@ -23,12 +23,13 @@ import { smoothTransition } from "@/lib/motion";
 export const ChatInput = () => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
+
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const textareaRef = useRef<AutosizeTextAreaRef>(null);
   const handleSubmit = useHandleSubmit();
   const { scrollToBottom, isAtBottom } = useScroll();
 
-  const [newChatText, setNewChatText] = useAtom(newChatTextAtom);
+  const setNewChatText = useSetAtom(newChatTextAtom);
   const [newChatDocuments] = useAtom(newChatDocumentsAtom);
 
   const debouncedUpdateChatMutation = useDebouncedCallback((text: string) => {
@@ -72,13 +73,13 @@ export const ChatInput = () => {
           maxHeight={192}
           minHeight={56}
           ref={textareaRef}
-          defaultValue={newChatText}
           className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
-          onChange={(e) => {
-            if (chatId === undefined || chatId === null || chatId === "") {
-              setNewChatText(e.target.value);
-            } else {
-              if (textareaRef?.current) {
+          onChange={() => {
+            if (textareaRef?.current) {
+              if (chatId === undefined || chatId === null || chatId === "") {
+                setNewChatText(textareaRef?.current?.textArea.value as string);
+              } else {
+                setNewChatText(textareaRef?.current?.textArea.value as string);
                 debouncedUpdateChatMutation(textareaRef.current.textArea.value);
               }
             }

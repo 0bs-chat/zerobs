@@ -15,9 +15,8 @@ import {
 } from "@/store/github";
 import type { RepoItem } from "@/hooks/github/types";
 import { toast } from "sonner";
-import { memo } from "react";
 
-const FileTree = memo(() => {
+const FileTree = () => {
   const { items, stats } = useAtomValue(githubCombinedItemsAtom);
   const isLoading = useAtomValue(githubIsLoadingAtom);
   const hasError = useAtomValue(githubHasErrorAtom);
@@ -151,6 +150,6 @@ const FileTree = memo(() => {
       </ScrollArea>
     </div>
   );
-});
+};
 
 export default FileTree;

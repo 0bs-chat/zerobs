@@ -12,7 +12,7 @@ import {
 } from "@/store/chatStore";
 import { useRemoveDocument } from "@/hooks/use-documents";
 import { getTagInfo } from "@/lib/helpers";
-import React, { useCallback } from "react";
+import { memo, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { models } from "../../../../convex/langchain/models";
 import mime from "mime";
@@ -24,7 +24,7 @@ type DocumentBadgeProps = {
   modalities?: string[];
 };
 
-const DocumentBadge = React.memo(
+const DocumentBadge = memo(
   ({ doc, onPreview, onRemove, modalities }: DocumentBadgeProps) => {
     // Map file extensions to tags so loader logic recognizes supported modalities.
     let resolvedTag: string = doc.type;
