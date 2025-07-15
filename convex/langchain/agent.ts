@@ -7,7 +7,7 @@ import {
   createAgentWithTools,
   getAvailableToolsDescription,
 } from "./helpers";
-import { type CompletedStep, GraphState, planSchema } from "./state";
+import { type CompletedStep, GraphState, planSchema, planArray } from "./state";
 import { modelSupportsTools, formatMessages, getModel, models } from "./models";
 import {
   BaseMessage,
@@ -103,10 +103,10 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
 
   // Get model config to check if it's anthropic
   const modelConfig = models.find((m) => m.model_name === formattedConfig.chat.model!);
-  const isAnthropic = modelConfig?.parser === "anthropic";
+  const isFunctionCallingParser = modelConfig?.parser === "functionCalling";
 
   const modelWithOutputParser = promptTemplate.pipe(
-    isAnthropic
+    isFunctionCallingParser
       ? model.withStructuredOutput(planSchema, { method: "functionCalling" })
       : model.withStructuredOutput(planSchema)
   );
@@ -209,13 +209,13 @@ async function replanner(
   );
 
   // Get model config to check if it's anthropic
+  const outputSchema = replannerOutputSchema(formattedConfig.chat.artifacts)
   const modelConfig = models.find((m) => m.model_name === formattedConfig.chat.model!);
-  const isAnthropic = modelConfig?.parser === "anthropic";
-
+  const isFunctionCallingParser = modelConfig?.parser === "functionCalling";
   const modelWithOutputParser = promptTemplate.pipe(
-    isAnthropic
-      ? model.withStructuredOutput(replannerOutputSchema(formattedConfig.chat.artifacts), { method: "functionCalling" })
-      : model.withStructuredOutput(replannerOutputSchema(formattedConfig.chat.artifacts))
+    isFunctionCallingParser
+      ? model.withStructuredOutput(outputSchema, { method: "functionCalling" })
+      : model.withStructuredOutput(outputSchema),
   );
 
   const formattedMessages = await formatMessages(
@@ -237,12 +237,12 @@ async function replanner(
         .flat(),
     },
     config,
-  )) as z.infer<ReturnType<typeof replannerOutputSchema>>;
+  )) as z.infer<typeof outputSchema>;
 
-  if (response.action === "respond_to_user") {
+  if (response.type === "respond_to_user") {
     const responseMessages = [
       new AIMessage({
-        content: response.response,
+        content: response.data as string,
         additional_kwargs: {
           pastSteps: state.pastSteps.map((pastStep) => {
             const [step, messages] = pastStep;
@@ -257,9 +257,9 @@ async function replanner(
       plan: [],
       pastSteps: [],
     };
-  } else if (response.action === "continue_planning") {
+  } else if (response.type === "continue_planning") {
     return {
-      plan: response.plan,
+      plan: response.data as z.infer<typeof planArray>,
     };
   } else {
     throw new Error("Invalid response from replanner");

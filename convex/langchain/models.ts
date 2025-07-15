@@ -31,7 +31,7 @@ export const models: {
   hidden?: boolean;
   type?: "chat" | "embeddings";
   temperature?: number;
-  parser?: "base" | "anthropic"
+  parser?: "base" | "functionCalling"
 }[] = [
     {
       label: "Gemini 2.5 Flash",
@@ -47,6 +47,7 @@ export const models: {
         "Gemini 2.5 Flash is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
       usageRateMultiplier: 1.0,
       temperature: 0.5,
+      parser: "functionCalling",
     },
     {
       label: "Gemini 2.5 Flash Thinking",
@@ -62,6 +63,7 @@ export const models: {
         "Gemini 2.5 Flash Thinking is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
       usageRateMultiplier: 1.0,
       temperature: 0.5,
+      parser: "functionCalling",
     },
     {
       label: "Gemini 2.5 Pro",
@@ -77,6 +79,7 @@ export const models: {
         "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
       usageRateMultiplier: 1.5,
       temperature: 0.5,
+      parser: "functionCalling",
     },
     {
       label: "GPT-4.1",
@@ -134,7 +137,7 @@ export const models: {
         "Claude 4 is a versatile model that excels in various text and image processing tasks.",
       usageRateMultiplier: 2.0,
       temperature: 0.5,
-      parser: "anthropic",
+      parser: "functionCalling",
     },
     {
       label: "Worker",
@@ -151,6 +154,7 @@ export const models: {
       usageRateMultiplier: 1.0,
       hidden: true,
       temperature: 0.5,
+      parser: "functionCalling",
     },
     {
       label: "Deepseek R1",
