@@ -7,4 +7,3 @@
 5. regenerate n branch chat wth model selector.
 6. default mcps (gonna work on a proper jupyter for code exec, memory mcp, v0 like mcp)
 7. special ui for our mcps (mainly v0 and memory)
-

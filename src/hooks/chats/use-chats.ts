@@ -8,85 +8,86 @@ import { api } from "../../../convex/_generated/api";
 import { useEffect, useState, type RefObject } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
-import { useAtom, useAtomValue } from "jotai";
-import { lastChatMessageAtom, newChatAtom } from "@/store/chatStore";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { useAtomValue } from "jotai";
+import {
+  lastChatMessageAtom,
+  newChatModelAtom,
+  newChatDocumentsAtom,
+  newChatWebSearchAtom,
+  newChatConductorModeAtom,
+  newChatOrchestratorModeAtom,
+  newChatArtifactsAtom,
+  newChatReasoningEffortAtom,
+  selectedProjectIdAtom,
+} from "@/store/chatStore";
 import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
 
 export const useHandleSubmit = () => {
   const createMessageMutation = useMutation(api.chatMessages.mutations.create);
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const createChatMutation = useMutation(api.chats.mutations.create);
-  const [newChat, setNewChat] = useAtom(newChatAtom);
+
+  // new chat atoms
+  const newChatDocuments = useAtomValue(newChatDocumentsAtom);
+  const newChatModel = useAtomValue(newChatModelAtom);
+  const newChatReasoningEffort = useAtomValue(newChatReasoningEffortAtom);
+  const newChatConductorMode = useAtomValue(newChatConductorModeAtom);
+  const newChatOrchestratorMode = useAtomValue(newChatOrchestratorModeAtom);
+  const newChatWebSearch = useAtomValue(newChatWebSearchAtom);
+  const newChatArtifacts = useAtomValue(newChatArtifactsAtom);
+  const selectedProjectId = useAtomValue(selectedProjectIdAtom);
   const sendAction = useAction(api.langchain.index.chat);
   const navigate = useNavigate();
   const lastChatMessage = useAtomValue(lastChatMessageAtom);
 
   const handleSubmit = async (
-    chat: Doc<"chats">,
-    textareaRef: RefObject<AutosizeTextAreaRef | null>,
+    chatId: Id<"chats">,
+    textareaRef: RefObject<AutosizeTextAreaRef>
   ) => {
-    try {
-      if (textareaRef?.current) {
-        textareaRef.current.textArea.value = "";
-      }
-      if (chat._id === "new") {
-        setNewChat((prev) => ({
-          ...prev,
-          text: "",
-          documents: [],
-          projectId: null,
-          orchestratorMode: false,
-          webSearch: false,
-          artifacts: false,
-          conductorMode: false,
-        }));
-        chat._id = await createChatMutation({
-          name: chat.name,
-          model: chat.model,
-          reasoningEffort: chat.reasoningEffort,
-          projectId: chat.projectId,
-          conductorMode: chat.conductorMode,
-          orchestratorMode: chat.orchestratorMode,
-          webSearch: chat.webSearch,
-          artifacts: chat.artifacts,
-        });
-        await createMessageMutation({
-          chatId: chat._id,
-          documents: chat.documents,
-          text: chat.text,
-          parentId: null,
-        });
-        navigate({
-          to: "/chat/$chatId",
-          params: { chatId: chat._id },
-        });
-        await sendAction({ chatId: chat._id });
-      } else {
-        await updateChatMutation({
-          chatId: chat._id,
-          updates: { text: "", documents: [] },
-        });
-        await createMessageMutation({
-          chatId: chat._id,
-          documents: chat.documents,
-          text: newChat.text !== "" ? newChat.text : chat.text,
-          parentId: lastChatMessage ?? null,
-        });
-        setNewChat((prev) => ({
-          ...prev,
-          text: "",
-          documents: [],
-          projectId: null,
-        }));
-        await sendAction({ chatId: chat._id });
-      }
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to send message. Please try again.",
-      );
+    const inputText = textareaRef.current?.textArea.value;
+
+    if (inputText === "" || inputText === undefined || inputText === null) {
+      toast.error("Please enter a message before sending");
+      return;
+    }
+
+    if (chatId === "" || chatId === undefined || chatId === null) {
+      const newChatId = await createChatMutation({
+        name: "New Chat",
+        model: newChatModel,
+        reasoningEffort: newChatReasoningEffort,
+        projectId: selectedProjectId,
+        conductorMode: newChatConductorMode,
+        orchestratorMode: newChatOrchestratorMode,
+        webSearch: newChatWebSearch,
+        artifacts: newChatArtifacts,
+      });
+      await createMessageMutation({
+        chatId: newChatId,
+        documents: newChatDocuments,
+        text: inputText,
+        parentId: null,
+      });
+      textareaRef.current.textArea.value = "";
+      navigate({
+        to: "/chat/$chatId",
+        params: { chatId: newChatId },
+      });
+      await sendAction({ chatId: newChatId });
+    } else {
+      await updateChatMutation({
+        chatId: chatId,
+        updates: { text: inputText, documents: newChatDocuments },
+      });
+      await createMessageMutation({
+        chatId: chatId,
+        documents: newChatDocuments,
+        text: inputText,
+        parentId: lastChatMessage ?? null,
+      });
+      textareaRef.current.textArea.value = "";
+      await sendAction({ chatId: chatId });
     }
   };
 
@@ -99,7 +100,7 @@ export const useInfiniteChats = () => {
     {},
     {
       initialNumItems: 15,
-    },
+    }
   );
 
   const pinnedChats = results?.filter((chat) => chat.pinned) ?? [];
@@ -119,7 +120,7 @@ export const useSearchChats = () => {
 
   const searchResults = useQuery(
     api.chats.queries.search,
-    debouncedQuery.trim() ? { query: debouncedQuery } : "skip",
+    debouncedQuery.trim() ? { query: debouncedQuery } : "skip"
   );
 
   // Debounce search query
@@ -178,8 +179,7 @@ export const chatHandlers = () => {
   const handleDelete = async (chatId: string) => {
     if (params.chatId === chatId) {
       navigate({
-        to: "/chat/$chatId",
-        params: { chatId: "new" },
+        to: "/",
         replace: true,
       });
     }

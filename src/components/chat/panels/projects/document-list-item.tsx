@@ -15,7 +15,7 @@ export function ProjectDocumentListItem({
   projectDocument: ProjectDocument;
 }) {
   const updateProjectDocument = useMutation(
-    api.projectDocuments.mutations.update,
+    api.projectDocuments.mutations.update
   );
   const removeDocument = useMutation(api.projectDocuments.mutations.remove);
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
@@ -23,7 +23,7 @@ export function ProjectDocumentListItem({
   return (
     <Card
       key={projectDocument._id}
-      className={`flex flex-row items-center justify-between rounded-xl p-3 transition-colors ${projectDocument.selected ? "bg-muted/50" : ""}`}
+      className={`flex flex-row items-center justify-between p-3 transition-colors ${projectDocument.selected ? "bg-muted/50" : ""}`}
     >
       <div className="flex items-center gap-3">
         <Checkbox
@@ -38,7 +38,7 @@ export function ProjectDocumentListItem({
         {(() => {
           const { icon: Icon, className } = getTagInfo(
             projectDocument.document.type,
-            projectDocument.document.status,
+            projectDocument.document.status
           );
           return <Icon className={className} />;
         })()}
