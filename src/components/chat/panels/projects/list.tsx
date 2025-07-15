@@ -62,6 +62,8 @@ export const ProjectsList = () => {
                   setSelectedProjectId(
                     selectedProjectId === project._id ? null : project._id
                   );
+                } else {
+                  setSelectedProjectId(project._id);
                 }
               }}
             >
