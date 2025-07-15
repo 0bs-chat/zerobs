@@ -1,13 +1,9 @@
---ui changes need to be made  --
+-------- todo -------------------------------------------------------------------------
+
 1. make settings page. [done]
-
-
--------- todo --------------------
-
-1. projects page.
-2. orchestrator (where it searches more and longer)
-3. regenerate n branch chat wth model selector,
-4. default mcps (gonna work on a proper jupyter for code exec, memory mcp, v0 like mcp)
-5. special ui for our mcps (mainly v0 and memory)
-
-
+2. projects page & rendering issues. [done]
+3. auto upload images if user pastes from clipboard + allow attaching/removing files as well in the user edit mode.
+4. orchestrator (where it searches more and longer)
+5. regenerate n branch chat wth model selector.
+6. default mcps (gonna work on a proper jupyter for code exec, memory mcp, v0 like mcp)
+7. special ui for our mcps (mainly v0 and memory)

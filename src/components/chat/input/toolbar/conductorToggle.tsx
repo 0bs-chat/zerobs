@@ -1,21 +1,22 @@
 import { Toggle } from "@/components/ui/toggle";
 import { Network } from "lucide-react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
-import { useSetAtom } from "jotai";
-import { newChatAtom } from "@/store/chatStore";
+import { useAtom } from "jotai";
+import { newChatConductorModeAtom } from "@/store/chatStore";
 import { motion } from "motion/react";
 import { buttonHover, smoothTransition } from "@/lib/motion";
+import { memo } from "react";
 
-export const ConductorToggle = ({
-  chatId,
-  conductorMode,
-}: {
-  chatId: Id<"chats">;
-  conductorMode: boolean;
-}) => {
-  const setNewChat = useSetAtom(newChatAtom);
+export const ConductorToggle = memo(({ chatId }: { chatId: Id<"chats"> }) => {
+  const [newChatConductorMode, setNewChatConductorMode] = useAtom(
+    newChatConductorModeAtom
+  );
+  const chat = useQuery(
+    api.chats.queries.get,
+    chatId !== undefined ? { chatId } : "skip"
+  );
   const updateChatMutation = useMutation(api.chats.mutations.update);
 
   return (
@@ -29,24 +30,27 @@ export const ConductorToggle = ({
       <Toggle
         variant="outline"
         className="transition-all duration-300"
-        pressed={conductorMode}
+        pressed={chat?.conductorMode ?? newChatConductorMode}
         onPressedChange={() => {
-          if (chatId === "new") {
-            setNewChat((prev) => ({
-              ...prev,
-              conductorMode: !prev.conductorMode,
-            }));
+          if (
+            chat?._id === undefined ||
+            chat?._id === null ||
+            chat?._id === ""
+          ) {
+            setNewChatConductorMode(!newChatConductorMode);
           } else {
             updateChatMutation({
-              chatId,
-              updates: { conductorMode: !conductorMode },
+              chatId: chat?._id,
+              updates: {
+                conductorMode: !chat?.conductorMode,
+              },
             });
           }
         }}
       >
         <motion.div
           animate={{
-            scale: conductorMode ? 1.1 : 1,
+            scale: newChatConductorMode ? 1.1 : 1,
           }}
           transition={{ duration: 0.3 }}
         >
@@ -56,4 +60,4 @@ export const ConductorToggle = ({
       </Toggle>
     </motion.div>
   );
-};
+});

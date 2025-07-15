@@ -11,11 +11,9 @@ import {
 
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 
-export function useStream(chatId: Id<"chats"> | "new") {
-  const stream = useQuery(
-    api.streams.queries.get,
-    chatId !== "new" ? { chatId } : "skip",
-  );
+export function useStream(chatId: Id<"chats">) {
+  // not checking for
+  const stream = useQuery(api.streams.queries.get, { chatId });
   const convex = useConvex();
 
   const [groupedChunks, setGroupedChunks] = useState<ChunkGroup[]>([]);
@@ -50,8 +48,8 @@ export function useStream(chatId: Id<"chats"> | "new") {
             const newEvents: ChunkGroup[] = result.chunks.page.flatMap(
               (chunkDoc) =>
                 chunkDoc.chunks.map(
-                  (chunkStr) => JSON.parse(chunkStr) as ChunkGroup,
-                ),
+                  (chunkStr) => JSON.parse(chunkStr) as ChunkGroup
+                )
             );
 
             setGroupedChunks((prev) => {

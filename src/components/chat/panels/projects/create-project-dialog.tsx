@@ -9,19 +9,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../../../convex/_generated/api";
 import {
   createProjectDialogOpenAtom,
   resizePanelOpenAtom,
   selectedPanelTabAtom,
 } from "@/store/chatStore";
 import { useAtom, useSetAtom } from "jotai";
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
 
-export const CreateProjectDialog = () => {
+export const CreateProjectDialog = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const [projectDialogOpen, setProjectDialogOpen] = useAtom(
-    createProjectDialogOpenAtom,
+    createProjectDialogOpenAtom
   );
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
   const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
@@ -55,36 +59,44 @@ export const CreateProjectDialog = () => {
   };
 
   return (
-    <Dialog open={projectDialogOpen} onOpenChange={setProjectDialogOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleCreateProject} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <label htmlFor="name">Name</label>
-            <Input id="name" name="name" placeholder="Project name" required />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="description">Description (Optional)</label>
-            <Textarea
-              id="description"
-              name="description"
-              placeholder="Project description"
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => setProjectDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit">Create</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <>
+      {children}
+      <Dialog open={projectDialogOpen} onOpenChange={setProjectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateProject} className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="name">Name</label>
+              <Input
+                id="name"
+                name="name"
+                placeholder="Project name"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="description">Description (Optional)</label>
+              <Textarea
+                id="description"
+                name="description"
+                placeholder="Project description"
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => setProjectDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Create</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };

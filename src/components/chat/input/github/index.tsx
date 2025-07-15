@@ -5,7 +5,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import React, { Suspense, useState } from "react";
+import { memo, Suspense, useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -28,13 +28,11 @@ import {
 } from "@/store/github";
 import { useUploadDocuments } from "@/hooks/use-documents";
 import { useAtom, useAtomValue } from "jotai";
-import type { Doc } from "../../../../../convex/_generated/dataModel";
 
 interface GitHubDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children?: React.ReactNode;
-  chat: Doc<"chats">;
 }
 
 const RepoLoader = () => {
@@ -42,7 +40,7 @@ const RepoLoader = () => {
   const [currentRepo, setCurrentRepo] = useAtom(githubCurrentRepoAtom);
   const [currentBranch, setCurrentBranch] = useAtom(githubCurrentBranchAtom);
   const [availableBranches, setAvailableBranches] = useAtom(
-    githubAvailableBranchesAtom,
+    githubAvailableBranchesAtom
   );
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
 
@@ -91,7 +89,7 @@ const RepoLoader = () => {
         setCurrentBranch("main");
       }
     },
-    500,
+    500
   );
 
   const handleBranchChange = (value: string) => {
@@ -161,83 +159,75 @@ const RepoLoader = () => {
   );
 };
 
-function RepoActions({
-  onCloseDialog,
-  chat,
-}: {
-  onCloseDialog: (open: boolean) => void;
-  chat: Doc<"chats">;
-}) {
-  const uploadDocuments = useUploadDocuments({
-    type: "github",
-    chat,
-  });
-  const { combineSelectedFilesForChat } = useGithub();
-  const selectedFiles = useAtomValue(selectedFilesAtom);
+const RepoActions = memo(
+  ({ onCloseDialog }: { onCloseDialog: (open: boolean) => void }) => {
+    const uploadDocuments = useUploadDocuments({
+      type: "github",
+    });
+    const { combineSelectedFilesForChat } = useGithub();
+    const selectedFiles = useAtomValue(selectedFilesAtom);
 
-  const handleAddToChat = async () => {
-    try {
-      // Generate combined file
-      const combinedFile = await combineSelectedFilesForChat(
-        Array.from(selectedFiles),
-      );
+    const handleAddToChat = async () => {
+      try {
+        // Generate combined file
+        const combinedFile = await combineSelectedFilesForChat(
+          Array.from(selectedFiles)
+        );
 
-      // Create FileList
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(combinedFile);
-      const fileList = dataTransfer.files;
+        // Create FileList
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(combinedFile);
+        const fileList = dataTransfer.files;
 
-      // Upload using existing hook
-      await uploadDocuments(fileList);
+        // Upload using existing hook
+        await uploadDocuments(fileList);
 
-      toast.success(
-        `Added ${selectedFiles.size} files to chat as combined document`,
-      );
-      onCloseDialog(false);
-    } catch (error) {
-      console.error("Error adding files to chat:", error);
-      toast.error("Failed to add files to chat");
-    }
-  };
+        toast.success(
+          `Added ${selectedFiles.size} files to chat as combined document`
+        );
+        onCloseDialog(false);
+      } catch (error) {
+        console.error("Error adding files to chat:", error);
+        toast.error("Failed to add files to chat");
+      }
+    };
 
-  return (
-    <div className="flex gap-2 w-full items-center justify-between">
-      <TokenUsageCounter />
-      <Button onClick={handleAddToChat} disabled={!selectedFiles.size}>
-        Add to Chat
-      </Button>
-    </div>
-  );
-}
+    return (
+      <div className="flex gap-2 w-full items-center justify-between">
+        <TokenUsageCounter />
+        <Button onClick={handleAddToChat} disabled={!selectedFiles.size}>
+          Add to Chat
+        </Button>
+      </div>
+    );
+  }
+);
 
-const GitHubDialog = ({
-  open,
-  onOpenChange,
-  children,
-  chat,
-}: GitHubDialogProps) => {
-  return (
-    <Suspense fallback={<div>...</div>}>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogTrigger asChild>{children}</DialogTrigger>
-        <DialogContent
-          className={`sm:max-w-[800px]`}
-          aria-description="let's you add github repository to your chat"
-        >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <p>Add from GitHub</p>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4 w-full flex flex-col gap-4">
-            <RepoLoader />
-            <FileTree />
-            <RepoActions onCloseDialog={onOpenChange} chat={chat} />
-          </div>
-        </DialogContent>
-      </Dialog>
-    </Suspense>
-  );
-};
+const GitHubDialog = memo(
+  ({ open, onOpenChange, children }: GitHubDialogProps) => {
+    return (
+      <Suspense fallback={<div>...</div>}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogTrigger asChild>{children}</DialogTrigger>
+          <DialogContent
+            className={`sm:max-w-[800px]`}
+            aria-description="let's you add github repository to your chat"
+          >
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg">
+                <p>Add from GitHub</p>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4 w-full flex flex-col gap-4">
+              <RepoLoader />
+              <FileTree />
+              <RepoActions onCloseDialog={onOpenChange} />
+            </div>
+          </DialogContent>
+        </Dialog>
+      </Suspense>
+    );
+  }
+);
 
 export default GitHubDialog;

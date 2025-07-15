@@ -5,11 +5,15 @@ import type { Id, Doc } from "../../../../convex/_generated/dataModel";
 import { XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { documentDialogOpenAtom } from "@/store/chatStore";
+import {
+  documentDialogOpenAtom,
+  newChatDocumentsAtom,
+  newChatModelAtom,
+} from "@/store/chatStore";
 import { useRemoveDocument } from "@/hooks/use-documents";
 import { getTagInfo } from "@/lib/helpers";
-import React, { useCallback } from "react";
-import { useSetAtom } from "jotai";
+import { memo, useCallback } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
 import { models } from "../../../../convex/langchain/models";
 import mime from "mime";
 
@@ -20,7 +24,7 @@ type DocumentBadgeProps = {
   modalities?: string[];
 };
 
-const DocumentBadge = React.memo(
+const DocumentBadge = memo(
   ({ doc, onPreview, onRemove, modalities }: DocumentBadgeProps) => {
     // Map file extensions to tags so loader logic recognizes supported modalities.
     let resolvedTag: string = doc.type;
@@ -51,7 +55,7 @@ const DocumentBadge = React.memo(
     const { icon: Icon, className: IconClassName } = getTagInfo(
       resolvedTag,
       doc.status,
-      modalities,
+      modalities
     );
 
     const handlePreview = useCallback(() => {
@@ -63,7 +67,7 @@ const DocumentBadge = React.memo(
         e.stopPropagation();
         onRemove();
       },
-      [onRemove],
+      [onRemove]
     );
 
     return (
@@ -84,20 +88,24 @@ const DocumentBadge = React.memo(
         </Button>
       </Badge>
     );
-  },
+  }
 );
 DocumentBadge.displayName = "DocumentBadge";
 
 export const DocumentList = ({
   documentIds = [],
-  model,
 }: {
   documentIds?: Id<"documents">[];
-  model: string;
 }) => {
-  const documents = useQuery(api.documents.queries.getMultiple, {
-    documentIds,
-  });
+  const newChatDocuments = useAtomValue(newChatDocumentsAtom);
+  const newChatModel = useAtomValue(newChatModelAtom);
+
+  const documents = useQuery(
+    api.documents.queries.getMultiple,
+    documentIds.length > 0 || newChatDocuments.length > 0
+      ? { documentIds: [...documentIds, ...newChatDocuments] }
+      : "skip"
+  );
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
   const removeDocument = useRemoveDocument();
 
@@ -105,19 +113,19 @@ export const DocumentList = ({
     (documentId: Id<"documents">) => {
       setDocumentDialogOpen(documentId);
     },
-    [setDocumentDialogOpen],
+    [setDocumentDialogOpen]
   );
 
   const handleRemove = useCallback(
     (documentId: Id<"documents">) => {
       removeDocument(documentId);
     },
-    [removeDocument],
+    [removeDocument]
   );
 
   if (!documents?.length) return null;
 
-  const selectedModel = models.find((m) => m.model_name === model);
+  const selectedModel = models.find((m) => m.model_name === newChatModel);
   const modalities = selectedModel?.modalities;
 
   return (
