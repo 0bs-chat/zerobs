@@ -7,7 +7,7 @@ import {
   createAgentWithTools,
   getAvailableToolsDescription,
 } from "./helpers";
-import { type CompletedStep, GraphState, planSchema } from "./state";
+import { type CompletedStep, GraphState, planSchema, planArray } from "./state";
 import { modelSupportsTools, formatMessages, getModel, models } from "./models";
 import {
   BaseMessage,
@@ -209,12 +209,13 @@ async function replanner(
   );
 
   // Get model config to check if it's anthropic
+  const outputSchema = replannerOutputSchema(formattedConfig.chat.artifacts)
   const modelConfig = models.find((m) => m.model_name === formattedConfig.chat.model!);
   const isFunctionCallingParser = modelConfig?.parser === "functionCalling";
   const modelWithOutputParser = promptTemplate.pipe(
     isFunctionCallingParser
-      ? model.withStructuredOutput(replannerOutputSchema(formattedConfig.chat.artifacts), { method: "functionCalling" })
-      : model.withStructuredOutput(replannerOutputSchema(formattedConfig.chat.artifacts))
+      ? model.withStructuredOutput(outputSchema, { method: "functionCalling" })
+      : model.withStructuredOutput(outputSchema),
   );
 
   const formattedMessages = await formatMessages(
@@ -236,12 +237,12 @@ async function replanner(
         .flat(),
     },
     config,
-  )) as z.infer<ReturnType<typeof replannerOutputSchema>>;
+  )) as z.infer<typeof outputSchema>;
 
   if (response.type === "respond_to_user") {
     const responseMessages = [
       new AIMessage({
-        content: response.data,
+        content: response.data as string,
         additional_kwargs: {
           pastSteps: state.pastSteps.map((pastStep) => {
             const [step, messages] = pastStep;
@@ -258,7 +259,7 @@ async function replanner(
     };
   } else if (response.type === "continue_planning") {
     return {
-      plan: response.data,
+      plan: response.data as z.infer<typeof planArray>,
     };
   } else {
     throw new Error("Invalid response from replanner");

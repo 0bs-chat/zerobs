@@ -154,6 +154,7 @@ export const models: {
       usageRateMultiplier: 1.0,
       hidden: true,
       temperature: 0.5,
+      parser: "functionCalling",
     },
     {
       label: "Deepseek R1",

@@ -118,10 +118,10 @@ export const chat = action({
                   : []),
               ],
             });
-            if (streamDoc?.status === "cancelled") {
-              abort.abort();
-              return null
-            }
+          }
+          if (streamDoc?.status === "cancelled") {
+            abort.abort();
+            return null;
           }
           await new Promise((resolve) => setTimeout(resolve, 300));
         }

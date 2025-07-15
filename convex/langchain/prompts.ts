@@ -226,7 +226,7 @@ export function createReplannerPrompt(availableToolsDescription: string) {
       `- Ensure steps are non-overlapping, unambiguous, and context-rich.\n` +
       `- The result of the final step should be the final answer.\n` +
       `${toolsSection}\n\n` +
-      `**Message History:** (Last message is the user's objective)\n`,
+      `**Message History:**\n`,
     ],
     new MessagesPlaceholder("messages"),
     [
@@ -242,25 +242,22 @@ export function createReplannerPrompt(availableToolsDescription: string) {
       `2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.\n\n` +
       `3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.\n\n` +
       `4. **Update Your Plan:**\n` +
-      ` - **If ready to respond:** Set {{ action: "respond_to_user", data: <<response>> }} and formulate the complete, synthesized response.\n` +
-      ` - **If not ready:** Set {{ action: "continue_planning", data: <<newPlan>> }} and provide a new plan containing **only the remaining steps needed** to fill the gaps you identified, using the planArray conventions with the discriminated union format: {{ type: "single", data: planStep }} for single steps or {{ type: "parallel", data: planStep[] }} for parallel execution. The next step should be the most direct action to address the missing information.\n`,
+      ` - **If ready to respond:** Set type to "respond_to_user" and data as the response. Formulate the complete, synthesized response.\n` +
+      ` - **If not ready:** Set type to "continue_planning" and provide a new plan containing **only the remaining steps needed** to fill ` +
+      `the gaps you identified.\n\n` +
+      `**ALWAYS** output valid JSON, do not include any extraneous text or explanations.`
     ],
   ]);
 }
 
 export const replannerOutputSchema = (artifacts: boolean) =>
-  z.discriminatedUnion("type", [
-    z.object({
-      type: z.literal("continue_planning"),
-      data: planArray,
-    }),
-    z.object({
-      type: z.literal("respond_to_user"),
-      data: z
-        .string()
-        .describe(
-          "A comprehensive, final response to the user. Synthesize the results of all completed steps into a single, coherent answer. This is the only thing the user will see, so it must be complete and detailed." +
-          `${artifacts ? `Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`,
-        ),
-    }),
-  ]);
+  z.object({
+    type: z.enum(["continue_planning", "respond_to_user"]).describe("The type of response"),
+    data: z.union([
+      planArray.describe("The updated plan when type is 'continue_planning'"),
+      z.string().describe(
+        "A comprehensive, final response to the user. Synthesize the results of all completed steps into a single, coherent answer. This is the only thing the user will see, so it must be complete and detailed." +
+        `${artifacts ? ` Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`
+      )
+    ]).describe("The response data - either a plan array or a string response")
+  });
