@@ -24,10 +24,7 @@ export function AppSidebar() {
 
   const handleNewChat = () => {
     navigate({
-      to: "/chat/$chatId",
-      params: {
-        chatId: "new",
-      },
+      to: "/",
       replace: true,
     });
   };
@@ -81,7 +78,7 @@ export function AppSidebar() {
       <SidebarHeader className="flex items-center w-full font-bold font-mono text-xl py-3.5 px-2">
         0bs
       </SidebarHeader>
-      <SidebarContent className="overflow-hidden gap-0">
+      <SidebarContent className="overflow-hidden gap-0 px-2">
         <SidebarGroup className="gap-2">
           <Button
             variant="outline"

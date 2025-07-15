@@ -5,23 +5,24 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Globe2Icon } from "lucide-react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
-import { newChatAtom } from "@/store/chatStore";
-import { useSetAtom } from "jotai";
+import { newChatWebSearchAtom } from "@/store/chatStore";
+import { useAtom } from "jotai";
 import { motion } from "motion/react";
 import { buttonHover, smoothTransition } from "@/lib/motion";
+import { memo } from "react";
 
-export const WebSearchToggle = ({
-  chatId,
-  webSearch,
-}: {
-  chatId: Id<"chats">;
-  webSearch?: boolean;
-}) => {
+export const WebSearchToggle = memo(({ chatId }: { chatId: Id<"chats"> }) => {
   const updateChatMutation = useMutation(api.chats.mutations.update);
-  const setNewChat = useSetAtom(newChatAtom);
+  const [newChatWebSearch, setNewChatWebSearch] = useAtom(newChatWebSearchAtom);
+
+  const chat = useQuery(
+    api.chats.queries.get,
+    chatId !== undefined ? { chatId } : "skip"
+  );
+
   return (
     <Tooltip delayDuration={300}>
       <TooltipTrigger asChild>
@@ -34,24 +35,28 @@ export const WebSearchToggle = ({
         >
           <Toggle
             variant="outline"
-            className={`transition-all duration-300 ${webSearch ? "bg-accent text-accent-foreground" : ""}`}
-            aria-pressed={webSearch ?? false}
-            pressed={webSearch ?? false}
+            className={`transition-all duration-300 ${newChatWebSearch ? "bg-accent text-accent-foreground" : ""}`}
+            aria-pressed={chat?.webSearch ?? newChatWebSearch}
+            pressed={chat?.webSearch ?? newChatWebSearch}
             onPressedChange={() => {
-              if (chatId === "new") {
-                setNewChat((prev) => ({ ...prev, webSearch: !prev.webSearch }));
+              if (
+                chat?._id === undefined ||
+                chat?._id === null ||
+                chat?._id === ""
+              ) {
+                setNewChatWebSearch(!newChatWebSearch);
               } else {
                 updateChatMutation({
-                  chatId,
+                  chatId: chat?._id,
                   updates: {
-                    webSearch: !webSearch,
+                    webSearch: !chat?.webSearch,
                   },
                 });
               }
             }}
           >
             <motion.div
-              animate={{ rotate: webSearch ? 360 : 0 }}
+              animate={{ rotate: newChatWebSearch ? 360 : 0 }}
               transition={{ duration: 0.3 }}
             >
               <Globe2Icon className="h-4 w-4" />
@@ -64,4 +69,4 @@ export const WebSearchToggle = ({
       </TooltipContent>
     </Tooltip>
   );
-};
+});

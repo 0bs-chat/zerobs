@@ -12,7 +12,7 @@ import {
 import {
   lastChatMessageAtom,
   groupedMessagesAtom,
-  useStreamAtom
+  useStreamAtom,
 } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { useStream } from "./use-stream";
@@ -21,18 +21,20 @@ export type { MessageWithBranchInfo, BranchPath };
 
 export type NavigateBranch = (
   depth: number,
-  direction: "prev" | "next" | number,
+  direction: "prev" | "next" | number
 ) => void;
 
-export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
+export const useMessages = ({ chatId }: { chatId: Id<"chats"> }) => {
   // Fetch message tree from Convex
   const messages = useQuery(
     api.chatMessages.queries.get,
-    chatId !== "new" ? { chatId } : "skip",
+    chatId !== undefined && chatId !== null && chatId !== ""
+      ? { chatId }
+      : "skip"
   );
   const messageTree = useMemo(
     () => (messages ? buildMessageTree(messages) : []),
-    [messages],
+    [messages]
   );
 
   // Set up atoms
@@ -49,10 +51,17 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   // Calculate the current thread with branch information
   const currentThread = useMemo(
     () => buildThread(messageTree, branchPath),
-    [messageTree, branchPath],
+    [messageTree, branchPath]
   );
 
   // Group messages by human message + responses
+  useEffect(() => {
+    const thread = buildThread(messageTree, branchPath);
+    setLastMessageId(
+      thread.length > 0 ? thread[thread.length - 1].message._id : undefined
+    );
+  }, [messageTree, branchPath, setLastMessageId]);
+
   const groupedMessages = useMemo(() => {
     return groupMessages(currentThread);
   }, [currentThread]);
@@ -60,12 +69,21 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   // Update atoms when data changes
   useEffect(() => {
     const thread = buildThread(messageTree, branchPath);
-    const lastMessageId = thread.length > 0 ? thread[thread.length - 1].message._id : undefined;
+    const lastMessageId =
+      thread.length > 0 ? thread[thread.length - 1].message._id : undefined;
 
     setLastMessageId(lastMessageId);
     setGroupedMessages(groupedMessages);
     setUseStreamAtom(streamData);
-  }, [messageTree, branchPath, groupedMessages, streamData, setLastMessageId, setGroupedMessages, setUseStreamAtom]);
+  }, [
+    messageTree,
+    branchPath,
+    groupedMessages,
+    streamData,
+    setLastMessageId,
+    setGroupedMessages,
+    setUseStreamAtom,
+  ]);
 
   // Function to change branch at a specific depth
   const changeBranch = useCallback((depth: number, newBranchIndex: number) => {
@@ -98,7 +116,7 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
 
       changeBranch(depth, newIndex);
     },
-    [currentThread, branchPath, changeBranch],
+    [currentThread, branchPath, changeBranch]
   );
 
   const resetBranches = useCallback(() => {
@@ -116,7 +134,7 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
         hasBranches: threadItem.totalBranches > 1,
       };
     },
-    [currentThread],
+    [currentThread]
   );
 
   const isOnDefaultPath = branchPath.length === 0;
@@ -124,7 +142,7 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const totalBranches = useMemo(() => {
     return currentThread.reduce(
       (sum, item) => sum + (item.totalBranches - 1),
-      0,
+      0
     );
   }, [currentThread]);
 
@@ -147,7 +165,15 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
     totalBranches,
 
     // Loading state
-    isLoading: messageTree === undefined && chatId !== "new",
-    isEmpty: currentThread.length === 0 && chatId !== "new",
+    isLoading:
+      messageTree === undefined &&
+      chatId !== undefined &&
+      chatId !== null &&
+      chatId !== "",
+    isEmpty:
+      currentThread.length === 0 &&
+      chatId !== undefined &&
+      chatId !== null &&
+      chatId !== "",
   };
 };

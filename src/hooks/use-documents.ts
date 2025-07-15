@@ -1,29 +1,31 @@
-import type { Doc, Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { newChatAtom } from "@/store/chatStore";
+import { newChatDocumentsAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 
 export const useRemoveDocument = () => {
-  const params = useParams({ from: "/chat/$chatId/" });
+  const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const chatInputQuery = useQuery(
     api.chats.queries.get,
-    chatId !== "new" ? { chatId } : "skip",
+    chatId !== undefined && chatId !== null && chatId !== ""
+      ? { chatId }
+      : "skip"
   );
   const updateChatInputMutation = useMutation(api.chats.mutations.update);
-  const setNewChat = useSetAtom(newChatAtom);
+  const setNewChatDocuments = useSetAtom(newChatDocumentsAtom);
 
   return (documentId: Id<"documents">) => {
-    if (chatId !== "new") {
+    if (chatId !== undefined && chatId !== null && chatId !== "") {
       if (!chatInputQuery?.documents) {
         return;
       }
 
       const filteredDocuments = chatInputQuery.documents.filter(
-        (id) => id !== documentId,
+        (id) => id !== documentId
       );
 
       updateChatInputMutation({
@@ -33,12 +35,7 @@ export const useRemoveDocument = () => {
         },
       });
     } else {
-      setNewChat((prev) => {
-        const filteredDocuments = prev.documents.filter(
-          (id) => id !== documentId,
-        );
-        return { ...prev, documents: filteredDocuments };
-      });
+      setNewChatDocuments((prev) => prev.filter((id) => id !== documentId));
     }
   };
 };
@@ -46,20 +43,22 @@ export const useRemoveDocument = () => {
 export const useUploadDocuments = (
   {
     type,
-    chat,
   }: {
     type: "file" | "url" | "site" | "youtube" | "text" | "github";
-    chat?: Doc<"chats">;
-  } = { type: "file" },
+  } = { type: "file" }
 ) => {
-  const params = useParams({ from: "/chat/$chatId/" });
+  const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
+  const chat = useQuery(
+    api.chats.queries.get,
+    chatId !== undefined ? { chatId } : "skip"
+  );
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const generateUploadUrlMutation = useMutation(
-    api.documents.mutations.generateUploadUrl,
+    api.documents.mutations.generateUploadUrl
   );
   const createMutation = useMutation(api.documents.mutations.create);
-  const setNewChat = useSetAtom(newChatAtom);
+  const setNewChatDocuments = useSetAtom(newChatDocumentsAtom);
 
   return async (files: FileList) => {
     try {
@@ -95,12 +94,12 @@ export const useUploadDocuments = (
             size: file.size,
             key: storageId,
           });
-        }),
+        })
       );
 
       // Update chat input with new documents
       if (chat) {
-        if (chatId !== "new") {
+        if (chatId !== undefined && chatId !== null && chatId !== "") {
           await updateChatMutation({
             chatId,
             updates: {
@@ -108,15 +107,12 @@ export const useUploadDocuments = (
             },
           });
         } else {
-          setNewChat((prev) => ({
-            ...prev,
-            documents: [...prev.documents, ...documentIds],
-          }));
+          setNewChatDocuments((prev) => [...prev, ...documentIds]);
         }
       }
 
       toast(
-        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`,
+        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`
       );
 
       return documentIds;

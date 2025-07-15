@@ -22,14 +22,14 @@ export const MessagesList = memo(
     groupedMessages: MessageGroup[];
   }) => {
     const [editingMessageId, setEditingMessageId] = useState<string | null>(
-      null,
+      null
     );
     const [editedText, setEditedText] = useState("");
 
     useEffect(() => {
       if (editingMessageId) {
         const messageToEdit = groupedMessages?.find(
-          (g) => g.input.message._id === editingMessageId,
+          (g) => g.input.message._id === editingMessageId
         );
         if (messageToEdit) {
           const content = messageToEdit.input.message.message.content;
@@ -117,7 +117,7 @@ export const MessagesList = memo(
         </AnimatePresence>
       </motion.div>
     );
-  },
+  }
 );
 
 MessagesList.displayName = "MessagesList";
