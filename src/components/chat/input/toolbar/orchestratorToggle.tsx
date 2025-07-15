@@ -7,9 +7,9 @@ import { useAtom } from "jotai";
 import { newChatOrchestratorModeAtom } from "@/store/chatStore";
 import { motion } from "motion/react";
 import { buttonHover, smoothTransition } from "@/lib/motion";
-import React from "react";
+import { memo } from "react";
 
-export const OrchestratorToggle = React.memo(
+export const OrchestratorToggle = memo(
   ({ chatId }: { chatId: Id<"chats"> }) => {
     const updateChatMutation = useMutation(api.chats.mutations.update);
     const [newChatOrchestratorMode, setNewChatOrchestratorMode] = useAtom(

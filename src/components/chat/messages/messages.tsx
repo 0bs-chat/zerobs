@@ -3,18 +3,24 @@ import { motion, AnimatePresence } from "motion/react";
 import { UserMessage } from "./user-message";
 import { AiMessage } from "./ai-message";
 import { UtilsBar } from "./utils-bar";
-import { useAtomValue } from "jotai";
-import { groupedMessagesAtom } from "@/store/chatStore";
 import type { NavigateBranch } from "@/hooks/chats/use-messages";
+import type { groupMessages } from "../../../../convex/chatMessages/helpers";
 import {
   messageListVariants,
   chatMessageVariants,
   springTransition,
 } from "@/lib/motion";
 
+type MessageGroup = ReturnType<typeof groupMessages>[0];
+
 export const MessagesList = memo(
-  ({ navigateBranch }: { navigateBranch: NavigateBranch }) => {
-    const groupedMessages = useAtomValue(groupedMessagesAtom);
+  ({
+    navigateBranch,
+    groupedMessages
+  }: {
+    navigateBranch: NavigateBranch;
+    groupedMessages: MessageGroup[];
+  }) => {
     const [editingMessageId, setEditingMessageId] = useState<string | null>(
       null
     );
@@ -29,10 +35,10 @@ export const MessagesList = memo(
           const content = messageToEdit.input.message.message.content;
           const textContent = Array.isArray(content)
             ? ((
-                content.find((c) => c.type === "text") as
-                  | { type: "text"; text: string }
-                  | undefined
-              )?.text ?? "")
+              content.find((c) => c.type === "text") as
+              | { type: "text"; text: string }
+              | undefined
+            )?.text ?? "")
             : "";
           setEditedText(textContent);
         }
@@ -78,6 +84,7 @@ export const MessagesList = memo(
                     editedText={editedText}
                     onDone={onDone}
                     navigateBranch={navigateBranch!}
+                    groupedMessages={groupedMessages}
                   />
                 </div>
               </div>
@@ -100,6 +107,7 @@ export const MessagesList = memo(
                       item={group.input}
                       isAI={true}
                       navigateBranch={navigateBranch!}
+                      groupedMessages={groupedMessages}
                     />
                   </div>
                 )}
