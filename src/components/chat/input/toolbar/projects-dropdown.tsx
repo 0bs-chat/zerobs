@@ -5,7 +5,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { FoldersIcon, PlusIcon } from "lucide-react";
 import {
@@ -16,6 +16,7 @@ import {
 import { useSetAtom } from "jotai";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
+import { useProjects } from "@/hooks/chats/use-projects";
 
 interface ProjectsDropdownProps {
   onCloseDropdown: () => void;
@@ -26,9 +27,8 @@ export const ProjectsDropdown = ({
 }: ProjectsDropdownProps) => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
-  const projects = useQuery(api.projects.queries.getAll, {
-    paginationOpts: { numItems: 3, cursor: null },
-  });
+
+  const projects = useProjects(3);
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);

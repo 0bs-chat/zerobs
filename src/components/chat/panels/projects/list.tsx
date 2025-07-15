@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ExternalLinkIcon, Folder, PlusIcon, TrashIcon } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useNavigate, useParams } from "@tanstack/react-router";
@@ -11,21 +11,21 @@ import {
   createProjectDialogOpenAtom,
   selectedProjectIdAtom,
   resizePanelOpenAtom,
+  sidebarOpenAtom,
 } from "@/store/chatStore";
 import { CreateProjectDialog } from "@/components/chat/panels/projects/create-project-dialog";
+import { useProjects } from "@/hooks/chats/use-projects";
 
 export const ProjectsList = () => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const navigate = useNavigate();
-  const allProjects = useQuery(api.projects.queries.getAll, {
-    paginationOpts: { numItems: 20, cursor: null },
-  });
+  const allProjects = useProjects(20);
 
   const removeProjectMutation = useMutation(api.projects.mutations.remove);
   const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
-
+  const setSidebarOpen = useSetAtom(sidebarOpenAtom);
   const [selectedProjectId, setSelectedProjectId] = useAtom(
     selectedProjectIdAtom
   );
@@ -34,19 +34,33 @@ export const ProjectsList = () => {
     <div className="flex flex-col gap-3 h-full ">
       <div className="flex items-center text-center justify-between">
         <h2 className="text-xl font-bold">Select a Project</h2>
-        <CreateProjectDialog>
+        <div className="flex items-center justify-center gap-2 ">
           <Button
             variant="outline"
             size="sm"
-            className=""
+            className="cursor-pointer"
             onClick={() => {
-              setProjectDialogOpen(true);
+              navigate({ to: "/projects" });
+              setResizePanelOpen(false);
+              setSidebarOpen(false);
             }}
           >
-            <PlusIcon className="size-4" />
-            New Project
+            All Projects
           </Button>
-        </CreateProjectDialog>
+          <CreateProjectDialog>
+            <Button
+              variant="ghost"
+              size="sm"
+              className=""
+              onClick={() => {
+                setProjectDialogOpen(true);
+              }}
+            >
+              <PlusIcon className="size-4" />
+              New Project
+            </Button>
+          </CreateProjectDialog>
+        </div>
       </div>
       <ScrollArea className="h-[calc(100vh-10rem)] ">
         <div className="flex flex-col gap-2 overflow-y-auto">
@@ -99,6 +113,7 @@ export const ProjectsList = () => {
                         params: { projectId: project._id },
                       });
                       setResizePanelOpen(false);
+                      setSidebarOpen(false);
                     }}
                     className="cursor-pointer group-hover/card:flex opacity-0 group-hover/card:opacity-100 transition-all duration-300 hover:text-accent-foreground"
                   >
