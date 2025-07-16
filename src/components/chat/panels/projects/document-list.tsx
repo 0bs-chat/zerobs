@@ -1,9 +1,9 @@
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { ProjectDocumentListItem } from "./document-list-item";
+import { Toggle } from "@/components/ui/toggle";
 
 export function ProjectDocumentList({
   projectId,
@@ -42,16 +42,18 @@ export function ProjectDocumentList({
 
   return (
     <div className="flex flex-col gap-2 bg-card shadow-sm border p-4 rounded-lg">
-      <div className="flex items-center px-3 gap-3">
-        <Checkbox
-          checked={projectDocuments.projectDocuments.every(
-            (projectDocument) => projectDocument.selected
-          )}
-          onCheckedChange={(checked) =>
-            handleSelectAll(checked.valueOf() as boolean)
-          }
-        />
-        <label htmlFor="select-all" className="text-sm text-muted-foreground">
+      <div className="flex items-center  gap-3">
+        <Toggle
+          variant="default"
+          className="text-sm text-muted-foreground cursor-pointer"
+          onClick={() => {
+            handleSelectAll(
+              !projectDocuments.projectDocuments.every(
+                (projectDocument) => projectDocument.selected
+              )
+            );
+          }}
+        >
           Select All (
           {
             projectDocuments.projectDocuments.filter(
@@ -59,7 +61,7 @@ export function ProjectDocumentList({
             ).length
           }
           /{projectDocuments.projectDocuments.length})
-        </label>
+        </Toggle>
       </div>
       <div className="flex flex-col gap-2">
         {projectDocuments.projectDocuments.map((projectDocument) => (

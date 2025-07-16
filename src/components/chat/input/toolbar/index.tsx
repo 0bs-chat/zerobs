@@ -88,6 +88,7 @@ export const ToolBar = React.memo(
           multiple
           onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
         />
+
         <GitHubDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
 
         <div className="flex flex-row items-center gap-1">

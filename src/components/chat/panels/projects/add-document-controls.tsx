@@ -28,7 +28,7 @@ export const AddDocumentControls = ({
   });
   const createDocuments = useMutation(api.documents.mutations.create);
   const createProjectDocuments = useMutation(
-    api.projectDocuments.mutations.create,
+    api.projectDocuments.mutations.create
   );
   const updateChatInput = useMutation(api.chats.mutations.update);
   const params = useParams({ strict: false });
@@ -45,17 +45,18 @@ export const AddDocumentControls = ({
             createProjectDocuments({
               projectId,
               documentId,
-            }),
-          ),
+            })
+          )
       );
     }
-
-    await updateChatInput({
-      chatId,
-      updates: {
-        projectId,
-      },
-    });
+    if (chatId !== undefined && chatId !== null && chatId !== "") {
+      await updateChatInput({
+        chatId,
+        updates: {
+          projectId,
+        },
+      });
+    }
   };
 
   const handleUrlUpload = async () => {
@@ -115,7 +116,7 @@ export const AddDocumentControls = ({
         <Button
           variant="default"
           size="sm"
-          className="bg-primary text-primary-foreground"
+          className="bg-primary text-primary-foreground cursor-pointer"
         >
           <PlusIcon className="size-4" />
           Add Document

@@ -51,7 +51,7 @@ export function AppSidebar() {
         root: null,
         rootMargin: "0px",
         threshold: 0.1,
-      },
+      }
     );
 
     observer.observe(loadMoreElement);

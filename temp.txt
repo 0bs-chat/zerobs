@@ -3,7 +3,7 @@
 1. make settings page. [done]
 2. projects page & rendering issues. [done]
 3. artifacts bug. [done]
-4. projects page + update projectid ui.
+4. projects page + update projectid ui. [done]
 5. uploaded files not getting shown.
 6. add opening and closing animations to planner step accordion.
 7. better model selector.

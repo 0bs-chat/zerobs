@@ -1,4 +1,3 @@
-import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2Icon, EyeIcon } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
@@ -23,56 +22,54 @@ export function ProjectDocumentListItem({
   return (
     <Card
       key={projectDocument._id}
-      className={`flex flex-row items-center justify-between p-3 transition-colors ${projectDocument.selected ? "bg-muted/50" : ""}`}
+      className={`flex items-center justify-between p-1 transition-colors hover:bg-accent/50 dark:hover:bg-accent cursor-pointer ${projectDocument.selected ? "bg-secondary/80" : ""}`}
+      onClick={() =>
+        updateProjectDocument({
+          projectDocumentId: projectDocument._id,
+          update: { selected: !projectDocument.selected },
+        })
+      }
     >
-      <div className="flex items-center gap-3">
-        <Checkbox
-          checked={projectDocument.selected}
-          onCheckedChange={(checked) =>
-            updateProjectDocument({
-              projectDocumentId: projectDocument._id,
-              update: { selected: checked.valueOf() as boolean },
-            })
-          }
-        />
-        {(() => {
-          const { icon: Icon, className } = getTagInfo(
-            projectDocument.document.type,
-            projectDocument.document.status
-          );
-          return <Icon className={className} />;
-        })()}
+      <div className="flex flex-row items-center gap-3 w-full p-2">
+        <div>
+          {(() => {
+            const { icon: Icon, className } = getTagInfo(
+              projectDocument.document.type,
+              projectDocument.document.status
+            );
+            return <Icon className={className} />;
+          })()}
+        </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium" style={{ wordBreak: "break-word" }}>
             {projectDocument.document.name}
           </p>
-          <p
-            className="text-sm text-muted-foreground"
-            style={{ wordBreak: "break-word" }}
-          >
+          <p className="text-sm text-muted-foreground truncate">
             Size: {(projectDocument.document.size / 1024).toFixed(2)} KB
           </p>
         </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            setDocumentDialogOpen(projectDocument.document._id);
-          }}
-        >
-          <EyeIcon className="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() =>
-            removeDocument({ projectDocumentId: projectDocument._id })
-          }
-        >
-          <Trash2Icon className="size-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="cursor-pointer hover:text-primary"
+            onClick={() => {
+              setDocumentDialogOpen(projectDocument.document._id);
+            }}
+          >
+            <EyeIcon className=" size-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            className="cursor-pointer hover:text-destructive"
+            size="icon"
+            onClick={() =>
+              removeDocument({ projectDocumentId: projectDocument._id })
+            }
+          >
+            <Trash2Icon className="size-5 " />
+          </Button>
+        </div>
       </div>
     </Card>
   );

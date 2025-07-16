@@ -23,6 +23,7 @@ export const ProjectsList = () => {
   const allProjects = useProjects(20);
 
   const removeProjectMutation = useMutation(api.projects.mutations.remove);
+  const updateChat = useMutation(api.chats.mutations.update);
   const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
   const setSidebarOpen = useSetAtom(sidebarOpenAtom);
@@ -79,6 +80,12 @@ export const ProjectsList = () => {
                   );
                 } else {
                   setSelectedProjectId(project._id);
+                  updateChat({
+                    chatId,
+                    updates: {
+                      projectId: project._id,
+                    },
+                  });
                 }
               }}
             >

@@ -49,6 +49,7 @@ export const useUploadDocuments = (
 ) => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
+
   const chat = useQuery(
     api.chats.queries.get,
     chatId !== undefined ? { chatId } : "skip"
