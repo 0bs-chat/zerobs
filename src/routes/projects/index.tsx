@@ -1,7 +1,7 @@
 import { chatMessageVariants, layoutTransition } from "@/lib/motion";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { useProjects } from "@/hooks/chats/use-projects";
+import { useProjects } from "@/hooks/use-projects";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, FolderOpen } from "lucide-react";
 import { ModeToggle } from "@/components/theme-switcher";
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/projects/")({
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const projects = useProjects(20);
+  const { projects } = useProjects(20);
 
   return (
     <motion.div
