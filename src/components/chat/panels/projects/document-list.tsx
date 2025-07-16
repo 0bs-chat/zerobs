@@ -44,7 +44,7 @@ export function ProjectDocumentList({
     <div className="flex flex-col gap-2 bg-card shadow-sm border p-4 rounded-lg">
       <div className="flex items-center  gap-3">
         <Toggle
-          variant="default"
+          variant="outline"
           className="text-sm text-muted-foreground cursor-pointer"
           onClick={() => {
             handleSelectAll(
@@ -54,7 +54,12 @@ export function ProjectDocumentList({
             );
           }}
         >
-          Select All (
+          {projectDocuments.projectDocuments.every(
+            (projectDocument) => projectDocument.selected
+          )
+            ? "Deselect All"
+            : "Select All"}{" "}
+          (
           {
             projectDocuments.projectDocuments.filter(
               (projectDocument) => projectDocument.selected

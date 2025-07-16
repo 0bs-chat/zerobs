@@ -55,7 +55,7 @@ export const UserMessage = memo(
               <Markdown
                 content={entry.text}
                 id={item.message._id}
-                className="prose [&_p]:mb-0"
+                className="prose [&_p]:mb-0 [&_p]:mt-0"
               />
             ) : null}
             {entry.type === "file" ? (

@@ -19,12 +19,23 @@ export const ProjectsPanel = () => {
 
   const chatProjectId = chat?.projectId;
 
+  const isNewChatRoute = !!chatId;
+
+  if (!isNewChatRoute) {
+    // At / route, show details if a project is selected
+    if (selectedChatProjectId) {
+      return <ProjectDetails projectId={selectedChatProjectId} />;
+    }
+    return <ProjectsList />;
+  }
+
+  // In chat context, use the existing logic
   if (
     !selectedChatProjectId ||
-    !chatId ||
-    chatId === "" ||
-    chatId === undefined ||
-    chatProjectId !== selectedChatProjectId
+    selectedChatProjectId === null ||
+    chatProjectId !== selectedChatProjectId ||
+    chatProjectId === "" ||
+    chatProjectId === undefined
   ) {
     return <ProjectsList />;
   }

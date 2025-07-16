@@ -80,7 +80,7 @@ export const MarkdownBlock = memo(
         margin: "0",
         wrapLongLines: wrapLongLines,
       }),
-      [wrapLongLines],
+      [wrapLongLines]
     );
 
     const components = useMemo(
@@ -152,7 +152,7 @@ export const MarkdownBlock = memo(
           );
         },
       }),
-      [copy, copied, wrapLongLines, setWrapLongLines, theme],
+      [copy, copied, wrapLongLines, setWrapLongLines, theme]
     );
 
     return (
@@ -177,7 +177,7 @@ export const MarkdownBlock = memo(
         </ReactMarkdown>
       </article>
     );
-  },
+  }
 );
 
 MarkdownBlock.displayName = "MarkdownBlock";
@@ -201,7 +201,7 @@ export const Markdown = memo(
         className={className}
       />
     ));
-  },
+  }
 );
 
 Markdown.displayName = "Markdown";
