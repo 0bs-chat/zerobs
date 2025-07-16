@@ -73,11 +73,12 @@ export const ChatInput = () => {
           minHeight={60}
           ref={textareaRef}
           className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
-          onChange={(e) => {
-            if (chatId === undefined || chatId === null || chatId === "") {
-              setNewChatText(e.target.value);
-            } else {
-              if (textareaRef?.current) {
+          onChange={() => {
+            if (textareaRef?.current) {
+              if (chatId === undefined || chatId === null || chatId === "") {
+                setNewChatText(textareaRef?.current?.textArea.value as string);
+              } else {
+                setNewChatText(textareaRef?.current?.textArea.value as string);
                 debouncedUpdateChatMutation(textareaRef.current.textArea.value);
               }
             }

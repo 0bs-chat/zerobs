@@ -17,8 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { CopyButton } from "./copy-button";
-import { useAtomValue } from "jotai";
-import { groupedMessagesAtom } from "@/store/chatStore";
+import { groupMessages } from "../../../../../convex/chatMessages/helpers";
 
 interface MessageContent {
   type: string;
@@ -34,6 +33,7 @@ export const UtilsBar = memo(
     onDone,
     isAI,
     navigateBranch,
+    groupedMessages,
   }: {
     item: MessageWithBranchInfo;
     isEditing?: boolean;
@@ -42,13 +42,13 @@ export const UtilsBar = memo(
     onDone?: () => void;
     isAI?: boolean;
     navigateBranch: NavigateBranch;
+    groupedMessages: ReturnType<typeof groupMessages>;
   }) => {
     const regenerate = useAction(api.langchain.index.regenerate);
     const updateMessage = useMutation(api.chatMessages.mutations.updateInput);
     const chat = useAction(api.langchain.index.chat);
 
     const copyText = (() => {
-      const groupedMessages = useAtomValue(groupedMessagesAtom);
       const content = item.message.message.content;
       if (!content) return "";
 

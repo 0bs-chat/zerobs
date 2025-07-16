@@ -5,7 +5,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import React, { memo, Suspense, useState } from "react";
+import { memo, Suspense, useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -35,7 +35,7 @@ interface GitHubDialogProps {
   children?: React.ReactNode;
 }
 
-const RepoLoader = memo(() => {
+const RepoLoader = () => {
   const { loadRepository, parseGitHubUrl, getRepoBranches } = useGithub();
   const [currentRepo, setCurrentRepo] = useAtom(githubCurrentRepoAtom);
   const [currentBranch, setCurrentBranch] = useAtom(githubCurrentBranchAtom);
@@ -157,9 +157,9 @@ const RepoLoader = memo(() => {
       </Button>
     </div>
   );
-});
+};
 
-const RepoActions = React.memo(
+const RepoActions = memo(
   ({ onCloseDialog }: { onCloseDialog: (open: boolean) => void }) => {
     const uploadDocuments = useUploadDocuments({
       type: "github",
@@ -203,7 +203,7 @@ const RepoActions = React.memo(
   }
 );
 
-const GitHubDialog = React.memo(
+const GitHubDialog = memo(
   ({ open, onOpenChange, children }: GitHubDialogProps) => {
     return (
       <Suspense fallback={<div>...</div>}>

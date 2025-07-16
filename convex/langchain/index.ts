@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { action, internalAction } from "../_generated/server";
-import type { Id } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { agentGraph } from "./agent";
 import { api, internal } from "../_generated/api";
 import {
@@ -13,7 +13,7 @@ import {
   ToolMessage,
 } from "@langchain/core/messages";
 import { MemorySaver } from "@langchain/langgraph";
-import { GraphState } from "./state";
+import type { GraphState, AIChunkGroup, ToolChunkGroup } from "./state";
 import { v } from "convex/values";
 import {
   buildMessageLookups,
@@ -21,20 +21,6 @@ import {
 } from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
-
-export interface AIChunkGroup {
-  type: "ai";
-  content: string;
-  reasoning?: string;
-}
-
-export interface ToolChunkGroup {
-  type: "tool";
-  toolName: string;
-  input?: unknown;
-  output?: unknown;
-  isComplete: boolean;
-}
 
 export const generateTitle = internalAction({
   args: v.object({
@@ -101,6 +87,7 @@ export const chat = action({
       },
     );
 
+    let streamDoc: Doc<"streams"> | null = null;
     let buffer: string[] = [];
     let checkpoint: typeof GraphState.State | null = null;
     let finished = false;
@@ -115,7 +102,7 @@ export const chat = action({
           if (buffer.length > 0) {
             const chunks = buffer;
             buffer = [];
-            await ctx.runMutation(internal.streams.mutations.flush, {
+            streamDoc = await ctx.runMutation(internal.streams.mutations.flush, {
               chatId,
               chunks,
               completedSteps: [
@@ -124,22 +111,28 @@ export const chat = action({
                 ) ?? []),
                 ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
                   ? [
-                      ...(Array.isArray(localCheckpoint.plan[0])
-                        ? localCheckpoint.plan[0].map((step) => step.step)
-                        : [localCheckpoint.plan[0].step]),
-                    ]
+                    ...(localCheckpoint.plan[0].type === "parallel"
+                      ? localCheckpoint.plan[0].data.map((step) => step.step)
+                      : [localCheckpoint.plan[0].data.step]),
+                  ]
                   : []),
               ],
             });
+          }
+          if (streamDoc?.status === "cancelled") {
+            abort.abort();
+            return null;
           }
           await new Promise((resolve) => setTimeout(resolve, 300));
         }
       };
 
-      let lastToolInput: unknown | undefined = undefined;
       const streamer = async () => {
         try {
           for await (const evt of stream) {
+            if (abort.signal.aborted) {
+              return;
+            }
             localCheckpoint = (
               await agent.getState({
                 configurable: { thread_id: chatId },
@@ -159,17 +152,16 @@ export const chat = action({
                     content: evt.data?.chunk?.content ?? "",
                     reasoning:
                       evt.data?.chunk?.additional_kwargs?.reasoning_content,
-                  }),
+                  } as AIChunkGroup),
                 );
               } else if (evt.event === "on_tool_start") {
-                lastToolInput = evt.data?.input;
                 buffer.push(
                   JSON.stringify({
                     type: "tool",
                     toolName: evt.name,
                     input: evt.data?.input,
                     isComplete: false,
-                  }),
+                  } as ToolChunkGroup),
                 );
               } else if (evt.event === "on_tool_end") {
                 let output = evt.data?.output.content;
@@ -198,10 +190,10 @@ export const chat = action({
                   JSON.stringify({
                     type: "tool",
                     toolName: evt.name,
-                    input: lastToolInput,
+                    input: evt.data?.input,
                     output,
                     isComplete: true,
-                  }),
+                  } as ToolChunkGroup),
                 );
               }
             }

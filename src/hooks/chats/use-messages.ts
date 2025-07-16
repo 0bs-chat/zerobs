@@ -9,8 +9,13 @@ import {
   type BranchPath,
   type MessageWithBranchInfo,
 } from "../../../convex/chatMessages/helpers";
-import { lastChatMessageAtom } from "@/store/chatStore";
+import {
+  lastChatMessageAtom,
+  groupedMessagesAtom,
+  useStreamAtom,
+} from "@/store/chatStore";
 import { useSetAtom } from "jotai";
+import { useStream } from "./use-stream";
 
 export type { MessageWithBranchInfo, BranchPath };
 
@@ -31,10 +36,17 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> }) => {
     () => (messages ? buildMessageTree(messages) : []),
     [messages]
   );
+
+  // Set up atoms
   const setLastMessageId = useSetAtom(lastChatMessageAtom);
+  const setGroupedMessages = useSetAtom(groupedMessagesAtom);
+  const setUseStreamAtom = useSetAtom(useStreamAtom);
 
   // State to track selected branch path (array of indices, one per depth)
   const [branchPath, setBranchPath] = useState<BranchPath>([]);
+
+  // Get stream data
+  const streamData = useStream(chatId);
 
   // Calculate the current thread with branch information
   const currentThread = useMemo(
@@ -53,6 +65,25 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> }) => {
   const groupedMessages = useMemo(() => {
     return groupMessages(currentThread);
   }, [currentThread]);
+
+  // Update atoms when data changes
+  useEffect(() => {
+    const thread = buildThread(messageTree, branchPath);
+    const lastMessageId =
+      thread.length > 0 ? thread[thread.length - 1].message._id : undefined;
+
+    setLastMessageId(lastMessageId);
+    setGroupedMessages(groupedMessages);
+    setUseStreamAtom(streamData);
+  }, [
+    messageTree,
+    branchPath,
+    groupedMessages,
+    streamData,
+    setLastMessageId,
+    setGroupedMessages,
+    setUseStreamAtom,
+  ]);
 
   // Function to change branch at a specific depth
   const changeBranch = useCallback((depth: number, newBranchIndex: number) => {
@@ -120,6 +151,7 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> }) => {
     messageTree,
     currentThread,
     groupedMessages,
+    streamData,
     lastMessageId: currentThread[currentThread.length - 1]?.message._id,
 
     // Actions

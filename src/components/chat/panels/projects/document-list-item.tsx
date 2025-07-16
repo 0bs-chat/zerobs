@@ -53,7 +53,9 @@ export function ProjectDocumentListItem({
             variant="ghost"
             size="icon"
             className="cursor-pointer hover:text-primary"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
               setDocumentDialogOpen(projectDocument.document._id);
             }}
           >
@@ -63,9 +65,11 @@ export function ProjectDocumentListItem({
             variant="ghost"
             className="cursor-pointer hover:text-destructive"
             size="icon"
-            onClick={() =>
-              removeDocument({ projectDocumentId: projectDocument._id })
-            }
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              removeDocument({ projectDocumentId: projectDocument._id });
+            }}
           >
             <Trash2Icon className="size-5 " />
           </Button>

@@ -14,13 +14,13 @@ import {
   sidebarOpenAtom,
 } from "@/store/chatStore";
 import { CreateProjectDialog } from "@/components/chat/panels/projects/create-project-dialog";
-import { useProjects } from "@/hooks/chats/use-projects";
+import { useProjects } from "@/hooks/use-projects";
 
 export const ProjectsList = () => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const navigate = useNavigate();
-  const allProjects = useProjects(20);
+  const { projects: allProjects } = useProjects(20);
 
   const removeProjectMutation = useMutation(api.projects.mutations.remove);
   const updateChat = useMutation(api.chats.mutations.update);

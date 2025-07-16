@@ -33,6 +33,22 @@ function RootRouteComponent() {
 
   const publicRoutes = ["/auth"];
 
+  {
+    isLoading && (
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <div className="flex justify-center items-center h-screen font-sans bg-background">
+          <Loader2 className="w-10 h-10 animate-spin [animation-duration:0.3s]" />
+        </div>
+      </ThemeProvider>
+    );
+  }
+
+  {
+    !isAuthenticated && !publicRoutes.includes(location.pathname) && (
+      <Navigate to="/auth" />
+    );
+  }
+
   const sidebarOpen = useAtomValue(sidebarOpenAtom);
   const setSidebarOpen = useSetAtom(sidebarOpenAtom);
   const resizePanelOpen = useAtomValue(resizePanelOpenAtom);

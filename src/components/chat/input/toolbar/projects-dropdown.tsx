@@ -16,7 +16,7 @@ import {
 import { useSetAtom } from "jotai";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
-import { useProjects } from "@/hooks/chats/use-projects";
+import { useProjects } from "@/hooks/use-projects";
 
 interface ProjectsDropdownProps {
   onCloseDropdown: () => void;
@@ -27,8 +27,8 @@ export const ProjectsDropdown = ({
 }: ProjectsDropdownProps) => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
+  const { projects } = useProjects(3);
 
-  const projects = useProjects(3);
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
