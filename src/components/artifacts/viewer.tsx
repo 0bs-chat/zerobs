@@ -73,7 +73,7 @@ const prepareReactCode = (code: string): string => {
       };
       // Simple mock: render a box with the component name.
       return <div style={style} {...props}><strong>${id}</strong>{children && <span style={{ marginLeft: '0.25rem' }}>{children}</span>}</div>;
-    };`,
+    };`
     )
     .join("\n");
 
@@ -246,7 +246,7 @@ const MermaidRenderer = ({ content }: { content: string }) => {
 
 const renderArtifactContent = (
   artifact: Artifact,
-  view: "preview" | "source",
+  view: "preview" | "source"
 ) => {
   if (view === "source" && artifact.type !== "application/vnd.ant.code") {
     let language = artifact.language;
@@ -300,7 +300,7 @@ export const ArtifactViewer = ({
   onClose: () => void;
 }) => {
   const { copy, copied } = useCopy({ duration: 500 });
-  const [view, setView] = useState<"preview" | "source">("preview");
+  const [view, setView] = useState<"preview" | "source">("source");
 
   useEffect(() => {
     if (artifact.type === "application/vnd.ant.code") {

@@ -4,12 +4,12 @@
 2. projects page & rendering issues. [done]
 3. artifacts bug. [done]
 4. projects page + update projectid ui. [done]
-5. uploaded files not getting shown.
-6. add opening and closing animations to planner step accordion.
+5. uploaded files not getting shown. [done] will do animations after.
+6. auto upload images if user pastes from clipboard + allow attaching/removing files as well in the user edit mode.
 7. better model selector.
 8. add more models.
 9. copy button implementation. (all getting active at the same time.)
-10. auto upload images if user pastes from clipboard + allow attaching/removing files as well in the user edit mode.
+10. add opening and closing animations to planner step accordion
 11. orchestrator (where it searches more and longer)
 12. regenerate n branch chat wth model selector.
 13. default mcps (gonna work on a proper jupyter for code exec, memory mcp, v0 like mcp)

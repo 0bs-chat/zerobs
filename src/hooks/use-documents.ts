@@ -4,11 +4,13 @@ import { api } from "../../convex/_generated/api";
 import { useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { newChatDocumentsAtom } from "@/store/chatStore";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
+import { useMemo } from "react";
 
 export const useRemoveDocument = () => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
+
   const chatInputQuery = useQuery(
     api.chats.queries.get,
     chatId !== undefined && chatId !== null && chatId !== ""
@@ -99,17 +101,17 @@ export const useUploadDocuments = (
       );
 
       // Update chat input with new documents
-      if (chat) {
-        if (chatId !== undefined && chatId !== null && chatId !== "") {
-          await updateChatMutation({
-            chatId,
-            updates: {
-              documents: [...chat.documents, ...documentIds],
-            },
-          });
-        } else {
-          setNewChatDocuments((prev) => [...prev, ...documentIds]);
-        }
+      if (chatId !== undefined && chatId !== null && chatId !== "") {
+        // Existing chat - update chat documents
+        await updateChatMutation({
+          chatId,
+          updates: {
+            documents: [...(chat?.documents || []), ...documentIds],
+          },
+        });
+      } else {
+        // New chat - update atom
+        setNewChatDocuments((prev) => [...prev, ...documentIds]);
       }
 
       toast(
@@ -124,4 +126,29 @@ export const useUploadDocuments = (
       });
     }
   };
+};
+
+export const useDocumentList = () => {
+  const params = useParams({ strict: false });
+  const chatId = params.chatId as Id<"chats">;
+
+  const chat = useQuery(
+    api.chats.queries.get,
+    chatId !== undefined ? { chatId } : "skip"
+  );
+
+  const newChatDocuments = useAtomValue(newChatDocumentsAtom);
+
+  const documentIds = useMemo(() => {
+    return chatId !== undefined && chatId !== null && chatId !== ""
+      ? chat?.documents || [] // Existing chat: use chat.documents
+      : newChatDocuments; // New chat: use atom
+  }, [chatId, chat?.documents, newChatDocuments]);
+
+  const documents = useQuery(
+    api.documents.queries.getMultiple,
+    documentIds.length > 0 ? { documentIds } : "skip"
+  );
+
+  return { documents, documentIds };
 };

@@ -18,11 +18,8 @@ const ArtifactsList = ({ artifacts }: { artifacts: Artifact[] }) => {
   }
   return (
     <div className="flex flex-col gap-4 h-full">
-      <ScrollArea
-        type="always"
-        className="flex-grow h-[calc(100vh-10rem)] pr-3"
-      >
-        <div className="flex flex-col gap-3">
+      <ScrollArea type="always" className="flex-grow h-[calc(100vh-10rem)]">
+        <div className="flex flex-col gap-2">
           {artifacts.map((artifact) => (
             <ArtifactCard key={`${artifact.id}`} artifact={artifact} />
           ))}

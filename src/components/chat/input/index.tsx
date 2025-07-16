@@ -5,8 +5,8 @@ import {
 } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useAtom, useSetAtom } from "jotai";
-import { newChatDocumentsAtom, newChatTextAtom } from "@/store/chatStore";
+import { useSetAtom } from "jotai";
+import { newChatTextAtom } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
 import { useRef, type RefObject } from "react";
@@ -23,13 +23,13 @@ import { smoothTransition } from "@/lib/motion";
 export const ChatInput = () => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
+
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const textareaRef = useRef<AutosizeTextAreaRef>(null);
   const handleSubmit = useHandleSubmit();
   const { scrollToBottom, isAtBottom } = useScroll();
 
   const setNewChatText = useSetAtom(newChatTextAtom);
-  const [newChatDocuments] = useAtom(newChatDocumentsAtom);
 
   const debouncedUpdateChatMutation = useDebouncedCallback((text: string) => {
     updateChatMutation({
@@ -47,13 +47,13 @@ export const ChatInput = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.9 }}
             transition={smoothTransition}
-            className="absolute top-0 right-1/2 -translate-y-10 translate-x-1/2"
+            className="absolute top-0 right-1/2 -translate-y-10 translate-x-1/2 z-10"
           >
             <Button
               onClick={() => scrollToBottom("smooth")}
               variant="outline"
               size="sm"
-              className="text-xs text-muted-foreground rounded-full"
+              className="text-xs text-muted-foreground rounded-full shadow-lg border border-border/50 bg-background/80 backdrop-blur-sm hover:bg-background/90"
             >
               <ArrowDown className="w-4 h-4" />
               Scroll to bottom
@@ -63,14 +63,14 @@ export const ChatInput = () => {
       </AnimatePresence>
 
       {/* Document List */}
-      <DocumentList documentIds={newChatDocuments} />
+      <DocumentList />
 
       {/* Input */}
       <div>
         <AutosizeTextarea
           key={chatId}
           maxHeight={192}
-          minHeight={56}
+          minHeight={60}
           ref={textareaRef}
           className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
           onChange={(e) => {

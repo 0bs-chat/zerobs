@@ -82,7 +82,7 @@ export const ArtifactCard = memo(({ artifact }: { artifact: Artifact }) => {
           : "border-2 border-transparent"
       }`}
     >
-      <CardHeader className="py-1.5">
+      <CardHeader>
         <div className="flex items-center justify-between gap-2 max-w-full">
           <div className="flex items-center gap-2 min-w-1/2 flex-1">
             <Icon className={`w-5 h-5 ${className} flex-shrink-0`} />

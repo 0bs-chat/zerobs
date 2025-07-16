@@ -74,11 +74,7 @@ export const ProjectsList = () => {
                   : ""
               }`}
               onClick={() => {
-                if (chatId === undefined || chatId === null || chatId === "") {
-                  setSelectedProjectId(
-                    selectedProjectId === project._id ? null : project._id
-                  );
-                } else {
+                if (chatId !== undefined && chatId !== null && chatId !== "") {
                   setSelectedProjectId(project._id);
                   updateChat({
                     chatId,
@@ -86,13 +82,24 @@ export const ProjectsList = () => {
                       projectId: project._id,
                     },
                   });
+                } else {
+                  setSelectedProjectId(
+                    selectedProjectId === project._id ? null : project._id
+                  );
                 }
               }}
             >
               <div className="flex items-center justify-between flex-1 gap-1 w-full">
-                <div className="flex gap-2 items-center justify-start w-full">
-                  <Folder className="w-6 h-6 fill-accent text-accent-foreground" />
-                  <h3 className="font-medium text-lg">{project.name}</h3>
+                <div className="flex flex-col gap-1">
+                  <div className="flex gap-2 items-center justify-start w-full">
+                    <Folder className="w-6 h-6 fill-accent text-accent-foreground" />
+                    <h3 className="font-medium text-lg">{project.name}</h3>
+                  </div>
+                  {project.description && (
+                    <p className="text-sm text-muted-foreground text-justify line-clamp-2 text-ellipsis w-full">
+                      {project.description}
+                    </p>
+                  )}
                 </div>
                 <div className=" hidden gap-2 items-center justify-center z-10 absolute right-2 group-hover/card:flex">
                   <Button
@@ -128,11 +135,6 @@ export const ProjectsList = () => {
                   </Button>
                 </div>
               </div>
-              {project.description && (
-                <p className="text-sm text-muted-foreground text-justify line-clamp-2 text-ellipsis w-full">
-                  {project.description}
-                </p>
-              )}
             </Card>
           ))}
         </div>
