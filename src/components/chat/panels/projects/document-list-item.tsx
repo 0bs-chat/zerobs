@@ -1,4 +1,4 @@
-import { Trash2Icon, EyeIcon } from "lucide-react";
+import { Trash2Icon, EyeIcon, CheckIcon } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { ProjectDocument } from "./types";
@@ -31,15 +31,21 @@ export function ProjectDocumentListItem({
       }
     >
       <div className="flex flex-row items-center gap-3 w-full p-2">
-        <div>
-          {(() => {
-            const { icon: Icon, className } = getTagInfo(
-              projectDocument.document.type,
-              projectDocument.document.status
-            );
-            return <Icon className={className} />;
-          })()}
-        </div>
+        {!projectDocument.selected ? (
+          <div>
+            {(() => {
+              const { icon: Icon, className } = getTagInfo(
+                projectDocument.document.type,
+                projectDocument.document.status
+              );
+              return <Icon className={className} />;
+            })()}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <CheckIcon className="size-5 text-green-500" />
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <p className="font-medium" style={{ wordBreak: "break-word" }}>
             {projectDocument.document.name}

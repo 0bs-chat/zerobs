@@ -5,7 +5,7 @@
 3. artifacts bug. [done]
 4. projects page + update projectid ui. [done]
 5. uploaded files not getting shown. [done] will do animations after.
-5a. fix doc viewer.
+5a. fix document viewer.
 6. auto upload images if user pastes from clipboard + allow attaching/removing files as well in the user edit mode.
 7. better model selector.
 8. add more models.

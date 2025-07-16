@@ -92,7 +92,7 @@ export const ProjectsList = () => {
               <div className="flex items-center justify-between flex-1 gap-1 w-full">
                 <div className="flex flex-col gap-1">
                   <div className="flex gap-2 items-center justify-start w-full">
-                    <Folder className="w-6 h-6 fill-accent text-accent-foreground" />
+                    <Folder className="w-6 h-6 fill-accent text-accent-foreground/70" />
                     <h3 className="font-medium text-lg">{project.name}</h3>
                   </div>
                   {project.description && (

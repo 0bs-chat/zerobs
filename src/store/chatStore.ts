@@ -136,3 +136,5 @@ export const selectedArtifactAtom = atomWithStorage<Artifact | null>(
   "selectedArtifact",
   null
 );
+
+export const documentUploadDialogOpenAtom = atom<boolean>(false);

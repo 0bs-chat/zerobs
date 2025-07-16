@@ -20,11 +20,11 @@ export const DocumentDialog = () => {
 
   const document = useQuery(
     api.documents.queries.get,
-    documentDialogOpen ? { documentId: documentDialogOpen } : "skip",
+    documentDialogOpen ? { documentId: documentDialogOpen } : "skip"
   );
 
   const generateDownloadUrl = useMutation(
-    api.documents.mutations.generateDownloadUrl,
+    api.documents.mutations.generateDownloadUrl
   );
 
   useEffect(() => {
@@ -90,7 +90,7 @@ export const DocumentDialog = () => {
 
   const { icon: Icon, className: IconClassName } = getTagInfo(
     document?.type!,
-    document?.status!,
+    document?.status!
   );
 
   return (
@@ -98,11 +98,11 @@ export const DocumentDialog = () => {
       open={!!documentDialogOpen}
       onOpenChange={() => setDocumentDialogOpen(undefined)}
     >
-      <DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-[800px] h-[76vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Icon className={`${IconClassName} h-8 w-8`} />
-            <span>{documentName}</span>
+            <span className="text-lg font-medium">{documentName}</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -167,9 +167,11 @@ export const DocumentDialog = () => {
             )}
         </div>
 
-        <div className="flex justify-end gap-2 mt-4">
+        <div className="flex justify-end gap-2 py-3">
           {document?.type === "file" ? (
-            <Button onClick={handleDownload}>Download</Button>
+            <Button onClick={handleDownload} className="cursor-pointer">
+              Download
+            </Button>
           ) : document?.type === "url" ||
             document?.type === "site" ||
             document?.type === "youtube" ? (
@@ -179,6 +181,7 @@ export const DocumentDialog = () => {
           ) : null}
           <Button
             variant="outline"
+            className="cursor-pointer"
             onClick={() => setDocumentDialogOpen(undefined)}
           >
             Close

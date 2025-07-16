@@ -22,6 +22,7 @@ import { layoutTransition } from "@/lib/motion";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopNav } from "@/components/topnav";
 import { Panel } from "@/components/chat/panels";
+import { DocumentDialog } from "@/components/document-dialog";
 
 export const Route = createRootRoute({
   component: RootRouteComponent,
@@ -119,6 +120,7 @@ function RootRouteComponent() {
             </ResizablePanelGroup>
           </SidebarProvider>
         </motion.div>
+        <DocumentDialog />
         <Toaster />
       </ThemeProvider>
     </>

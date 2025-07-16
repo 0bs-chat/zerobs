@@ -152,3 +152,95 @@ export const useDocumentList = () => {
 
   return { documents, documentIds };
 };
+
+export function useDocumentUpload(projectId: Id<"projects">) {
+  const uploadDocuments = useUploadDocuments({
+    type: "file",
+  });
+  const createDocuments = useMutation(api.documents.mutations.create);
+  const createProjectDocuments = useMutation(
+    api.projectDocuments.mutations.create
+  );
+  const updateChatInput = useMutation(api.chats.mutations.update);
+  const params = useParams({ strict: false });
+  const chatId = params.chatId as Id<"chats">;
+
+  const handleFileUpload = async (files: FileList) => {
+    const documentIds = await uploadDocuments(files);
+
+    if (documentIds) {
+      await Promise.all(
+        documentIds
+          .filter((documentId) => documentId !== undefined)
+          .map((documentId) =>
+            createProjectDocuments({
+              projectId,
+              documentId,
+            })
+          )
+      );
+    }
+    if (chatId !== undefined && chatId !== null && chatId !== "") {
+      await updateChatInput({
+        chatId,
+        updates: {
+          projectId,
+        },
+      });
+    }
+  };
+
+  const handleUrlUpload = async (url: string) => {
+    if (!url) return;
+
+    const documentId = await createDocuments({
+      name: url,
+      type: "url",
+      size: 0,
+      key: url,
+    });
+
+    await createProjectDocuments({
+      projectId,
+      documentId,
+    });
+  };
+
+  const handleSiteUpload = async (url: string) => {
+    if (!url) return;
+    const documentId = await createDocuments({
+      name: url,
+      type: "site",
+      size: 0,
+      key: url,
+    });
+
+    await createProjectDocuments({
+      projectId,
+      documentId,
+    });
+  };
+
+  const handleYoutubeUpload = async (url: string) => {
+    if (!url) return;
+
+    const documentId = await createDocuments({
+      name: url,
+      type: "youtube",
+      size: 0,
+      key: url,
+    });
+
+    await createProjectDocuments({
+      projectId,
+      documentId,
+    });
+  };
+
+  return {
+    handleFileUpload,
+    handleUrlUpload,
+    handleSiteUpload,
+    handleYoutubeUpload,
+  };
+}

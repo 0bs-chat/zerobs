@@ -1,5 +1,5 @@
-import { ProjectsList } from "./list";
-import { ProjectDetails } from "./details";
+import { ProjectsList } from "./project-list";
+import { ProjectDetails } from "./project-details";
 import { useAtomValue } from "jotai";
 import { selectedProjectIdAtom } from "@/store/chatStore";
 import { useParams } from "@tanstack/react-router";

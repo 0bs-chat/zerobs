@@ -67,7 +67,7 @@ const DocumentBadge = memo(
     return (
       <Badge
         variant="outline"
-        className="flex items-center gap-1.5 px-1 py-1 bg-secondary/50 hover:bg-secondary/80 transition-colors duration-300"
+        className="flex items-center gap-1.5 px-1 py-1 bg-secondary/50 hover:bg-secondary/80 transition-colors duration-300 cursor-pointer"
         onClick={handlePreview}
       >
         <Icon className={`${IconClassName} h-4 w-4`} />
