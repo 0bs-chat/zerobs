@@ -19,11 +19,11 @@ import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { smoothTransition } from "@/lib/motion";
+import { useFileUploadHandlers } from "@/hooks/use-documents";
 
 export const ChatInput = () => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
-
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const textareaRef = useRef<AutosizeTextAreaRef>(null);
   const handleSubmit = useHandleSubmit();
@@ -37,6 +37,8 @@ export const ChatInput = () => {
       updates: { text },
     });
   }, 300);
+
+  useFileUploadHandlers(textareaRef as RefObject<AutosizeTextAreaRef>);
 
   return (
     <div className="relative flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg">

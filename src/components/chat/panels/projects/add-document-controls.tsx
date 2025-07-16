@@ -13,7 +13,7 @@ import {
   YoutubeIcon,
 } from "lucide-react";
 import type { Id } from "../../../../../convex/_generated/dataModel";
-import { useDocumentUpload } from "@/hooks/use-documents";
+import { documentUploadHandlers } from "@/hooks/use-documents";
 import { useState } from "react";
 import {
   Dialog,
@@ -35,7 +35,7 @@ export const AddDocumentControls = ({
     handleUrlUpload,
     handleSiteUpload,
     handleYoutubeUpload,
-  } = useDocumentUpload(projectId);
+  } = documentUploadHandlers(projectId);
 
   // Local state for dialog
   const [dialogOpen, setDialogOpen] = useState(false);

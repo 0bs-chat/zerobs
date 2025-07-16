@@ -1,7 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ExternalLinkIcon, Folder, PlusIcon, TrashIcon } from "lucide-react";
+import {
+  ExternalLinkIcon,
+  Folder,
+  FolderIcon,
+  PlusIcon,
+  TrashIcon,
+} from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
@@ -46,6 +52,7 @@ export const ProjectsList = () => {
               setSidebarOpen(false);
             }}
           >
+            <FolderIcon className="size-4 text-accent-foreground/70 " />
             All Projects
           </Button>
           <CreateProjectDialog>
