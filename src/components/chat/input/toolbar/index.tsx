@@ -6,12 +6,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   PlusIcon,
   ArrowUp,
   PaperclipIcon,
   GithubIcon,
   BrainIcon,
   Hammer,
+  ChevronDownIcon,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { useUploadDocuments } from "@/hooks/use-documents";
@@ -23,12 +29,11 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useParams } from "@tanstack/react-router";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import React, { useRef, useState, type RefObject } from "react";
-import { getTagInfo } from "@/lib/helpers";
+import { getModalityIcon } from "@/lib/helpers";
 import GitHubDialog from "../github";
 import { ConductorToggle } from "./conductorToggle";
 import { OrchestratorToggle } from "./orchestratorToggle";
@@ -36,8 +41,10 @@ import { useAtomValue, useSetAtom } from "jotai";
 import {
   newChatReasoningEffortAtom,
   newChatModelAtom,
+  modelPopoverOpenAtom,
   streamStatusAtom,
 } from "@/store/chatStore";
+import { useAtom } from "jotai";
 import { models } from "../../../../../convex/langchain/models";
 import { ArtifactsToggle } from "./artifatsToggle";
 import { WebSearchToggle } from "./webSearchToggle";
@@ -68,6 +75,8 @@ export const ToolBar = React.memo(
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const streamStatus = useAtomValue(streamStatusAtom);
     const cancelStreamMutation = useMutation(api.streams.mutations.cancel);
+    const [modelPopoverOpen, setModelPopoverOpen] =
+      useAtom(modelPopoverOpenAtom);
 
     const selectedModel = chat?.model ?? newChatModel;
     const reasoningEffort = chat?.reasoningEffort ?? newChatReasoningEffort;
@@ -78,6 +87,18 @@ export const ToolBar = React.memo(
 
     const handleFileUpload = useUploadDocuments({ type: "file" });
     const handleSubmit = useHandleSubmit();
+
+    const handleModelSelect = (modelName: string) => {
+      if (chatId === undefined || chatId === null || chatId === "") {
+        setNewChatModel(modelName);
+      } else {
+        updateChatMutation({
+          chatId,
+          updates: { model: modelName },
+        });
+      }
+      setModelPopoverOpen(false);
+    };
 
     return (
       <div className="flex flex-row justify-between items-center w-full p-1">
@@ -109,8 +130,8 @@ export const ToolBar = React.memo(
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
-                    setIsDropdownOpen(false); // unmounting dropdown
-                    setIsDialogOpen(true); // dialog mount
+                    setIsDropdownOpen(false);
+                    setIsDialogOpen(true);
                   }}
                 >
                   <GithubIcon className="w-4 h-4" />
@@ -129,6 +150,7 @@ export const ToolBar = React.memo(
           <WebSearchToggle chatId={chatId} />
         </div>
         <div className="flex flex-row items-center gap-1">
+          {/* selectreasoing div */}
           {showReasoningEffort && (
             <Select
               value={reasoningEffort}
@@ -154,65 +176,69 @@ export const ToolBar = React.memo(
               </SelectContent>
             </Select>
           )}
-          <Select
-            value={selectedModel}
-            onValueChange={(value) => {
-              if (chatId === undefined || chatId === null || chatId === "") {
-                setNewChatModel(value);
-              } else {
-                updateChatMutation({
-                  chatId,
-                  updates: { model: value },
-                });
-              }
-            }}
-          >
-            <SelectTrigger>
-              {selectedModelConfig?.label || selectedModel}
-            </SelectTrigger>
-            <SelectContent>
-              {models?.map((model, index) => {
-                if (model.hidden) return null;
-                return (
-                  <SelectItem
-                    key={model.model}
-                    value={model.model_name}
-                    className={`${
-                      model.model_name === selectedModel ? "bg-accent" : ""
-                    } ${index > 0 ? "mt-1" : ""}`}
-                  >
-                    <div className="flex flex-col w-full gap-2">
-                      <span className={`text-foreground`}>{model.label}</span>
-                      <div className="flex flex-row gap-1 flex-wrap">
+          {/* model select div */}
+          <Popover open={modelPopoverOpen} onOpenChange={setModelPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="justify-between gap-2 cursor-pointer bg-muted"
+                onClick={() => setModelPopoverOpen(!modelPopoverOpen)}
+              >
+                {selectedModelConfig?.label || selectedModel}
+                <ChevronDownIcon className="h-4 w-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-96 max-h-96 overflow-y-auto p-0"
+              align="end"
+            >
+              <div className="space-y-1 p-1 dark:bg-black bg-white">
+                {models
+                  .filter((model) => !model.hidden)
+                  .map((model, index) => (
+                    <div
+                      key={model.model}
+                      className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60   ${
+                        model.model_name === selectedModel
+                          ? "bg-accent/40 dark:bg-accent/70"
+                          : ""
+                      }`}
+                      onClick={() => handleModelSelect(model.model_name)}
+                    >
+                      <div className="text-foreground flex gap-2 items-center justify-center ">
+                        <img
+                          src={model.logo}
+                          alt={model.label}
+                          className={`h-4 w-4 ${
+                            ["openai", "x-ai", "openrouter"].includes(
+                              model.provider
+                            )
+                              ? "dark:invert"
+                              : ""
+                          }`}
+                        />
+                        {model.label}
+                      </div>
+                      <div className="flex flex-row gap-2 items-center opacity-75">
                         {model.modalities?.map((modality) => {
                           const { icon: Icon, className: IconClassName } =
-                            getTagInfo(modality);
+                            getModalityIcon(modality);
                           return (
-                            <Badge
+                            <Icon
                               key={modality}
-                              className={`flex items-center gap-1 text-foreground bg-input/80`}
-                            >
-                              <Icon className={`h-3 w-3 ${IconClassName}`} />
-                              {modality}
-                            </Badge>
+                              className={`h-4 w-4 ${IconClassName}`}
+                            />
                           );
                         })}
                         {model.toolSupport && (
-                          <Badge
-                            className={`flex items-center gap-1 text-foreground bg-input/80`}
-                          >
-                            <Hammer className="h-3 w-3" />
-                            Tools
-                          </Badge>
+                          <Hammer key={model.model} className="h-4 w-4" />
                         )}
                       </div>
                     </div>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-
+                  ))}
+              </div>
+            </PopoverContent>
+          </Popover>
           <motion.div
             variants={buttonHover}
             initial="rest"

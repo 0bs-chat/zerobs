@@ -74,6 +74,7 @@ export const ChatInput = () => {
           maxHeight={192}
           minHeight={60}
           ref={textareaRef}
+          autoFocus
           className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
           onChange={() => {
             if (textareaRef?.current) {

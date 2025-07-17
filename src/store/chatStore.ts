@@ -138,3 +138,4 @@ export const selectedArtifactAtom = atomWithStorage<Artifact | null>(
 );
 
 export const documentUploadDialogOpenAtom = atom<boolean>(false);
+export const modelPopoverOpenAtom = atom<boolean>(false);

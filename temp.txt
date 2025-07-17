@@ -1,18 +1,19 @@
 -------- todo -------------------------------------------------------------------------
 
-1. make settings page. [done]
-2. projects page & rendering issues. [done]
-3. artifacts bug. [done]
-4. projects page + update projectid ui. [done]
-5. uploaded files not getting shown. [done] will do animations after.
+1.  make settings page. [done]
+2.  projects page & rendering issues. [done]
+3.  artifacts bug. [done]
+4.  projects page + update projectid ui. [done]
+5.  uploaded files not getting shown. [done] will do animations after.
 5a. fix document viewer. [done]
 6.  auto upload images if user pastes from clipboard. [done]
-6a. allow attaching/removing files as well in the user edit mode.
-7. better model selector.
-8. add more models.
-9. copy button implementation. (all getting active at the same time.)
+6a. allow attaching/removing files as well in the user edit mode. also add dropdown for model select [for later] (needs major changes)
+7.  better model selector.
+8.  add more models.
+9.  copy button implementation. (all getting active at the same time.)
 10. add opening and closing animations to planner step accordion
-11. orchestrator (where it searches more and longer)
-12. regenerate n branch chat wth model selector.
-13. default mcps (gonna work on a proper jupyter for code exec, memory mcp, v0 like mcp)
-14. special ui for our mcps (mainly v0 and memory)
+11. perf optimisation using infinitescrollarea etc.
+12. orchestrator (where it searches more and longer)
+13. regenerate n branch chat wth model selector.
+14. default mcps (gonna work on a proper jupyter for code exec, memory mcp, v0 like mcp)
+15. special ui for our mcps (mainly v0 and memory)
