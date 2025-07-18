@@ -9,7 +9,7 @@ import { AddDocumentControls } from "./add-document-controls";
 import { ProjectDocumentList } from "./document-list";
 import type { ProjectDetailsProps } from "./types";
 import { selectedProjectIdAtom } from "@/store/chatStore";
-import { useAtom } from "jotai";
+import { useSetAtom } from "jotai";
 import { useParams } from "@tanstack/react-router";
 import type { Id } from "node_modules/convex/dist/esm-types/values/value";
 
@@ -22,9 +22,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const chatId = params.chatId as Id<"chats">;
   const updateProject = useMutation(api.projects.mutations.update);
   const updateChatMutation = useMutation(api.chats.mutations.update);
-  const [selectedProjectId, setSelectedProjectId] = useAtom(
-    selectedProjectIdAtom
-  );
+  const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
   const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
     updateProject({
       projectId: projectId!,
@@ -34,6 +32,20 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
     });
   }, 1000);
 
+  const handlecloseProject = () => {
+    if (chatId === undefined || chatId === null || chatId === "") {
+      setSelectedProjectId(null);
+    } else {
+      setSelectedProjectId(null);
+      updateChatMutation({
+        chatId,
+        updates: {
+          projectId: null,
+        },
+      });
+    }
+  };
+
   if (!project) return null;
 
   return (
@@ -41,46 +53,14 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
       <div className="flex flex-col gap-1 ">
         <div className="flex items-center justify-between">
           <div className="flex gap-2 items-center justify-start w-full">
-            <Folder className="w-6 h-6 fill-accent text-accent-foreground" />
+            <Folder className="w-6 h-6 fill-accent text-accent-foreground/70" />
             <h3 className="font-medium text-lg">{project.name}</h3>
           </div>
           <Button
             variant="outline"
             size="icon"
             className="cursor-pointer"
-            onClick={() => {
-              if (chatId !== undefined && chatId !== null && chatId !== "") {
-                if (selectedProjectId === project._id) {
-                  setSelectedProjectId(null);
-                  if (
-                    chatId !== undefined &&
-                    chatId !== null &&
-                    chatId !== ""
-                  ) {
-                    updateChatMutation({
-                      chatId,
-                      updates: {
-                        projectId: null,
-                      },
-                    });
-                  }
-                } else {
-                  setSelectedProjectId(project._id);
-                  if (
-                    chatId !== undefined &&
-                    chatId !== null &&
-                    chatId !== ""
-                  ) {
-                    updateChatMutation({
-                      chatId,
-                      updates: {
-                        projectId: project._id,
-                      },
-                    });
-                  }
-                }
-              }
-            }}
+            onClick={() => handlecloseProject()}
           >
             <XIcon className="size-5" />
           </Button>

@@ -17,10 +17,18 @@ import mime from "mime";
 import { Base64 } from "convex/values";
 import { getUrl } from "../utils/helpers";
 
-export const models: {
+export type Model = {
   label: string;
   model_name: string;
   model: string;
+  ownedby:
+    | "openai"
+    | "google"
+    | "claude"
+    | "x-ai"
+    | "moonshotai"
+    | "openrouter"
+    | "deepseek";
   isThinking: boolean;
   toolSupport: boolean;
   provider: "openai" | "google";
@@ -31,224 +39,240 @@ export const models: {
   hidden?: boolean;
   type?: "chat" | "embeddings";
   temperature?: number;
-  parser?: "base" | "functionCalling"
-}[] = [
-    {
-      label: "Gemini 2.5 Flash",
-      model_name: "gemini-2.5-flash",
-      model: "google/gemini-2.5-flash-preview-05-20",
-      isThinking: false,
-      toolSupport: true,
-      provider: "openai",
-      modalities: ["text", "image", "pdf"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-      description:
-        "Gemini 2.5 Flash is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
-      usageRateMultiplier: 1.0,
-      temperature: 0.5,
-      parser: "functionCalling",
-    },
-    {
-      label: "Gemini 2.5 Flash Thinking",
-      model_name: "gemini-2.5-flash-thinking",
-      model: "google/gemini-2.5-flash-preview-05-20:thinking",
-      isThinking: true,
-      toolSupport: true,
-      provider: "openai",
-      modalities: ["text", "image", "pdf"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-      description:
-        "Gemini 2.5 Flash Thinking is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
-      usageRateMultiplier: 1.0,
-      temperature: 0.5,
-      parser: "functionCalling",
-    },
-    {
-      label: "Gemini 2.5 Pro",
-      model_name: "gemini-2.5-pro",
-      model: "google/gemini-2.5-pro-preview",
-      isThinking: true,
-      toolSupport: true,
-      provider: "openai",
-      modalities: ["text", "image", "pdf"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-      description:
-        "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
-      usageRateMultiplier: 1.5,
-      temperature: 0.5,
-      parser: "functionCalling",
-    },
-    {
-      label: "GPT-4.1",
-      model_name: "gpt-4.1",
-      model: "openai/gpt-4.1",
-      isThinking: false,
-      toolSupport: true,
-      provider: "openai",
-      modalities: ["text", "image"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
-      description:
-        "GPT-4.1 is a state-of-the-art language model capable of understanding and generating human-like text.",
-      usageRateMultiplier: 1.0,
-    },
-    {
-      label: "o4 mini",
-      model_name: "o4-mini",
-      model: "openai/o4-mini",
-      isThinking: true,
-      toolSupport: true,
-      provider: "openai",
-      modalities: ["text", "image"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-      description:
-        "o4 mini is a state-of-the-art language model capable of understanding and generating human-like text.",
-      usageRateMultiplier: 1.0,
-    },
-    {
-      label: "o3",
-      model_name: "o3",
-      model: "openai/o3",
-      isThinking: true,
-      toolSupport: true,
-      provider: "openai",
-      modalities: ["text", "image"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-      description:
-        "o3 is a state-of-the-art language model capable of understanding and generating human-like text.",
-      usageRateMultiplier: 1.5,
-    },
-    {
-      label: "Claude 4",
-      model_name: "claude-4",
-      model: "anthropic/claude-sonnet-4",
-      isThinking: false,
-      toolSupport: true,
-      provider: "openai",
-      modalities: ["text", "image", "pdf"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSCRxLvQkYbi8sZjauXl0P9cm7wv6oqd4TkgLy",
-      description:
-        "Claude 4 is a versatile model that excels in various text and image processing tasks.",
-      usageRateMultiplier: 2.0,
-      temperature: 0.5,
-      parser: "functionCalling",
-    },
-    {
-      label: "Worker",
-      model_name: "worker",
-      model: "google/gemini-2.5-flash-preview-05-20",
-      isThinking: false,
-      toolSupport: true,
-      provider: "openai",
-      modalities: ["text", "image", "pdf"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-      description:
-        "The Worker model is designed for specialized tasks requiring high efficiency.",
-      usageRateMultiplier: 1.0,
-      hidden: true,
-      temperature: 0.5,
-      parser: "functionCalling",
-    },
-    {
-      label: "Deepseek R1",
-      model_name: "deepseek-r1-0528",
-      model: "deepseek/deepseek-r1-0528:free",
-      isThinking: true,
-      toolSupport: false,
-      provider: "openai",
-      modalities: ["text"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSc6tHQtOkQ3diauvF12HnrWNtOmhI0eYwBKzf",
-      description:
-        "Deepseek R1 is a model focused on deep learning tasks with a strong emphasis on text processing.",
-      usageRateMultiplier: 1.0,
-    },
-    {
-      label: "Embeddings",
-      model_name: "embeddings",
-      model: "text-embedding-004",
-      isThinking: false,
-      toolSupport: false,
-      provider: "google",
-      modalities: ["text"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-      description:
-        "The Embeddings model is designed for generating high-quality text embeddings.",
-      usageRateMultiplier: 1.0,
-      hidden: true,
-      type: "embeddings",
-    },
-    {
-      label: "Grok 3 Mini",
-      model_name: "grok-3-mini",
-      model: "x-ai/grok-3-mini-beta",
-      isThinking: true,
-      toolSupport: true,
-      provider: "openai",
-      modalities: ["text"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-      description:
-        "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
-      usageRateMultiplier: 1.5,
-    },
-    {
-      label: "Grok 4",
-      model_name: "grok-4",
-      model: "x-ai/grok-4",
-      isThinking: true,
-      toolSupport: true,
-      provider: "openai",
-      modalities: ["text", "image"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-      description:
-        "Grok 4 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
-      usageRateMultiplier: 2.0,
-    },
-    {
-      label: "Cypher Alpha",
-      model_name: "cypher-alpha",
-      model: "openrouter/cypher-alpha:free",
-      isThinking: false,
-      toolSupport: false,
-      provider: "openai",
-      modalities: ["text"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-      description:
-        "Cypher Alpha is a stealth mode model that can be used to generate text.",
-      usageRateMultiplier: 0.0,
-    },
-    {
-      label: "Kimi K2",
-      model_name: "kimi-k2",
-      model: "moonshotai/kimi-k2",
-      isThinking: false,
-      toolSupport: true,
-      provider: "openai",
-      modalities: ["text"],
-      image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
-      description:
-        "Kimi K2 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
-      usageRateMultiplier: 1.0,
-    },
-  ];
+  parser?: "base" | "functionCalling";
+};
+
+export const models: Model[] = [
+  {
+    label: "Gemini 2.5 Flash",
+    model_name: "gemini-2.5-flash",
+    model: "google/gemini-2.5-flash-preview-05-20",
+    isThinking: false,
+    toolSupport: true,
+    provider: "google",
+    ownedby: "google",
+    modalities: ["text", "image", "pdf"],
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
+    description:
+      "Gemini 2.5 Flash is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    usageRateMultiplier: 1.0,
+    temperature: 0.5,
+    parser: "functionCalling",
+  },
+  {
+    label: "Gemini 2.5 Flash Thinking",
+    model_name: "gemini-2.5-flash-thinking",
+    model: "google/gemini-2.5-flash-preview-05-20:thinking",
+    isThinking: true,
+    toolSupport: true,
+    provider: "google",
+    ownedby: "google",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
+    modalities: ["text", "image", "pdf"],
+    description:
+      "Gemini 2.5 Flash Thinking is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    usageRateMultiplier: 1.0,
+    temperature: 0.5,
+    parser: "functionCalling",
+  },
+  {
+    label: "Gemini 2.5 Pro",
+    model_name: "gemini-2.5-pro",
+    model: "google/gemini-2.5-pro-preview",
+    isThinking: true,
+    toolSupport: true,
+    provider: "google",
+    ownedby: "google",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
+    modalities: ["text", "image", "pdf"],
+    description:
+      "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
+    usageRateMultiplier: 1.5,
+    temperature: 0.5,
+    parser: "functionCalling",
+  },
+  {
+    label: "GPT-4.1",
+    model_name: "gpt-4.1",
+    model: "openai/gpt-4.1",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    ownedby: "openai",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    modalities: ["text", "image"],
+    description:
+      "GPT-4.1 is a state-of-the-art language model capable of understanding and generating human-like text.",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "o4 mini",
+    model_name: "o4-mini",
+    model: "openai/o4-mini",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    ownedby: "openai",
+    modalities: ["text", "image"],
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    description:
+      "o4 mini is a state-of-the-art language model capable of understanding and generating human-like text.",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "o3",
+    model_name: "o3",
+    model: "openai/o3",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    ownedby: "openai",
+    modalities: ["text", "image"],
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    description:
+      "o3 is a state-of-the-art language model capable of understanding and generating human-like text.",
+    usageRateMultiplier: 1.5,
+  },
+  {
+    label: "Claude 4",
+    model_name: "claude-4",
+    model: "anthropic/claude-sonnet-4",
+    isThinking: false,
+    toolSupport: true,
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqEW1jLdxK7iJruFcAblpzLxNM30vHj4R1XQGm",
+    ownedby: "claude",
+    provider: "openai",
+    modalities: ["text", "image", "pdf"],
+    description:
+      "Claude 4 is a versatile model that excels in various text and image processing tasks.",
+    usageRateMultiplier: 2.0,
+    temperature: 0.5,
+    parser: "functionCalling",
+  },
+  {
+    label: "Worker",
+    model_name: "worker",
+    model: "google/gemini-2.5-flash-preview-05-20",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    ownedby: "x-ai",
+    modalities: ["text", "image", "pdf"],
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
+    description:
+      "The Worker model is designed for specialized tasks requiring high efficiency.",
+    usageRateMultiplier: 1.0,
+    hidden: true,
+    temperature: 0.5,
+    parser: "functionCalling",
+  },
+  {
+    label: "Deepseek R1",
+    model_name: "deepseek-r1-0528",
+    model: "deepseek/deepseek-r1-0528:free",
+    isThinking: true,
+    toolSupport: false,
+    provider: "openai",
+    ownedby: "deepseek",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgq1OXAfgZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
+    modalities: ["text"],
+    description:
+      "Deepseek R1 is a model focused on deep learning tasks with a strong emphasis on text processing.",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "Embeddings",
+    model_name: "embeddings",
+    model: "text-embedding-004",
+    isThinking: false,
+    toolSupport: false,
+    provider: "google",
+    ownedby: "deepseek",
+    modalities: ["text"],
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
+    description:
+      "The Embeddings model is designed for generating high-quality text embeddings.",
+    usageRateMultiplier: 1.0,
+    hidden: true,
+    type: "embeddings",
+  },
+  {
+    label: "Grok 3 Mini",
+    model_name: "grok-3-mini",
+    model: "x-ai/grok-3-mini-beta",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    ownedby: "x-ai",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqQVKe6msqb0eJD1lOtoRLpyBn5ImjxSY4PhQz",
+    modalities: ["text"],
+    description:
+      "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    usageRateMultiplier: 1.5,
+  },
+  {
+    label: "Grok 4",
+    model_name: "grok-4",
+    model: "x-ai/grok-4",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    ownedby: "x-ai",
+    modalities: ["text", "image"],
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqQVKe6msqb0eJD1lOtoRLpyBn5ImjxSY4PhQz",
+    description:
+      "Grok 4 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    usageRateMultiplier: 2.0,
+  },
+  {
+    label: "Cypher Alpha",
+    model_name: "cypher-alpha",
+    model: "openrouter/cypher-alpha:free",
+    isThinking: false,
+    toolSupport: false,
+    provider: "openai",
+    ownedby: "openrouter",
+    modalities: ["text"],
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
+    description:
+      "Cypher Alpha is a stealth mode model that can be used to generate text.",
+    usageRateMultiplier: 0.0,
+  },
+  {
+    label: "Kimi K2",
+    model_name: "kimi-k2",
+    model: "moonshotai/kimi-k2",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    ownedby: "openrouter",
+    modalities: ["text"],
+    description:
+      "Kimi K2 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    usageRateMultiplier: 1.0,
+  },
+];
 
 export async function getModel(
   ctx: ActionCtx,
   model: string,
   reasoningEffort: "low" | "medium" | "high" | undefined,
-  userId?: string,
+  userId?: string
 ): Promise<BaseChatModel> {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -287,7 +311,7 @@ export async function getModel(
 export async function getEmbeddingModel(
   ctx: ActionCtx,
   model: string,
-  userId?: string,
+  userId?: string
 ) {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -306,7 +330,7 @@ export async function getEmbeddingModel(
       })
     )?.value ??
     process.env[
-    modelConfig.provider === "google" ? "GOOGLE_API_KEY" : "OPENAI_API_KEY"
+      modelConfig.provider === "google" ? "GOOGLE_API_KEY" : "OPENAI_API_KEY"
     ];
 
   if (modelConfig.provider === "google") {
@@ -334,7 +358,7 @@ export async function getEmbeddingModel(
 export async function formatMessages(
   ctx: ActionCtx,
   messages: BaseMessage[],
-  model: string,
+  model: string
 ): Promise<BaseMessage[]> {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -367,7 +391,7 @@ export async function formatMessages(
                     api.documents.queries.get,
                     {
                       documentId,
-                    },
+                    }
                   );
                   if (document.type === "file") {
                     const mimeType =
@@ -378,17 +402,17 @@ export async function formatMessages(
                         : mimeType.split("/")[0];
                     if (
                       supportedTags.includes(
-                        fileType as "text" | "image" | "pdf",
+                        fileType as "text" | "image" | "pdf"
                       )
                     ) {
                       const base64 = Base64.fromByteArray(
                         new Uint8Array(
                           await (
                             await ctx.storage.get(
-                              document.key as Id<"_storage">,
+                              document.key as Id<"_storage">
                             )
-                          )?.arrayBuffer()!,
-                        ),
+                          )?.arrayBuffer()!
+                        )
                       );
                       if (fileType === "image") {
                         return {
@@ -413,7 +437,7 @@ export async function formatMessages(
                     }
                   } else if (["text", "github"].includes(document.type)) {
                     const blob = await ctx.storage.get(
-                      document.key as Id<"_storage">,
+                      document.key as Id<"_storage">
                     );
                     return {
                       type: "text",
@@ -428,7 +452,7 @@ export async function formatMessages(
               } else {
                 return contentItem;
               }
-            }),
+            })
           );
 
           // Create new message with processed content
@@ -440,7 +464,7 @@ export async function formatMessages(
       } else {
         return message;
       }
-    }),
+    })
   );
 
   return formattedMessages;
@@ -448,7 +472,7 @@ export async function formatMessages(
 
 export async function getVectorText(
   ctx: ActionCtx,
-  document: Doc<"documents">,
+  document: Doc<"documents">
 ): Promise<MessageContentComplex | DataContentBlock> {
   // Fall back to vector processing for unsupported file types
   let doc = document;

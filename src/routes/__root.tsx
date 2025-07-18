@@ -22,6 +22,7 @@ import { layoutTransition } from "@/lib/motion";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopNav } from "@/components/topnav";
 import { Panel } from "@/components/chat/panels";
+import { DocumentDialog } from "@/components/document-dialog";
 
 export const Route = createRootRoute({
   component: RootRouteComponent,
@@ -52,6 +53,21 @@ function RootRouteComponent() {
   const sidebarOpen = useAtomValue(sidebarOpenAtom);
   const setSidebarOpen = useSetAtom(sidebarOpenAtom);
   const resizePanelOpen = useAtomValue(resizePanelOpenAtom);
+  {
+    isLoading && (
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <div className="flex justify-center items-center h-screen font-sans bg-background">
+          <Loader2 className="w-10 h-10 animate-spin [animation-duration:0.3s]" />
+        </div>
+      </ThemeProvider>
+    );
+  }
+
+  {
+    !isAuthenticated && !publicRoutes.includes(location.pathname) && (
+      <Navigate to="/auth" />
+    );
+  }
 
   return (
     <>
@@ -104,6 +120,7 @@ function RootRouteComponent() {
             </ResizablePanelGroup>
           </SidebarProvider>
         </motion.div>
+        <DocumentDialog />
         <Toaster />
       </ThemeProvider>
     </>

@@ -8,7 +8,6 @@ import {
   EyeIcon,
   CodeIcon,
 } from "lucide-react";
-import { useCopy } from "@/hooks/use-copy";
 import { Markdown } from "@/components/ui/markdown";
 import { MermaidChart } from "@/components/ui/markdown/mermaid";
 import type { Artifact } from "./utils";
@@ -73,7 +72,7 @@ const prepareReactCode = (code: string): string => {
       };
       // Simple mock: render a box with the component name.
       return <div style={style} {...props}><strong>${id}</strong>{children && <span style={{ marginLeft: '0.25rem' }}>{children}</span>}</div>;
-    };`,
+    };`
     )
     .join("\n");
 
@@ -246,7 +245,7 @@ const MermaidRenderer = ({ content }: { content: string }) => {
 
 const renderArtifactContent = (
   artifact: Artifact,
-  view: "preview" | "source",
+  view: "preview" | "source"
 ) => {
   if (view === "source" && artifact.type !== "application/vnd.ant.code") {
     let language = artifact.language;
@@ -299,8 +298,8 @@ export const ArtifactViewer = ({
   artifact: Artifact;
   onClose: () => void;
 }) => {
-  const { copy, copied } = useCopy({ duration: 500 });
-  const [view, setView] = useState<"preview" | "source">("preview");
+  const [copied, setCopied] = useState(false);
+  const [view, setView] = useState<"preview" | "source">("source");
 
   useEffect(() => {
     if (artifact.type === "application/vnd.ant.code") {
@@ -311,7 +310,9 @@ export const ArtifactViewer = ({
   }, [artifact.type, artifact.id]);
 
   const handleCopy = () => {
-    copy(artifact.content);
+    navigator.clipboard.writeText(artifact.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1000);
   };
 
   const handleOpenInNewTab = () => {

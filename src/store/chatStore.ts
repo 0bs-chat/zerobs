@@ -23,8 +23,6 @@ export const createProjectDialogOpenAtom = atom(false);
 
 export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", false);
 
-export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
-
 export const groupedMessagesAtom = atom<
   ReturnType<typeof groupMessages> | undefined
 >(undefined);
@@ -133,3 +131,12 @@ export const selectedProjectIdAtom = atomWithStorage<Id<"projects"> | null>(
   "selectedProjectId",
   null
 );
+
+export const selectedArtifactAtom = atomWithStorage<Artifact | null>(
+  "selectedArtifact",
+  null
+);
+
+export const documentUploadDialogOpenAtom = atom<boolean>(false);
+export const modelPopoverOpenAtom = atom<boolean>(false);
+export const userMessageModelPopoverOpenAtom = atom<boolean>(false);
