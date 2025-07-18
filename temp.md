@@ -7,14 +7,33 @@
 5.  uploaded files not getting shown. [done] will do animations after.
 5a. fix document viewer. [done]
 6.  auto upload images if user pastes from clipboard. [done]
---- now comes this guy
-6a. allow attaching/removing files as well in the user edit mode. also add dropdown for model select [for later] (needs major changes)
 ---
+
+<details>
+<summary> now comes this guy </summary>
+
+> process
+
+1. user clicks > select the model > regenerates. or user can say retry same > just run that one. [done]
+2. let user also upload files in there.
+3. allow attaching/removing files as well in the user edit mode.
+4. search in the model picker [done]
+
+</details>
+
+---
+
+---
+
 7.  better model selector. [done]
-7a.  better topnav (according to differnet routes)
+
+7a. better topnav (according to differnet routes)
 7b. make chatinput ui clean. (> 7a)
+
+---
+
 8. copy button implementation. (all getting active at the same time.) [done]
-9.  add more models.
+9. add more models.
 10. add opening and closing animations to planner step accordion
 11. perf optimisation using infinitescrollarea etc.
 12. orchestrator (where it searches more and longer)

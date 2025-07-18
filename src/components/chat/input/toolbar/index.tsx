@@ -52,6 +52,7 @@ import { StopButtonIcon } from "./stop-button-icon";
 import { motion } from "motion/react";
 import { buttonHover, smoothTransition } from "@/lib/motion";
 import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
+import { SearchInput } from "../../messages/utils-bar/user-message-model-selector";
 
 export const ToolBar = React.memo(
   ({ textareaRef }: { textareaRef: RefObject<AutosizeTextAreaRef> }) => {
@@ -76,7 +77,6 @@ export const ToolBar = React.memo(
     const cancelStreamMutation = useMutation(api.streams.mutations.cancel);
     const [modelPopoverOpen, setModelPopoverOpen] =
       useAtom(modelPopoverOpenAtom);
-
     const selectedModel = chat?.model ?? newChatModel;
     const reasoningEffort = chat?.reasoningEffort ?? newChatReasoningEffort;
     const selectedModelConfig = models.find(
@@ -86,6 +86,8 @@ export const ToolBar = React.memo(
 
     const handleFileUpload = useUploadDocuments({ type: "file" });
     const handleSubmit = useHandleSubmit();
+
+    const [searchModel, setSearchModel] = useState("");
 
     return (
       <div className="flex flex-row justify-between items-center w-full p-1">
@@ -179,9 +181,18 @@ export const ToolBar = React.memo(
               className="w-96 max-h-96 overflow-y-auto p-0"
               align="end"
             >
+              <SearchInput
+                searchModel={searchModel}
+                setSearchModel={setSearchModel}
+              />
               <div className="space-y-1 p-1 dark:bg-black/35 bg-white">
                 {models
                   .filter((model) => !model.hidden)
+                  .filter((model) =>
+                    model.model_name
+                      .toLowerCase()
+                      .includes(searchModel.toLowerCase())
+                  )
                   .map((model, index) => (
                     <ModelItem
                       key={index}
@@ -237,11 +248,11 @@ function ModelItem({
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const setModelPopoverOpen = useSetAtom(modelPopoverOpenAtom);
 
-  const handleModelSelect = (modelName: string) => {
+  const handleModelSelect = async (modelName: string) => {
     if (chatId === undefined || chatId === null || chatId === "") {
       setNewChatModel(modelName);
     } else {
-      updateChatMutation({
+      await updateChatMutation({
         chatId,
         updates: { model: modelName },
       });
@@ -252,7 +263,7 @@ function ModelItem({
   return (
     <div
       key={model.model}
-      className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60   ${
+      className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
         model.model_name === selectedModel
           ? "bg-accent/40 dark:bg-accent/70"
           : ""

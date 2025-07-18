@@ -17,7 +17,7 @@ import mime from "mime";
 import { Base64 } from "convex/values";
 import { getUrl } from "../utils/helpers";
 
-export const models: {
+export type Model = {
   label: string;
   model_name: string;
   model: string;
@@ -40,7 +40,9 @@ export const models: {
   type?: "chat" | "embeddings";
   temperature?: number;
   parser?: "base" | "functionCalling";
-}[] = [
+};
+
+export const models: Model[] = [
   {
     label: "Gemini 2.5 Flash",
     model_name: "gemini-2.5-flash",

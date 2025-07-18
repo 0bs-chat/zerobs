@@ -10,13 +10,15 @@ import {
   chatMessageVariants,
   springTransition,
 } from "@/lib/motion";
+import { useAtomValue } from "jotai";
+import { userMessageModelPopoverOpenAtom } from "@/store/chatStore";
 
 type MessageGroup = ReturnType<typeof groupMessages>[0];
 
 export const MessagesList = memo(
   ({
     navigateBranch,
-    groupedMessages
+    groupedMessages,
   }: {
     navigateBranch: NavigateBranch;
     groupedMessages: MessageGroup[];
@@ -25,6 +27,9 @@ export const MessagesList = memo(
       null
     );
     const [editedText, setEditedText] = useState("");
+    const userMessageModelPopoverOpen = useAtomValue(
+      userMessageModelPopoverOpenAtom
+    );
 
     useEffect(() => {
       if (editingMessageId) {
@@ -35,10 +40,10 @@ export const MessagesList = memo(
           const content = messageToEdit.input.message.message.content;
           const textContent = Array.isArray(content)
             ? ((
-              content.find((c) => c.type === "text") as
-              | { type: "text"; text: string }
-              | undefined
-            )?.text ?? "")
+                content.find((c) => c.type === "text") as
+                  | { type: "text"; text: string }
+                  | undefined
+              )?.text ?? "")
             : "";
           setEditedText(textContent);
         }
@@ -76,7 +81,11 @@ export const MessagesList = memo(
                   editedText={editedText}
                   setEditedText={setEditedText}
                 />
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <div
+                  className={`opacity-0 group-hover:opacity-100 transition-opacity ${
+                    userMessageModelPopoverOpen ? "opacity-100" : "opacity-0"
+                  }`}
+                >
                   <UtilsBar
                     item={group.input}
                     isEditing={editingMessageId === group.input.message._id}
