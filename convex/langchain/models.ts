@@ -21,10 +21,7 @@ export const models: {
   label: string;
   model_name: string;
   model: string;
-  isThinking: boolean;
-  toolSupport: boolean;
-  logo: string;
-  provider:
+  ownedby:
     | "openai"
     | "google"
     | "claude"
@@ -32,6 +29,10 @@ export const models: {
     | "moonshotai"
     | "openrouter"
     | "deepseek";
+  isThinking: boolean;
+  toolSupport: boolean;
+  logo: string;
+  provider: "openai" | "google";
   modalities: ("text" | "image" | "pdf")[];
   image: string;
   description: string;
@@ -48,6 +49,7 @@ export const models: {
     isThinking: false,
     toolSupport: true,
     provider: "google",
+    ownedby: "google",
     modalities: ["text", "image", "pdf"],
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
     image:
@@ -65,6 +67,7 @@ export const models: {
     isThinking: true,
     toolSupport: true,
     provider: "google",
+    ownedby: "google",
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
     modalities: ["text", "image", "pdf"],
     image:
@@ -82,6 +85,7 @@ export const models: {
     isThinking: true,
     toolSupport: true,
     provider: "google",
+    ownedby: "google",
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
     modalities: ["text", "image", "pdf"],
     image:
@@ -99,6 +103,7 @@ export const models: {
     isThinking: false,
     toolSupport: true,
     provider: "openai",
+    ownedby: "openai",
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     modalities: ["text", "image"],
     image:
@@ -114,6 +119,7 @@ export const models: {
     isThinking: true,
     toolSupport: true,
     provider: "openai",
+    ownedby: "openai",
     modalities: ["text", "image"],
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     image:
@@ -129,6 +135,7 @@ export const models: {
     isThinking: true,
     toolSupport: true,
     provider: "openai",
+    ownedby: "openai",
     modalities: ["text", "image"],
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     image:
@@ -144,7 +151,8 @@ export const models: {
     isThinking: false,
     toolSupport: true,
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqEW1jLdxK7iJruFcAblpzLxNM30vHj4R1XQGm",
-    provider: "claude",
+    ownedby: "claude",
+    provider: "openai",
     modalities: ["text", "image", "pdf"],
     image:
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSCRxLvQkYbi8sZjauXl0P9cm7wv6oqd4TkgLy",
@@ -160,7 +168,8 @@ export const models: {
     model: "google/gemini-2.5-flash-preview-05-20",
     isThinking: false,
     toolSupport: true,
-    provider: "x-ai",
+    provider: "openai",
+    ownedby: "x-ai",
     modalities: ["text", "image", "pdf"],
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
     image:
@@ -178,7 +187,8 @@ export const models: {
     model: "deepseek/deepseek-r1-0528:free",
     isThinking: true,
     toolSupport: false,
-    provider: "deepseek",
+    provider: "openai",
+    ownedby: "deepseek",
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgq1OXAfgZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
     modalities: ["text"],
     image:
@@ -194,6 +204,7 @@ export const models: {
     isThinking: false,
     toolSupport: false,
     provider: "google",
+    ownedby: "deepseek",
     modalities: ["text"],
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
     image:
@@ -210,7 +221,8 @@ export const models: {
     model: "x-ai/grok-3-mini-beta",
     isThinking: true,
     toolSupport: true,
-    provider: "x-ai",
+    provider: "openai",
+    ownedby: "x-ai",
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqQVKe6msqb0eJD1lOtoRLpyBn5ImjxSY4PhQz",
     modalities: ["text"],
     image:
@@ -225,7 +237,8 @@ export const models: {
     model: "x-ai/grok-4",
     isThinking: true,
     toolSupport: true,
-    provider: "x-ai",
+    provider: "openai",
+    ownedby: "x-ai",
     modalities: ["text", "image"],
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqQVKe6msqb0eJD1lOtoRLpyBn5ImjxSY4PhQz",
     image:
@@ -240,7 +253,8 @@ export const models: {
     model: "openrouter/cypher-alpha:free",
     isThinking: false,
     toolSupport: false,
-    provider: "openrouter",
+    provider: "openai",
+    ownedby: "openrouter",
     modalities: ["text"],
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
     image:
@@ -256,7 +270,8 @@ export const models: {
     logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
     isThinking: false,
     toolSupport: true,
-    provider: "openrouter",
+    provider: "openai",
+    ownedby: "openrouter",
     modalities: ["text"],
     image:
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",

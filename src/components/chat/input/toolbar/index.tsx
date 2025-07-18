@@ -211,7 +211,7 @@ export const ToolBar = React.memo(
                           alt={model.label}
                           className={`h-4 w-4 ${
                             ["openai", "x-ai", "openrouter"].includes(
-                              model.provider
+                              model.ownedby
                             )
                               ? "dark:invert"
                               : ""

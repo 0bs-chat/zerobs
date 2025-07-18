@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import {
   FileIcon,
   CodeIcon,
@@ -13,7 +13,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCopy } from "@/hooks/use-copy";
 import type { Artifact } from "./utils";
 import { useAtomValue } from "jotai";
 import { selectedArtifactAtom } from "@/store/chatStore";
@@ -64,10 +63,12 @@ export const ArtifactCard = memo(({ artifact }: { artifact: Artifact }) => {
   const { viewArtifact } = useArtifactView();
 
   const { Icon, className } = getArtifactIcon(artifact.type, artifact.language);
-  const { copy, copied } = useCopy({ duration: 2000 });
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    copy(artifact.content);
+    navigator.clipboard.writeText(artifact.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1000);
   };
 
   const handleView = () => {
