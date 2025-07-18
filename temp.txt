@@ -7,9 +7,13 @@
 5.  uploaded files not getting shown. [done] will do animations after.
 5a. fix document viewer. [done]
 6.  auto upload images if user pastes from clipboard. [done]
+--- now comes this guy
 6a. allow attaching/removing files as well in the user edit mode. also add dropdown for model select [for later] (needs major changes)
+---
 7.  better model selector. [done]
-10. copy button implementation. (all getting active at the same time.)
+7a.  better topnav (according to differnet routes)
+7b. make chatinput ui clean. (> 7a)
+8. copy button implementation. (all getting active at the same time.) [done]
 9.  add more models.
 10. add opening and closing animations to planner step accordion
 11. perf optimisation using infinitescrollarea etc.

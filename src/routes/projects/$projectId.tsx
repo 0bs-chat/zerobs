@@ -165,7 +165,9 @@ function ProjectDetails() {
                       <CardHeader className="flex flex-row justify-between items-center">
                         <div className="flex flex-col gap-2">
                           <CardTitle>{chat.name}</CardTitle>
-                          <CardDescription>{chat.text}</CardDescription>
+                          {chat.text && (
+                            <CardDescription>{chat.text}</CardDescription>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground whitespace-nowrap">
                           {formatDistanceToNowStrict(

@@ -59,7 +59,6 @@ export const ToolBar = React.memo(
     const chatId = params.chatId as Id<"chats">;
     // chat atoms
     const setNewChatReasoningEffort = useSetAtom(newChatReasoningEffortAtom);
-    const setNewChatModel = useSetAtom(newChatModelAtom);
     const newChatModel = useAtomValue(newChatModelAtom);
     const newChatReasoningEffort = useAtomValue(newChatReasoningEffortAtom);
 
@@ -87,18 +86,6 @@ export const ToolBar = React.memo(
 
     const handleFileUpload = useUploadDocuments({ type: "file" });
     const handleSubmit = useHandleSubmit();
-
-    const handleModelSelect = (modelName: string) => {
-      if (chatId === undefined || chatId === null || chatId === "") {
-        setNewChatModel(modelName);
-      } else {
-        updateChatMutation({
-          chatId,
-          updates: { model: modelName },
-        });
-      }
-      setModelPopoverOpen(false);
-    };
 
     return (
       <div className="flex flex-row justify-between items-center w-full p-1">
@@ -192,49 +179,16 @@ export const ToolBar = React.memo(
               className="w-96 max-h-96 overflow-y-auto p-0"
               align="end"
             >
-              <div className="space-y-1 p-1 dark:bg-black bg-white">
+              <div className="space-y-1 p-1 dark:bg-black/35 bg-white">
                 {models
                   .filter((model) => !model.hidden)
                   .map((model, index) => (
-                    <div
-                      key={model.model}
-                      className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60   ${
-                        model.model_name === selectedModel
-                          ? "bg-accent/40 dark:bg-accent/70"
-                          : ""
-                      }`}
-                      onClick={() => handleModelSelect(model.model_name)}
-                    >
-                      <div className="text-foreground flex gap-2 items-center justify-center ">
-                        <img
-                          src={model.logo}
-                          alt={model.label}
-                          className={`h-4 w-4 ${
-                            ["openai", "x-ai", "openrouter"].includes(
-                              model.ownedby
-                            )
-                              ? "dark:invert"
-                              : ""
-                          }`}
-                        />
-                        {model.label}
-                      </div>
-                      <div className="flex flex-row gap-2 items-center opacity-75">
-                        {model.modalities?.map((modality) => {
-                          const { icon: Icon, className: IconClassName } =
-                            getModalityIcon(modality);
-                          return (
-                            <Icon
-                              key={modality}
-                              className={`h-4 w-4 ${IconClassName}`}
-                            />
-                          );
-                        })}
-                        {model.toolSupport && (
-                          <Hammer key={model.model} className="h-4 w-4" />
-                        )}
-                      </div>
-                    </div>
+                    <ModelItem
+                      key={index}
+                      model={model}
+                      selectedModel={selectedModel}
+                      chatId={chatId}
+                    />
                   ))}
               </div>
             </PopoverContent>
@@ -269,3 +223,62 @@ export const ToolBar = React.memo(
     );
   }
 );
+
+function ModelItem({
+  model,
+  selectedModel,
+  chatId,
+}: {
+  model: (typeof models)[number];
+  selectedModel: string;
+  chatId: Id<"chats">;
+}) {
+  const setNewChatModel = useSetAtom(newChatModelAtom);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const setModelPopoverOpen = useSetAtom(modelPopoverOpenAtom);
+
+  const handleModelSelect = (modelName: string) => {
+    if (chatId === undefined || chatId === null || chatId === "") {
+      setNewChatModel(modelName);
+    } else {
+      updateChatMutation({
+        chatId,
+        updates: { model: modelName },
+      });
+    }
+    setModelPopoverOpen(false);
+  };
+
+  return (
+    <div
+      key={model.model}
+      className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60   ${
+        model.model_name === selectedModel
+          ? "bg-accent/40 dark:bg-accent/70"
+          : ""
+      }`}
+      onClick={() => handleModelSelect(model.model_name)}
+    >
+      <div className="text-foreground flex gap-2 items-center justify-center ">
+        <img
+          src={model.image}
+          alt={model.label}
+          className={`h-4 w-4 ${
+            ["openai", "x-ai", "openrouter"].includes(model.ownedby)
+              ? "dark:invert"
+              : ""
+          }`}
+        />
+        {model.label}
+      </div>
+      <div className="flex flex-row gap-2 items-center opacity-75">
+        {model.modalities?.map((modality) => {
+          const { icon: Icon, className: IconClassName } =
+            getModalityIcon(modality);
+          return <Icon key={modality} className={`h-4 w-4 ${IconClassName}`} />;
+        })}
+        {model.toolSupport && <Hammer key={model.model} className="h-4 w-4" />}
+      </div>
+    </div>
+  );
+}

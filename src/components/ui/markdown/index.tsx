@@ -18,6 +18,7 @@ import { useAtom, useAtomValue } from "jotai";
 import { themeAtom } from "@/store/settings";
 import { marked } from "marked";
 import rehypeSanitize from "rehype-sanitize";
+import { toast } from "sonner";
 
 const sanitizeSchema = {
   tagNames: [
@@ -92,6 +93,7 @@ export const MarkdownBlock = memo(
           const handleCopy = () => {
             navigator.clipboard.writeText(String(children).replace(/\n$/, ""));
             setCopied(true);
+            toast.success("Copied to clipboard");
             setTimeout(() => setCopied(false), 1000);
           };
 
@@ -142,7 +144,7 @@ export const MarkdownBlock = memo(
                 </SyntaxHighlighter>
               </div>
             ) : (
-              <span className="rounded-md bg-muted p-1 font-mono text-sm font-medium">
+              <span className="rounded-md  bg-muted-foreground/10 p-1 font-mono text-sm font-medium">
                 {children}
               </span>
             )

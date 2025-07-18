@@ -31,7 +31,6 @@ export const models: {
     | "deepseek";
   isThinking: boolean;
   toolSupport: boolean;
-  logo: string;
   provider: "openai" | "google";
   modalities: ("text" | "image" | "pdf")[];
   image: string;
@@ -51,9 +50,8 @@ export const models: {
     provider: "google",
     ownedby: "google",
     modalities: ["text", "image", "pdf"],
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
     description:
       "Gemini 2.5 Flash is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     usageRateMultiplier: 1.0,
@@ -68,10 +66,9 @@ export const models: {
     toolSupport: true,
     provider: "google",
     ownedby: "google",
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
-    modalities: ["text", "image", "pdf"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
+    modalities: ["text", "image", "pdf"],
     description:
       "Gemini 2.5 Flash Thinking is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     usageRateMultiplier: 1.0,
@@ -86,10 +83,9 @@ export const models: {
     toolSupport: true,
     provider: "google",
     ownedby: "google",
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
-    modalities: ["text", "image", "pdf"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
+    modalities: ["text", "image", "pdf"],
     description:
       "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
     usageRateMultiplier: 1.5,
@@ -104,10 +100,9 @@ export const models: {
     toolSupport: true,
     provider: "openai",
     ownedby: "openai",
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
-    modalities: ["text", "image"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    modalities: ["text", "image"],
     description:
       "GPT-4.1 is a state-of-the-art language model capable of understanding and generating human-like text.",
     usageRateMultiplier: 1.0,
@@ -121,9 +116,8 @@ export const models: {
     provider: "openai",
     ownedby: "openai",
     modalities: ["text", "image"],
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     description:
       "o4 mini is a state-of-the-art language model capable of understanding and generating human-like text.",
     usageRateMultiplier: 1.0,
@@ -137,9 +131,8 @@ export const models: {
     provider: "openai",
     ownedby: "openai",
     modalities: ["text", "image"],
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     description:
       "o3 is a state-of-the-art language model capable of understanding and generating human-like text.",
     usageRateMultiplier: 1.5,
@@ -150,12 +143,11 @@ export const models: {
     model: "anthropic/claude-sonnet-4",
     isThinking: false,
     toolSupport: true,
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqEW1jLdxK7iJruFcAblpzLxNM30vHj4R1XQGm",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqEW1jLdxK7iJruFcAblpzLxNM30vHj4R1XQGm",
     ownedby: "claude",
     provider: "openai",
     modalities: ["text", "image", "pdf"],
-    image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSCRxLvQkYbi8sZjauXl0P9cm7wv6oqd4TkgLy",
     description:
       "Claude 4 is a versatile model that excels in various text and image processing tasks.",
     usageRateMultiplier: 2.0,
@@ -171,9 +163,8 @@ export const models: {
     provider: "openai",
     ownedby: "x-ai",
     modalities: ["text", "image", "pdf"],
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
     description:
       "The Worker model is designed for specialized tasks requiring high efficiency.",
     usageRateMultiplier: 1.0,
@@ -189,10 +180,9 @@ export const models: {
     toolSupport: false,
     provider: "openai",
     ownedby: "deepseek",
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgq1OXAfgZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
-    modalities: ["text"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSc6tHQtOkQ3diauvF12HnrWNtOmhI0eYwBKzf",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgq1OXAfgZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
+    modalities: ["text"],
     description:
       "Deepseek R1 is a model focused on deep learning tasks with a strong emphasis on text processing.",
     usageRateMultiplier: 1.0,
@@ -206,9 +196,8 @@ export const models: {
     provider: "google",
     ownedby: "deepseek",
     modalities: ["text"],
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqIOIY3KaMNspr61keuaXCISjAEZnKvgWcqFUx",
     description:
       "The Embeddings model is designed for generating high-quality text embeddings.",
     usageRateMultiplier: 1.0,
@@ -223,10 +212,9 @@ export const models: {
     toolSupport: true,
     provider: "openai",
     ownedby: "x-ai",
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqQVKe6msqb0eJD1lOtoRLpyBn5ImjxSY4PhQz",
-    modalities: ["text"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqQVKe6msqb0eJD1lOtoRLpyBn5ImjxSY4PhQz",
+    modalities: ["text"],
     description:
       "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     usageRateMultiplier: 1.5,
@@ -240,9 +228,8 @@ export const models: {
     provider: "openai",
     ownedby: "x-ai",
     modalities: ["text", "image"],
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqQVKe6msqb0eJD1lOtoRLpyBn5ImjxSY4PhQz",
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqQVKe6msqb0eJD1lOtoRLpyBn5ImjxSY4PhQz",
     description:
       "Grok 4 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     usageRateMultiplier: 2.0,
@@ -256,9 +243,8 @@ export const models: {
     provider: "openai",
     ownedby: "openrouter",
     modalities: ["text"],
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
     description:
       "Cypher Alpha is a stealth mode model that can be used to generate text.",
     usageRateMultiplier: 0.0,
@@ -267,14 +253,13 @@ export const models: {
     label: "Kimi K2",
     model_name: "kimi-k2",
     model: "moonshotai/kimi-k2",
-    logo: "https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
     isThinking: false,
     toolSupport: true,
     provider: "openai",
     ownedby: "openrouter",
     modalities: ["text"],
-    image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "Kimi K2 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     usageRateMultiplier: 1.0,
