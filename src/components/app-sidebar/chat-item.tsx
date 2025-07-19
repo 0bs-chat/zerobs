@@ -86,31 +86,39 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
                 )}
               >
                 <span className="truncate">{chat.name}</span>
-                <div className="absolute inset-y-0 right-0 z-10 flex items-center justify-end gap-2 bg-gradient-to-l from-background via-background/80 to-transparent pl-8 pr-1 text-muted-foreground transition-transform duration-200 group-hover/item:translate-x-0 translate-x-full">
+                <div className="absolute inset-y-0 right-0 z-10 flex items-center justify-end bg-gradient-to-l from-background via-background/80 to-transparent pl-8 pr-1 text-muted-foreground transition-transform duration-200 group-hover/item:translate-x-0 translate-x-full gap-2">
                   {isPinned ? (
-                    <PinOffIcon
-                      className="h-4 w-4 text-muted-foreground hover:cursor-pointer"
+                    <Button
+                      className="cursor-pointer text-muted-foreground bg-transparent hover:bg-transparent hover:text-accent-400 h-4 w-4  z-10 "
                       onClick={(e) => {
                         e.stopPropagation();
                         handleUnpin(chat._id);
                       }}
-                    />
+                    >
+                      <PinOffIcon className="h-4 w-4 " />
+                    </Button>
                   ) : (
-                    <PinIcon
-                      className="h-4 hover:text-secondary-foreground w-4 text-muted-foreground hover:cursor-pointer z-10"
+                    <Button
+                      className="text-muted-foreground cursor-pointer hover:bg-transparent bg-transparent hover:text-accent-400 h-4 w-4 z-10"
                       onClick={(e) => {
                         e.stopPropagation();
                         handlePin(chat._id);
                       }}
-                    />
+                    >
+                      <PinIcon className="w-4 h-4" />
+                    </Button>
                   )}
-                  <TrashIcon
-                    className="h-4 hover:text-destructive w-4 text-muted-foreground hover:cursor-pointer z-10"
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground cursor-pointer hover:bg-transparent bg-transparent h-4 w-4 hover:text-red-400 z-10"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(chat._id);
                     }}
-                  />
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </SidebarMenuButton>

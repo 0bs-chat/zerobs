@@ -7,7 +7,8 @@
 5.  uploaded files not getting shown. [done] will do animations after.
 5a. fix document viewer. [done]
 6.  auto upload images if user pastes from clipboard. [done]
----
+
+<br/>
 
 <details>
 <summary> now comes this guy </summary>
@@ -21,15 +22,16 @@
 
 </details>
 
----
+<br/>
 
----
 
-7.  better model selector. [done]
+<details>
+<summary>7.better chat input ui<summary/>
 
 7a. better topnav (according to differnet routes)
 7b. make chatinput ui clean. (> 7a)
 
+</details>
 ---
 
 8. copy button implementation. (all getting active at the same time.) [done]
