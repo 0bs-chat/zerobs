@@ -18,6 +18,7 @@ import {
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { CopyButton } from "./copy-button";
 import { groupMessages } from "../../../../../convex/chatMessages/helpers";
+import { UserMessageModelSelector } from "./user-message-model-selector";
 
 interface MessageContent {
   type: string;
@@ -57,12 +58,12 @@ export const UtilsBar = memo(
           const response = groupedMessages
             ?.find((group) => group.input.message._id === item.message._id)
             ?.response.map(
-              (response) => response.message.message.content as string,
+              (response) => response.message.message.content as string
             );
           return response?.join("\n") || "";
         } else {
           const textContent = (content as MessageContent[]).find(
-            (entry) => entry.type === "text",
+            (entry) => entry.type === "text"
           );
           return textContent?.text || "";
         }
@@ -95,6 +96,7 @@ export const UtilsBar = memo(
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="cursor-pointer"
                   onClick={() => setEditing?.(null)}
                 >
                   <X className="h-4 w-4" />
@@ -110,9 +112,10 @@ export const UtilsBar = memo(
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="cursor-pointer"
                   onClick={() => handleSubmit(true)}
                 >
-                  <CheckCheck className="h-4 w-4" />
+                  <CheckCheck className="h-4 w-4 cursor-pointer" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Submit</TooltipContent>
@@ -125,6 +128,7 @@ export const UtilsBar = memo(
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="cursor-pointer"
                   onClick={() => handleSubmit(false)}
                 >
                   <Star className="h-4 w-4" />
@@ -144,6 +148,7 @@ export const UtilsBar = memo(
           <Button
             variant="ghost"
             size="icon"
+            className="cursor-pointer"
             onClick={() => {
               navigateBranch?.(item.depth, item.totalBranches);
               regenerate({ messageId: item.message._id });
@@ -162,24 +167,21 @@ export const UtilsBar = memo(
         <Button
           variant="ghost"
           size="icon"
+          className="cursor-pointer"
           onClick={() => setEditing?.(item.message._id)}
         >
           <PenSquare className="h-4 w-4" />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            navigateBranch?.(item.depth, item.totalBranches);
-            regenerate({ messageId: item.message._id });
-          }}
-        >
-          <RefreshCcw className="h-4 w-4" />
-        </Button>
+        <UserMessageModelSelector item={item} navigateBranch={navigateBranch}>
+          <Button variant="ghost" size="icon" className="cursor-pointer">
+            <RefreshCcw className="h-4 w-4" />
+          </Button>
+        </UserMessageModelSelector>
+
         {copyText && <CopyButton text={copyText} />}
       </div>
     );
-  },
+  }
 );
 
 UtilsBar.displayName = "UtilsBar";

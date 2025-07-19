@@ -4,10 +4,15 @@ import { ProjectsPanel } from "./projects";
 import { MCPPanel } from "./mcp/index";
 import { ArtifactsPanel } from "./artifacts";
 import { useAtomValue, useSetAtom } from "jotai";
+import { useParams } from "@tanstack/react-router";
 
 export const Panel = () => {
+  const { chatId } = useParams({ strict: false });
+
   const activeTab = useAtomValue(selectedPanelTabAtom);
   const setActiveTab = useSetAtom(selectedPanelTabAtom);
+
+  const isNewChat = chatId === undefined || chatId === null || chatId === "";
 
   // If an artifact is currently selected, we're in "preview" mode
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
@@ -22,7 +27,9 @@ export const Panel = () => {
       {!hideTabHeader && ( // Hide the tab list when previewing an artifact
         <div className="flex items-center justify-between gap-2 m-2.5 pr-12">
           <TabsList className="w-full flex justify-center h-10">
-            <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
+            {!isNewChat && (
+              <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
+            )}
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="mcp">MCP</TabsTrigger>
           </TabsList>
@@ -30,12 +37,14 @@ export const Panel = () => {
       )}
 
       <>
-        <TabsContent
-          value="artifacts"
-          className={`h-full w-full ${hideTabHeader ? "px-0" : "px-3"}`}
-        >
-          <ArtifactsPanel />
-        </TabsContent>
+        {!isNewChat && (
+          <TabsContent
+            value="artifacts"
+            className={`h-full w-full ${hideTabHeader ? "px-0" : "px-3"}`}
+          >
+            <ArtifactsPanel />
+          </TabsContent>
+        )}
 
         <TabsContent value="projects" className="h-full w-full px-3">
           <ProjectsPanel />

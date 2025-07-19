@@ -8,5 +8,7 @@
   "files.readonlyInclude": {
     "**/routeTree.gen.ts": true
   },
-  "editor.tabSize": 2
+  "editor.tabSize": 2,
+  "eslint.trace.server": "off",
+  "eslint.enable": false
 }

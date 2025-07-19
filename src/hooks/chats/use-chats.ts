@@ -9,7 +9,7 @@ import { useEffect, useState, type RefObject } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   lastChatMessageAtom,
   newChatModelAtom,
@@ -30,7 +30,7 @@ export const useHandleSubmit = () => {
   const createChatMutation = useMutation(api.chats.mutations.create);
 
   // new chat atoms
-  const newChatDocuments = useAtomValue(newChatDocumentsAtom);
+  const [newChatDocuments, setNewChatDocuments] = useAtom(newChatDocumentsAtom);
   const newChatModel = useAtomValue(newChatModelAtom);
   const newChatReasoningEffort = useAtomValue(newChatReasoningEffortAtom);
   const newChatConductorMode = useAtomValue(newChatConductorModeAtom);
@@ -73,6 +73,7 @@ export const useHandleSubmit = () => {
       });
       textareaRef.current.textArea.value = "";
       setNewChatText("");
+      setNewChatDocuments([]);
       navigate({
         to: "/chat/$chatId",
         params: { chatId: newChatId },
@@ -91,6 +92,7 @@ export const useHandleSubmit = () => {
       });
       textareaRef.current.textArea.value = "";
       setNewChatText("");
+      setNewChatDocuments([]);
       await sendAction({ chatId: chatId });
     }
   };

@@ -18,7 +18,7 @@ function RouteComponent() {
   const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
 
   useEffect(() => {
-    setSelectedArtifact(undefined);
+    setSelectedArtifact(null);
   }, [chatId, setSelectedArtifact]);
 
   return (

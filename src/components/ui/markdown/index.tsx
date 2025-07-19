@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -13,12 +13,12 @@ import {
   atomDark,
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { useCopy } from "@/hooks/use-copy";
 import { wrapLongLinesAtom } from "@/store/chatStore";
 import { useAtom, useAtomValue } from "jotai";
 import { themeAtom } from "@/store/settings";
 import { marked } from "marked";
 import rehypeSanitize from "rehype-sanitize";
+import { toast } from "sonner";
 
 const sanitizeSchema = {
   tagNames: [
@@ -70,7 +70,7 @@ function parseMarkdownIntoBlocks(markdown: string): string[] {
 export const MarkdownBlock = memo(
   ({ content, className }: { content: string; className?: string }) => {
     const mermaidChartId = React.useRef(0);
-    const { copy, copied } = useCopy({ duration: 1000 });
+    const [copied, setCopied] = useState(false);
     const [wrapLongLines, setWrapLongLines] = useAtom(wrapLongLinesAtom);
     const theme = useAtomValue(themeAtom);
     const customStyle = useMemo(
@@ -80,7 +80,7 @@ export const MarkdownBlock = memo(
         margin: "0",
         wrapLongLines: wrapLongLines,
       }),
-      [wrapLongLines],
+      [wrapLongLines]
     );
 
     const components = useMemo(
@@ -91,7 +91,10 @@ export const MarkdownBlock = memo(
           const language = match ? match[1] : isCodeBlock ? "text" : null;
 
           const handleCopy = () => {
-            copy(String(children).replace(/\n$/, ""));
+            navigator.clipboard.writeText(String(children).replace(/\n$/, ""));
+            setCopied(true);
+            toast.success("Copied to clipboard");
+            setTimeout(() => setCopied(false), 1000);
           };
 
           return !inline ? (
@@ -102,10 +105,8 @@ export const MarkdownBlock = memo(
               />
             ) : language ? (
               <div className="my-2 flex flex-col overflow-auto rounded-md bg-card">
-                <div className="flex items-center justify-between rounded-t bg-secondary px-2 py-1 text-sm text-secondary-foreground">
-                  <span className="text-sm text-muted-foreground">
-                    {language}
-                  </span>
+                <div className="flex items-center justify-between rounded-t bg-secondary/70 px-2 py-1 text-sm text-secondary-foreground">
+                  <span className="text-sm font-mono">{language}</span>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
@@ -122,7 +123,7 @@ export const MarkdownBlock = memo(
                       variant="ghost"
                       size="icon"
                       onClick={handleCopy}
-                      className={copied ? "text-green-500" : ""}
+                      className={copied ? "text-accent-foreground" : ""}
                     >
                       {copied ? (
                         <CheckIcon className="h-4 w-4" />
@@ -143,7 +144,7 @@ export const MarkdownBlock = memo(
                 </SyntaxHighlighter>
               </div>
             ) : (
-              <span className="rounded-md bg-muted p-1 font-mono text-sm font-medium">
+              <span className="rounded-md  bg-muted-foreground/10 p-1 font-mono text-sm font-medium">
                 {children}
               </span>
             )
@@ -152,7 +153,7 @@ export const MarkdownBlock = memo(
           );
         },
       }),
-      [copy, copied, wrapLongLines, setWrapLongLines, theme],
+      [copied, wrapLongLines, setWrapLongLines, theme]
     );
 
     return (
@@ -177,7 +178,7 @@ export const MarkdownBlock = memo(
         </ReactMarkdown>
       </article>
     );
-  },
+  }
 );
 
 MarkdownBlock.displayName = "MarkdownBlock";
@@ -201,7 +202,7 @@ export const Markdown = memo(
         className={className}
       />
     ));
-  },
+  }
 );
 
 Markdown.displayName = "Markdown";
