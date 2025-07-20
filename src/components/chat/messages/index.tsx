@@ -13,7 +13,6 @@ import { api } from "../../../../convex/_generated/api";
 
 export const ChatMessages = () => {
   const chatId = useAtomValue(chatIdAtom);
-  const { scrollToBottom, shouldAutoScroll } = useScroll();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const user = useQuery(api.auth.getUser);
@@ -26,26 +25,12 @@ export const ChatMessages = () => {
     isEmpty
   } = useMessages({ chatId });
 
-  // Auto-scroll during streaming only if user hasn't scrolled away
-  useEffect(() => {
-    if (shouldAutoScroll && streamData.chunkGroups.length > 0) {
-      scrollToBottom("smooth");
-    }
-  }, [streamData.chunkGroups.length, shouldAutoScroll, scrollToBottom]);
-
-  // Auto-scroll when new messages arrive (non-streaming)
-  useEffect(() => {
-    if (shouldAutoScroll && groupedMessages.length > 0) {
-      scrollToBottom("smooth");
-    }
-  }, [groupedMessages.length, shouldAutoScroll, scrollToBottom]);
-
-  // Initial scroll to bottom when chat loads
-  useEffect(() => {
-    if (!isEmpty && !isLoading) {
-      scrollToBottom("auto");
-    }
-  }, [isEmpty, isLoading, scrollToBottom]);
+  useScroll({
+    streamData,
+    groupedMessages,
+    isEmpty,
+    isLoading,
+  });
 
   const mainContent = useMemo(() => {
     if (isLoading) {

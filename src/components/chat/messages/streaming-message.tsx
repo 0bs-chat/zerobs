@@ -23,7 +23,6 @@ export const StreamingMessage = memo(() => {
     );
   }, [streamData?.planningStepsMessage, streamData?.isStreaming, messageId]);
 
-  // Regular streaming display (no planning mode)
   const regularContent = useMemo(() => {
     if (!streamData?.langchainMessages) return [];
 
@@ -31,12 +30,8 @@ export const StreamingMessage = memo(() => {
       const isLastAiMessage =
         index === streamData.langchainMessages!.length - 1 && message?.getType() === "ai";
 
-      // Use message.id if available, otherwise fallback to type+index
-      const key = message.id || `${message?.getType?.() ?? "msg"}-${index}`;
-
       return (
         <motion.div
-          key={key}
           variants={streamingVariants}
           initial="initial"
           animate="animate"

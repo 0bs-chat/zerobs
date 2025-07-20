@@ -1,6 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-export const useScroll = () => {
+interface UseScrollOptions {
+  streamData?: {
+    chunkGroups: any[];
+    status?: string;
+  };
+  groupedMessages?: any[];
+  isEmpty?: boolean;
+  isLoading?: boolean;
+}
+
+export const useScroll = (options: UseScrollOptions = {}) => {
+  const { streamData, groupedMessages, isEmpty, isLoading } = options;
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [userHasScrolledAway, setUserHasScrolledAway] = useState(false);
   const lastScrollTopRef = useRef<number>(0);
@@ -92,6 +103,29 @@ export const useScroll = () => {
     }
   }, [findScrollContainer]);
 
+  const shouldAutoScroll = isAtBottom && !userHasScrolledAway;
+
+  // Auto-scroll during streaming only if user hasn't scrolled away
+  useEffect(() => {
+    if (shouldAutoScroll && streamData?.chunkGroups && streamData.chunkGroups.length > 0) {
+      scrollToBottom("smooth");
+    }
+  }, [streamData?.chunkGroups?.length, shouldAutoScroll, scrollToBottom]);
+
+  // Auto-scroll when new messages arrive (non-streaming)
+  useEffect(() => {
+    if (shouldAutoScroll && groupedMessages && groupedMessages.length > 0) {
+      scrollToBottom("smooth");
+    }
+  }, [groupedMessages?.length, shouldAutoScroll, scrollToBottom]);
+
+  // Initial scroll to bottom when chat loads
+  useEffect(() => {
+    if (!isEmpty && !isLoading) {
+      scrollToBottom("auto");
+    }
+  }, [isEmpty, isLoading, scrollToBottom]);
+
   // Setup effect
   useEffect(() => {
     let cleanup: (() => void) | undefined;
@@ -153,6 +187,6 @@ export const useScroll = () => {
     scrollToBottom,
     isAtBottom,
     userHasScrolledAway,
-    shouldAutoScroll: isAtBottom && !userHasScrolledAway,
+    shouldAutoScroll,
   };
 };
