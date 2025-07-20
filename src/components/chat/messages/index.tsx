@@ -1,5 +1,6 @@
-import type { Id } from "../../../../convex/_generated/dataModel";
-import { useParams } from "@tanstack/react-router";
+
+import { useAtomValue } from "jotai";
+import { chatIdAtom } from "@/store/chatStore";
 import { useMessages } from "../../../hooks/chats/use-messages";
 import { useEffect, useMemo, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,8 +12,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 
 export const ChatMessages = () => {
-  const params = useParams({ from: "/chat/$chatId/" });
-  const chatId = params.chatId as Id<"chats">;
+  const chatId = useAtomValue(chatIdAtom);
   const { scrollToBottom, shouldAutoScroll } = useScroll();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 

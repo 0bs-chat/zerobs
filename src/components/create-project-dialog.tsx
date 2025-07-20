@@ -15,9 +15,8 @@ import {
   resizePanelOpenAtom,
   selectedPanelTabAtom,
 } from "@/store/chatStore";
-import { useAtom, useSetAtom } from "jotai";
-import type { Id } from "../../convex/_generated/dataModel";
-import { useParams } from "@tanstack/react-router";
+import { useAtom, useSetAtom, useAtomValue } from "jotai";
+import { chatIdAtom } from "@/store/chatStore";
 
 export const CreateProjectDialog = () => {
   const [projectDialogOpen, setProjectDialogOpen] = useAtom(
@@ -27,8 +26,7 @@ export const CreateProjectDialog = () => {
   const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
   const createProject = useMutation(api.projects.mutations.create);
   const updateChatMutation = useMutation(api.chats.mutations.update);
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats">;
+  const chatId = useAtomValue(chatIdAtom);
 
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

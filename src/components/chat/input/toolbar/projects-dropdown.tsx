@@ -14,8 +14,8 @@ import {
   selectedPanelTabAtom,
 } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
-import type { Id } from "../../../../../convex/_generated/dataModel";
-import { useParams } from "@tanstack/react-router";
+import { useAtomValue } from "jotai";
+import { chatIdAtom } from "@/store/chatStore";
 
 interface ProjectsDropdownProps {
   onCloseDropdown: () => void;
@@ -24,8 +24,7 @@ interface ProjectsDropdownProps {
 export const ProjectsDropdown = ({
   onCloseDropdown,
 }: ProjectsDropdownProps) => {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats">;
+  const chatId = useAtomValue(chatIdAtom);
   const projects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 3, cursor: null },
   });

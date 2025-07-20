@@ -5,14 +5,12 @@ import {
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useAtom, useSetAtom, useAtomValue } from "jotai";
-import { newChatAtom, selectedProjectIdAtom, chatAtom } from "@/store/chatStore";
+import { newChatAtom, selectedProjectIdAtom, chatAtom, chatIdAtom } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
 import { useEffect } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
-import { useParams } from "@tanstack/react-router";
-import type { Id } from "../../../../convex/_generated/dataModel";
 import { useScroll } from "@/hooks/chats/use-scroll";
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
@@ -21,8 +19,7 @@ import { fadeInUp, smoothTransition } from "@/lib/motion";
 import { useTextAreaRef } from "@/hooks/chats/use-textarea";
 
 export const ChatInput = () => {
-  const params = useParams({ from: "/chat/$chatId/" });
-  const chatId = params.chatId as Id<"chats">;
+  const chatId = useAtomValue(chatIdAtom);
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const [newChat, setNewChat] = useAtom(newChatAtom);
   const chat = (useAtomValue(chatAtom))!;

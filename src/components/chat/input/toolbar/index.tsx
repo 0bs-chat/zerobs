@@ -29,11 +29,10 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useParams } from "@tanstack/react-router";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import { useAtomValue, useSetAtom } from "jotai";
+import { chatIdAtom } from "@/store/chatStore";
 import { useRef, useState } from "react";
 import GitHubDialog from "../github";
-import { useSetAtom, useAtomValue } from "jotai";
 import { streamStatusAtom, newChatAtom, chatAtom } from "@/store/chatStore";
 import { models } from "../../../../../convex/langchain/models";
 import { StopButtonIcon } from "./stop-button-icon";
@@ -76,8 +75,7 @@ const TOGGLES = [
 type ToggleKey = typeof TOGGLES[number]["key"];
 
 export const ToolBar = () => {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats">;
+  const chatId = useAtomValue(chatIdAtom);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const updateChatMutation = useMutation(api.chats.mutations.update);

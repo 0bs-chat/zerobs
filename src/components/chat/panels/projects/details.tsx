@@ -8,14 +8,13 @@ import { useDebouncedCallback } from "use-debounce";
 import { AddDocumentControls } from "./add-document-controls";
 import { ProjectDocumentList } from "./document-list";
 import type { ProjectDetailsProps } from "./types";
-import { useParams } from "@tanstack/react-router";
-import type { Id } from "../../../../../convex/_generated/dataModel";
+import { useAtomValue } from "jotai";
+import { chatIdAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { newChatAtom } from "@/store/chatStore";
 
 export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats">;
+  const chatId = useAtomValue(chatIdAtom);
   const project = useQuery(
     api.projects.queries.get,
     projectId ? { projectId } : "skip",

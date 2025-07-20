@@ -7,7 +7,7 @@ import { newChatAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 
 export const useRemoveDocument = () => {
-  const params = useParams({ from: "/chat/$chatId/" });
+  const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const chatInputQuery = useQuery(
     api.chats.queries.get,
@@ -52,7 +52,7 @@ export const useUploadDocuments = (
     chat?: Doc<"chats">;
   } = { type: "file" },
 ) => {
-  const params = useParams({ from: "/chat/$chatId/" });
+  const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const generateUploadUrlMutation = useMutation(

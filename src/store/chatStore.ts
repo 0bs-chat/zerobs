@@ -26,6 +26,7 @@ export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   public: false,
 });
 export const chatAtom = atom<Doc<"chats">>();
+export const chatIdAtom = selectAtom(chatAtom, (chat) => chat?._id!);
 
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
 

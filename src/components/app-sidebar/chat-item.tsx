@@ -4,7 +4,8 @@ import { SidebarMenuButton } from "@/components/ui/sidebar";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { chatHandlers } from "@/hooks/chats/use-chats";
 import { cn } from "@/lib/utils";
-import { useParams } from "@tanstack/react-router";
+import { useAtomValue } from "jotai";
+import { chatIdAtom } from "@/store/chatStore";
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -38,8 +39,8 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
       handleDelete,
       handleSelect,
     } = chatHandlers();
-    const params = useParams({ strict: false });
-    const isSelected = params.chatId === chat._id;
+    const currentChatId = useAtomValue(chatIdAtom);
+    const isSelected = currentChatId === chat._id;
 
     // Rename dialog state
     const [renameOpen, setRenameOpen] = React.useState(false);

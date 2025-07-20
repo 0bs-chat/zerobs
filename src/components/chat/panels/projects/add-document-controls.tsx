@@ -16,7 +16,8 @@ import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useUploadDocuments } from "@/hooks/use-documents";
-import { useParams } from "@tanstack/react-router";
+import { useAtomValue } from "jotai";
+import { chatIdAtom } from "@/store/chatStore";
 
 export const AddDocumentControls = ({
   projectId,
@@ -31,8 +32,7 @@ export const AddDocumentControls = ({
     api.projectDocuments.mutations.create,
   );
   const updateChatInput = useMutation(api.chats.mutations.update);
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats">;
+  const chatId = useAtomValue(chatIdAtom);
 
   const handleFileUpload = async (files: FileList) => {
     const documentIds = await uploadDocuments(files);
