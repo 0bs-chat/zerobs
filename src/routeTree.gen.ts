@@ -16,9 +16,16 @@ import { Route as SettingsIntegrationsRouteImport } from './routes/settings/inte
 import { Route as SettingsBillingRouteImport } from './routes/settings/billing'
 import { Route as SettingsApiKeysRouteImport } from './routes/settings/apiKeys'
 
+const ProjectsLazyRouteImport = createFileRoute('/projects')()
 const SettingsRouteLazyRouteImport = createFileRoute('/settings')()
+const ProjectProjectIdLazyRouteImport = createFileRoute('/project/$projectId')()
 const ChatChatIdIndexLazyRouteImport = createFileRoute('/chat/$chatId/')()
 
+const ProjectsLazyRoute = ProjectsLazyRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/projects.lazy').then((d) => d.Route))
 const SettingsRouteLazyRoute = SettingsRouteLazyRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -31,6 +38,13 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectProjectIdLazyRoute = ProjectProjectIdLazyRouteImport.update({
+  id: '/project/$projectId',
+  path: '/project/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/project.$projectId.lazy').then((d) => d.Route),
+)
 const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
   id: '/integrations',
   path: '/integrations',
@@ -57,26 +71,32 @@ const ChatChatIdIndexLazyRoute = ChatChatIdIndexLazyRouteImport.update({
 export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/projects': typeof ProjectsLazyRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/project/$projectId': typeof ProjectProjectIdLazyRoute
   '/chat/$chatId': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/projects': typeof ProjectsLazyRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/project/$projectId': typeof ProjectProjectIdLazyRoute
   '/chat/$chatId': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/projects': typeof ProjectsLazyRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/project/$projectId': typeof ProjectProjectIdLazyRoute
   '/chat/$chatId/': typeof ChatChatIdIndexLazyRoute
 }
 export interface FileRouteTypes {
@@ -84,36 +104,51 @@ export interface FileRouteTypes {
   fullPaths:
     | '/auth'
     | '/settings'
+    | '/projects'
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
+    | '/project/$projectId'
     | '/chat/$chatId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
     | '/settings'
+    | '/projects'
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
+    | '/project/$projectId'
     | '/chat/$chatId'
   id:
     | '__root__'
     | '/auth'
     | '/settings'
+    | '/projects'
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
+    | '/project/$projectId'
     | '/chat/$chatId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren
+  ProjectsLazyRoute: typeof ProjectsLazyRoute
+  ProjectProjectIdLazyRoute: typeof ProjectProjectIdLazyRoute
   ChatChatIdIndexLazyRoute: typeof ChatChatIdIndexLazyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -126,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/project/$projectId': {
+      id: '/project/$projectId'
+      path: '/project/$projectId'
+      fullPath: '/project/$projectId'
+      preLoaderRoute: typeof ProjectProjectIdLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/integrations': {
@@ -177,6 +219,8 @@ const SettingsRouteLazyRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   SettingsRouteLazyRoute: SettingsRouteLazyRouteWithChildren,
+  ProjectsLazyRoute: ProjectsLazyRoute,
+  ProjectProjectIdLazyRoute: ProjectProjectIdLazyRoute,
   ChatChatIdIndexLazyRoute: ChatChatIdIndexLazyRoute,
 }
 export const routeTree = rootRouteImport

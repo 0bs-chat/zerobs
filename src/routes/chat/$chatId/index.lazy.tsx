@@ -1,13 +1,11 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { ChatMessages } from "@/components/chat/messages";
 import { ChatInput } from "@/components/chat/input/index";
-import { AppSidebar } from "@/components/app-sidebar";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { TopNav } from "@/components/topnav";
 import { Panel } from "@/components/chat/panels";
 import { DocumentDialog } from "@/components/document-dialog";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
@@ -50,15 +48,6 @@ function RouteComponent() {
 
   return (
     <>
-      <TopNav />
-      <motion.div
-        variants={slideInFromLeft}
-        initial="initial"
-        animate="animate"
-        transition={layoutTransition}
-      >
-        <AppSidebar />
-      </motion.div>
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel className="flex flex-col gap-1 p-2 pt-4">
           <motion.div

@@ -12,6 +12,8 @@ import { motion } from "motion/react";
 import { sidebarOpenAtom } from "@/store/chatStore";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useConvexAuth } from "convex/react";
+import { AppSidebar } from "@/components/app-sidebar";
+import { TopNav } from "@/components/topnav";
 
 export const Route = createRootRoute({
   component: () => {
@@ -51,6 +53,10 @@ export const Route = createRootRoute({
               setSidebarOpen(!sidebarOpen);
             }}
           >
+            {/* AppSidebar and TopNav are now available on all routes */}
+            <AppSidebar />
+            <TopNav />
+            
             {/* Redirect authenticated users away from public routes */}
             {isAuthenticated && publicRoutes.includes(location.pathname) && (
               <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />

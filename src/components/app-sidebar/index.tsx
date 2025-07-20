@@ -9,7 +9,7 @@ import {
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
 import { useNavigate } from "@tanstack/react-router";
-import { SearchIcon, XIcon, PlusIcon } from "lucide-react";
+import { SearchIcon, XIcon, PlusIcon, FolderIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChatItem } from "@/components/app-sidebar/chat-item";
@@ -28,6 +28,13 @@ export function AppSidebar() {
       params: {
         chatId: "new",
       },
+      replace: true,
+    });
+  };
+
+  const handleNavigateToProjects = () => {
+    navigate({
+      to: "/projects",
       replace: true,
     });
   };
@@ -91,6 +98,17 @@ export function AppSidebar() {
             <div className="flex items-center gap-2">
               <PlusIcon className="w-4 h-4" />
               New chat
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full cursor-pointer"
+            onClick={handleNavigateToProjects}
+          >
+            <div className="flex items-center gap-2">
+              <FolderIcon className="w-4 h-4" />
+              Projects
             </div>
           </Button>
 
