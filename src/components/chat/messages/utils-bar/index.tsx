@@ -2,7 +2,7 @@ import { memo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { BranchNavigation } from "./branch-navigation";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, PenSquare, RefreshCcw, Star, X } from "lucide-react";
+import { CheckCheck, GitFork, PenSquare, RefreshCcw, Star, X } from "lucide-react";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type {
@@ -45,6 +45,7 @@ export const UtilsBar = memo(
     groupedMessages: ReturnType<typeof groupMessages>;
   }) => {
     const regenerate = useAction(api.langchain.index.regenerate);
+    const branchChat = useAction(api.langchain.index.branchChat);
     const updateMessage = useMutation(api.chatMessages.mutations.updateInput);
     const chat = useAction(api.langchain.index.chat);
 
@@ -145,6 +146,18 @@ export const UtilsBar = memo(
             variant="ghost"
             size="icon"
             onClick={() => {
+              branchChat({
+                chatId: item.message.chatId!,
+                branchFrom: item.message._id,
+              });
+            }}
+          >
+            <GitFork className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
               navigateBranch?.(item.depth, item.totalBranches);
               regenerate({ messageId: item.message._id });
             }}
@@ -165,6 +178,18 @@ export const UtilsBar = memo(
           onClick={() => setEditing?.(item.message._id)}
         >
           <PenSquare className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            branchChat({
+              chatId: item.message.chatId!,
+              branchFrom: item.message._id,
+            });
+          }}
+        >
+          <GitFork className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"

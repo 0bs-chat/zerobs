@@ -312,3 +312,61 @@ export const regenerate = action({
     });
   },
 });
+
+export const branchChat = action({
+  args: v.object({
+    chatId: v.id("chats"),
+    branchFrom: v.id("chatMessages"),
+  }),
+  handler: async (ctx, args) => {
+    const chatDoc = await ctx.runQuery(api.chats.queries.get, {
+      chatId: args.chatId,
+    });
+
+    const newChatId = await ctx.runMutation(api.chats.mutations.create, {
+      name: `Branched: ${chatDoc.name}`,
+      model: chatDoc.model,
+      reasoningEffort: chatDoc.reasoningEffort,
+      projectId: chatDoc.projectId,
+      conductorMode: chatDoc.conductorMode,
+      orchestratorMode: chatDoc.orchestratorMode,
+      webSearch: chatDoc.webSearch,
+      artifacts: chatDoc.artifacts,
+    });
+
+    const allMessages = await ctx.runQuery(api.chatMessages.queries.get, {
+      chatId: args.chatId,
+    });
+
+    const branchFromMessage = allMessages.find(
+      (m) => m._id === args.branchFrom,
+    );
+    if (!branchFromMessage) {
+      throw new Error("Branch message not found");
+    }
+
+    const { messageMap } = buildMessageLookups(allMessages);
+    const thread = getThreadFromMessage(branchFromMessage, messageMap);
+
+    const lastMessage = thread.at(-1);
+    if (lastMessage) {
+      const storedMessage = mapChatMessagesToStoredMessages([lastMessage.message])[0];
+      if (storedMessage.type === "ai") {
+        thread.pop();
+      }
+    }
+
+    if (thread.length > 0) {
+      await ctx.runMutation(internal.chats.mutations.createRaw, {
+        chatId: newChatId,
+        messages: thread.map((m) => ({
+          message: messageMap.get(m._id)!.message,
+        })),
+      });
+    }
+
+    await ctx.runAction(api.langchain.index.chat, {
+      chatId: newChatId,
+    });
+  },
+});

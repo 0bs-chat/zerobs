@@ -142,7 +142,7 @@ export const models: {
     {
       label: "Worker",
       model_name: "worker",
-      model: "google/gemini-2.0-flash",
+      model: "google/gemini-2.0-flash-001",
       isThinking: false,
       toolSupport: true,
       provider: "openai",
