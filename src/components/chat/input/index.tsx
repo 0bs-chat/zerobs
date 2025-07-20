@@ -1,15 +1,14 @@
 import { DocumentList } from "./document-list";
 import {
   AutosizeTextarea,
-  type AutosizeTextAreaRef,
 } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useAtom, useSetAtom } from "jotai";
-import { newChatAtom, selectedProjectIdAtom } from "@/store/chatStore";
+import { useAtom, useSetAtom, useAtomValue } from "jotai";
+import { newChatAtom, selectedProjectIdAtom, chatAtom } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
-import { useQuery, useMutation } from "convex/react";
-import { useEffect, useRef } from "react";
+import { useMutation } from "convex/react";
+import { useEffect } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
 import { useParams } from "@tanstack/react-router";
@@ -19,38 +18,37 @@ import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { fadeInUp, smoothTransition } from "@/lib/motion";
+import { useTextAreaRef } from "@/hooks/chats/use-textarea";
 
 export const ChatInput = () => {
   const params = useParams({ from: "/chat/$chatId/" });
   const chatId = params.chatId as Id<"chats">;
   const updateChatMutation = useMutation(api.chats.mutations.update);
-  const textareaRef = useRef<AutosizeTextAreaRef>(null);
   const [newChat, setNewChat] = useAtom(newChatAtom);
+  const chat = (useAtomValue(chatAtom))!;
   const handleSubmit = useHandleSubmit();
   const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
   const { scrollToBottom, isAtBottom } = useScroll();
-
-  const chat =
-    useQuery(api.chats.queries.get, chatId !== "new" ? { chatId } : "skip") ??
-    newChat;
-
+  const { ref: textareaRef, setRef, focus, setValue } = useTextAreaRef();
   setSelectedProjectId(chat.projectId ?? undefined);
 
   useEffect(() => {
     if (textareaRef?.current) {
-      textareaRef.current.textArea.focus();
-      textareaRef.current.textArea.value = chat.text;
+      focus();
+      setValue(chat.text ?? "");
     }
-  }, [chat._id]);
+  }, [chat._id, focus, setValue]);
 
   const handleChange = useDebouncedCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      if (chatId !== "new") {
-        updateChatMutation({
-          chatId,
-          updates: { text: e.target.value },
-        });
-      }
+      setNewChat((prev) => ({
+        ...prev,
+        text: e.target.value,
+      }));
+      updateChatMutation({
+        chatId,
+        updates: { text: e.target.value },
+      });
     },
     300,
   );
@@ -94,14 +92,10 @@ export const ChatInput = () => {
           key={chatId}
           maxHeight={192}
           minHeight={56}
-          ref={textareaRef}
+          ref={setRef}
           defaultValue={chat.text}
           className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
           onChange={(e) => {
-            setNewChat((prev) => ({
-              ...prev,
-              text: e.target.value,
-            }));
             handleChange(e);
           }}
           onKeyDown={(e) => {
@@ -115,13 +109,13 @@ export const ChatInput = () => {
                 toast.error("Please enter a message");
                 return;
               }
-              if (textareaRef?.current?.textArea.value.trim() === "") {
+              if (e.currentTarget.value.trim() === "") {
                 toast.error("Please enter a message before sending");
                 return;
               }
 
               if (textareaRef?.current) {
-                handleSubmit(chat, textareaRef);
+                handleSubmit(chat);
               }
             }
           }}
@@ -129,7 +123,7 @@ export const ChatInput = () => {
         />
       </motion.div>
 
-      <ToolBar chat={chat} textareaRef={textareaRef} />
+      <ToolBar />
     </motion.div>
   );
 };

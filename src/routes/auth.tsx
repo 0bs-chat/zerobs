@@ -6,7 +6,7 @@ import { Navigate } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/auth")({
   component: RouteComponent,
 });
 

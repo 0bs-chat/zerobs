@@ -33,7 +33,7 @@ export const Route = createRootRoute({
     }
 
     if (!isAuthenticated && !publicRoutes.includes(location.pathname)) {
-      return <Navigate to="/" />;
+      return <Navigate to="/auth" />;
     }
 
     return (

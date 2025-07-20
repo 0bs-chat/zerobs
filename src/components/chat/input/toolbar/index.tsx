@@ -26,29 +26,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useParams } from "@tanstack/react-router";
-import type { Doc, Id } from "../../../../../convex/_generated/dataModel";
-import { useRef, useState, type RefObject } from "react";
+import type { Id } from "../../../../../convex/_generated/dataModel";
+import { useRef, useState } from "react";
 import { getTagInfo } from "@/lib/helpers";
 import GitHubDialog from "../github";
 import { ConductorToggle } from "./conductorToggle";
 import { OrchestratorToggle } from "./orchestratorToggle";
 import { useSetAtom, useAtomValue } from "jotai";
-import { streamStatusAtom, newChatAtom } from "@/store/chatStore";
+import { streamStatusAtom, newChatAtom, chatAtom } from "@/store/chatStore";
 import { models } from "../../../../../convex/langchain/models";
 import { ArtifactsToggle } from "./artifatsToggle";
 import { WebSearchToggle } from "./webSearchToggle";
 import { StopButtonIcon } from "./stop-button-icon";
 import { motion } from "motion/react";
 import { buttonHover, smoothTransition } from "@/lib/motion";
-import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
 
-export const ToolBar = ({
-  chat,
-  textareaRef,
-}: {
-  chat: Doc<"chats">;
-  textareaRef: RefObject<AutosizeTextAreaRef | null>;
-}) => {
+export const ToolBar = () => {
   const params = useParams({ strict: false });
   const chatId = params.chatId as Id<"chats">;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,6 +51,7 @@ export const ToolBar = ({
   const streamStatus = useAtomValue(streamStatusAtom);
   const cancelStreamMutation = useMutation(api.streams.mutations.cancel);
   const setNewChat = useSetAtom(newChatAtom);
+  const chat = (useAtomValue(chatAtom))!;
   const selectedModel = chat.model;
   const reasoningEffort = chat.reasoningEffort;
   const selectedModelConfig = models.find(
@@ -217,7 +211,7 @@ export const ToolBar = ({
             size="icon"
             onClick={async () => {
               if (!["pending", "streaming"].includes(streamStatus ?? "")) {
-                await handleSubmit(chat, textareaRef);
+                await handleSubmit(chat);
               } else {
                 await cancelStreamMutation({ chatId });
               }

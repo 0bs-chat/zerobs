@@ -5,31 +5,31 @@ import {
   useQuery,
 } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { lastChatMessageAtom, newChatAtom } from "@/store/chatStore";
-import type { AutosizeTextAreaRef } from "@/components/ui/autosize-textarea";
+import { useTextAreaRef } from "./use-textarea";
 
 export const useHandleSubmit = () => {
   const createMessageMutation = useMutation(api.chatMessages.mutations.create);
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const createChatMutation = useMutation(api.chats.mutations.create);
-  const [newChat, setNewChat] = useAtom(newChatAtom);
+  const setNewChat = useSetAtom(newChatAtom);
   const sendAction = useAction(api.langchain.index.chat);
   const navigate = useNavigate();
   const lastChatMessage = useAtomValue(lastChatMessageAtom);
+  const { setValue, getValue } = useTextAreaRef();
 
   const handleSubmit = async (
     chat: Doc<"chats">,
-    textareaRef: RefObject<AutosizeTextAreaRef | null>,
   ) => {
     try {
-      if (textareaRef?.current) {
-        textareaRef.current.textArea.value = "";
-      }
+      const messageText = getValue();
+      setValue("");
+
       if (chat._id === "new") {
         setNewChat((prev) => ({
           ...prev,
@@ -54,7 +54,7 @@ export const useHandleSubmit = () => {
         await createMessageMutation({
           chatId: chat._id,
           documents: chat.documents,
-          text: chat.text,
+          text: messageText,
           parentId: null,
         });
         navigate({
@@ -70,7 +70,7 @@ export const useHandleSubmit = () => {
         await createMessageMutation({
           chatId: chat._id,
           documents: chat.documents,
-          text: newChat.text !== "" ? newChat.text : chat.text,
+          text: messageText,
           parentId: lastChatMessage ?? null,
         });
         setNewChat((prev) => ({

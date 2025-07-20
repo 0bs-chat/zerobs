@@ -25,6 +25,17 @@ export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   updatedAt: 0,
   public: false,
 });
+export const chatAtom = atom<Doc<"chats">>();
+export const chatIdAtom = atom((get) => get(chatAtom)?._id);
+export const documentsAtom = atom((get) => get(chatAtom)?.documents);
+export const modelAtom = atom((get) => get(chatAtom)?.model);
+export const projectIdAtom = atom((get) => get(chatAtom)?.projectId);
+export const textAtom = atom((get) => get(chatAtom)?.text);
+export const reasoningEffortAtom = atom((get) => get(chatAtom)?.reasoningEffort);
+export const conductorModeAtom = atom((get) => get(chatAtom)?.conductorMode);
+export const orchestratorModeAtom = atom((get) => get(chatAtom)?.orchestratorMode);
+export const webSearchAtom = atom((get) => get(chatAtom)?.webSearch);
+export const artifactsAtom = atom((get) => get(chatAtom)?.artifacts);
 
 export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
 
