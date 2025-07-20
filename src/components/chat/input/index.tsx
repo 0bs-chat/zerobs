@@ -45,10 +45,12 @@ export const ChatInput = () => {
         ...prev,
         text: e.target.value,
       }));
-      updateChatMutation({
-        chatId,
-        updates: { text: e.target.value },
-      });
+      if (chatId !== "new") {
+        updateChatMutation({
+          chatId,
+          updates: { text: e.target.value },
+        });
+      }
     },
     300,
   );
