@@ -101,7 +101,7 @@ export function TopNav() {
                 className="cursor-pointer gap-3 font-medium"
                 onClick={() => {
                   signOut();
-                  navigate({ to: "/" });
+                  navigate({ to: "/auth" });
                   toast.success("Signed out");
                 }}
               >

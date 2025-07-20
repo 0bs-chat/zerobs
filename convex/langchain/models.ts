@@ -36,7 +36,7 @@ export const models: {
     {
       label: "Gemini 2.5 Flash",
       model_name: "gemini-2.5-flash",
-      model: "google/gemini-2.5-flash-preview-05-20",
+      model: "google/gemini-2.5-flash",
       isThinking: false,
       toolSupport: true,
       provider: "openai",
@@ -52,7 +52,7 @@ export const models: {
     {
       label: "Gemini 2.5 Flash Thinking",
       model_name: "gemini-2.5-flash-thinking",
-      model: "google/gemini-2.5-flash-preview-05-20:thinking",
+      model: "google/gemini-2.5-flash",
       isThinking: true,
       toolSupport: true,
       provider: "openai",
@@ -455,9 +455,9 @@ export async function getVectorText(
   let maxAttempts = 50;
   while (doc.status === "processing" && maxAttempts > 0) {
     await new Promise((resolve) => setTimeout(resolve, 3000));
-    doc = await ctx.runQuery(api.documents.queries.get, {
-      documentId: document._id,
-    });
+    doc = (await ctx.runQuery(internal.documents.crud.read, {
+      id: document._id,
+    }))!;
     maxAttempts--;
   }
   const vectors = await ctx.runQuery(internal.documents.queries.getAllVectors, {
