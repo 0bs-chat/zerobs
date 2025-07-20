@@ -12,9 +12,12 @@ import { useAtomValue } from "jotai";
 import { chatIdAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { newChatAtom } from "@/store/chatStore";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 
 export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const chatId = useAtomValue(chatIdAtom);
+  const navigate = useNavigate();
+  const router = useRouter();
   const project = useQuery(
     api.projects.queries.get,
     projectId ? { projectId } : "skip",
@@ -44,6 +47,12 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
             size="icon"
             className="cursor-pointer"
             onClick={() => {
+              // Only navigate to /projects if we're on the /project/{id} route
+              if (router.state.location.pathname.startsWith("/project/")) {
+                navigate({ to: "/projects" });
+              }
+              
+              // Always clear the project selection
               if (chatId !== "new") {
                 updateChatInput({
                   chatId,

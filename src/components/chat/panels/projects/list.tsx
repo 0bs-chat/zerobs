@@ -9,9 +9,12 @@ import { chatIdAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { createProjectDialogOpenAtom, newChatAtom } from "@/store/chatStore";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 
 export const ProjectsList = () => {
   const chatId = useAtomValue(chatIdAtom);
+  const navigate = useNavigate();
+  const router = useRouter();
   const allProjects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 20, cursor: null },
   });
@@ -46,6 +49,12 @@ export const ProjectsList = () => {
                 key={project._id}
                 className="group flex-row relative group/card px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-accent/30 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
+                  // Only navigate to project page if we're on the /projects route
+                  if (router.state.location.pathname === "/projects") {
+                    navigate({ to: "/project/$projectId", params: { projectId: project._id } });
+                  }
+                  
+                  // Always update the chat if not a new chat
                   if (chatId !== "new") {
                     updateChatMutation({
                       chatId,

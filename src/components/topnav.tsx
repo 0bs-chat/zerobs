@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -39,6 +39,10 @@ export function TopNav() {
   const navigate = useNavigate();
   const [sidebarOpen] = useAtom(sidebarOpenAtom);
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
+  
+  // Check if we're on a chat route by looking for chatId parameter
+  const params = useParams({ strict: false });
+  const isOnChatRoute = !!params.chatId;
 
   return (
     <div
@@ -112,21 +116,23 @@ export function TopNav() {
           </DropdownMenu>
         ) : null}
         {!resizePanelOpen ? <ModeToggle /> : null}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent" : "bg-transparent"} ${selectedArtifact ? "hidden" : ""}`}
-          onClick={() => {
-            setResizePanelOpen(!resizePanelOpen);
-            setSelectedArtifact(undefined);
-          }}
-        >
-          {resizePanelOpen ? (
-            <PanelRightCloseIcon className="h-8 w-8" />
-          ) : (
-            <PanelRightOpenIcon className="h-8 w-8" />
-          )}
-        </Button>
+        {isOnChatRoute && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent" : "bg-transparent"} ${selectedArtifact ? "hidden" : ""}`}
+            onClick={() => {
+              setResizePanelOpen(!resizePanelOpen);
+              setSelectedArtifact(undefined);
+            }}
+          >
+            {resizePanelOpen ? (
+              <PanelRightCloseIcon className="h-8 w-8" />
+            ) : (
+              <PanelRightOpenIcon className="h-8 w-8" />
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );

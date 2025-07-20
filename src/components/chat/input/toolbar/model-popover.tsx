@@ -7,7 +7,7 @@ import {
 import { Hammer, ChevronDownIcon, Search, Brain } from "lucide-react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../../convex/langchain/models";
-import { getTagInfo, hammerTagInfo } from "@/lib/helpers";
+import { getTagInfo, hammerTagInfo, thinkingTagInfo } from "@/lib/helpers";
 import { api } from "../../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
 import { newChatAtom } from "@/store/chatStore";
@@ -105,8 +105,8 @@ export function ModelPopover({
                     </div>
                   )}
                   {model.isThinking && (
-                    <div className="p-1 rounded-md bg-purple-100/20 backdrop-blur-sm">
-                      <Brain className="h-4 w-4 text-purple-500/70" />
+                    <div className={`p-1 rounded-md ${thinkingTagInfo.parentClassName}`}>
+                      <thinkingTagInfo.icon className={`h-4 w-4 ${thinkingTagInfo.className}`} />
                     </div>
                   )}
                 </div>

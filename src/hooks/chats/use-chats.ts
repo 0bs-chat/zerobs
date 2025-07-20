@@ -22,6 +22,7 @@ export const useHandleSubmit = () => {
   const navigate = useNavigate();
   const lastChatMessage = useAtomValue(lastChatMessageAtom);
   const { setValue, getValue } = useTextAreaRef();
+  const params = useParams({ strict: false });
 
   const handleSubmit = async (
     chat: Doc<"chats">,
@@ -31,6 +32,10 @@ export const useHandleSubmit = () => {
       setValue("");
 
       if (chat._id === "new") {
+        // If we're on a project page, use that project ID
+        const projectIdFromRoute = params.projectId as Id<"projects"> | undefined;
+        const finalProjectId = projectIdFromRoute || chat.projectId;
+        
         setNewChat((prev) => ({
           ...prev,
           text: "",
@@ -45,7 +50,7 @@ export const useHandleSubmit = () => {
           name: chat.name,
           model: chat.model,
           reasoningEffort: chat.reasoningEffort,
-          projectId: chat.projectId,
+          projectId: finalProjectId,
           conductorMode: chat.conductorMode,
           orchestratorMode: chat.orchestratorMode,
           webSearch: chat.webSearch,

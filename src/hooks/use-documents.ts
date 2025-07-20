@@ -1,14 +1,12 @@
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { newChatAtom } from "@/store/chatStore";
-import { useSetAtom } from "jotai";
+import { newChatAtom, chatIdAtom } from "@/store/chatStore";
+import { useSetAtom, useAtomValue } from "jotai";
 
 export const useRemoveDocument = () => {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats">;
+  const chatId = useAtomValue(chatIdAtom);
   const chatInputQuery = useQuery(
     api.chats.queries.get,
     chatId !== "new" ? { chatId } : "skip",
@@ -52,8 +50,7 @@ export const useUploadDocuments = (
     chat?: Doc<"chats">;
   } = { type: "file" },
 ) => {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats">;
+  const chatId = useAtomValue(chatIdAtom);
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const generateUploadUrlMutation = useMutation(
     api.documents.mutations.generateUploadUrl,

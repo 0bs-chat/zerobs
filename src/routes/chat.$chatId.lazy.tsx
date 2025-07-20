@@ -12,25 +12,24 @@ import { CreateProjectDialog } from "@/components/create-project-dialog";
 import { useAtomValue, useSetAtom } from "jotai";
 import { chatAtom, resizePanelOpenAtom, selectedArtifactAtom } from "@/store/chatStore";
 import { useEffect } from "react";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
   slideInFromRight,
-  slideInFromLeft,
   layoutTransition,
 } from "@/lib/motion";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "../../convex/_generated/api";
 import { useQuery } from "convex/react";
 import { newChatAtom } from "@/store/chatStore";
 
-export const Route = createLazyFileRoute("/chat/$chatId/")({
+export const Route = createLazyFileRoute("/chat/$chatId")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const params = useParams({
-    from: "/chat/$chatId/",
+    from: "/chat/$chatId",
   });
   const chatId = params.chatId as Id<"chats">;
   const resizePanelOpen = useAtomValue(resizePanelOpenAtom);

@@ -160,7 +160,7 @@ export const ToolBar = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">Toggles</div>
+            <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">Agent Settings</div>
             {TOGGLES.map((toggle) => (
               <DropdownMenuItem
                 key={toggle.key}

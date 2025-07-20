@@ -10,6 +10,7 @@ import {
   YoutubeIcon,
   AlertCircleIcon,
   Hammer,
+  Brain,
 } from "lucide-react";
 import type { Doc } from "../../convex/_generated/dataModel";
 
@@ -36,37 +37,43 @@ export const getTagInfo = (
     case "text":
       return {
         icon: FileTextIcon, // Keeping FileTextIcon as it's a text document icon, not FileIcon
-        className: "text-blue-500/60",
+        className: "text-blue-500",
         parentClassName: "bg-blue-100/20 backdrop-blur-sm",
       };
     case "image":
-      return { icon: ImageIcon, className: "text-green-400/40", parentClassName: "bg-green-100/20 backdrop-blur-sm" };
+      return { icon: ImageIcon, className: "text-green-500", parentClassName: "bg-green-100/20 backdrop-blur-sm" };
     case "audio":
       return {
         icon: AudioLinesIcon,
-        className: "text-purple-400/40",
+        className: "text-purple-500",
         parentClassName: "bg-purple-100/20 backdrop-blur-sm",
       };
     case "video":
-      return { icon: VideoIcon, className: "text-red-400/40", parentClassName: "bg-red-100/20 backdrop-blur-sm" };
+      return { icon: VideoIcon, className: "text-red-500", parentClassName: "bg-red-100/20 backdrop-blur-sm" };
     case "pdf":
-      return { icon: FileIcon, className: "text-orange-400/40", parentClassName: "bg-orange-100/20 backdrop-blur-sm" };
+      return { icon: FileIcon, className: "text-orange-500", parentClassName: "bg-orange-100/20 backdrop-blur-sm" };
     case "file":
-      return { icon: FileIcon, className: "text-yellow-400/40", parentClassName: "bg-yellow-100/20 backdrop-blur-sm" };
+      return { icon: FileIcon, className: "text-yellow-500", parentClassName: "bg-yellow-100/20 backdrop-blur-sm" };
     case "url":
-      return { icon: LinkIcon, className: "text-blue-400/40", parentClassName: "bg-blue-100/20 backdrop-blur-sm" };
+      return { icon: LinkIcon, className: "text-blue-500", parentClassName: "bg-blue-100/20 backdrop-blur-sm" };
     case "site":
-      return { icon: GlobeIcon, className: "text-green-400/40", parentClassName: "bg-green-100/20 backdrop-blur-sm" };
+      return { icon: GlobeIcon, className: "text-green-500", parentClassName: "bg-green-100/20 backdrop-blur-sm" };
     case "youtube":
-      return { icon: YoutubeIcon, className: "text-red-400/40", parentClassName: "bg-red-100/20 backdrop-blur-sm" };
+      return { icon: YoutubeIcon, className: "text-red-500", parentClassName: "bg-red-100/20 backdrop-blur-sm" };
     default:
-      return { icon: FileIcon, className: "text-gray-400/40", parentClassName: "bg-gray-100/20 backdrop-blur-sm" };
+      return { icon: FileIcon, className: "text-gray-500", parentClassName: "bg-gray-100/20 backdrop-blur-sm" };
   }
 };
 
 // Hammer tag info for tool support
 export const hammerTagInfo = {
-  icon: Hammer,
-  className: "text-amber-500/60",
+  icon: <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Hammer_and_sickle_red_on_transparent.svg/250px-Hammer_and_sickle_red_on_transparent.svg.png" alt="hammer" className="w-4 h-4" />,
+  className: "text-amber-500",
+  parentClassName: "bg-amber-100/20 backdrop-blur-sm",
+};
+
+export const thinkingTagInfo = {
+  icon: Brain,
+  className: "text-amber-500",
   parentClassName: "bg-amber-100/20 backdrop-blur-sm",
 };
