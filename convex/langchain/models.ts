@@ -104,7 +104,7 @@ export const models: {
       provider: "openai",
       modalities: ["text", "image"],
       image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
       description:
         "o4 mini is a state-of-the-art language model capable of understanding and generating human-like text.",
       usageRateMultiplier: 1.0,
@@ -118,7 +118,7 @@ export const models: {
       provider: "openai",
       modalities: ["text", "image"],
       image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
       description:
         "o3 is a state-of-the-art language model capable of understanding and generating human-like text.",
       usageRateMultiplier: 1.5,
@@ -195,7 +195,7 @@ export const models: {
       provider: "openai",
       modalities: ["text"],
       image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+        "https://x.ai/favicon.ico",
       description:
         "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
       usageRateMultiplier: 1.5,
@@ -209,7 +209,7 @@ export const models: {
       provider: "openai",
       modalities: ["text", "image"],
       image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+        "https://x.ai/favicon.ico",
       description:
         "Grok 4 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
       usageRateMultiplier: 2.0,
@@ -223,7 +223,7 @@ export const models: {
       provider: "openai",
       modalities: ["text"],
       image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+        "https://openrouter.ai/favicon.ico",
       description:
         "Cypher Alpha is a stealth mode model that can be used to generate text.",
       usageRateMultiplier: 0.0,
@@ -237,7 +237,7 @@ export const models: {
       provider: "openai",
       modalities: ["text"],
       image:
-        "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+        "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://moonshot.ai&size=256",
       description:
         "Kimi K2 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
       usageRateMultiplier: 1.0,

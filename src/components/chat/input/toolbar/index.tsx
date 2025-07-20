@@ -37,6 +37,7 @@ import { ArtifactsToggle, WebSearchToggle, ConductorToggle, OrchestratorToggle }
 import { StopButtonIcon } from "./stop-button-icon";
 import { motion } from "motion/react";
 import { buttonHover, smoothTransition } from "@/lib/motion";
+import { ModelPopover } from "./model-popover";
 
 export const ToolBar = () => {
   const params = useParams({ strict: false });
@@ -137,64 +138,7 @@ export const ToolBar = () => {
             </SelectContent>
           </Select>
         )}
-        <Select
-          value={selectedModel}
-          onValueChange={(value) => {
-            if (chatId === "new") {
-              setNewChat((prev) => ({ ...prev, model: value }));
-            } else {
-              updateChatMutation({
-                chatId,
-                updates: { model: value },
-              });
-            }
-          }}
-        >
-          <SelectTrigger>
-            {selectedModelConfig?.label || selectedModel}
-          </SelectTrigger>
-          <SelectContent>
-            {models?.map((model, index) => {
-              if (model.hidden) return null;
-              return (
-                <SelectItem
-                  key={model.model}
-                  value={model.model_name}
-                  className={`${
-                    model.model_name === selectedModel ? "bg-accent" : ""
-                  } ${index > 0 ? "mt-1" : ""}`}
-                >
-                  <div className="flex flex-col w-full gap-2">
-                    <span className={`text-foreground`}>{model.label}</span>
-                    <div className="flex flex-row gap-1 flex-wrap">
-                      {model.modalities?.map((modality) => {
-                        const { icon: Icon, className: IconClassName } =
-                          getTagInfo(modality);
-                        return (
-                          <Badge
-                            key={modality}
-                            className={`flex items-center gap-1 text-foreground bg-input/80`}
-                          >
-                            <Icon className={`h-3 w-3 ${IconClassName}`} />
-                            {modality}
-                          </Badge>
-                        );
-                      })}
-                      {model.toolSupport && (
-                        <Badge
-                          className={`flex items-center gap-1 text-foreground bg-input/80`}
-                        >
-                          <Hammer className="h-3 w-3" />
-                          Tools
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+        <ModelPopover selectedModel={selectedModel} chatId={chatId} />
 
         <motion.div
           variants={buttonHover}
