@@ -26,7 +26,7 @@ export const ChatInput = () => {
   const handleSubmit = useHandleSubmit();
   const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
   const { scrollToBottom, isAtBottom } = useScroll();
-  const { ref: textareaRef, setRef, focus, setValue } = useTextAreaRef();
+  const { ref: textareaRef, setRef, focus } = useTextAreaRef();
 
   useEffect(() => {
     if (chat) {
@@ -35,11 +35,10 @@ export const ChatInput = () => {
   }, [chat, setSelectedProjectId]);
 
   useEffect(() => {
-    if (chat && textareaRef?.current) {
+    if (textareaRef?.current) {
       focus();
-      setValue(chat.text ?? "");
     }
-  }, [chat, focus, setValue]);
+  }, [chatId, focus]);
 
   const handleChange = useDebouncedCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
