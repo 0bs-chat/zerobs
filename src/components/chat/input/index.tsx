@@ -22,19 +22,24 @@ export const ChatInput = () => {
   const chatId = useAtomValue(chatIdAtom);
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const [newChat, setNewChat] = useAtom(newChatAtom);
-  const chat = (useAtomValue(chatAtom))!;
+  const chat = useAtomValue(chatAtom);
   const handleSubmit = useHandleSubmit();
   const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
   const { scrollToBottom, isAtBottom } = useScroll();
   const { ref: textareaRef, setRef, focus, setValue } = useTextAreaRef();
-  setSelectedProjectId(chat.projectId ?? undefined);
 
   useEffect(() => {
-    if (textareaRef?.current) {
+    if (chat) {
+      setSelectedProjectId(chat.projectId ?? undefined);
+    }
+  }, [chat, setSelectedProjectId]);
+
+  useEffect(() => {
+    if (chat && textareaRef?.current) {
       focus();
       setValue(chat.text ?? "");
     }
-  }, [chat._id, focus, setValue]);
+  }, [chat, focus, setValue]);
 
   const handleChange = useDebouncedCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -83,7 +88,7 @@ export const ChatInput = () => {
       </AnimatePresence>
 
       {/* Document List */}
-      <DocumentList documentIds={chat.documents} model={chat.model} />
+      {chat && <DocumentList documentIds={chat.documents} model={chat.model} />}
 
       {/* Input */}
       <motion.div whileFocus={{ scale: 1.02 }} transition={smoothTransition}>
@@ -92,7 +97,7 @@ export const ChatInput = () => {
           maxHeight={192}
           minHeight={56}
           ref={setRef}
-          defaultValue={chat.text}
+          defaultValue={chat?.text}
           className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
           onChange={(e) => {
             handleChange(e);
@@ -103,7 +108,7 @@ export const ChatInput = () => {
 
               if (
                 (!newChat.text || newChat.text.trim() === "") &&
-                chat.documents.length === 0
+                chat && chat.documents.length === 0
               ) {
                 toast.error("Please enter a message");
                 return;
@@ -113,7 +118,7 @@ export const ChatInput = () => {
                 return;
               }
 
-              if (textareaRef?.current) {
+              if (textareaRef?.current && chat) {
                 handleSubmit(chat);
               }
             }
@@ -122,7 +127,7 @@ export const ChatInput = () => {
         />
       </motion.div>
 
-      <ToolBar />
+      {chat && <ToolBar />}
     </motion.div>
   );
 };

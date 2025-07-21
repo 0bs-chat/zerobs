@@ -43,7 +43,9 @@ function RouteComponent() {
   const queryChat =
     useQuery(api.chats.queries.get, chatId !== "new" ? { chatId } : "skip") ??
     newChat;
-  setChat(queryChat);
+  useEffect(() => {
+    setChat(queryChat);
+  }, [queryChat, setChat]);
 
   return (
     <>
