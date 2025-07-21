@@ -4,7 +4,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Hammer, ChevronDownIcon, Search, Brain } from "lucide-react";
+import { Hammer, ChevronDownIcon, Search } from "lucide-react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../../convex/langchain/models";
 import { getTagInfo, hammerTagInfo, thinkingTagInfo } from "@/lib/helpers";

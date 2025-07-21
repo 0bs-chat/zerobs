@@ -9,7 +9,6 @@ import {
   GlobeIcon,
   YoutubeIcon,
   AlertCircleIcon,
-  Hammer,
   Brain,
 } from "lucide-react";
 import type { Doc } from "../../convex/_generated/dataModel";
