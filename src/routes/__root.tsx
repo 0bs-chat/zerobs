@@ -20,7 +20,7 @@ export const Route = createRootRoute({
     const location = useLocation();
     const { isLoading, isAuthenticated } = useConvexAuth();
 
-    const publicRoutes = ["/"];
+    const publicRoutes = ["/auth"];
     const sidebarOpen = useAtomValue(sidebarOpenAtom);
     const setSidebarOpen = useSetAtom(sidebarOpenAtom);
 
@@ -54,9 +54,13 @@ export const Route = createRootRoute({
             }}
           >
             {/* AppSidebar and TopNav are now available on all routes */}
-            <AppSidebar />
-            <TopNav />
-            
+            {isAuthenticated && (
+              <>
+                <AppSidebar />
+                <TopNav />
+              </>
+            )}
+
             {/* Redirect authenticated users away from public routes */}
             {isAuthenticated && publicRoutes.includes(location.pathname) && (
               <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
