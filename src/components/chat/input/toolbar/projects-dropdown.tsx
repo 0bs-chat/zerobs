@@ -10,6 +10,7 @@ import { api } from "../../../../../convex/_generated/api";
 import { FoldersIcon, PlusIcon } from "lucide-react";
 import {
   createProjectDialogOpenAtom,
+  newChatAtom,
   resizePanelOpenAtom,
   selectedPanelTabAtom,
 } from "@/store/chatStore";
@@ -32,6 +33,7 @@ export const ProjectsDropdown = ({
   const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
   const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
+  const setNewChat = useSetAtom(newChatAtom);
 
   return (
     <DropdownMenuSub>
@@ -46,12 +48,16 @@ export const ProjectsDropdown = ({
           <DropdownMenuItem
             key={project._id}
             onSelect={() => {
-              updateChatMutation({
-                chatId,
-                updates: {
-                  projectId: project._id,
-                },
-              });
+              if (chatId === "new") {
+                setNewChat((prev) => ({ ...prev, projectId: project._id }));
+              } else {
+                updateChatMutation({
+                  chatId,
+                  updates: {
+                    projectId: project._id,
+                  },
+                });
+              }
               onCloseDropdown();
               setResizePanelOpen(true);
               setSelectedPanelTab("projects");

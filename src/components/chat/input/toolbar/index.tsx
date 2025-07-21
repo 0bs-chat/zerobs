@@ -39,6 +39,7 @@ import { StopButtonIcon } from "./stop-button-icon";
 import { motion } from "motion/react";
 import { buttonHover, smoothTransition, scaleIn, iconSpinVariants } from "@/lib/motion";
 import { ModelPopover } from "./model-popover";
+import { useRouter } from "@tanstack/react-router";
 
 // Toggle registry for DRY logic
 const TOGGLES = [
@@ -90,6 +91,8 @@ export const ToolBar = () => {
     (m) => m.model_name === selectedModel,
   );
   const showReasoningEffort = selectedModelConfig?.isThinking ?? false;
+  const router = useRouter();
+  const isProjectRoute = router.state.location.pathname.startsWith("/project/");
 
   const handleFileUpload = useUploadDocuments({ type: "file", chat });
   const handleSubmit = useHandleSubmit();
@@ -146,9 +149,11 @@ export const ToolBar = () => {
                 <GithubIcon className="w-4 h-4" />
                 Add GitHub Repo
               </DropdownMenuItem>
-              <ProjectsDropdown
-                onCloseDropdown={() => setIsDropdownOpen(false)}
-              />
+              {!isProjectRoute && (
+                <ProjectsDropdown
+                  onCloseDropdown={() => setIsDropdownOpen(false)}
+                />
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
