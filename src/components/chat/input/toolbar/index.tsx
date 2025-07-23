@@ -100,11 +100,18 @@ export const ToolBar = () => {
   // Generic toggle handler
   const handleToggle = (key: ToggleKey, value: boolean) => {
     if (chatId === "new") {
-      setNewChat((prev) => ({ ...prev, [key]: value }));
+      setNewChat((prev) => ({
+        ...prev,
+        [key]: value,
+        ...(key === "orchestratorMode" && { webSearch: true }),
+      }));
     } else {
       updateChatMutation({
         chatId,
-        updates: { [key]: value },
+        updates: {
+          [key]: value,
+          ...(key === "orchestratorMode" && { webSearch: true }),
+        },
       });
     }
   };
