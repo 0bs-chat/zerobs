@@ -318,7 +318,7 @@ export const branchChat = action({
     chatId: v.id("chats"),
     branchFrom: v.id("chatMessages"),
   }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ newChatId: Id<"chats"> }> => {
     const chatDoc = await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });
@@ -368,5 +368,7 @@ export const branchChat = action({
     await ctx.runAction(api.langchain.index.chat, {
       chatId: newChatId,
     });
+
+    return { newChatId };
   },
 });

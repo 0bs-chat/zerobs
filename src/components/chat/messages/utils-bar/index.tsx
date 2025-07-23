@@ -2,7 +2,7 @@ import { memo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { BranchNavigation } from "./branch-navigation";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, GitFork, PenSquare, RefreshCcw, Star, X } from "lucide-react";
+import { CheckCheck, GitFork, RefreshCcw, Star, X } from "lucide-react";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type {
@@ -18,6 +18,7 @@ import {
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { CopyButton } from "./copy-button";
 import { groupMessages } from "../../../../../convex/chatMessages/helpers";
+import { useNavigate } from "@tanstack/react-router";
 
 interface MessageContent {
   type: string;
@@ -45,9 +46,10 @@ export const UtilsBar = memo(
     groupedMessages: ReturnType<typeof groupMessages>;
   }) => {
     const regenerate = useAction(api.langchain.index.regenerate);
-    const branchChat = useAction(api.langchain.index.branchChat);
+    const branchChat = useAction(api.langchain.index.branchChat) as unknown as (args: { chatId: string, branchFrom: string }) => Promise<{ newChatId: string }>;
     const updateMessage = useMutation(api.chatMessages.mutations.updateInput);
     const chat = useAction(api.langchain.index.chat);
+    const navigate = useNavigate();
 
     const copyText = (() => {
       const content = item.message.message.content;
@@ -145,10 +147,14 @@ export const UtilsBar = memo(
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => {
-              branchChat({
+            onClick={async () => {
+              const result = await branchChat({
                 chatId: item.message.chatId!,
                 branchFrom: item.message._id,
+              });
+              navigate({
+                to: "/chat/$chatId",
+                params: { chatId: result.newChatId },
               });
             }}
           >
@@ -175,18 +181,17 @@ export const UtilsBar = memo(
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setEditing?.(item.message._id)}
-        >
-          <PenSquare className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            branchChat({
+          onClick={async () => {
+            const result = await branchChat({
               chatId: item.message.chatId!,
               branchFrom: item.message._id,
             });
+            if (result && result.newChatId) {
+              navigate({
+                to: "/chat/$chatId",
+                params: { chatId: result.newChatId },
+              });
+            }
           }}
         >
           <GitFork className="h-4 w-4" />
