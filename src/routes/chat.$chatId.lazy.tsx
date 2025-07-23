@@ -56,7 +56,7 @@ function RouteComponent() {
             layout
             transition={layoutTransition}
           >
-            <ChatMessages />
+            <ChatMessages chatId={chatId} />
           </motion.div>
           <motion.div
             className="flex-none"

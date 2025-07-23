@@ -1,6 +1,3 @@
-
-import { useAtomValue } from "jotai";
-import { chatIdAtom } from "@/store/chatStore";
 import { useMessages } from "../../../hooks/chats/use-messages";
 import { useMemo, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,9 +7,9 @@ import { useScroll } from "@/hooks/chats/use-scroll";
 import { TriangleAlertIcon } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 
-export const ChatMessages = () => {
-  const chatId = useAtomValue(chatIdAtom);
+export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const user = useQuery(api.auth.getUser);
