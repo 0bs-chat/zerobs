@@ -16,40 +16,44 @@ import { PlusIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { Doc } from "../../../../../convex/_generated/dataModel";
+import { validateMCP } from "@/hooks/use-mcp";
+import {
+  intitalMCPState,
+  selectedMCPTemplateAtom,
+  mcpDialogOpenAtom,
+  type McpType,
+} from "@/store/chatStore";
+import { useAtom } from "jotai";
 
 export const MCPDialog = () => {
-  const initialMcp = {
-    name: "",
-    type: "http" as const,
-    command: "",
-    url: "",
-    dockerImage: "",
-    dockerPort: 0,
-    dockerCommand: "",
-    restartOnNewChat: false,
-    env: {},
-    status: "creating" as const,
-  };
-
-  const [mcp, setMcp] =
-    useState<
-      Omit<
-        Doc<"mcps">,
-        "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
-      >
-    >(initialMcp);
+  const [mcp, setMcp] = useAtom(selectedMCPTemplateAtom);
+  const [isOpen, setIsOpen] = useAtom(mcpDialogOpenAtom);
   const { handleCreate } = useMCPs();
   const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
 
   const handleSubmit = async () => {
+    // Convert mcp to MCPFormState for validation
+    const mcpFormState = {
+      name: mcp.name,
+      type: mcp.type,
+      command: mcp.command,
+      url: mcp.url,
+      dockerImage: mcp.dockerImage,
+      dockerPort: mcp.dockerPort,
+      dockerCommand: mcp.dockerCommand,
+      env: mcp.env,
+      status: mcp.status,
+      restartOnNewChat: mcp.restartOnNewChat,
+    };
+
+    if (!validateMCP(mcpFormState)) return;
+
     setIsLoading(true);
     try {
-      await handleCreate(mcp, (open) => {
+      await handleCreate(mcpFormState, (open) => {
         if (!open) {
           // Reset form state when dialog closes after successful creation
-          setMcp(initialMcp);
+          setMcp(intitalMCPState);
         }
         setIsOpen(open);
       });
@@ -61,13 +65,41 @@ export const MCPDialog = () => {
     }
   };
 
+  const handleTypeChange = (type: McpType) => {
+    setMcp((prev) => {
+      // Create a new object with proper type handling
+      const updated = {
+        ...prev,
+        type,
+        // Clear type-specific fields when switching types
+        command: type === "stdio" ? prev.command || "" : "",
+        url: type === "http" ? prev.url || "" : "",
+        dockerImage: type === "docker" ? prev.dockerImage || "" : "",
+        dockerPort: type === "docker" ? prev.dockerPort || 0 : 0,
+        dockerCommand: type === "docker" ? prev.dockerCommand || "" : "",
+      };
+
+      // Ensure we maintain the required properties
+      if ("description" in prev) {
+        return {
+          ...updated,
+          description: prev.description,
+          image: prev.image,
+          official: prev.official,
+        };
+      }
+
+      return updated;
+    });
+  };
+
   return (
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
         if (!open && !isLoading) {
           // Reset form state when dialog closes
-          setMcp(initialMcp);
+          setMcp(intitalMCPState);
         }
         setIsOpen(open);
       }}
@@ -98,20 +130,7 @@ export const MCPDialog = () => {
 
           <div className="flex flex-col gap-2">
             <Label>Type *</Label>
-            <TypeSelector
-              type={mcp.type}
-              onTypeChange={(type) =>
-                setMcp((prev) => ({
-                  ...prev,
-                  type,
-                  command: type === "stdio" ? prev.command : "",
-                  url: type === "http" ? prev.url : "",
-                  dockerImage: type === "docker" ? prev.dockerImage : "",
-                  dockerPort: type === "docker" ? prev.dockerPort : 0,
-                  dockerCommand: type === "docker" ? prev.dockerCommand : "",
-                }))
-              }
-            />
+            <TypeSelector type={mcp.type} onTypeChange={handleTypeChange} />
           </div>
 
           {mcp.type === "stdio" && (
@@ -120,7 +139,7 @@ export const MCPDialog = () => {
               <Input
                 id="mcp-command"
                 placeholder="STDIO command (e.g., python -m my_mcp)"
-                value={mcp.command}
+                value={mcp.command || ""}
                 onChange={(e) =>
                   setMcp((prev) => ({ ...prev, command: e.target.value }))
                 }
@@ -134,7 +153,7 @@ export const MCPDialog = () => {
               <Input
                 id="mcp-url"
                 placeholder="HTTP URL (e.g., http://localhost:3000/sse)"
-                value={mcp.url}
+                value={mcp.url || ""}
                 onChange={(e) =>
                   setMcp((prev) => ({ ...prev, url: e.target.value }))
                 }
@@ -149,7 +168,7 @@ export const MCPDialog = () => {
                 <Input
                   id="mcp-docker-image"
                   placeholder="Docker image (e.g., my-mcp:latest)"
-                  value={mcp.dockerImage}
+                  value={mcp.dockerImage || ""}
                   onChange={(e) =>
                     setMcp((prev) => ({ ...prev, dockerImage: e.target.value }))
                   }
@@ -161,11 +180,11 @@ export const MCPDialog = () => {
                   id="mcp-docker-port"
                   type="number"
                   placeholder="Port (e.g., 8000)"
-                  value={mcp.dockerPort}
+                  value={mcp.dockerPort || 0}
                   onChange={(e) =>
                     setMcp((prev) => ({
                       ...prev,
-                      dockerPort: parseInt(e.target.value) || 8000,
+                      dockerPort: parseInt(e.target.value) || 0,
                     }))
                   }
                 />
@@ -175,7 +194,7 @@ export const MCPDialog = () => {
                 <Input
                   id="mcp-docker-command"
                   placeholder="Command to run in container (optional)"
-                  value={mcp.dockerCommand}
+                  value={mcp.dockerCommand || ""}
                   onChange={(e) =>
                     setMcp((prev) => ({
                       ...prev,
@@ -212,7 +231,7 @@ export const MCPDialog = () => {
           <Button
             variant="outline"
             onClick={() => {
-              setMcp(initialMcp);
+              setMcp(intitalMCPState);
               setIsOpen(false);
             }}
             disabled={isLoading}
