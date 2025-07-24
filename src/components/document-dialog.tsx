@@ -27,12 +27,6 @@ export const DocumentDialog = () => {
     api.documents.mutations.generateDownloadUrl,
   );
 
-  // Early return if dialog is not open
-  if (!documentDialogOpen) {
-    return null;
-  }
-
-  // fileType is now handled by getTagInfo
   const documentName = document?.name ?? "";
   const { icon: Icon, className: IconClassName, tag } = document
     ? getTagInfo(document)
@@ -67,6 +61,11 @@ export const DocumentDialog = () => {
     };
     loadPreviewUrl();
   }, [document, tag, generateDownloadUrl]);
+
+  // Early return if dialog is not open
+  if (!documentDialogOpen) {
+    return null;
+  }
 
   const handleDownload = async () => {
     if (!document || tag !== "file") return;
