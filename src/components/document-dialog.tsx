@@ -8,7 +8,7 @@ import { documentDialogOpenAtom } from "@/store/chatStore";
 import { api } from "../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { Button } from "@/components/ui/button";
-import { getTagInfo } from "@/lib/document-helper";
+import { getDocTagInfo } from "@/lib/helper";
 import { formatBytes } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -29,7 +29,7 @@ export const DocumentDialog = () => {
 
   const documentName = document?.name ?? "";
   const { icon: Icon, className: IconClassName, tag } = document
-    ? getTagInfo(document)
+    ? getDocTagInfo(document)
     : { icon: () => null, className: "", tag: "" };
 
   useEffect(() => {

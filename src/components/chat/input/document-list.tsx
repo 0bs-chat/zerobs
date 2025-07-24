@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { documentDialogOpenAtom } from "@/store/chatStore";
 import { useRemoveDocument } from "@/hooks/use-documents";
-import { getTagInfo } from "@/lib/document-helper";
+import { getDocTagInfo } from "@/lib/helper";
 import React, { useCallback } from "react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../convex/langchain/models";
@@ -21,7 +21,7 @@ type DocumentBadgeProps = {
 
 const DocumentBadge = React.memo(
   ({ doc, onPreview, onRemove, modalities }: DocumentBadgeProps) => {
-    const { icon: Icon, className: IconClassName } = getTagInfo(doc, modalities);
+    const { icon: Icon, className: IconClassName } = getDocTagInfo(doc, modalities);
 
     const handlePreview = useCallback(() => {
       onPreview(doc._id);

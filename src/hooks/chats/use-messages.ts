@@ -26,7 +26,7 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> }) => {
 
   const messages = useQuery(
     api.chatMessages.queries.get,
-    { chatId },
+    chatId !== "new" ? { chatId } : "skip",
   );
   const messageTree = useMemo(
     () => (messages ? buildMessageTree(messages) : []),

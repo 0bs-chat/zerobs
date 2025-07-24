@@ -4,10 +4,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Hammer, ChevronDownIcon, Search } from "lucide-react";
+import { ChevronDownIcon, Search } from "lucide-react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../../convex/langchain/models";
-import { getTagInfo, hammerTagInfo, thinkingTagInfo } from "@/lib/document-helper";
+import { getTagInfo } from "@/lib/helper";
 import { api } from "../../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
 import { newChatAtom } from "@/store/chatStore";
@@ -72,58 +72,50 @@ export function ModelPopover({
             .filter((model) =>
               model.model_name.toLowerCase().includes(searchModel.toLowerCase())
             )
-            .map((model) => (
-              <div
-                key={model.model}
-                className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
-                  model.model_name === selectedModel
-                    ? "bg-accent/40 dark:bg-accent/70"
-                    : ""
-                }`}
-                onClick={() => handleModelSelect(model.model_name)}
-              >
-                <div className="text-foreground flex gap-2 items-center justify-center ">
-                  <img
-                    src={model.image}
-                    alt={model.label}
-                    className="h-4 w-4"
-                  />
-                  {model.label}
-                </div>
-                <div className="flex flex-row gap-1 items-center opacity-75">
-                  {model.modalities?.filter((modality) => modality !== "text").map((modality) => {
-                    const allowedTypes = ["file", "url", "site", "youtube", "text", "github"] as const;
-                    const type = (allowedTypes.includes(modality as any) ? modality : "file") as typeof allowedTypes[number];
-                    const fakeDoc = {
-                      _id: "modality" as any,
-                      _creationTime: 0,
-                      userId: "modality",
-                      key: "modality",
-                      type,
-                      name: modality,
-                      size: 0,
-                      status: "done" as const,
-                    };
-                    const { icon: Icon, className: IconClassName, parentClassName } = getTagInfo(fakeDoc);
-                    return (
-                      <div key={modality} className={`p-1 rounded-md ${parentClassName}`}>
-                        <Icon className={`h-4 w-4 ${IconClassName}`} />
+            .map((model) => {
+              const toolSupportTag = getTagInfo("toolSupport");
+              const thinkingTagInfo = getTagInfo("thinking");
+              return (
+                <div
+                  key={model.model_name}
+                  className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
+                    model.model_name === selectedModel
+                      ? "bg-accent/40 dark:bg-accent/70"
+                      : ""
+                  }`}
+                  onClick={() => handleModelSelect(model.model_name)}
+                >
+                  <div className="text-foreground flex gap-2 items-center justify-center ">
+                    <img
+                      src={model.image}
+                      alt={model.label}
+                      className="h-4 w-4"
+                    />
+                    {model.label}
+                  </div>
+                  <div className="flex flex-row gap-1 items-center opacity-75">
+                    {model.modalities?.filter((modality) => modality !== "text").map((modality) => {
+                      const { icon: Icon, className: IconClassName, parentClassName } = getTagInfo(modality);
+                      return (
+                        <div key={modality} className={`p-1 rounded-md ${parentClassName}`}>
+                          <Icon className={`h-4 w-4 ${IconClassName}`} />
+                        </div>
+                      );
+                    })}
+                    {model.toolSupport && (
+                      <div className={`p-1 rounded-md ${toolSupportTag.parentClassName}`}>
+                        <toolSupportTag.icon className={`h-4 w-4 ${toolSupportTag.className}`} />
                       </div>
-                    );
-                  })}
-                  {model.toolSupport && (
-                    <div className={`p-1 rounded-md ${hammerTagInfo.parentClassName}`}>
-                      <Hammer className={`h-4 w-4 ${hammerTagInfo.className}`} />
-                    </div>
-                  )}
-                  {model.isThinking && (
-                    <div className={`p-1 rounded-md ${thinkingTagInfo.parentClassName}`}>
-                      <thinkingTagInfo.icon className={`h-4 w-4 ${thinkingTagInfo.className}`} />
-                    </div>
-                  )}
+                    )}
+                    {model.isThinking && (
+                      <div className={`p-1 rounded-md ${thinkingTagInfo.parentClassName}`}>
+                        <thinkingTagInfo.icon className={`h-4 w-4 ${thinkingTagInfo.className}`} />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
         </div>
       </PopoverContent>
     </Popover>
