@@ -3,7 +3,7 @@ import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { atomWithStorage, selectAtom } from "jotai/utils";
 import { useStream } from "@/hooks/chats/use-stream";
 import type { Artifact } from "@/components/artifacts/utils";
-import { groupMessages } from "../../convex/chatMessages/helpers";
+import { buildThread, groupMessages } from "../../convex/chatMessages/helpers";
 import type { ContentPart } from "@/components/artifacts/utils";
 import { parseContent } from "@/components/artifacts/utils";
 
@@ -49,11 +49,11 @@ export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
 );
 export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
 
-export const groupedMessagesAtom = atom<
-  ReturnType<typeof groupMessages> | undefined
->(undefined);
-export const lastChatMessageAtom = atom<Id<"chatMessages"> | undefined>(
-  undefined,
+export const currentThreadAtom = atom<ReturnType<typeof buildThread> | undefined>(undefined);
+export const groupedMessagesAtom = selectAtom(currentThreadAtom, (thread) => thread ? groupMessages(thread) : []);
+export const lastChatMessageAtom = selectAtom(
+  currentThreadAtom,
+  (thread) => (thread && thread.length > 0 ? thread[thread.length - 1].message._id : undefined)
 );
 
 export const useStreamAtom = atom<ReturnType<typeof useStream> | undefined>(
@@ -64,7 +64,6 @@ export const streamStatusAtom = selectAtom(
   (stream) => stream?.status,
 );
 
-// Create a more stable derived atom
 export const allArtifactsAtom = atom((get) => {
   const artifacts: Artifact[] = [];
 

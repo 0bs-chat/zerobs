@@ -84,11 +84,12 @@ export const createRaw = internalMutation({
 
     for (const message of args.messages) {
       const created = await ctx.runMutation(
-        internal.chatMessages.crud.createInternal,
+        internal.chatMessages.crud.create,
         {
           chatId: args.chatId,
           parentId: currentParent,
           message: message.message,
+          minimized: false,
         },
       );
       // Set the current message as parent for the next message

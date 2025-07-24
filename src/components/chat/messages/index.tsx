@@ -3,11 +3,12 @@ import { useMemo, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessagesList } from "./messages";
 import { StreamingMessage } from "./streaming-message";
-import { useScroll } from "@/hooks/chats/use-scroll";
 import { TriangleAlertIcon } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
+import { groupedMessagesAtom, useStreamAtom } from "@/store/chatStore";
+import { useAtomValue } from "jotai";
 
 export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -15,21 +16,15 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> }) => {
   const user = useQuery(api.auth.getUser);
 
   const {
-    groupedMessages,
-    streamData,
-    navigateBranch,
     isLoading,
     isEmpty
   } = useMessages({ chatId });
 
-  useScroll({
-    streamData,
-    groupedMessages,
-    isEmpty,
-    isLoading,
-  });
+  const groupedMessages = useAtomValue(groupedMessagesAtom);
+  const streamData = useAtomValue(useStreamAtom);
 
   const mainContent = useMemo(() => {
+    if (!streamData) return null;
     if (isLoading) {
       return (
         <div className="flex items-center justify-center h-full">
@@ -67,10 +62,7 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> }) => {
       <ScrollArea className="h-full chat-messages-scroll-area">
         <div className="flex flex-col gap-1 p-1 max-w-4xl mx-auto">
           {groupedMessages.length > 0 && (
-            <MessagesList
-              navigateBranch={navigateBranch}
-              groupedMessages={groupedMessages}
-            />
+            <MessagesList />
           )}
 
           {streamData.chunkGroups.length > 0 && <StreamingMessage />}
@@ -95,7 +87,7 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> }) => {
         </div>
       </ScrollArea>
     );
-  }, [isLoading, isEmpty, groupedMessages, navigateBranch, streamData]);
+  }, [isLoading, isEmpty, groupedMessages, streamData, chatId, user?.name]);
 
   return mainContent;
 };

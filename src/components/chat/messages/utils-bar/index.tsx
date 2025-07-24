@@ -8,7 +8,6 @@ import { useAction, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type {
   MessageWithBranchInfo,
-  NavigateBranch,
 } from "@/hooks/chats/use-messages";
 import {
   Tooltip,
@@ -20,6 +19,7 @@ import type { Id } from "../../../../../convex/_generated/dataModel";
 import { CopyButton } from "./copy-button";
 import { groupMessages } from "../../../../../convex/chatMessages/helpers";
 import { useNavigate } from "@tanstack/react-router";
+import { useNavigateBranch } from "@/hooks/chats/use-messages";
 
 interface MessageContent {
   type: string;
@@ -34,7 +34,6 @@ export const UtilsBar = memo(
     editedText,
     onDone,
     isAI,
-    navigateBranch,
     groupedMessages,
   }: {
     item: MessageWithBranchInfo;
@@ -43,7 +42,6 @@ export const UtilsBar = memo(
     editedText?: string;
     onDone?: () => void;
     isAI?: boolean;
-    navigateBranch: NavigateBranch;
     groupedMessages: ReturnType<typeof groupMessages>;
   }) => {
     const regenerate = useAction(api.langchain.index.regenerate) as unknown as (args: { messageId: Id<"chatMessages">, model?: string }) => Promise<void>;
@@ -51,6 +49,7 @@ export const UtilsBar = memo(
     const updateMessage = useMutation(api.chatMessages.mutations.updateInput);
     const chat = useAction(api.langchain.index.chat);
     const navigate = useNavigate();
+    const navigateBranch = useNavigateBranch();
 
     const copyText = (() => {
       const content = item.message.message.content;
