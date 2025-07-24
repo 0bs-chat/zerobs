@@ -16,7 +16,6 @@ import { MemorySaver } from "@langchain/langgraph";
 import type { GraphState, AIChunkGroup, ToolChunkGroup } from "./state";
 import { v } from "convex/values";
 import {
-  buildMessageLookups,
   getThreadFromMessage,
 } from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
@@ -72,8 +71,7 @@ export const chat = action({
       model: args.model,
     });
     const { chat, message, messages, customPrompt } = prep!;
-    const { messageMap } = buildMessageLookups(messages);
-    const thread = getThreadFromMessage(message, messageMap);
+    const thread = getThreadFromMessage(message, messages);
 
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
@@ -350,8 +348,7 @@ export const branchChat = action({
       throw new Error("Branch message not found");
     }
 
-    const { messageMap } = buildMessageLookups(allMessages);
-    const thread = getThreadFromMessage(branchFromMessage, messageMap);
+    const thread = getThreadFromMessage(branchFromMessage, allMessages);
 
     const lastMessage = thread.at(-1);
     if (lastMessage) {
@@ -365,7 +362,7 @@ export const branchChat = action({
       await ctx.runMutation(internal.chats.mutations.createRaw, {
         chatId: newChatId,
         messages: thread.map((m) => ({
-          message: messageMap.get(m._id)!.message,
+          message: JSON.stringify(mapChatMessagesToStoredMessages([m.message])[0]),
         })),
       });
     }
