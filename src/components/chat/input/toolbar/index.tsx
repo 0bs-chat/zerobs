@@ -177,7 +177,12 @@ export const ToolBar = () => {
               <DropdownMenuItem
                 key={toggle.key}
                 onClick={() => handleToggle(toggle.key, !chat[toggle.key as keyof typeof chat])}
-                className="flex items-center justify-between pr-2"
+                className={[
+                  "flex items-center justify-between pr-2",
+                  toggle.key === "orchestratorMode"
+                    ? "bg-gradient-to-r from-input to-card"
+                    : "",
+                ].join(" ")}
               >
                 <span className="flex items-center gap-2">
                   {/* Add motion to icon */}
