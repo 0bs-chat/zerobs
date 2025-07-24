@@ -1,5 +1,5 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ModeToggle } from "@/components/theme-switcher";
+import { ModeToggle } from "@/components/theme-provider";
 import {
   resizePanelOpenAtom,
   selectedArtifactAtom,
