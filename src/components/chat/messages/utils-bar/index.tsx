@@ -2,7 +2,7 @@ import { memo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { BranchNavigation } from "./branch-navigation";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, GitBranch, RefreshCcw, Star, X } from "lucide-react";
+import { Check, CheckCheck, GitBranch, Pencil, RefreshCcw, X } from "lucide-react";
 import { ActionDropdown } from "./action-dropdown";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
@@ -115,7 +115,7 @@ export const UtilsBar = memo(
                   size="icon"
                   onClick={() => handleSubmit(true)}
                 >
-                  <CheckCheck className="h-4 w-4" />
+                  <Check className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Submit</TooltipContent>
@@ -130,7 +130,7 @@ export const UtilsBar = memo(
                   size="icon"
                   onClick={() => handleSubmit(false)}
                 >
-                  <Star className="h-4 w-4" />
+                  <CheckCheck className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Submit and Regenerate</TooltipContent>
@@ -197,6 +197,23 @@ export const UtilsBar = memo(
     return (
       <div className={`flex flex-row items-center gap-1 self-start`}>
         <BranchNavigation item={item} navigateBranch={navigateBranch!} />
+        {setEditing && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditing(item.message._id)}
+                  aria-label="Edit"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Edit</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         <ActionDropdown
           trigger={
             <Button variant="ghost" size="icon">
