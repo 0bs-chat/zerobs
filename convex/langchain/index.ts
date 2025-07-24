@@ -63,11 +63,13 @@ export const generateTitle = internalAction({
 export const chat = action({
   args: v.object({
     chatId: v.id("chats"),
+    model: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     const { chatId } = args;
     const prep = await ctx.runMutation(internal.langchain.utils.prepareChat, {
       chatId,
+      model: args.model,
     });
     const { chat, message, messages, customPrompt } = prep!;
     const { messageMap } = buildMessageLookups(messages);
@@ -296,6 +298,7 @@ export const chat = action({
 export const regenerate = action({
   args: v.object({
     messageId: v.id("chatMessages"),
+    model: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     const message = await ctx.runQuery(internal.chatMessages.crud.read, {
@@ -309,6 +312,7 @@ export const regenerate = action({
     });
     await ctx.runAction(api.langchain.index.chat, {
       chatId: message.chatId,
+      model: args.model,
     });
   },
 });
@@ -317,6 +321,7 @@ export const branchChat = action({
   args: v.object({
     chatId: v.id("chats"),
     branchFrom: v.id("chatMessages"),
+    model: v.optional(v.string()),
   }),
   handler: async (ctx, args): Promise<{ newChatId: Id<"chats"> }> => {
     const chatDoc = await ctx.runQuery(api.chats.queries.get, {
@@ -325,7 +330,7 @@ export const branchChat = action({
 
     const newChatId = await ctx.runMutation(api.chats.mutations.create, {
       name: `Branched: ${chatDoc.name}`,
-      model: chatDoc.model,
+      model: args.model ?? chatDoc.model,
       reasoningEffort: chatDoc.reasoningEffort,
       projectId: chatDoc.projectId,
       conductorMode: chatDoc.conductorMode,
@@ -367,6 +372,7 @@ export const branchChat = action({
 
     await ctx.runAction(api.langchain.index.chat, {
       chatId: newChatId,
+      model: args.model,
     });
 
     return { newChatId };

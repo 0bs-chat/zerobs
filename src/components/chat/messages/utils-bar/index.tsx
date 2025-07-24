@@ -2,7 +2,8 @@ import { memo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { BranchNavigation } from "./branch-navigation";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, GitFork, RefreshCcw, Star, X } from "lucide-react";
+import { CheckCheck, GitBranch, RefreshCcw, Star, X } from "lucide-react";
+import { ActionDropdown } from "./action-dropdown";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type {
@@ -45,8 +46,8 @@ export const UtilsBar = memo(
     navigateBranch: NavigateBranch;
     groupedMessages: ReturnType<typeof groupMessages>;
   }) => {
-    const regenerate = useAction(api.langchain.index.regenerate);
-    const branchChat = useAction(api.langchain.index.branchChat) as unknown as (args: { chatId: string, branchFrom: string }) => Promise<{ newChatId: string }>;
+    const regenerate = useAction(api.langchain.index.regenerate) as unknown as (args: { messageId: Id<"chatMessages">, model?: string }) => Promise<void>;
+    const branchChat = useAction(api.langchain.index.branchChat) as unknown as (args: { chatId: Id<"chats">, branchFrom: Id<"chatMessages">, model?: string }) => Promise<{ newChatId: Id<"chats"> }>;
     const updateMessage = useMutation(api.chatMessages.mutations.updateInput);
     const chat = useAction(api.langchain.index.chat);
     const navigate = useNavigate();
@@ -144,10 +145,14 @@ export const UtilsBar = memo(
       return (
         <div className={`flex flex-row items-center gap-1 self-start`}>
           <BranchNavigation item={item} navigateBranch={navigateBranch!} />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={async () => {
+          <ActionDropdown
+            trigger={
+              <Button variant="ghost" size="icon">
+                <GitBranch className="h-4 w-4" />
+              </Button>
+            }
+            actionLabel={<><GitBranch className="h-4 w-4 mr-2" />Branch</>}
+            onAction={async () => {
               const result = await branchChat({
                 chatId: item.message.chatId!,
                 branchFrom: item.message._id,
@@ -157,19 +162,34 @@ export const UtilsBar = memo(
                 params: { chatId: result.newChatId },
               });
             }}
-          >
-            <GitFork className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
+            onActionWithModel={async (model) => {
+              const result = await branchChat({
+                chatId: item.message.chatId!,
+                branchFrom: item.message._id,
+                model,
+              });
+              navigate({
+                to: "/chat/$chatId",
+                params: { chatId: result.newChatId },
+              });
+            }}
+          />
+          <ActionDropdown
+            trigger={
+              <Button variant="ghost" size="icon">
+                <RefreshCcw className="h-4 w-4" />
+              </Button>
+            }
+            actionLabel={<><RefreshCcw className="h-4 w-4 mr-2" />Regenerate</>}
+            onAction={() => {
               navigateBranch?.(item.depth, item.totalBranches);
               regenerate({ messageId: item.message._id });
             }}
-          >
-            <RefreshCcw className="h-4 w-4" />
-          </Button>
+            onActionWithModel={(model) => {
+              navigateBranch?.(item.depth, item.totalBranches);
+              regenerate({ messageId: item.message._id, model });
+            }}
+          />
           {copyText && <CopyButton text={copyText} />}
         </div>
       );
@@ -178,10 +198,14 @@ export const UtilsBar = memo(
     return (
       <div className={`flex flex-row items-center gap-1 self-start`}>
         <BranchNavigation item={item} navigateBranch={navigateBranch!} />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={async () => {
+        <ActionDropdown
+          trigger={
+            <Button variant="ghost" size="icon">
+              <GitBranch className="h-4 w-4" />
+            </Button>
+          }
+          actionLabel={<><GitBranch className="h-4 w-4 mr-2" />Branch</>}
+          onAction={async () => {
             const result = await branchChat({
               chatId: item.message.chatId!,
               branchFrom: item.message._id,
@@ -193,19 +217,36 @@ export const UtilsBar = memo(
               });
             }
           }}
-        >
-          <GitFork className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
+          onActionWithModel={async (model) => {
+            const result = await branchChat({
+              chatId: item.message.chatId!,
+              branchFrom: item.message._id,
+              model,
+            });
+            if (result && result.newChatId) {
+              navigate({
+                to: "/chat/$chatId",
+                params: { chatId: result.newChatId },
+              });
+            }
+          }}
+        />
+        <ActionDropdown
+          trigger={
+            <Button variant="ghost" size="icon">
+              <RefreshCcw className="h-4 w-4" />
+            </Button>
+          }
+          actionLabel={<><RefreshCcw className="h-4 w-4 mr-2" />Regenerate</>}
+          onAction={() => {
             navigateBranch?.(item.depth, item.totalBranches);
             regenerate({ messageId: item.message._id });
           }}
-        >
-          <RefreshCcw className="h-4 w-4" />
-        </Button>
+          onActionWithModel={(model) => {
+            navigateBranch?.(item.depth, item.totalBranches);
+            regenerate({ messageId: item.message._id, model });
+          }}
+        />
         {copyText && <CopyButton text={copyText} />}
       </div>
     );

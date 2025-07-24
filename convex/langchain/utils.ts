@@ -6,6 +6,7 @@ import type { Doc } from "../_generated/dataModel";
 export const prepareChat = internalMutation({
   args: v.object({
     chatId: v.id("chats"),
+    model: v.optional(v.string()),
   }),
   handler: async (
     ctx,
@@ -23,6 +24,14 @@ export const prepareChat = internalMutation({
     const chat = await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });
+
+    if (args.model && args.model !== chat.model) {
+      await ctx.runMutation(api.chats.mutations.update, {
+        chatId: args.chatId,
+        updates: { model: args.model },
+      });
+      chat.model = args.model;
+    }
 
     let streamDoc = await ctx.runQuery(api.streams.queries.get, {
       chatId: args.chatId,
