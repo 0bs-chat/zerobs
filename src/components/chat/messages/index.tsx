@@ -10,7 +10,7 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import { groupedMessagesAtom, useStreamAtom } from "@/store/chatStore";
 import { useAtomValue } from "jotai";
 
-export const ChatMessages = ({ chatId }: { chatId?: Id<"chats"> }) => {
+export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const user = useQuery(api.auth.getUser);

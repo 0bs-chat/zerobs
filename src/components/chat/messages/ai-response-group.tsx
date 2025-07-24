@@ -1,0 +1,73 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { AiMessage } from "./ai-message";
+import { UtilsBar } from "./utils-bar";
+import { ChevronUp, ChevronDown } from "lucide-react";
+import { springTransition } from "@/lib/motion";
+
+export const AiResponseGroup = ({ group, groupedMessages }: any) => {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <div className={`flex flex-col gap-1 group relative${open ? '' : ' opacity-50'}`}>
+      <button
+        type="button"
+        onClick={e => {
+          e.stopPropagation();
+          setOpen(prev => !prev);
+        }}
+        className={`z-10 p-1 bg-background/80 rounded-full hover:bg-accent transition-colors
+          absolute top-0 left-0 transform -translate-x-[2rem] ${open ? 'opacity-0' : 'opacity-100'}
+          group-hover:opacity-100
+          group-hover:bg-background/80
+          group-hover:hover:bg-accent
+          group-hover:hover:bg-accent
+          `}
+        aria-label={open ? "Collapse" : "Expand"}
+      >
+        {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="ai-group"
+            data-slot="ai-response-group"
+            initial="collapsed"
+            animate="open"
+            exit="collapsed"
+            variants={{
+              open: { opacity: 1, height: "auto" },
+              collapsed: { opacity: 0, height: 0 },
+            }}
+            transition={{ duration: 0.2, ease: [0.04, 0.62, 0.23, 0.98] }}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-col gap-1">
+              {group.response.map((response: any, index: number) => {
+                return (
+                  <motion.div
+                    key={`${response.message._id}-${index}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, ...springTransition }}
+                  >
+                    <AiMessage item={response} />
+                  </motion.div>
+                );
+              })}
+              {group.response.length > 0 && (
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <UtilsBar
+                    item={group.input}
+                    isAI={true}
+                    groupedMessages={groupedMessages}
+                  />
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};

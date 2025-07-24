@@ -19,7 +19,7 @@ const branchPathAtom = atom<BranchPath>([]);
 
 export type { MessageWithBranchInfo, BranchPath };
 
-export const useMessages = ({ chatId }: { chatId: Id<"chats"> }) => {
+export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const setCurrentThread = useSetAtom(currentThreadAtom);
   const setUseStreamAtom = useSetAtom(useStreamAtom);
   const branchPath = useAtomValue(branchPathAtom);
