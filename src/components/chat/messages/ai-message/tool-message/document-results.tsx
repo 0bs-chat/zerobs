@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/accordion";
 import { Markdown } from "@/components/ui/markdown";
 import { formatDate } from "@/lib/utils";
-import { getTagInfo } from "@/lib/helpers";
+import { getTagInfo } from "@/lib/document-helper";
 import { useSetAtom } from "jotai";
 import { documentDialogOpenAtom } from "@/store/chatStore";
 import type { Doc } from "../../../../../../convex/_generated/dataModel";
@@ -62,9 +62,7 @@ export const DocumentResultDisplay = ({
         </AccordionTrigger>
         <AccordionContent className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[36rem] overflow-y-auto">
           {results.map((result, index) => {
-            const { icon: Icon, className } = getTagInfo(
-              result.metadata.document.type,
-            );
+            const { icon: Icon, className } = getTagInfo(result.metadata.document);
             return (
               <Card key={index} className="hover:shadow-md transition-shadow">
                 <CardHeader className="flex flex-col gap-2">

@@ -3,7 +3,7 @@ import { Trash2Icon, EyeIcon } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { ProjectDocument } from "./types";
-import { getTagInfo } from "@/lib/helpers";
+import { getTagInfo } from "@/lib/document-helper";
 import { Button } from "@/components/ui/button";
 import { useSetAtom } from "jotai";
 import { documentDialogOpenAtom } from "@/store/chatStore";
@@ -36,10 +36,7 @@ export function ProjectDocumentListItem({
           }
         />
         {(() => {
-          const { icon: Icon, className } = getTagInfo(
-            projectDocument.document.type,
-            projectDocument.document.status,
-          );
+          const { icon: Icon, className } = getTagInfo(projectDocument.document);
           return <Icon className={className} />;
         })()}
         <div className="flex-1 min-w-0">

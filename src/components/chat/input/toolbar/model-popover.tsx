@@ -7,7 +7,7 @@ import {
 import { Hammer, ChevronDownIcon, Search } from "lucide-react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../../convex/langchain/models";
-import { getTagInfo, hammerTagInfo, thinkingTagInfo } from "@/lib/helpers";
+import { getTagInfo, hammerTagInfo, thinkingTagInfo } from "@/lib/document-helper";
 import { api } from "../../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
 import { newChatAtom } from "@/store/chatStore";
@@ -92,7 +92,19 @@ export function ModelPopover({
                 </div>
                 <div className="flex flex-row gap-1 items-center opacity-75">
                   {model.modalities?.filter((modality) => modality !== "text").map((modality) => {
-                    const { icon: Icon, className: IconClassName, parentClassName } = getTagInfo(modality);
+                    const allowedTypes = ["file", "url", "site", "youtube", "text", "github"] as const;
+                    const type = (allowedTypes.includes(modality as any) ? modality : "file") as typeof allowedTypes[number];
+                    const fakeDoc = {
+                      _id: "modality" as any,
+                      _creationTime: 0,
+                      userId: "modality",
+                      key: "modality",
+                      type,
+                      name: modality,
+                      size: 0,
+                      status: "done" as const,
+                    };
+                    const { icon: Icon, className: IconClassName, parentClassName } = getTagInfo(fakeDoc);
                     return (
                       <div key={modality} className={`p-1 rounded-md ${parentClassName}`}>
                         <Icon className={`h-4 w-4 ${IconClassName}`} />

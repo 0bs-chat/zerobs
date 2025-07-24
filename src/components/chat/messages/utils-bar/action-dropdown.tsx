@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { models } from "../../../../../convex/langchain/models";
-import { getTagInfo, hammerTagInfo, thinkingTagInfo } from "@/lib/helpers";
+import { getTagInfo, hammerTagInfo, thinkingTagInfo } from "@/lib/document-helper";
 import { Hammer } from "lucide-react";
 
 export function ActionDropdown({
@@ -42,11 +42,23 @@ export function ActionDropdown({
                 {model.modalities
                   ?.filter((modality) => modality !== "text")
                   .map((modality) => {
+                    const allowedTypes = ["file", "url", "site", "youtube", "text", "github"] as const;
+                    const type = (allowedTypes.includes(modality as any) ? modality : "file") as typeof allowedTypes[number];
+                    const fakeDoc = {
+                      _id: "modality" as any,
+                      _creationTime: 0,
+                      userId: "modality",
+                      key: "modality",
+                      type,
+                      name: modality,
+                      size: 0,
+                      status: "done" as const,
+                    };
                     const {
                       icon: Icon,
                       className: IconClassName,
                       parentClassName,
-                    } = getTagInfo(modality);
+                    } = getTagInfo(fakeDoc);
                     return (
                       <div
                         key={modality}

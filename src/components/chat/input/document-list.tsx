@@ -7,11 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { documentDialogOpenAtom } from "@/store/chatStore";
 import { useRemoveDocument } from "@/hooks/use-documents";
-import { getTagInfo } from "@/lib/helpers";
+import { getTagInfo } from "@/lib/document-helper";
 import React, { useCallback } from "react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../convex/langchain/models";
-import mime from "mime";
 
 type DocumentBadgeProps = {
   doc: Doc<"documents">;
@@ -22,37 +21,7 @@ type DocumentBadgeProps = {
 
 const DocumentBadge = React.memo(
   ({ doc, onPreview, onRemove, modalities }: DocumentBadgeProps) => {
-    // Map file extensions to tags so loader logic recognizes supported modalities.
-    let resolvedTag: string = doc.type;
-    if (doc.type === "file") {
-      const mimeType = mime.getType(doc.name) || "";
-
-      if (mimeType === "application/pdf") {
-        resolvedTag = "pdf";
-      } else if (mimeType.startsWith("image/")) {
-        resolvedTag = "image";
-      } else if (mimeType.startsWith("video/")) {
-        resolvedTag = "video";
-      } else if (mimeType.startsWith("audio/")) {
-        resolvedTag = "audio";
-      } else if (mimeType.startsWith("text/")) {
-        resolvedTag = "text";
-      } else {
-        // Fallback: derive from extension if mime type couldn't classify
-        const extension =
-          mime.getExtension(mimeType) ??
-          doc.name.split(".").pop()?.toLowerCase();
-        if (extension === "pdf") {
-          resolvedTag = "pdf";
-        }
-      }
-    }
-
-    const { icon: Icon, className: IconClassName } = getTagInfo(
-      resolvedTag,
-      doc.status,
-      modalities,
-    );
+    const { icon: Icon, className: IconClassName } = getTagInfo(doc, modalities);
 
     const handlePreview = useCallback(() => {
       onPreview(doc._id);
