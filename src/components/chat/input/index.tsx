@@ -1,11 +1,14 @@
 import { DocumentList } from "./document-list";
-import {
-  AutosizeTextarea,
-} from "@/components/ui/autosize-textarea";
+import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useAtom, useSetAtom, useAtomValue } from "jotai";
-import { newChatAtom, selectedProjectIdAtom, chatAtom, chatIdAtom } from "@/store/chatStore";
+import {
+  newChatAtom,
+  selectedProjectIdAtom,
+  chatAtom,
+  chatIdAtom,
+} from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
 import { useEffect } from "react";
@@ -53,7 +56,7 @@ export const ChatInput = () => {
         });
       }
     },
-    300,
+    300
   );
 
   return (
@@ -107,7 +110,8 @@ export const ChatInput = () => {
 
               if (
                 (!newChat.text || newChat.text.trim() === "") &&
-                chat && chat.documents.length === 0
+                chat &&
+                chat.documents.length === 0
               ) {
                 toast.error("Please enter a message");
                 return;
