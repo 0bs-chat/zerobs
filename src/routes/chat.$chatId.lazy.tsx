@@ -22,7 +22,6 @@ import {
 import { api } from "../../convex/_generated/api";
 import { useQuery } from "convex/react";
 import { newChatAtom } from "@/store/chatStore";
-import { SidebarSeparator } from "@/components/ui/sidebar";
 
 export const Route = createLazyFileRoute("/chat/$chatId")({
   component: RouteComponent,
