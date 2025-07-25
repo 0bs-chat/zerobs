@@ -91,7 +91,6 @@ export function AppSidebar() {
       <SidebarContent className="overflow-hidden gap-0">
         <SidebarGroup className="gap-2">
           <Button
-            variant="outline"
             className="w-full cursor-pointer"
             onClick={handleNewChat}
           >

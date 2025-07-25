@@ -22,6 +22,7 @@ import {
 import { api } from "../../convex/_generated/api";
 import { useQuery } from "convex/react";
 import { newChatAtom } from "@/store/chatStore";
+import { SidebarSeparator } from "@/components/ui/sidebar";
 
 export const Route = createLazyFileRoute("/chat/$chatId")({
   component: RouteComponent,
@@ -69,7 +70,15 @@ function RouteComponent() {
         <AnimatePresence mode="wait">
           {resizePanelOpen && (
             <>
-              <ResizableHandle />
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={layoutTransition}
+                style={{ display: 'flex', alignItems: 'stretch' }}
+              >
+                <ResizableHandle />
+              </motion.div>
               <ResizablePanel defaultSize={40} minSize={25} maxSize={60}>
                 <motion.div
                   variants={slideInFromRight}

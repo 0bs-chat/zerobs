@@ -33,33 +33,33 @@ export const getTagInfo = (
         tag: "text"
       };
     case "image":
-      return { icon: ImageIcon, className: "text-green-500", parentClassName: "bg-green-100/20 backdrop-blur-sm", tag: "image" };
+      return { icon: ImageIcon, className: "text-green-500", parentClassName: "bg-green-300/20 backdrop-blur-sm", tag: "image" };
     case "video":
-      return { icon: VideoIcon, className: "text-red-500", parentClassName: "bg-red-100/20 backdrop-blur-sm", tag: "video" };
+      return { icon: VideoIcon, className: "text-red-500", parentClassName: "bg-red-300/20 backdrop-blur-sm", tag: "video" };
     case "audio":
-      return { icon: AudioLinesIcon, className: "text-purple-500", parentClassName: "bg-purple-100/20 backdrop-blur-sm", tag: "audio" };
+      return { icon: AudioLinesIcon, className: "text-purple-500", parentClassName: "bg-purple-300/20 backdrop-blur-sm", tag: "audio" };
     case "pdf":
-      return { icon: FileIcon, className: "text-orange-500", parentClassName: "bg-orange-100/20 backdrop-blur-sm", tag: "pdf" };
+      return { icon: FileIcon, className: "text-orange-500", parentClassName: "bg-orange-300/20 backdrop-blur-sm", tag: "pdf" };
     case "url":
-      return { icon: LinkIcon, className: "text-blue-500", parentClassName: "bg-blue-100/20 backdrop-blur-sm", tag: "url" };
+      return { icon: LinkIcon, className: "text-blue-500", parentClassName: "bg-blue-300/20 backdrop-blur-sm", tag: "url" };
     case "site":
-      return { icon: GlobeIcon, className: "text-green-500", parentClassName: "bg-green-100/20 backdrop-blur-sm", tag: "site" };
+      return { icon: GlobeIcon, className: "text-green-500", parentClassName: "bg-green-300/20 backdrop-blur-sm", tag: "site" };
     case "youtube":
-      return { icon: YoutubeIcon, className: "text-red-500", parentClassName: "bg-red-100/20 backdrop-blur-sm", tag: "youtube" };
+      return { icon: YoutubeIcon, className: "text-red-500", parentClassName: "bg-red-300/20 backdrop-blur-sm", tag: "youtube" };
     case "github":
-      return { icon: GithubIcon, className: "text-gray-500", parentClassName: "bg-gray-100/20 backdrop-blur-sm", tag: "github" };
+      return { icon: GithubIcon, className: "text-gray-500", parentClassName: "bg-gray-300/20 backdrop-blur-sm", tag: "github" };
     case "error":
-      return { icon: AlertCircleIcon, className: "text-red-500", parentClassName: "bg-red-100/20 backdrop-blur-sm", tag: "error" };
+      return { icon: AlertCircleIcon, className: "text-red-500", parentClassName: "bg-red-300/20 backdrop-blur-sm", tag: "error" };
     case "processing":
-      return { icon: Loader2Icon, className: "text-gray-500 animate-spin", parentClassName: "bg-gray-100/20 backdrop-blur-sm", tag: "processing" };
+      return { icon: Loader2Icon, className: "text-gray-500 animate-spin", parentClassName: "bg-gray-300/20 backdrop-blur-sm", tag: "processing" };
     case "toolSupport":
-      return { icon: Hammer, className: "text-gray-500", parentClassName: "bg-gray-100/20 backdrop-blur-sm", tag: "toolSupport" };
+      return { icon: Hammer, className: "text-blue-500", parentClassName: "bg-blue-300/20 backdrop-blur-sm", tag: "toolSupport" };
     case "thinking":
-      return { icon: Brain, className: "text-gray-500", parentClassName: "bg-gray-100/20 backdrop-blur-sm", tag: "thinking" };
+      return { icon: Brain, className: "text-purple-500", parentClassName: "bg-purple-300/20 backdrop-blur-sm", tag: "thinking" };
     case "file":
-      return { icon: FileIcon, className: "text-gray-500", parentClassName: "bg-gray-100/20 backdrop-blur-sm", tag: "file" };
+      return { icon: FileIcon, className: "text-gray-500", parentClassName: "bg-gray-300/20 backdrop-blur-sm", tag: "file" };
     default:
-      return { icon: FileIcon, className: "text-gray-500", parentClassName: "bg-gray-100/20 backdrop-blur-sm", tag: "file" };
+      return { icon: FileIcon, className: "text-gray-500", parentClassName: "bg-gray-300/20 backdrop-blur-sm", tag: "file" };
   }
 };
 
