@@ -123,7 +123,7 @@ export const allArtifactsAtom = atom((get) => {
 // mcp atoms
 
 export type McpType = "http" | "stdio" | "docker";
-export const intitalMCPState = {
+export const initialMCPState = {
   name: "",
   type: "http" as McpType,
   command: "",
@@ -150,8 +150,8 @@ export type McpTemplate = Omit<
 };
 
 export const selectedMCPTemplateAtom = atom<
-  McpTemplate | typeof intitalMCPState
->(intitalMCPState);
+  McpTemplate | typeof initialMCPState
+>(initialMCPState);
 
 // example files
 

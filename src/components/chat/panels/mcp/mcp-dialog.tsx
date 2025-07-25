@@ -18,7 +18,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { validateMCP } from "@/hooks/use-mcp";
 import {
-  intitalMCPState,
+  initialMCPState,
   selectedMCPTemplateAtom,
   mcpDialogOpenAtom,
   type McpType,
@@ -32,28 +32,41 @@ export const MCPDialog = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
-    // Convert mcp to MCPFormState for validation
-    const mcpFormState = {
-      name: mcp.name,
-      type: mcp.type,
-      command: mcp.command,
-      url: mcp.url,
-      dockerImage: mcp.dockerImage,
-      dockerPort: mcp.dockerPort,
-      dockerCommand: mcp.dockerCommand,
-      env: mcp.env,
-      status: mcp.status,
-      restartOnNewChat: mcp.restartOnNewChat,
-    };
+    const {
+      name,
+      type,
+      command,
+      url,
+      dockerImage,
+      dockerPort,
+      dockerCommand,
+      env,
+      restartOnNewChat,
+      status,
+    } = mcp;
 
-    if (!validateMCP(mcpFormState)) return;
+    if (
+      !validateMCP({
+        name,
+        type,
+        command,
+        url,
+        dockerImage,
+        dockerPort,
+        dockerCommand,
+        env,
+        restartOnNewChat,
+        status,
+      })
+    )
+      return;
 
     setIsLoading(true);
     try {
-      await handleCreate(mcpFormState, (open) => {
+      await handleCreate(mcp, (open) => {
         if (!open) {
           // Reset form state when dialog closes after successful creation
-          setMcp(intitalMCPState);
+          setMcp(initialMCPState);
         }
         setIsOpen(open);
       });
@@ -99,7 +112,7 @@ export const MCPDialog = () => {
       onOpenChange={(open) => {
         if (!open && !isLoading) {
           // Reset form state when dialog closes
-          setMcp(intitalMCPState);
+          setMcp(initialMCPState);
         }
         setIsOpen(open);
       }}
@@ -231,7 +244,7 @@ export const MCPDialog = () => {
           <Button
             variant="outline"
             onClick={() => {
-              setMcp(intitalMCPState);
+              setMcp(initialMCPState);
               setIsOpen(false);
             }}
             disabled={isLoading}
