@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import type { ChunkGroup } from "../../../convex/langchain/state";
+import type { MessageGroup } from "@/../convex/chatMessages/helpers";
 
 interface UseScrollOptions {
   streamData?: {
-    chunkGroups: any[];
+    chunkGroups: ChunkGroup[];
     status?: string;
   };
-  groupedMessages?: any[];
+  groupedMessages?: MessageGroup[];
   isEmpty?: boolean;
   isLoading?: boolean;
 }

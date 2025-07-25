@@ -1,34 +1,59 @@
-import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { AiMessage } from "./ai-message";
 import { UtilsBar } from "./utils-bar";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import { springTransition } from "@/lib/motion";
+import type { MessageGroup } from "../../../../convex/chatMessages/helpers";
+import { useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { useState } from "react";
 
-export const AiResponseGroup = ({ group, groupedMessages }: any) => {
-  const [open, setOpen] = useState(true);
+interface AiResponseGroupProps {
+  group: MessageGroup;
+  groupedMessages: MessageGroup[];
+}
+
+export const AiResponseGroup = (props: AiResponseGroupProps) => {
+  const { group, groupedMessages } = props;
+  const minimized = group.input.message.minimized ?? false;
+  const [loading, setLoading] = useState(false);
+  const toggleMinimized = useMutation(api.chatMessages.mutations.toggleMinimized);
+
+  const handleToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      await toggleMinimized({ id: group.input.message._id });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className={`flex flex-col gap-1 group relative${open ? '' : ' opacity-50'}`}>
+    <div className={`flex flex-col gap-1 group relative${!minimized ? '' : ' opacity-50'}`}>
       <button
         type="button"
-        onClick={e => {
-          e.stopPropagation();
-          setOpen(prev => !prev);
-        }}
+        onClick={handleToggle}
         className={`z-10 p-1 bg-background/80 rounded-full hover:bg-accent transition-colors
-          absolute top-0 left-0 transform -translate-x-[2rem] ${open ? 'opacity-0' : 'opacity-100'}
+          absolute top-0 left-0 transform -translate-x-[2rem] ${!minimized ? 'opacity-0' : 'opacity-100'}
           group-hover:opacity-100
           group-hover:bg-background/80
           group-hover:hover:bg-accent
           group-hover:hover:bg-accent
           `}
-        aria-label={open ? "Collapse" : "Expand"}
+        aria-label={!minimized ? "Collapse" : "Expand"}
+        disabled={loading}
       >
-        {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        {loading ? (
+          <Loader2 size={18} className="animate-spin" />
+        ) : !minimized ? (
+          <ChevronUp size={18} />
+        ) : (
+          <ChevronDown size={18} />
+        )}
       </button>
       <AnimatePresence initial={false}>
-        {open && (
+        {!minimized && (
           <motion.div
             key="ai-group"
             data-slot="ai-response-group"
@@ -43,7 +68,7 @@ export const AiResponseGroup = ({ group, groupedMessages }: any) => {
             className="overflow-hidden"
           >
             <div className="flex flex-col gap-1">
-              {group.response.map((response: any, index: number) => {
+              {group.response.map((response, index) => {
                 return (
                   <motion.div
                     key={`${response.message._id}-${index}`}

@@ -27,6 +27,11 @@ export interface MessageWithBranchInfo {
 
 export type BranchPath = number[];
 
+export type MessageGroup = {
+  input: MessageWithBranchInfo;
+  response: MessageWithBranchInfo[];
+};
+
 // Recursive helper to build the current thread
 export const buildThread = (
   nodes: MessageNode[],
@@ -120,11 +125,6 @@ export function getThreadFromMessage(
 }
 
 export const groupMessages = (currentThread: MessageWithBranchInfo[]) => {
-  type MessageGroup = {
-    input: MessageWithBranchInfo;
-    response: MessageWithBranchInfo[];
-  };
-
   const groups: MessageGroup[] = [];
   let currentGroup: MessageGroup | null = null;
 
