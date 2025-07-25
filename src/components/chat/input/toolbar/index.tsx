@@ -17,7 +17,6 @@ import {
   Network,
   Binoculars,
   XIcon,
-  ChevronDownIcon, // <-- Add this
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { useUploadDocuments } from "@/hooks/use-documents";

@@ -61,7 +61,7 @@ export function AppSidebar() {
         root: null,
         rootMargin: "0px",
         threshold: 0.1,
-      },
+      }
     );
 
     observer.observe(loadMoreElement);
@@ -88,7 +88,7 @@ export function AppSidebar() {
       <SidebarHeader className="flex items-center w-full font-bold font-mono text-xl py-3.5 px-2">
         0bs
       </SidebarHeader>
-      <SidebarContent className="overflow-hidden gap-0">
+      <SidebarContent className="overflow-hidden gap-0 px-1.5">
         <SidebarGroup className="gap-2">
           <Button
             variant="outline"
