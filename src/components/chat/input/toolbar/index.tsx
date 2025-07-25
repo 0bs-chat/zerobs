@@ -103,14 +103,14 @@ export const ToolBar = () => {
       setNewChat((prev) => ({
         ...prev,
         [key]: value,
-        ...(key === "orchestratorMode" && { webSearch: true }),
+        ...(key === "orchestratorMode" && value && { webSearch: true }),
       }));
     } else {
       updateChatMutation({
         chatId,
         updates: {
           [key]: value,
-          ...(key === "orchestratorMode" && { webSearch: true }),
+          ...(key === "orchestratorMode" && value && { webSearch: true }),
         },
       });
     }

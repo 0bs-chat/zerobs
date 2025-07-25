@@ -56,7 +56,16 @@ export const DocumentDialog = () => {
           break;
         }
         default:
-          setPreviewUrl(null);
+          if (["file", "text", "github"].includes(document.type)) {
+            const url = await generateDownloadUrl({
+              documentId: document._id!,
+            });
+            setPreviewUrl(url);
+            break;
+          } else {
+            setPreviewUrl(document.key as string);
+          }
+          break;
       }
     };
     loadPreviewUrl();
@@ -113,72 +122,71 @@ export const DocumentDialog = () => {
             )}
           </div>
 
-          {previewUrl &&
-            (["image", "pdf", "youtube", "file", "url", "site"].includes(tag)) && (
-              <div className="flex-grow relative min-h-0 bg-muted rounded-md border overflow-hidden">
-                {(() => {
-                  if (tag === "image") {
-                    return (
-                      <img
-                        src={previewUrl}
-                        alt={documentName}
-                        className="absolute inset-0 w-full h-full object-contain"
-                      />
-                    );
-                  } else if (tag === "pdf") {
-                    return (
-                      <object
-                        data={previewUrl}
-                        className="absolute inset-0 w-full h-full"
-                        type="application/pdf"
-                      >
-                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                          PDF preview not supported in your browser. Please download
-                          the file to view it.
-                        </div>
-                      </object>
-                    );
-                  } else if (tag === "youtube") {
-                    return (
-                      <iframe
-                        src={previewUrl}
-                        className="absolute inset-0 w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    );
-                  } else if (tag === "url" || tag === "site") {
-                    return (
-                      <iframe
-                        src={previewUrl}
-                        className="absolute inset-0 w-full h-full"
-                        sandbox="allow-same-origin allow-scripts"
-                        style={{
-                          transform: "scale(0.95)",
-                          transformOrigin: "top left",
-                          width: "105.3%", // 100/0.95 to compensate for scale
-                          height: "105.3%",
-                        }}
-                      />
-                    );
-                  } else if (tag === "file") {
-                    // fallback for unknown file types
-                    return (
-                      <object
-                        data={previewUrl}
-                        className="absolute inset-0 w-full h-full"
-                        type="application/octet-stream"
-                      >
-                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                          File preview not supported. Please download the file to view it.
-                        </div>
-                      </object>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            )}
+          {previewUrl && (
+            <div className="flex-grow relative min-h-0 bg-muted rounded-md border overflow-hidden">
+              {(() => {
+                if (tag === "image") {
+                  return (
+                    <img
+                      src={previewUrl}
+                      alt={documentName}
+                      className="absolute inset-0 w-full h-full object-contain"
+                    />
+                  );
+                } else if (tag === "pdf") {
+                  return (
+                    <object
+                      data={previewUrl}
+                      className="absolute inset-0 w-full h-full"
+                      type="application/pdf"
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                        PDF preview not supported in your browser. Please download
+                        the file to view it.
+                      </div>
+                    </object>
+                  );
+                } else if (tag === "youtube") {
+                  return (
+                    <iframe
+                      src={previewUrl}
+                      className="absolute inset-0 w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  );
+                } else if (tag === "url" || tag === "site") {
+                  return (
+                    <iframe
+                      src={previewUrl}
+                      className="absolute inset-0 w-full h-full"
+                      sandbox="allow-same-origin allow-scripts"
+                      style={{
+                        transform: "scale(0.95)",
+                        transformOrigin: "top left",
+                        width: "105.3%", // 100/0.95 to compensate for scale
+                        height: "105.3%",
+                      }}
+                    />
+                  );
+                } else if (tag === "file") {
+                  // fallback for unknown file types
+                  return (
+                    <object
+                      data={previewUrl}
+                      className="absolute inset-0 w-full h-full"
+                      type="application/octet-stream"
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                        File preview not supported. Please download the file to view it.
+                      </div>
+                    </object>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 mt-4">

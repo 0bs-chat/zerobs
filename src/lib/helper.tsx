@@ -72,8 +72,8 @@ export const getDocTagInfo = (
   parentClassName?: string;
   tag: string;
 } => {
-  const mimeType = mime.getType(document.name) || "";
   let modality: string;
+  const mimeType = mime.getType(document.name) || "";
   if (mimeType.startsWith("image/")) {
     modality = "image";
   } else if (mimeType.startsWith("video/")) {
@@ -85,13 +85,17 @@ export const getDocTagInfo = (
   } else if (mimeType.startsWith("application/pdf")) {
     modality = "pdf";
   } else {
-    modality = "file";
+    modality = document.type;
   }
   if (document.status === "processing" && !supportedModalities.includes(modality)) {
-    return getTagInfo("processing");
+    const result = getTagInfo("processing");
+    result.tag = modality;
+    return result;
   }
-  if (document.status === "error") {
-    return getTagInfo("error");
+  if (document.status === "error" && !supportedModalities.includes(modality)) {
+    const result = getTagInfo("error");
+    result.tag = modality;
+    return result;
   }
   return getTagInfo(modality);
 };
