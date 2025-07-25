@@ -1,5 +1,5 @@
 import { useMessages } from "../../../hooks/chats/use-messages";
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessagesList } from "./messages";
 import { StreamingMessage } from "./streaming-message";
@@ -7,40 +7,19 @@ import { TriangleAlertIcon } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { groupedMessagesAtom, useStreamAtom } from "@/store/chatStore";
+import { streamStatusAtom } from "@/store/chatStore";
 import { useAtomValue } from "jotai";
 
 export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-
   const user = useQuery(api.auth.getUser);
-
   const {
     isLoading,
     isEmpty
   } = useMessages({ chatId });
 
-  const groupedMessages = useAtomValue(groupedMessagesAtom);
-  const streamData = useAtomValue(useStreamAtom);
+  const streamStatus = useAtomValue(streamStatusAtom);
 
   const mainContent = useMemo(() => {
-    if (!streamData) return null;
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-muted-foreground">Loading messages...</div>
-        </div>
-      );
-    }
-
-    if (isEmpty && !streamData.chunkGroups.length) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-muted-foreground">No messages</div>
-        </div>
-      );
-    }
-
     if (chatId === "new") {
       return (
         <div className="flex items-center justify-center h-full flex-col gap-4 -translate-y-30">
@@ -57,37 +36,50 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
         </div>
       );
     }
+    
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-muted-foreground">Loading messages...</div>
+        </div>
+      );
+    }
+
+    if (isEmpty) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-muted-foreground">No messages</div>
+        </div>
+      );
+    }
 
     return (
-      <ScrollArea className="h-full chat-messages-scroll-area">
+      <ScrollArea className="h-full">
         <div className="flex flex-col gap-1 p-1 max-w-4xl mx-auto">
-          {groupedMessages.length > 0 && (
-            <MessagesList />
-          )}
+          <MessagesList />
 
-          {streamData.chunkGroups.length > 0 && <StreamingMessage />}
-          {["streaming", "pending"].includes(streamData?.status ?? "") && (
+          {streamStatus === "streaming" && <StreamingMessage />}
+          {["streaming", "pending"].includes(streamStatus ?? "") && (
             <div className="flex items-center gap-1">
               <span className="inline-block w-2 h-4 bg-current animate-pulse" />
             </div>
           )}
-          {["cancelled", "error"].includes(streamData.status ?? "") && (
+          {["cancelled", "error"].includes(streamStatus ?? "") && (
             <div
-              className={`flex flex-row gap-2 items-center justify-start p-2 rounded-lg ${streamData.status === "cancelled" ? "bg-yellow-500/10" : "bg-red-500/10"}`}
+              className={`flex flex-row gap-2 items-center justify-start p-2 rounded-lg ${streamStatus === "cancelled" ? "bg-yellow-500/10" : "bg-red-500/10"}`}
             >
               <TriangleAlertIcon className="w-4 h-4" />
               <div className="text-muted-foreground">
-                {streamData.status === "cancelled"
+                {streamStatus === "cancelled"
                   ? "Stream cancelled"
                   : "Stream error"}
               </div>
             </div>
           )}
-          <div ref={scrollAreaRef} />
         </div>
       </ScrollArea>
     );
-  }, [isLoading, isEmpty, groupedMessages, streamData, chatId, user?.name]);
+  }, [isLoading, isEmpty, streamStatus, chatId]);
 
   return mainContent;
 };

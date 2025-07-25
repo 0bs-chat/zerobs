@@ -56,17 +56,11 @@ function RouteComponent() {
             layout
             transition={layoutTransition}
           >
-            {chatId !== "new" && <ChatMessages chatId={chatId} />}
+            <ChatMessages chatId={chatId} />
           </motion.div>
-          <motion.div
-            className="flex-none"
-            layout
-            transition={layoutTransition}
-          >
-            <ChatInput />
-          </motion.div>
+          <ChatInput />
         </ResizablePanel>
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           {resizePanelOpen && (
             <>
               <motion.div

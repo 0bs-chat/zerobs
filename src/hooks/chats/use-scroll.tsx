@@ -1,21 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { ChunkGroup } from "../../../convex/langchain/state";
-import type { MessageGroup } from "@/../convex/chatMessages/helpers";
 
-interface UseScrollOptions {
-  streamData?: {
-    chunkGroups: ChunkGroup[];
-    status?: string;
-  };
-  groupedMessages?: MessageGroup[];
-  isEmpty?: boolean;
-  isLoading?: boolean;
-}
-
-export const useScroll = (options: UseScrollOptions = {}) => {
-  const { streamData, groupedMessages, isEmpty, isLoading } = options;
+export const useScroll = () => {
   const [isAtBottom, setIsAtBottom] = useState(true);
-  const [userHasScrolledAway, setUserHasScrolledAway] = useState(false);
   const lastScrollTopRef = useRef<number>(0);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -24,7 +10,6 @@ export const useScroll = (options: UseScrollOptions = {}) => {
     const selectors = [
       '[data-slot="scroll-area-viewport"]', // Radix scroll area viewport
       "[data-radix-scroll-area-viewport]", // Alternative Radix selector
-      ".chat-messages-scroll-area", // Our class
     ];
 
     for (const selector of selectors) {
@@ -67,7 +52,6 @@ export const useScroll = (options: UseScrollOptions = {}) => {
           top: scrollContainer.scrollHeight,
           behavior,
         });
-        setUserHasScrolledAway(false);
         setIsAtBottom(true);
       }
     },
@@ -88,45 +72,11 @@ export const useScroll = (options: UseScrollOptions = {}) => {
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
-
-      scrollTimeoutRef.current = setTimeout(() => {
-        if (!atBottom) {
-          setUserHasScrolledAway(true);
-        }
-      }, 150);
     }
 
     lastScrollTopRef.current = scrollTop;
     setIsAtBottom(atBottom);
-
-    // Reset scrolled away state if user scrolled back to bottom
-    if (atBottom) {
-      setUserHasScrolledAway(false);
-    }
   }, [findScrollContainer]);
-
-  const shouldAutoScroll = isAtBottom && !userHasScrolledAway;
-
-  // Auto-scroll during streaming only if user hasn't scrolled away
-  useEffect(() => {
-    if (shouldAutoScroll && streamData?.chunkGroups && streamData.chunkGroups.length > 0) {
-      scrollToBottom("smooth");
-    }
-  }, [streamData?.chunkGroups?.length, shouldAutoScroll, scrollToBottom]);
-
-  // Auto-scroll when new messages arrive (non-streaming)
-  useEffect(() => {
-    if (shouldAutoScroll && groupedMessages && groupedMessages.length > 0) {
-      scrollToBottom("smooth");
-    }
-  }, [groupedMessages?.length, shouldAutoScroll, scrollToBottom]);
-
-  // Initial scroll to bottom when chat loads
-  useEffect(() => {
-    if (!isEmpty && !isLoading) {
-      scrollToBottom("auto");
-    }
-  }, [isEmpty, isLoading, scrollToBottom]);
 
   // Setup effect
   useEffect(() => {
@@ -187,8 +137,6 @@ export const useScroll = (options: UseScrollOptions = {}) => {
 
   return {
     scrollToBottom,
-    isAtBottom,
-    userHasScrolledAway,
-    shouldAutoScroll,
+    isAtBottom
   };
 };
