@@ -152,3 +152,12 @@ export type McpTemplate = Omit<
 export const selectedMCPTemplateAtom = atom<
   McpTemplate | typeof intitalMCPState
 >(intitalMCPState);
+
+// example files
+
+export const exampleFiles = [
+  "https://qujy6f1uxq.ufs.sh/f/MC8BmHgZR3uvaIG6am46YCrm1uwUl3He2itzSBL9kXapDGfZ",
+  "https://qujy6f1uxq.ufs.sh/f/46f0b1da-8aad-4e08-8ff2-0715fda20dcb-q4kjbf.jpg",
+  "https://qujy6f1uxq.ufs.sh/f/e84b90fe-ff10-4955-bbfd-163a41e8b64a-bw4pjg.jpg",
+  "https://qujy6f1uxq.ufs.sh/f/26675fcf-fd12-46a0-b0e2-eefd6fd748bb-bs2y0b.jpg",
+];
