@@ -51,7 +51,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
               if (router.state.location.pathname.startsWith("/project/")) {
                 navigate({ to: "/projects" });
               }
-              
+
               // Always clear the project selection
               if (chatId !== "new") {
                 updateChatInput({

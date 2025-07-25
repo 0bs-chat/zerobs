@@ -28,7 +28,11 @@ export const DocumentDialog = () => {
   );
 
   const documentName = document?.name ?? "";
-  const { icon: Icon, className: IconClassName, tag } = document
+  const {
+    icon: Icon,
+    className: IconClassName,
+    tag,
+  } = document
     ? getDocTagInfo(document)
     : { icon: () => null, className: "", tag: "" };
 
@@ -141,8 +145,8 @@ export const DocumentDialog = () => {
                       type="application/pdf"
                     >
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        PDF preview not supported in your browser. Please download
-                        the file to view it.
+                        PDF preview not supported in your browser. Please
+                        download the file to view it.
                       </div>
                     </object>
                   );
@@ -178,7 +182,8 @@ export const DocumentDialog = () => {
                       type="application/octet-stream"
                     >
                       <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        File preview not supported. Please download the file to view it.
+                        File preview not supported. Please download the file to
+                        view it.
                       </div>
                     </object>
                   );

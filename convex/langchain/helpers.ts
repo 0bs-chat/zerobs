@@ -106,25 +106,25 @@ export async function createAgentWithTools(
         ...agents,
         ...(chat.webSearch
           ? [
-            createReactAgent({
-              llm: llm,
-              tools: [retrievalTools.webSearch],
-              name: "WebSearch",
-              prompt:
-                "You are a WebSearch assistant specialized in searching the internet for current information. Use web search to find up-to-date information from various online sources.",
-            }),
-          ]
+              createReactAgent({
+                llm: llm,
+                tools: [retrievalTools.webSearch],
+                name: "WebSearch",
+                prompt:
+                  "You are a WebSearch assistant specialized in searching the internet for current information. Use web search to find up-to-date information from various online sources.",
+              }),
+            ]
           : []),
         ...(chat.projectId
           ? [
-            createReactAgent({
-              llm: llm,
-              tools: [retrievalTools.vectorSearch],
-              name: "VectorSearch",
-              prompt:
-                "You are a VectorSearch assistant specialized in searching through project documents and uploaded files. Use vector similarity search to find relevant information from the user's project documents.",
-            }),
-          ]
+              createReactAgent({
+                llm: llm,
+                tools: [retrievalTools.vectorSearch],
+                name: "VectorSearch",
+                prompt:
+                  "You are a VectorSearch assistant specialized in searching through project documents and uploaded files. Use vector similarity search to find relevant information from the user's project documents.",
+              }),
+            ]
           : []),
       ],
       llm: supervisorLlm,

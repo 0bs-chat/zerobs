@@ -28,7 +28,8 @@ export const StreamingMessage = memo(() => {
 
     return streamData.langchainMessages.map((message, index) => {
       const isLastAiMessage =
-        index === streamData.langchainMessages!.length - 1 && message?.getType() === "ai";
+        index === streamData.langchainMessages!.length - 1 &&
+        message?.getType() === "ai";
 
       return (
         <motion.div
@@ -51,7 +52,8 @@ export const StreamingMessage = memo(() => {
     });
   }, [streamData?.langchainMessages, messageId, streamData?.isStreaming]);
 
-  if (!streamData?.chunkGroups || streamData.chunkGroups.length === 0) return null;
+  if (!streamData?.chunkGroups || streamData.chunkGroups.length === 0)
+    return null;
 
   return (
     <motion.div

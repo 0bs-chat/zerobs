@@ -2,13 +2,18 @@ import { memo } from "react";
 import type { Dispatch, SetStateAction, ReactNode } from "react";
 import { BranchNavigation } from "./branch-navigation";
 import { Button } from "@/components/ui/button";
-import { Check, CheckCheck, GitBranch, Pencil, RefreshCcw, X } from "lucide-react";
+import {
+  Check,
+  CheckCheck,
+  GitBranch,
+  Pencil,
+  RefreshCcw,
+  X,
+} from "lucide-react";
 import { ActionDropdown } from "./action-dropdown";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import type {
-  MessageWithBranchInfo,
-} from "@/hooks/chats/use-messages";
+import type { MessageWithBranchInfo } from "@/hooks/chats/use-messages";
 import {
   Tooltip,
   TooltipContent,
@@ -31,7 +36,7 @@ const TooltipButton = ({
   onClick,
   icon,
   tooltip,
-  ariaLabel
+  ariaLabel,
 }: {
   onClick: () => void;
   icon: ReactNode;
@@ -56,7 +61,10 @@ const TooltipButton = ({
 );
 
 // Helper function for navigation logic
-const navigateToChat = (navigate: ReturnType<typeof useNavigate>, chatId: Id<"chats">) => {
+const navigateToChat = (
+  navigate: ReturnType<typeof useNavigate>,
+  chatId: Id<"chats">,
+) => {
   navigate({
     to: "/chat/$chatId",
     params: { chatId },
@@ -81,8 +89,19 @@ export const UtilsBar = memo(
     isAI?: boolean;
     groupedMessages: ReturnType<typeof groupMessages>;
   }) => {
-    const regenerate = useAction(api.langchain.index.regenerate) as unknown as (args: { messageId: Id<"chatMessages">, model?: string }) => Promise<void>;
-    const branchChat = useAction(api.langchain.index.branchChat) as unknown as (args: { chatId: Id<"chats">, branchFrom: Id<"chatMessages">, model?: string }) => Promise<{ newChatId: Id<"chats"> }>;
+    const regenerate = useAction(
+      api.langchain.index.regenerate,
+    ) as unknown as (args: {
+      messageId: Id<"chatMessages">;
+      model?: string;
+    }) => Promise<void>;
+    const branchChat = useAction(
+      api.langchain.index.branchChat,
+    ) as unknown as (args: {
+      chatId: Id<"chats">;
+      branchFrom: Id<"chatMessages">;
+      model?: string;
+    }) => Promise<{ newChatId: Id<"chats"> }>;
     const updateMessage = useMutation(api.chatMessages.mutations.updateInput);
     const chat = useAction(api.langchain.index.chat);
     const navigate = useNavigate();
@@ -178,7 +197,12 @@ export const UtilsBar = memo(
                 <GitBranch className="h-4 w-4" />
               </Button>
             }
-            actionLabel={<><GitBranch className="h-4 w-4 mr-2" />Branch</>}
+            actionLabel={
+              <>
+                <GitBranch className="h-4 w-4 mr-2" />
+                Branch
+              </>
+            }
             onAction={() => handleBranch()}
             onActionWithModel={handleBranch}
           />
@@ -188,7 +212,12 @@ export const UtilsBar = memo(
                 <RefreshCcw className="h-4 w-4" />
               </Button>
             }
-            actionLabel={<><RefreshCcw className="h-4 w-4 mr-2" />Regenerate</>}
+            actionLabel={
+              <>
+                <RefreshCcw className="h-4 w-4 mr-2" />
+                Regenerate
+              </>
+            }
             onAction={() => handleRegenerate()}
             onActionWithModel={handleRegenerate}
           />
@@ -214,7 +243,12 @@ export const UtilsBar = memo(
               <GitBranch className="h-4 w-4" />
             </Button>
           }
-          actionLabel={<><GitBranch className="h-4 w-4 mr-2" />Branch</>}
+          actionLabel={
+            <>
+              <GitBranch className="h-4 w-4 mr-2" />
+              Branch
+            </>
+          }
           onAction={() => handleBranch()}
           onActionWithModel={handleBranch}
         />
@@ -224,7 +258,12 @@ export const UtilsBar = memo(
               <RefreshCcw className="h-4 w-4" />
             </Button>
           }
-          actionLabel={<><RefreshCcw className="h-4 w-4 mr-2" />Regenerate</>}
+          actionLabel={
+            <>
+              <RefreshCcw className="h-4 w-4 mr-2" />
+              Regenerate
+            </>
+          }
           onAction={() => handleRegenerate()}
           onActionWithModel={handleRegenerate}
         />

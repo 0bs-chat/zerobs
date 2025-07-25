@@ -15,9 +15,7 @@ import {
 import { MemorySaver } from "@langchain/langgraph";
 import type { GraphState, AIChunkGroup, ToolChunkGroup } from "./state";
 import { v } from "convex/values";
-import {
-  getThreadFromMessage,
-} from "../chatMessages/helpers";
+import { getThreadFromMessage } from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
 
@@ -102,22 +100,27 @@ export const chat = action({
           if (buffer.length > 0) {
             const chunks = buffer;
             buffer = [];
-            streamDoc = await ctx.runMutation(internal.streams.mutations.flush, {
-              chatId,
-              chunks,
-              completedSteps: [
-                ...(localCheckpoint?.pastSteps?.map(
-                  (pastStep) => pastStep[0],
-                ) ?? []),
-                ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
-                  ? [
-                    ...(localCheckpoint.plan[0].type === "parallel"
-                      ? localCheckpoint.plan[0].data.map((step) => step.step)
-                      : [localCheckpoint.plan[0].data.step]),
-                  ]
-                  : []),
-              ],
-            });
+            streamDoc = await ctx.runMutation(
+              internal.streams.mutations.flush,
+              {
+                chatId,
+                chunks,
+                completedSteps: [
+                  ...(localCheckpoint?.pastSteps?.map(
+                    (pastStep) => pastStep[0],
+                  ) ?? []),
+                  ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
+                    ? [
+                        ...(localCheckpoint.plan[0].type === "parallel"
+                          ? localCheckpoint.plan[0].data.map(
+                              (step) => step.step,
+                            )
+                          : [localCheckpoint.plan[0].data.step]),
+                      ]
+                    : []),
+                ],
+              },
+            );
           }
           if (streamDoc?.status === "cancelled") {
             abort.abort();
@@ -352,7 +355,9 @@ export const branchChat = action({
 
     const lastMessage = thread.at(-1);
     if (lastMessage) {
-      const storedMessage = mapChatMessagesToStoredMessages([lastMessage.message])[0];
+      const storedMessage = mapChatMessagesToStoredMessages([
+        lastMessage.message,
+      ])[0];
       if (storedMessage.type === "ai") {
         thread.pop();
       }
@@ -362,7 +367,9 @@ export const branchChat = action({
       await ctx.runMutation(internal.chats.mutations.createRaw, {
         chatId: newChatId,
         messages: thread.map((m) => ({
-          message: JSON.stringify(mapChatMessagesToStoredMessages([m.message])[0]),
+          message: JSON.stringify(
+            mapChatMessagesToStoredMessages([m.message])[0],
+          ),
         })),
       });
     }

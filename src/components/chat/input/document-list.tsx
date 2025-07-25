@@ -21,7 +21,10 @@ type DocumentBadgeProps = {
 
 const DocumentBadge = React.memo(
   ({ doc, onPreview, onRemove, modalities }: DocumentBadgeProps) => {
-    const { icon: Icon, className: IconClassName } = getDocTagInfo(doc, modalities);
+    const { icon: Icon, className: IconClassName } = getDocTagInfo(
+      doc,
+      modalities,
+    );
 
     const handlePreview = useCallback(() => {
       onPreview(doc._id);

@@ -49,11 +49,16 @@ export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
 );
 export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
 
-export const currentThreadAtom = atom<ReturnType<typeof buildThread> | undefined>(undefined);
-export const groupedMessagesAtom = selectAtom(currentThreadAtom, (thread) => thread ? groupMessages(thread) : []);
-export const lastChatMessageAtom = selectAtom(
-  currentThreadAtom,
-  (thread) => (thread && thread.length > 0 ? thread[thread.length - 1].message._id : undefined)
+export const currentThreadAtom = atom<
+  ReturnType<typeof buildThread> | undefined
+>(undefined);
+export const groupedMessagesAtom = selectAtom(currentThreadAtom, (thread) =>
+  thread ? groupMessages(thread) : [],
+);
+export const lastChatMessageAtom = selectAtom(currentThreadAtom, (thread) =>
+  thread && thread.length > 0
+    ? thread[thread.length - 1].message._id
+    : undefined,
 );
 
 export const useStreamAtom = atom<ReturnType<typeof useStream> | undefined>(

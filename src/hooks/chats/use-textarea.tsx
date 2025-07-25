@@ -22,15 +22,18 @@ export const useTextAreaRef = () => {
     }
   }, [getRef]);
 
-  const setValue = useCallback((value: string) => {
-    const currentRef = getRef();
-    if (currentRef?.textArea) {
-      currentRef.textArea.value = value;
-      // Trigger any necessary updates
-      const event = new Event('input', { bubbles: true });
-      currentRef.textArea.dispatchEvent(event);
-    }
-  }, [getRef]);
+  const setValue = useCallback(
+    (value: string) => {
+      const currentRef = getRef();
+      if (currentRef?.textArea) {
+        currentRef.textArea.value = value;
+        // Trigger any necessary updates
+        const event = new Event("input", { bubbles: true });
+        currentRef.textArea.dispatchEvent(event);
+      }
+    },
+    [getRef],
+  );
 
   const getValue = useCallback(() => {
     const currentRef = getRef();

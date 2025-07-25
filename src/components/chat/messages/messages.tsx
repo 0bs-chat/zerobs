@@ -12,9 +12,7 @@ import { groupedMessagesAtom } from "@/store/chatStore";
 import { AiResponseGroup } from "./ai-response-group";
 
 export const MessagesList = () => {
-  const [editingMessageId, setEditingMessageId] = useState<string | null>(
-    null,
-  );
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editedText, setEditedText] = useState("");
   const groupedMessages = useAtomValue(groupedMessagesAtom);
 
@@ -27,10 +25,10 @@ export const MessagesList = () => {
         const content = messageToEdit.input.message.message.content;
         const textContent = Array.isArray(content)
           ? ((
-            content.find((c) => c.type === "text") as
-            | { type: "text"; text: string }
-            | undefined
-          )?.text ?? "")
+              content.find((c) => c.type === "text") as
+                | { type: "text"; text: string }
+                | undefined
+            )?.text ?? "")
           : "";
         setEditedText(textContent);
       }

@@ -8,10 +8,7 @@ import {
   type BranchPath,
   type MessageWithBranchInfo,
 } from "../../../convex/chatMessages/helpers";
-import {
-  useStreamAtom,
-  currentThreadAtom
-} from "@/store/chatStore";
+import { useStreamAtom, currentThreadAtom } from "@/store/chatStore";
 import { atom, useSetAtom, useAtomValue } from "jotai";
 import { useStream } from "./use-stream";
 
@@ -41,7 +38,12 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   useEffect(() => {
     setCurrentThread(currentThread);
     setUseStreamAtom(streamData);
-  }, [currentThread, JSON.stringify(streamData), setCurrentThread, setUseStreamAtom]);
+  }, [
+    currentThread,
+    JSON.stringify(streamData),
+    setCurrentThread,
+    setUseStreamAtom,
+  ]);
 
   return {
     isLoading: messages === undefined,
@@ -49,17 +51,19 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   };
 };
 
-
 // Function to change branch at a specific depth
 export const useChangeBranch = () => {
   const setBranchPath = useSetAtom(branchPathAtom);
-  return useCallback((depth: number, newBranchIndex: number) => {
-    setBranchPath((prev) => {
-      const newPath = prev.slice(0, depth); // Clear deeper selections
-      newPath[depth] = newBranchIndex;
-      return newPath;
-    });
-  }, [setBranchPath]);
+  return useCallback(
+    (depth: number, newBranchIndex: number) => {
+      setBranchPath((prev) => {
+        const newPath = prev.slice(0, depth); // Clear deeper selections
+        newPath[depth] = newBranchIndex;
+        return newPath;
+      });
+    },
+    [setBranchPath],
+  );
 };
 
 // Function to navigate branches (prev/next)
@@ -68,24 +72,27 @@ export const useNavigateBranch = () => {
   const branchPath = useAtomValue(branchPathAtom);
   const changeBranch = useChangeBranch();
 
-  return useCallback((depth: number, direction: "prev" | "next" | number) => {
-    if (typeof direction === "number") {
-      changeBranch(depth, direction);
-      return;
-    }
+  return useCallback(
+    (depth: number, direction: "prev" | "next" | number) => {
+      if (typeof direction === "number") {
+        changeBranch(depth, direction);
+        return;
+      }
 
-    const threadItem = currentThread![depth];
-    if (!threadItem) return;
+      const threadItem = currentThread![depth];
+      if (!threadItem) return;
 
-    const currentBranchIndex =
-      branchPath[depth] ?? threadItem.totalBranches - 1;
-    const totalBranches = threadItem.totalBranches;
+      const currentBranchIndex =
+        branchPath[depth] ?? threadItem.totalBranches - 1;
+      const totalBranches = threadItem.totalBranches;
 
-    const newIndex =
-      direction === "prev"
-        ? (currentBranchIndex - 1 + totalBranches) % totalBranches
-        : (currentBranchIndex + 1) % totalBranches;
+      const newIndex =
+        direction === "prev"
+          ? (currentBranchIndex - 1 + totalBranches) % totalBranches
+          : (currentBranchIndex + 1) % totalBranches;
 
-    changeBranch(depth, newIndex);
-  }, [currentThread, branchPath, changeBranch]);
+      changeBranch(depth, newIndex);
+    },
+    [currentThread, branchPath, changeBranch],
+  );
 };

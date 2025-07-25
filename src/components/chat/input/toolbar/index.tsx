@@ -37,7 +37,12 @@ import { streamStatusAtom, newChatAtom, chatAtom } from "@/store/chatStore";
 import { models } from "../../../../../convex/langchain/models";
 import { StopButtonIcon } from "./stop-button-icon";
 import { motion } from "motion/react";
-import { buttonHover, smoothTransition, scaleIn, iconSpinVariants } from "@/lib/motion";
+import {
+  buttonHover,
+  smoothTransition,
+  scaleIn,
+  iconSpinVariants,
+} from "@/lib/motion";
 import { ModelPopover } from "./model-popover";
 import { useRouter } from "@tanstack/react-router";
 
@@ -73,7 +78,7 @@ const TOGGLES = [
   },
 ] as const;
 
-type ToggleKey = typeof TOGGLES[number]["key"];
+type ToggleKey = (typeof TOGGLES)[number]["key"];
 
 export const ToolBar = () => {
   const chatId = useAtomValue(chatIdAtom);
@@ -84,7 +89,7 @@ export const ToolBar = () => {
   const streamStatus = useAtomValue(streamStatusAtom);
   const cancelStreamMutation = useMutation(api.streams.mutations.cancel);
   const setNewChat = useSetAtom(newChatAtom);
-  const chat = (useAtomValue(chatAtom))!;
+  const chat = useAtomValue(chatAtom)!;
   const selectedModel = chat.model;
   const reasoningEffort = chat.reasoningEffort;
   const selectedModelConfig = models.find(
@@ -117,7 +122,9 @@ export const ToolBar = () => {
   };
 
   // Render selected toggles as buttons
-  const selectedToggles = TOGGLES.filter((t) => chat[t.key as keyof typeof chat]);
+  const selectedToggles = TOGGLES.filter(
+    (t) => chat[t.key as keyof typeof chat],
+  );
 
   return (
     <div className="flex flex-row justify-between items-center w-full p-1">
@@ -172,11 +179,18 @@ export const ToolBar = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">Agent Settings</div>
+            <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">
+              Agent Settings
+            </div>
             {TOGGLES.map((toggle) => (
               <DropdownMenuItem
                 key={toggle.key}
-                onClick={() => handleToggle(toggle.key, !chat[toggle.key as keyof typeof chat])}
+                onClick={() =>
+                  handleToggle(
+                    toggle.key,
+                    !chat[toggle.key as keyof typeof chat],
+                  )
+                }
                 className={[
                   "flex items-center justify-between pr-2",
                   toggle.key === "orchestratorMode"
@@ -187,7 +201,9 @@ export const ToolBar = () => {
                 <span className="flex items-center gap-2">
                   {/* Add motion to icon */}
                   <motion.span
-                    variants={toggle.animation === "scale" ? scaleIn : iconSpinVariants}
+                    variants={
+                      toggle.animation === "scale" ? scaleIn : iconSpinVariants
+                    }
                     initial="initial"
                     animate="animate"
                     transition={smoothTransition}
@@ -200,7 +216,17 @@ export const ToolBar = () => {
                 <span className="ml-auto flex items-center">
                   {/* The checkmark is rendered by DropdownMenuCheckboxItem, but we want it on the right, so we hide the default and add our own if checked */}
                   {chat[toggle.key as keyof typeof chat] && (
-                    <svg className="size-4 text-primary" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" clipRule="evenodd" /></svg>
+                    <svg
+                      className="size-4 text-primary"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                   )}
                 </span>
               </DropdownMenuItem>
@@ -219,7 +245,9 @@ export const ToolBar = () => {
           >
             {/* Toggle icon: visible only when not hovered */}
             <motion.span
-              variants={toggle.animation === "scale" ? scaleIn : iconSpinVariants}
+              variants={
+                toggle.animation === "scale" ? scaleIn : iconSpinVariants
+              }
               initial="initial"
               animate="animate"
               transition={smoothTransition}

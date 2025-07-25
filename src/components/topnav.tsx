@@ -40,7 +40,7 @@ export function TopNav() {
   const navigate = useNavigate();
   const [sidebarOpen] = useAtom(sidebarOpenAtom);
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
-  
+
   // Check if we're on a chat route by looking for chatId parameter
   const params = useParams({ strict: false });
   const isOnChatRoute = !!params.chatId;
@@ -50,7 +50,10 @@ export function TopNav() {
     if (!isOnChatRoute) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       const tag = (event.target as HTMLElement)?.tagName;
-      const isEditable = tag === "INPUT" || tag === "TEXTAREA" || (event.target as HTMLElement)?.isContentEditable;
+      const isEditable =
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        (event.target as HTMLElement)?.isContentEditable;
       if (isEditable) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i") {
         event.preventDefault();

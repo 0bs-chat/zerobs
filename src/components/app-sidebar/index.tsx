@@ -90,10 +90,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="overflow-hidden gap-0">
         <SidebarGroup className="gap-2">
-          <Button
-            className="w-full cursor-pointer"
-            onClick={handleNewChat}
-          >
+          <Button className="w-full cursor-pointer" onClick={handleNewChat}>
             <div className="flex items-center gap-2">
               <PlusIcon className="w-4 h-4" />
               New chat

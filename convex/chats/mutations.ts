@@ -83,15 +83,12 @@ export const createRaw = internalMutation({
     let currentParent = args.messages[0]?.parentId ?? null;
 
     for (const message of args.messages) {
-      const created = await ctx.runMutation(
-        internal.chatMessages.crud.create,
-        {
-          chatId: args.chatId,
-          parentId: currentParent,
-          message: message.message,
-          minimized: false,
-        },
-      );
+      const created = await ctx.runMutation(internal.chatMessages.crud.create, {
+        chatId: args.chatId,
+        parentId: currentParent,
+        message: message.message,
+        minimized: false,
+      });
       // Set the current message as parent for the next message
       currentParent = created._id;
     }

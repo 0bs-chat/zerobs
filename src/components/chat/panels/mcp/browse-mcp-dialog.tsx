@@ -70,8 +70,7 @@ const MCP_TEMPLATES: McpTemplate[] = [
     restartOnNewChat: false,
     description:
       "Provides up-to-date, version-specific documentation and code examples for various libraries and frameworks. It helps AI models avoid hallucinations and generate accurate code by supplying relevant, real-time context directly from official sources.",
-    image:
-      "https://context7.com/favicon.ico",
+    image: "https://context7.com/favicon.ico",
     official: true,
   },
 ];
@@ -101,9 +100,7 @@ export const BrowseMCPDialog = () => {
         <DialogHeader>
           <DialogTitle>Browse MCP Templates</DialogTitle>
         </DialogHeader>
-        <div
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 overflow-auto w-full"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 overflow-auto w-full">
           {MCP_TEMPLATES.map((tpl, idx) => (
             <div
               key={idx}
@@ -202,7 +199,7 @@ export const BrowseMCPDialog = () => {
                 try {
                   await handleCreate(
                     templateToMCPFormState(MCP_TEMPLATES[selected]),
-                    setIsOpen
+                    setIsOpen,
                   );
                 } finally {
                   setLoading(false);

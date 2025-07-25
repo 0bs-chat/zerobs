@@ -1,11 +1,14 @@
 import { DocumentList } from "./document-list";
-import {
-  AutosizeTextarea,
-} from "@/components/ui/autosize-textarea";
+import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
 import { useAtom, useSetAtom, useAtomValue } from "jotai";
-import { newChatAtom, selectedProjectIdAtom, chatAtom, chatIdAtom } from "@/store/chatStore";
+import {
+  newChatAtom,
+  selectedProjectIdAtom,
+  chatAtom,
+  chatIdAtom,
+} from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
 import { useEffect } from "react";
@@ -65,13 +68,16 @@ export const ChatInput = () => {
         await handleFileUpload(e.dataTransfer.files);
       }
     },
-    [handleFileUpload]
+    [handleFileUpload],
   );
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (!isDragActive) setIsDragActive(true);
-  }, [isDragActive]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      if (!isDragActive) setIsDragActive(true);
+    },
+    [isDragActive],
+  );
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -93,7 +99,9 @@ export const ChatInput = () => {
       {/* Drag overlay */}
       {isDragActive && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 pointer-events-none rounded-lg">
-          <span className="text-lg font-semibold text-white">Drop files to upload</span>
+          <span className="text-lg font-semibold text-white">
+            Drop files to upload
+          </span>
         </div>
       )}
       <AnimatePresence>
@@ -143,7 +151,8 @@ export const ChatInput = () => {
 
               if (
                 (!newChat.text || newChat.text.trim() === "") &&
-                chat && chat.documents.length === 0
+                chat &&
+                chat.documents.length === 0
               ) {
                 toast.error("Please enter a message");
                 return;

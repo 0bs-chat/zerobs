@@ -51,9 +51,12 @@ export const ProjectsList = () => {
                 onClick={() => {
                   // Only navigate to project page if we're on the /projects route
                   if (router.state.location.pathname === "/projects") {
-                    navigate({ to: "/project/$projectId", params: { projectId: project._id } });
+                    navigate({
+                      to: "/project/$projectId",
+                      params: { projectId: project._id },
+                    });
                   }
-                  
+
                   // Always update the chat if not a new chat
                   if (chatId !== "new") {
                     updateChatMutation({

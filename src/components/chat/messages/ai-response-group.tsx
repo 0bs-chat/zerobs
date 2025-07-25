@@ -17,7 +17,9 @@ export const AiResponseGroup = (props: AiResponseGroupProps) => {
   const { group, groupedMessages } = props;
   const minimized = group.input.message.minimized ?? false;
   const [loading, setLoading] = useState(false);
-  const toggleMinimized = useMutation(api.chatMessages.mutations.toggleMinimized);
+  const toggleMinimized = useMutation(
+    api.chatMessages.mutations.toggleMinimized,
+  );
 
   const handleToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -30,12 +32,14 @@ export const AiResponseGroup = (props: AiResponseGroupProps) => {
   };
 
   return (
-    <div className={`flex flex-col gap-1 group relative${!minimized ? '' : ' opacity-50'}`}>
+    <div
+      className={`flex flex-col gap-1 group relative${!minimized ? "" : " opacity-50"}`}
+    >
       <button
         type="button"
         onClick={handleToggle}
         className={`z-10 p-1 bg-background/80 rounded-full hover:bg-accent transition-colors
-          absolute top-0 left-0 transform -translate-x-[2rem] ${!minimized ? 'opacity-0' : 'opacity-100'}
+          absolute top-0 left-0 transform -translate-x-[2rem] ${!minimized ? "opacity-0" : "opacity-100"}
           group-hover:opacity-100
           group-hover:bg-background/80
           group-hover:hover:bg-accent

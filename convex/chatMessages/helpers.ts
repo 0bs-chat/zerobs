@@ -10,10 +10,7 @@ import {
 export type Message = Omit<Doc<"chatMessages">, "message"> & {
   message: BaseMessage;
 };
-export type MessageNode = Omit<
-  Doc<"chatMessages">,
-  "message" | "children"
-> & {
+export type MessageNode = Omit<Doc<"chatMessages">, "message" | "children"> & {
   message: BaseMessage;
   children: MessageNode[];
 };

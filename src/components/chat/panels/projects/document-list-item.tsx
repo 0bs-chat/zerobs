@@ -36,7 +36,9 @@ export function ProjectDocumentListItem({
           }
         />
         {(() => {
-          const { icon: Icon, className } = getDocTagInfo(projectDocument.document);
+          const { icon: Icon, className } = getDocTagInfo(
+            projectDocument.document,
+          );
           return <Icon className={className} />;
         })()}
         <div className="flex-1 min-w-0">

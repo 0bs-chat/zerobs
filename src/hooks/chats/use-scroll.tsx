@@ -137,6 +137,6 @@ export const useScroll = () => {
 
   return {
     scrollToBottom,
-    isAtBottom
+    isAtBottom,
   };
 };

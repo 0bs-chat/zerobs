@@ -12,10 +12,7 @@ import { useAtomValue } from "jotai";
 
 export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const user = useQuery(api.auth.getUser);
-  const {
-    isLoading,
-    isEmpty
-  } = useMessages({ chatId });
+  const { isLoading, isEmpty } = useMessages({ chatId });
 
   const streamStatus = useAtomValue(streamStatusAtom);
 
@@ -36,7 +33,7 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
         </div>
       );
     }
-    
+
     if (isLoading) {
       return (
         <div className="flex items-center justify-center h-full">
