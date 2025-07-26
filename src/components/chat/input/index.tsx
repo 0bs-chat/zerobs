@@ -2,7 +2,7 @@ import { DocumentList } from "./document-list";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useAtom, useSetAtom, useAtomValue } from "jotai";
+import { useSetAtom, useAtomValue } from "jotai";
 import {
   newChatAtom,
   selectedProjectIdAtom,
@@ -26,7 +26,7 @@ import { useState, useCallback } from "react";
 export const ChatInput = () => {
   const chatId = useAtomValue(chatIdAtom);
   const updateChatMutation = useMutation(api.chats.mutations.update);
-  const [newChat, setNewChat] = useAtom(newChatAtom);
+  const setNewChat = useSetAtom(newChatAtom);
   const chat = useAtomValue(chatAtom);
   const handleSubmit = useHandleSubmit();
   const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);

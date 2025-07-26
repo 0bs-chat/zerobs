@@ -4,12 +4,14 @@ import {
   resizePanelOpenAtom,
   selectedArtifactAtom,
   sidebarOpenAtom,
+  userAtom,
 } from "@/store/chatStore";
 import {
   LogOutIcon,
   PanelRightCloseIcon,
   SettingsIcon,
   PlusIcon,
+  GithubIcon,
 } from "lucide-react";
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
@@ -32,14 +34,20 @@ import { useEffect } from "react";
 
 export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
-
-  const user = useQuery(api.auth.getUser);
-  const { signOut } = useAuthActions();
-
   const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
   const navigate = useNavigate();
-  const [sidebarOpen] = useAtom(sidebarOpenAtom);
+  const sidebarOpen = useAtomValue(sidebarOpenAtom);
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
+  const setUser = useSetAtom(userAtom);
+
+  const { signOut } = useAuthActions();
+  const user = useQuery(api.auth.getUser);
+
+  useEffect(() => {
+    if (user) {
+      setUser(user);
+    }
+  }, [user]);
 
   // Check if we're on a chat route by looking for chatId parameter
   const params = useParams({ strict: false });
@@ -116,23 +124,29 @@ export function TopNav() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                className="cursor-pointer gap-3 font-medium"
+                onClick={() => {
+                  window.open("https://github.com/0bs-chat/zerobs", "_blank");
+                }}
+              >
+                <GithubIcon />
+                <span>Github</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={() => {
                   navigate({ to: "/settings" });
                 }}
               >
-                <SettingsIcon className="h-5 w-5" />
+                <SettingsIcon />
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="cursor-pointer gap-3 font-medium"
                 onClick={() => {
                   signOut();
                   navigate({ to: "/auth" });
                   toast.success("Signed out");
                 }}
               >
-                <LogOutIcon className="h-5 w-5" />
+                <LogOutIcon />
                 <span>Sign out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>

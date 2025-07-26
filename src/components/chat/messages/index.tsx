@@ -4,14 +4,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessagesList } from "./messages";
 import { StreamingMessage } from "./streaming-message";
 import { TriangleAlertIcon } from "lucide-react";
-import { useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { streamStatusAtom } from "@/store/chatStore";
+import { streamStatusAtom, userAtom } from "@/store/chatStore";
 import { useAtomValue } from "jotai";
 
 export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
-  const user = useQuery(api.auth.getUser);
+  const user = useAtomValue(userAtom);
   const { isLoading, isEmpty } = useMessages({ chatId });
 
   const streamStatus = useAtomValue(streamStatusAtom);

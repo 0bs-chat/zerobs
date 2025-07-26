@@ -20,7 +20,8 @@ export const getRetrievalTools = async (
   const vectorSearchTool = new DynamicStructuredTool({
     name: "searchProjectDocuments",
     description:
-      "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents.",
+      "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents." +
+      "You are always supposed to use this tool if you are asked about something specific to find information but no additional information is provided.",
     schema: z.object({
       query: z.string().describe("The search query to find relevant documents"),
       limit: z

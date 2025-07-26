@@ -7,6 +7,8 @@ import { buildThread, groupMessages } from "../../convex/chatMessages/helpers";
 import { parseArtifacts } from "@/components/artifacts/utils";
 import { AIMessage } from "@langchain/core/messages";
 
+export const userAtom = atom<Doc<"users">>();
+
 export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   _id: "new" as Id<"chats">,
   _creationTime: 0,
