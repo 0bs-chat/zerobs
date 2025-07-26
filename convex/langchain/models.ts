@@ -36,6 +36,7 @@ export const models: {
     | "moonshotai"
     | "openrouter"
     | "cypher"
+    | "qwen"
     | "kimi";
   usageRateMultiplier: number;
   hidden?: boolean;
@@ -237,24 +238,9 @@ export const models: {
     usageRateMultiplier: 2.0,
   },
   {
-    label: "Cypher Alpha",
-    model_name: "cypher-alpha",
-    model: "openrouter/cypher-alpha:free",
-    isThinking: false,
-    toolSupport: false,
-    provider: "openai",
-    modalities: ["text"],
-    image:
-      "https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
-    description:
-      "Cypher Alpha is a stealth mode model that can be used to generate text.",
-    owner: "openrouter",
-    usageRateMultiplier: 0.0,
-  },
-  {
     label: "Kimi K2",
     model_name: "kimi-k2",
-    model: "moonshotai/kimi-k2",
+    model: "moonshotai/kimi-k2:free",
     isThinking: false,
     toolSupport: true,
     provider: "openai",
@@ -264,6 +250,34 @@ export const models: {
     description:
       "Kimi K2 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     owner: "moonshotai",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "Qwen 3 235B",
+    model_name: "qwen3-235b-a22b-2507",
+    model: "qwen/qwen3-235b-a22b-2507:free",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    owner: "qwen",
+    modalities: ["text"],
+    image: "https://www.google.com/s2/favicons?domain=chat.qwen.ai&sz=256",
+    description:
+      "Qwen 3 235B is a large language model from Qwen, suitable for a wide range of text generation tasks.",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "Qwen 3 Coder",
+    model_name: "qwen3-coder",
+    model: "qwen/qwen3-coder:free",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    owner: "qwen",
+    modalities: ["text"],
+    image: "https://www.google.com/s2/favicons?domain=chat.qwen.ai&sz=256",
+    description:
+      "Qwen 3 Coder is a code-focused model from Qwen, designed for programming and code generation tasks.",
     usageRateMultiplier: 1.0,
   },
 ];

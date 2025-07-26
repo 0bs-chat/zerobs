@@ -1,33 +1,28 @@
 import { motion, AnimatePresence } from "motion/react";
 import { AiMessage } from "./ai-message";
-import { UtilsBar } from "./utils-bar";
-import { ChevronUp, ChevronDown, Loader2 } from "lucide-react";
+import { AiUtilsBar } from "./utils-bar";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { springTransition } from "@/lib/motion";
 import type { MessageGroup } from "../../../../convex/chatMessages/helpers";
 import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { useState } from "react";
 
 interface AiResponseGroupProps {
   group: MessageGroup;
-  groupedMessages: MessageGroup[];
 }
 
 export const AiResponseGroup = (props: AiResponseGroupProps) => {
-  const { group, groupedMessages } = props;
-  const minimized = group.input.message.minimized ?? false;
-  const [loading, setLoading] = useState(false);
+  const firstResponse = props.group.response[0];
+  const minimized = firstResponse?.message.minimized ?? false;
+
   const toggleMinimized = useMutation(
     api.chatMessages.mutations.toggleMinimized,
-  );
+  ).withOptimisticUpdate((_localStore, _args) => {});
 
-  const handleToggle = async (e: React.MouseEvent) => {
+  const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setLoading(true);
-    try {
-      await toggleMinimized({ id: group.input.message._id });
-    } finally {
-      setLoading(false);
+    if (firstResponse?.message._id) {
+      toggleMinimized({ id: firstResponse.message._id });
     }
   };
 
@@ -46,11 +41,8 @@ export const AiResponseGroup = (props: AiResponseGroupProps) => {
           group-hover:hover:bg-accent
           `}
         aria-label={!minimized ? "Collapse" : "Expand"}
-        disabled={loading}
       >
-        {loading ? (
-          <Loader2 size={18} className="animate-spin" />
-        ) : !minimized ? (
+        {!minimized ? (
           <ChevronUp size={18} />
         ) : (
           <ChevronDown size={18} />
@@ -72,7 +64,7 @@ export const AiResponseGroup = (props: AiResponseGroupProps) => {
             className="overflow-hidden"
           >
             <div className="flex flex-col gap-1">
-              {group.response.map((response, index) => {
+              {props.group.response.map((response, index) => {
                 return (
                   <motion.div
                     key={`${response.message._id}-${index}`}
@@ -84,12 +76,11 @@ export const AiResponseGroup = (props: AiResponseGroupProps) => {
                   </motion.div>
                 );
               })}
-              {group.response.length > 0 && (
+              {props.group.response.length > 0 && (
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <UtilsBar
-                    item={group.input}
-                    isAI={true}
-                    groupedMessages={groupedMessages}
+                  <AiUtilsBar
+                    input={props.group.input}
+                    response={props.group.response}
                   />
                 </div>
               )}

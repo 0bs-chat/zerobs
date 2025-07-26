@@ -56,7 +56,7 @@ export const MCPCard = ({
       <div className="flex items-center justify-between">
         <div className="flex flex-col justify-center flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <CardTitle className="text-lg font-semibold">{mcp.name}</CardTitle>
+            <CardTitle className="text-md font-semibold">{mcp.name}</CardTitle>
             <Badge variant="secondary" className="text-xs flex-shrink-0">
               {mcp.type.toUpperCase()}
             </Badge>

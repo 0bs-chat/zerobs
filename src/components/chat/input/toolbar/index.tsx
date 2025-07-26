@@ -282,7 +282,7 @@ export const ToolBar = () => {
               }
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-background">
               <BrainIcon className="h-4 w-4" />
               {reasoningEffort}
             </SelectTrigger>

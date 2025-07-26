@@ -72,7 +72,7 @@ export function ModelPopover({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="justify-between gap-2 cursor-pointer bg-muted"
+          className="justify-between gap-2 cursor-pointer"
           onClick={() => setPopoverOpen(!popoverOpen)}
         >
           {selectedModelConfig?.label || selectedModel}
