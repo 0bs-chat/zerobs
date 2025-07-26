@@ -145,15 +145,7 @@ export const ChatInput = () => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
 
-            if (
-              (!newChat.text || newChat.text.trim() === "") &&
-              chat &&
-              chat.documents.length === 0
-            ) {
-              toast.error("Please enter a message");
-              return;
-            }
-            if (e.currentTarget.value.trim() === "") {
+            if (e.currentTarget.value.trim() === "" && chat?.documents.length === 0) {
               toast.error("Please enter a message before sending");
               return;
             }
