@@ -17,10 +17,11 @@ import {
   Network,
   Binoculars,
   XIcon, // <-- Add this
+  FoldersIcon,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { useUploadDocuments } from "@/hooks/chats/use-documents";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import {
   Select,
@@ -33,7 +34,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { chatIdAtom } from "@/store/chatStore";
 import { useRef, useState } from "react";
 import GitHubDialog from "../github";
-import { streamStatusAtom, newChatAtom, chatAtom } from "@/store/chatStore";
+import { streamStatusAtom, newChatAtom, chatAtom, resizePanelOpenAtom, selectedPanelTabAtom } from "@/store/chatStore";
 import { models } from "../../../../../convex/langchain/models";
 import { StopButtonIcon } from "./stop-button-icon";
 import { motion } from "motion/react";
@@ -98,6 +99,14 @@ export const ToolBar = () => {
   const showReasoningEffort = selectedModelConfig?.isThinking ?? false;
   const router = useRouter();
   const isProjectRoute = router.state.location.pathname.startsWith("/project/");
+  const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
+  const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
+
+  // Get project details if chat has a project
+  const project = useQuery(
+    api.projects.queries.get,
+    chat.projectId ? { projectId: chat.projectId } : "skip",
+  );
 
   const handleFileUpload = useUploadDocuments({ type: "file", chat });
   const handleSubmit = useHandleSubmit();
@@ -116,6 +125,23 @@ export const ToolBar = () => {
         updates: {
           [key]: value,
           ...(key === "orchestratorMode" && value && { webSearch: true }),
+        },
+      });
+    }
+  };
+
+  // Handle removing project from chat
+  const handleRemoveProject = () => {
+    if (chatId === "new") {
+      setNewChat((prev) => ({
+        ...prev,
+        projectId: null,
+      }));
+    } else {
+      updateChatMutation({
+        chatId,
+        updates: {
+          projectId: null,
         },
       });
     }
@@ -261,6 +287,28 @@ export const ToolBar = () => {
             </span>
           </Button>
         ))}
+        {/* Render project name with X button on hover */}
+        {project && (
+          <Button
+            variant="outline"
+            className="group justify-between px-2"
+            onClick={() => {
+              setResizePanelOpen(true);
+              setSelectedPanelTab("projects");
+            }}
+          >
+            <span className="flex items-center gap-1">
+              <FoldersIcon className="w-4 h-4" />
+              <span className="max-w-32 truncate">{project.name}</span>
+            </span>
+            <button onClick={(e) => {
+              e.stopPropagation();
+              handleRemoveProject();
+            }} className="hidden group-hover:block">
+              <XIcon className="w-4 h-4 text-destructive" />
+            </button>
+          </Button>
+        )}
       </div>
       <div className="flex flex-row items-center gap-1">
         {showReasoningEffort && (

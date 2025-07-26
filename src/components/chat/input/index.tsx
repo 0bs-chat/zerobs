@@ -54,6 +54,11 @@ export const ChatInput = () => {
           chatId,
           updates: { text: e.target.value },
         });
+      } else {
+        setNewChat((prev) => ({
+          ...prev,
+          text: e.target.value,
+        }));
       }
     },
     300,
@@ -134,10 +139,6 @@ export const ChatInput = () => {
         defaultValue={chat?.text}
         className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
         onChange={(e) => {
-          setNewChat((prev) => ({
-            ...prev,
-            text: e.target.value,
-          }));
           handleChange(e);
         }}
         onKeyDown={(e) => {

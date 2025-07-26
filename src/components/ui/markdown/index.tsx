@@ -163,6 +163,7 @@ export const MarkdownBlock = memo(
           ${className}`}
         style={{
           fontFamily: "Rubik",
+          wordBreak: "break-word",
         }}
       >
         <ReactMarkdown
