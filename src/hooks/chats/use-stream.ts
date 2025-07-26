@@ -149,11 +149,8 @@ export function useStream(chatId: Id<"chats"> | "new") {
   }, [stream?.completedSteps, langchainMessages]);
 
   return {
-    chunkGroups: groupedChunks,
     status: stream?.status,
-    completedSteps: stream?.completedSteps,
     langchainMessages,
     planningStepsMessage,
-    isStreaming: stream?.status === "streaming",
   };
 }

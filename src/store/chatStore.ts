@@ -4,8 +4,8 @@ import { atomWithStorage, selectAtom } from "jotai/utils";
 import { useStream } from "@/hooks/chats/use-stream";
 import type { Artifact } from "@/components/artifacts/utils";
 import { buildThread, groupMessages } from "../../convex/chatMessages/helpers";
-import type { ContentPart } from "@/components/artifacts/utils";
-import { parseContent } from "@/components/artifacts/utils";
+import { parseArtifacts } from "@/components/artifacts/utils";
+import { AIMessage } from "@langchain/core/messages";
 
 export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   _id: "new" as Id<"chats">,
@@ -76,7 +76,7 @@ export const allArtifactsAtom = atom((get) => {
   const streamData = get(useStreamAtom);
 
   // Only process if we have data
-  if (!groupedMessages && !streamData?.chunkGroups) {
+  if (!groupedMessages && !streamData?.langchainMessages) {
     return artifacts;
   }
 
@@ -87,13 +87,7 @@ export const allArtifactsAtom = atom((get) => {
         if (msg.getType() === "ai") {
           const content = msg.content;
           if (typeof content === "string") {
-            const parts = parseContent(content);
-            const messageArtifacts = parts
-              .filter(
-                (part): part is Extract<ContentPart, { type: "artifact" }> =>
-                  part.type === "artifact",
-              )
-              .map((part) => part.artifact);
+            const messageArtifacts = parseArtifacts(content);
             artifacts.push(...messageArtifacts);
           }
         }
@@ -101,18 +95,12 @@ export const allArtifactsAtom = atom((get) => {
     });
   }
 
-  if (streamData?.chunkGroups) {
-    const streamContent = streamData.chunkGroups
-      .filter((g) => g.type === "ai")
-      .map((g) => (g.type === "ai" ? g.content : ""))
+  if (streamData?.langchainMessages) {
+    const streamContent = streamData.langchainMessages
+      .filter((g) => g instanceof AIMessage)
+      .map((g) => (g instanceof AIMessage ? g.content : ""))
       .join("");
-    const streamParts = parseContent(streamContent);
-    const streamArtifacts = streamParts
-      .filter(
-        (part): part is Extract<ContentPart, { type: "artifact" }> =>
-          part.type === "artifact",
-      )
-      .map((part) => part.artifact);
+    const streamArtifacts = parseArtifacts(streamContent);
 
     streamArtifacts.forEach((sa) => {
       if (!artifacts.find((a) => a.id === sa.id)) {
