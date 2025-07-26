@@ -67,7 +67,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
     }, [chat.name]);
 
     return (
-      <>
+      <div className="py-0.5">
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <SidebarMenuButton
@@ -83,7 +83,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
                 ref={ref}
                 className={cn(
                   "relative flex w-full items-center isolate justify-between overflow-hidden rounded-md",
-                  isSelected && "bg-secondary/50",
+                  isSelected && "bg-secondary/50"
                 )}
               >
                 <span className="truncate">{chat.name}</span>
@@ -155,7 +155,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
             </form>
           </DialogContent>
         </Dialog>
-      </>
+      </div>
     );
-  },
+  }
 );

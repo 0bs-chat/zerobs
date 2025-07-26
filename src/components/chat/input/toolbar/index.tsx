@@ -16,7 +16,7 @@ import {
   Globe2Icon,
   Network,
   Binoculars,
-  XIcon, // <-- Add this
+  XIcon,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { useUploadDocuments } from "@/hooks/use-documents";
@@ -93,7 +93,7 @@ export const ToolBar = () => {
   const selectedModel = chat.model;
   const reasoningEffort = chat.reasoningEffort;
   const selectedModelConfig = models.find(
-    (m) => m.model_name === selectedModel,
+    (m) => m.model_name === selectedModel
   );
   const showReasoningEffort = selectedModelConfig?.isThinking ?? false;
   const router = useRouter();
@@ -123,7 +123,7 @@ export const ToolBar = () => {
 
   // Render selected toggles as buttons
   const selectedToggles = TOGGLES.filter(
-    (t) => chat[t.key as keyof typeof chat],
+    (t) => chat[t.key as keyof typeof chat]
   );
 
   return (
@@ -174,12 +174,17 @@ export const ToolBar = () => {
         {/* Separate toggles dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" title="Toggles">
+            <Button
+              variant="outline"
+              size="icon"
+              title="Toggles"
+              className="cursor-pointer"
+            >
               <Hammer className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">
+            <div className="px-2 py-2  font-mono text-sm text-muted-foreground">
               Agent Settings
             </div>
             {TOGGLES.map((toggle) => (
@@ -188,7 +193,7 @@ export const ToolBar = () => {
                 onClick={() =>
                   handleToggle(
                     toggle.key,
-                    !chat[toggle.key as keyof typeof chat],
+                    !chat[toggle.key as keyof typeof chat]
                   )
                 }
                 className={[
@@ -288,6 +293,7 @@ export const ToolBar = () => {
             </SelectContent>
           </Select>
         )}
+
         <ModelPopover selectedModel={selectedModel} chatId={chatId} />
 
         <motion.div

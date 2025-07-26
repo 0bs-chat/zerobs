@@ -56,7 +56,7 @@ export const ChatInput = () => {
         });
       }
     },
-    300,
+    300
   );
 
   // Handle drag and drop

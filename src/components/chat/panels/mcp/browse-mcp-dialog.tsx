@@ -10,19 +10,13 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { ServerIcon } from "lucide-react";
 import { BadgeCheck, Globe, Activity } from "lucide-react";
-import type { Doc } from "../../../../../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
-import { useMCPs } from "@/hooks/use-mcp";
-
-// Example MCP templates (static for now)
-type McpTemplate = Omit<
-  Doc<"mcps">,
-  "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
-> & {
-  description: string;
-  image: string;
-  official: boolean;
-};
+import {
+  selectedMCPTemplateAtom,
+  mcpDialogOpenAtom,
+  type McpTemplate,
+} from "@/store/chatStore";
+import { useSetAtom } from "jotai";
 
 const MCP_TEMPLATES: McpTemplate[] = [
   {
@@ -76,17 +70,22 @@ const MCP_TEMPLATES: McpTemplate[] = [
 ];
 
 export const BrowseMCPDialog = () => {
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | undefined>(undefined);
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const { handleCreate } = useMCPs();
+  const setMcp = useSetAtom(selectedMCPTemplateAtom);
+  const setMcpDialogOpen = useSetAtom(mcpDialogOpenAtom);
 
-  // Helper to transform template to MCPFormState
-  function templateToMCPFormState(tpl: McpTemplate) {
-    // Remove description, image, official
-    const { description, image, official, ...rest } = tpl;
-    return rest;
-  }
+  const handleImport = () => {
+    if (selected !== undefined) {
+      const selectedTemplate = MCP_TEMPLATES[selected];
+      // Set the selected template data in the atom
+      setMcp(selectedTemplate);
+      // Close browse dialog
+      setIsOpen(false);
+      // Open MCP creation dialog
+      setMcpDialogOpen(true);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -96,7 +95,6 @@ export const BrowseMCPDialog = () => {
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[90vw] sm:max-w-[80vw]">
-        {/* Added max-w classes to the DialogContent for better responsiveness */}
         <DialogHeader>
           <DialogTitle>Browse MCP Templates</DialogTitle>
         </DialogHeader>
@@ -192,22 +190,13 @@ export const BrowseMCPDialog = () => {
             Cancel
           </Button>
           <Button
-            disabled={selected === null || loading}
-            onClick={async () => {
-              if (selected !== null) {
-                setLoading(true);
-                try {
-                  await handleCreate(
-                    templateToMCPFormState(MCP_TEMPLATES[selected]),
-                    setIsOpen,
-                  );
-                } finally {
-                  setLoading(false);
-                }
-              }
+            disabled={selected === undefined}
+            onClick={() => {
+              setSelected(undefined);
+              handleImport();
             }}
           >
-            {loading ? "Importing..." : "Import MCP"}
+            Import MCP
           </Button>
         </DialogFooter>
       </DialogContent>

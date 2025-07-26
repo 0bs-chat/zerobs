@@ -8,7 +8,7 @@ export type MCPFormState = Omit<
   "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
 >;
 
-function validateMCP(mcp: MCPFormState): boolean {
+export function validateMCP(mcp: MCPFormState): boolean {
   if (!mcp.name.trim()) {
     toast.error("MCP name is required");
     return false;
@@ -56,7 +56,7 @@ export function useMCPs() {
 
   const handleCreate = async (
     newMCPData: MCPFormState,
-    setMcpEditDialogOpen: (open: boolean) => void,
+    setMcpEditDialogOpen: (open: boolean) => void
   ) => {
     if (!validateMCP(newMCPData)) return;
     try {
