@@ -18,7 +18,7 @@ import { useScroll } from "@/hooks/chats/use-scroll";
 import { Button } from "@/components/ui/button";
 import { ArrowDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { fadeInUp, smoothTransition } from "@/lib/motion";
+import { smoothTransition } from "@/lib/motion";
 import { useTextAreaRef } from "@/hooks/chats/use-textarea";
 import { useUploadDocuments } from "@/hooks/use-documents";
 import { useState, useCallback } from "react";
@@ -85,12 +85,8 @@ export const ChatInput = () => {
   }, []);
 
   return (
-    <motion.div
-      className={`relative flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg ${isDragActive ? "ring-2 ring-primary/60" : ""}`}
-      variants={fadeInUp}
-      initial="initial"
-      animate="animate"
-      transition={smoothTransition}
+    <div
+      className={`relative flex flex-col max-w-4xl w-full mx-auto bg-background shadow-sm outline-1 outline-border rounded-lg ${isDragActive ? "ring-2 ring-primary/60" : ""}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragEnter={handleDragOver}
@@ -130,48 +126,46 @@ export const ChatInput = () => {
       {chat && <DocumentList documentIds={chat.documents} model={chat.model} />}
 
       {/* Input */}
-      <motion.div whileFocus={{ scale: 1.02 }} transition={smoothTransition}>
-        <AutosizeTextarea
-          key={chatId}
-          maxHeight={192}
-          minHeight={56}
-          ref={setRef}
-          defaultValue={chat?.text}
-          className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
-          onChange={(e) => {
-            setNewChat((prev) => ({
-              ...prev,
-              text: e.target.value,
-            }));
-            handleChange(e);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
+      <AutosizeTextarea
+        key={chatId}
+        maxHeight={192}
+        minHeight={56}
+        ref={setRef}
+        defaultValue={chat?.text}
+        className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
+        onChange={(e) => {
+          setNewChat((prev) => ({
+            ...prev,
+            text: e.target.value,
+          }));
+          handleChange(e);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
 
-              if (
-                (!newChat.text || newChat.text.trim() === "") &&
-                chat &&
-                chat.documents.length === 0
-              ) {
-                toast.error("Please enter a message");
-                return;
-              }
-              if (e.currentTarget.value.trim() === "") {
-                toast.error("Please enter a message before sending");
-                return;
-              }
-
-              if (textareaRef?.current && chat) {
-                handleSubmit(chat);
-              }
+            if (
+              (!newChat.text || newChat.text.trim() === "") &&
+              chat &&
+              chat.documents.length === 0
+            ) {
+              toast.error("Please enter a message");
+              return;
             }
-          }}
-          placeholder="Type a message..."
-        />
-      </motion.div>
+            if (e.currentTarget.value.trim() === "") {
+              toast.error("Please enter a message before sending");
+              return;
+            }
+
+            if (textareaRef?.current && chat) {
+              handleSubmit(chat);
+            }
+          }
+        }}
+        placeholder="Type a message..."
+      />
 
       {chat && <ToolBar />}
-    </motion.div>
+    </div>
   );
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { UserMessage } from "./user-message";
-import { UtilsBar } from "./utils-bar";
+import { UserUtilsBar } from "./utils-bar";
 import {
   messageListVariants,
   chatMessageVariants,
@@ -10,10 +10,12 @@ import {
 import { useAtomValue } from "jotai";
 import { groupedMessagesAtom } from "@/store/chatStore";
 import { AiResponseGroup } from "./ai-response-group";
+import type { Id } from "../../../../convex/_generated/dataModel";
 
 export const MessagesList = () => {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editedText, setEditedText] = useState("");
+  const [editedDocuments, setEditedDocuments] = useState<Id<"documents">[]>([]);
   const groupedMessages = useAtomValue(groupedMessagesAtom);
 
   useEffect(() => {
@@ -30,7 +32,13 @@ export const MessagesList = () => {
                 | undefined
             )?.text ?? "")
           : "";
+        const documentIds = Array.isArray(content)
+          ? content
+              .filter((c) => c.type === "file")
+              .map((c) => (c as any).file.file_id as Id<"documents">)
+          : [];
         setEditedText(textContent);
+        setEditedDocuments(documentIds);
       }
     }
   }, [editingMessageId, groupedMessages]);
@@ -38,6 +46,7 @@ export const MessagesList = () => {
   const onDone = () => {
     setEditingMessageId(null);
     setEditedText("");
+    setEditedDocuments([]);
   };
 
   return (
@@ -64,19 +73,21 @@ export const MessagesList = () => {
                 isEditing={editingMessageId === group.input.message._id}
                 editedText={editedText}
                 setEditedText={setEditedText}
+                editedDocuments={editedDocuments}
+                setEditedDocuments={setEditedDocuments}
               />
               <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <UtilsBar
-                  item={group.input}
+                <UserUtilsBar
+                  input={group.input}
                   isEditing={editingMessageId === group.input.message._id}
                   setEditing={setEditingMessageId}
                   editedText={editedText}
+                  editedDocuments={editedDocuments}
                   onDone={onDone}
-                  groupedMessages={groupedMessages}
                 />
               </div>
             </div>
-            <AiResponseGroup group={group} groupedMessages={groupedMessages} />
+            <AiResponseGroup group={group} />
           </motion.div>
         ))}
       </AnimatePresence>
