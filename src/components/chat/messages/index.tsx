@@ -5,17 +5,20 @@ import { MessagesList } from "./messages";
 import { StreamingMessage } from "./streaming-message";
 import { TriangleAlertIcon } from "lucide-react";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { streamStatusAtom, userAtom } from "@/store/chatStore";
+import { streamStatusAtom, userLoadableAtom } from "@/store/chatStore";
 import { useAtomValue } from "jotai";
 
 export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
-  const user = useAtomValue(userAtom);
+  const userLoadable = useAtomValue(userLoadableAtom);
   const { isLoading, isEmpty } = useMessages({ chatId });
 
   const streamStatus = useAtomValue(streamStatusAtom);
 
   const mainContent = useMemo(() => {
     if (chatId === "new") {
+      // Get user name from loadable state
+      const userName = userLoadable.state === 'hasData' ? userLoadable.data?.name : '';
+
       return (
         <div className="flex items-center justify-center h-full flex-col gap-4 -translate-y-30">
           <div
@@ -26,7 +29,7 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
           >
             how can i help you
             <br />
-            {user?.name} ?
+            {userName} ?
           </div>
         </div>
       );
@@ -74,7 +77,7 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
         </div>
       </ScrollArea>
     );
-  }, [isLoading, isEmpty, streamStatus, chatId]);
+  }, [isLoading, isEmpty, streamStatus, chatId, userLoadable]);
 
   return mainContent;
 };

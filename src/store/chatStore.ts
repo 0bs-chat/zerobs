@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
-import { atomWithStorage, selectAtom } from "jotai/utils";
+import { atomWithStorage, selectAtom, loadable } from "jotai/utils";
 import { useStream } from "@/hooks/chats/use-stream";
 import type { Artifact } from "@/components/artifacts/utils";
 import { buildThread, groupMessages } from "../../convex/chatMessages/helpers";
@@ -8,6 +8,7 @@ import { parseArtifacts } from "@/components/artifacts/utils";
 import { AIMessage } from "@langchain/core/messages";
 
 export const userAtom = atom<Doc<"users">>();
+export const userLoadableAtom = loadable(userAtom);
 
 export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   _id: "new" as Id<"chats">,
