@@ -1,7 +1,7 @@
-import { memo, useMemo, useCallback, useRef, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import { memo, useMemo, useCallback, useRef, useState, useEffect } from "react";
+
 import { Markdown } from "@/components/ui/markdown";
-import type { MessageWithBranchInfo } from "./utils-bar/branch-navigation";
+import type { MessageWithBranchInfo, MessageGroup } from "../../../../convex/chatMessages/helpers";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { documentDialogOpenAtom } from "@/store/chatStore";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getDocTagInfo } from "@/lib/helper";
 import { models } from "../../../../convex/langchain/models";
+import { UserUtilsBar } from "./utils-bar";
 
 const DocumentButton = ({
   fileId,
@@ -102,19 +103,48 @@ const EditingDocumentList = ({
 export const UserMessage = memo(
   ({
     item,
-    isEditing,
-    editedText,
-    setEditedText,
-    editedDocuments,
-    setEditedDocuments,
+    groupedMessages,
   }: {
     item: MessageWithBranchInfo;
-    isEditing: boolean;
-    editedText: string;
-    setEditedText: Dispatch<SetStateAction<string>>;
-    editedDocuments?: Id<"documents">[];
-    setEditedDocuments?: Dispatch<SetStateAction<Id<"documents">[]>>;
+    groupedMessages?: MessageGroup[];
   }) => {
+    // State management moved from UserMessageGroup
+    const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+    const [editedText, setEditedText] = useState("");
+    const [editedDocuments, setEditedDocuments] = useState<Id<"documents">[]>([]);
+
+    const isEditing = editingMessageId === item.message._id;
+
+    useEffect(() => {
+      if (editingMessageId) {
+        const messageToEdit = groupedMessages?.find(
+          (g) => g.input.message._id === editingMessageId,
+        );
+        if (messageToEdit) {
+          const content = messageToEdit.input.message.message.content;
+          const textContent = Array.isArray(content)
+            ? ((
+                content.find((c) => c.type === "text") as
+                  | { type: "text"; text: string }
+                  | undefined
+              )?.text ?? "")
+            : "";
+          const documentIds = Array.isArray(content)
+            ? content
+                .filter((c) => c.type === "file")
+                .map((c) => (c as any).file.file_id as Id<"documents">)
+            : [];
+          setEditedText(textContent);
+          setEditedDocuments(documentIds);
+        }
+      }
+    }, [editingMessageId, groupedMessages]);
+
+    const onDone = () => {
+      setEditingMessageId(null);
+      setEditedText("");
+      setEditedDocuments([]);
+    };
     const content = item?.message?.message?.content;
     const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -123,24 +153,24 @@ export const UserMessage = memo(
 
     // File upload handlers for editing
     const handleFileInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files.length > 0 && setEditedDocuments) {
+      if (e.target.files && e.target.files.length > 0) {
         const uploadedIds = await handleFileUpload(e.target.files);
         if (uploadedIds) {
           setEditedDocuments(prev => [...prev, ...uploadedIds]);
         }
       }
-    }, [handleFileUpload, setEditedDocuments]);
+    }, [handleFileUpload]);
 
     const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       setIsDragActive(false);
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0 && setEditedDocuments) {
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const uploadedIds = await handleFileUpload(e.dataTransfer.files);
         if (uploadedIds) {
           setEditedDocuments(prev => [...prev, ...uploadedIds]);
         }
       }
-    }, [handleFileUpload, setEditedDocuments]);
+    }, [handleFileUpload]);
 
     const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -154,10 +184,8 @@ export const UserMessage = memo(
     }, []);
 
     const handleRemoveDocument = useCallback((documentId: Id<"documents">) => {
-      if (setEditedDocuments) {
-        setEditedDocuments(prev => prev.filter(id => id !== documentId));
-      }
-    }, [setEditedDocuments]);
+      setEditedDocuments(prev => prev.filter(id => id !== documentId));
+    }, []);
 
     // Memoize the content rendering to avoid unnecessary calculations
     const renderedContent = useMemo(() => {
@@ -183,65 +211,75 @@ export const UserMessage = memo(
       return content;
     }, [content, item.message._id, setDocumentDialogOpen]);
 
-    if (isEditing) {
-      return (
-        <div
-          className={`bg-card max-w-full self-end p-4 rounded-md shadow-sm w-full ${
-            isDragActive ? 'border-2 border-dashed border-primary' : ''
-          }`}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-        >
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            multiple
-            onChange={handleFileInputChange}
-          />
-          <Textarea
-            value={editedText}
-            onChange={(e) => setEditedText(e.target.value)}
-            className="bg-background shadow-inner mb-2"
-            autoFocus
-            placeholder="Edit your message..."
-          />
+    return (
+      <div className="group flex flex-col gap-1 max-w-[80%] self-end">
+        {isEditing ? (
+          <div
+            className={`bg-card max-w-full self-end p-4 rounded-md shadow-sm w-full ${
+              isDragActive ? 'border-2 border-dashed border-primary' : ''
+            }`}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              multiple
+              onChange={handleFileInputChange}
+            />
+            <Textarea
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+              className="bg-background shadow-inner mb-2"
+              autoFocus
+              placeholder="Edit your message..."
+            />
 
-          {/* File management section */}
-          <div className="flex flex-col gap-2">
-            {editedDocuments && editedDocuments.length > 0 && (
-              <EditingDocumentList
-                documentIds={editedDocuments}
-                onRemove={handleRemoveDocument}
-              />
-            )}
-
-            <div className="flex items-center justify-between">
-              {isDragActive && (
-                <span className="text-sm text-muted-foreground">
-                  Drop files here to add them
-                </span>
+            {/* File management section */}
+            <div className="flex flex-col gap-2">
+              {editedDocuments && editedDocuments.length > 0 && (
+                <EditingDocumentList
+                  documentIds={editedDocuments}
+                  onRemove={handleRemoveDocument}
+                />
               )}
-              <div className="flex-1" />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => fileInputRef.current?.click()}
-                className="h-8 w-8"
-              >
-                <PaperclipIcon className="h-4 w-4" />
-              </Button>
+
+              <div className="flex items-center justify-between">
+                {isDragActive && (
+                  <span className="text-sm text-muted-foreground">
+                    Drop files here to add them
+                  </span>
+                )}
+                <div className="flex-1" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-8 w-8"
+                >
+                  <PaperclipIcon className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
+        ) : (
+          <div className="bg-card flex flex-col gap-1 max-w-full self-end p-4 rounded-md shadow-sm">
+            {renderedContent}
+          </div>
+        )}
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+          <UserUtilsBar
+            input={item}
+            isEditing={isEditing}
+            setEditing={setEditingMessageId}
+            editedText={editedText}
+            editedDocuments={editedDocuments}
+            onDone={onDone}
+          />
         </div>
-      );
-    }
-
-    return (
-      <div className="bg-card flex flex-col gap-1 max-w-full self-end p-4 rounded-md shadow-sm">
-        {renderedContent}
       </div>
     );
   },
