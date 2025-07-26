@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useMemo } from "react";
-import { useQuery, useConvex } from "convex/react";
+import { useEffect, useState, useMemo } from "react";
+import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type {
@@ -19,85 +19,79 @@ export function useStream(chatId: Id<"chats"> | "new") {
     api.streams.queries.get,
     chatId !== "new" ? { chatId } : "skip",
   );
-  const convex = useConvex();
 
   const [groupedChunks, setGroupedChunks] = useState<ChunkGroup[]>([]);
-  const lastTimeRef = useRef<number | undefined>(undefined);
+  const [lastSeenTime, setLastSeenTime] = useState<number | undefined>(undefined);
 
+  // Reset state when chat or stream changes
   useEffect(() => {
-    lastTimeRef.current = undefined;
+    setLastSeenTime(undefined);
     setGroupedChunks([]);
   }, [chatId, stream?._id]);
 
+  // Reactive query for chunks - uses stream._creationTime as dependency for reactivity
+  // but still filters by lastSeenTime for bandwidth optimization
+  const chunksResult = useQuery(
+    api.streams.queries.getChunks,
+    stream && stream.status === "streaming"
+      ? {
+          chatId: stream.chatId,
+          lastChunkTime: lastSeenTime,
+          paginationOpts: { numItems: 200, cursor: null },
+        }
+      : "skip",
+  );
+
+  // Process new chunks when they arrive
+  useEffect(() => {
+    if (!chunksResult?.chunks.page.length) return;
+
+    const newEvents: ChunkGroup[] = chunksResult.chunks.page.flatMap(
+      (chunkDoc: any) =>
+        chunkDoc.chunks.map(
+          (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup,
+        ),
+    );
+
+    if (newEvents.length > 0) {
+      setGroupedChunks((prev) => {
+        const newGroups = [...prev];
+        let lastGroup =
+          newGroups.length > 0 ? newGroups[newGroups.length - 1] : null;
+
+        for (const chunk of newEvents) {
+          if (chunk.type === "ai") {
+            if (lastGroup?.type === "ai") {
+              lastGroup.content += chunk.content;
+              if (chunk.reasoning) {
+                lastGroup.reasoning =
+                  (lastGroup.reasoning ?? "") + chunk.reasoning;
+              }
+            } else {
+              lastGroup = { ...chunk };
+              newGroups.push(lastGroup);
+            }
+          } else {
+            lastGroup = chunk;
+            newGroups.push(chunk);
+          }
+        }
+        return newGroups;
+      });
+
+      // Update lastSeenTime to the latest chunk time for next query
+      const latestChunkTime =
+        chunksResult.chunks.page[chunksResult.chunks.page.length - 1]._creationTime;
+      setLastSeenTime(latestChunkTime);
+    }
+  }, [chunksResult]);
+
+  // Clear chunks when stream is not active
   useEffect(() => {
     if (!stream || stream.status !== "streaming") {
-      // Clear chunks when stream is not active or has completed
       setGroupedChunks([]);
-      return;
     }
-
-    let cancelled = false;
-
-    const poll = async () => {
-      while (!cancelled && stream.status === "streaming") {
-        try {
-          const result = await convex.query(api.streams.queries.getChunks, {
-            chatId: stream.chatId,
-            lastChunkTime: lastTimeRef.current,
-            paginationOpts: { numItems: 200, cursor: null },
-          });
-
-          if (cancelled) return;
-
-          if (result.chunks.page.length > 0) {
-            const newEvents: ChunkGroup[] = result.chunks.page.flatMap(
-              (chunkDoc) =>
-                chunkDoc.chunks.map(
-                  (chunkStr) => JSON.parse(chunkStr) as ChunkGroup,
-                ),
-            );
-
-            setGroupedChunks((prev) => {
-              const newGroups = [...prev];
-              let lastGroup =
-                newGroups.length > 0 ? newGroups[newGroups.length - 1] : null;
-
-              for (const chunk of newEvents) {
-                if (chunk.type === "ai") {
-                  if (lastGroup?.type === "ai") {
-                    lastGroup.content += chunk.content;
-                    if (chunk.reasoning) {
-                      lastGroup.reasoning =
-                        (lastGroup.reasoning ?? "") + chunk.reasoning;
-                    }
-                  } else {
-                    lastGroup = { ...chunk };
-                    newGroups.push(lastGroup);
-                  }
-                } else {
-                  lastGroup = chunk;
-                  newGroups.push(chunk);
-                }
-              }
-              return newGroups;
-            });
-            lastTimeRef.current =
-              result.chunks.page[result.chunks.page.length - 1]._creationTime;
-          }
-        } catch (err) {
-          console.error("Polling error", err);
-          break;
-        }
-        await new Promise((res) => setTimeout(res, 300));
-      }
-    };
-
-    poll();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [convex, stream]);
+  }, [stream?.status]);
 
   // Convert chunk groups to LangChain messages
   const langchainMessages = useMemo(() => {

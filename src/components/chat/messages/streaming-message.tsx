@@ -33,6 +33,7 @@ export const StreamingMessage = memo(() => {
 
       return (
         <motion.div
+          key={`${messageId}-${index}`}
           variants={streamingVariants}
           initial="initial"
           animate="animate"
