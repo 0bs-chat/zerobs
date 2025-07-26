@@ -19,7 +19,7 @@ import {
   XIcon, // <-- Add this
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
-import { useUploadDocuments } from "@/hooks/use-documents";
+import { useUploadDocuments } from "@/hooks/chats/use-documents";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import {

@@ -12,7 +12,7 @@ import { ServerIcon } from "lucide-react";
 import { BadgeCheck, Globe, Activity } from "lucide-react";
 import type { Doc } from "../../../../../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
-import { useMCPs } from "@/hooks/use-mcp";
+import { useMCPs } from "@/hooks/chats/use-mcp";
 
 // Example MCP templates (static for now)
 type McpTemplate = Omit<

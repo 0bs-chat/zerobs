@@ -1,6 +1,6 @@
 import { MCPDialog } from "./mcp-dialog";
 import { MCPCard } from "./mcp-card";
-import { useMCPs } from "@/hooks/use-mcp";
+import { useMCPs } from "@/hooks/chats/use-mcp";
 import { BrowseMCPDialog } from "./browse-mcp-dialog";
 
 export const MCPPanel = () => {

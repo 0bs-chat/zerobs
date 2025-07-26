@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import type { GitHubCombinedItems } from "@/hooks/github/types";
+import type { GitHubCombinedItems } from "@/hooks/chats/github/types";
 
 // Main data atom that the UI consumes
 

@@ -20,7 +20,7 @@ import { ArrowDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { smoothTransition } from "@/lib/motion";
 import { useTextAreaRef } from "@/hooks/chats/use-textarea";
-import { useUploadDocuments } from "@/hooks/use-documents";
+import { useUploadDocuments } from "@/hooks/chats/use-documents";
 import { useState, useCallback } from "react";
 
 export const ChatInput = () => {

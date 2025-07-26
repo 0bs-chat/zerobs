@@ -13,11 +13,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCopy } from "@/hooks/use-copy";
+import { useCopy } from "@/hooks/chats/use-copy";
 import type { Artifact } from "./utils";
 import { useAtomValue } from "jotai";
 import { selectedArtifactAtom } from "@/store/chatStore";
-import { useArtifactView } from "@/hooks/use-artifact-view";
+import { useArtifactView } from "@/hooks/chats/use-artifact-view";
 
 // Get appropriate icon for artifact type
 const getArtifactIcon = (type: string, _language?: string) => {

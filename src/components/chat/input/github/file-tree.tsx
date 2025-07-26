@@ -13,7 +13,7 @@ import {
   clearAllSelectionsAtom,
   isAtTokenLimitAtom,
 } from "@/store/github";
-import type { RepoItem } from "@/hooks/github/types";
+import type { RepoItem } from "@/hooks/chats/github/types";
 import { toast } from "sonner";
 
 const FileTree = () => {

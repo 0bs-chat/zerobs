@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EnvVarInput } from "./env-var-input";
 import { TypeSelector } from "./type-selector";
-import { useMCPs } from "@/hooks/use-mcp";
+import { useMCPs } from "@/hooks/chats/use-mcp";
 import { PlusIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";

@@ -9,7 +9,7 @@ import { useSetAtom } from "jotai";
 import { api } from "../../../../convex/_generated/api";
 import { useQuery } from "convex/react";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { useUploadDocuments } from "@/hooks/use-documents";
+import { useUploadDocuments } from "@/hooks/chats/use-documents";
 import { PaperclipIcon, XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";

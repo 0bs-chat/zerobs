@@ -1,6 +1,6 @@
-import type { Doc, Id } from "../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { newChatAtom, chatIdAtom } from "@/store/chatStore";
 import { useSetAtom, useAtomValue } from "jotai";

@@ -17,7 +17,7 @@ import {
 import { useDebouncedCallback } from "use-debounce";
 import FileTree from "./file-tree";
 import { Button } from "@/components/ui/button";
-import useGithub from "@/hooks/github/use-github";
+import useGithub from "@/hooks/chats/github/use-github";
 import { toast } from "sonner";
 import TokenUsageCounter from "./token-usage";
 import {
@@ -26,7 +26,7 @@ import {
   githubCurrentBranchAtom,
   githubAvailableBranchesAtom,
 } from "@/store/github";
-import { useUploadDocuments } from "@/hooks/use-documents";
+import { useUploadDocuments } from "@/hooks/chats/use-documents";
 import { useAtom, useAtomValue } from "jotai";
 import type { Doc } from "../../../../../convex/_generated/dataModel";
 
