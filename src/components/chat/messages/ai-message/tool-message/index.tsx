@@ -9,7 +9,7 @@ import { SearchResultDisplay, type SearchResult } from "./search-results";
 import { DocumentResultDisplay, type DocumentResult } from "./document-results";
 import type { BaseMessage } from "@langchain/core/messages";
 import { FileDisplay } from "./file-result";
-import { Check, Loader2, TriangleAlert } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 
 type ToolAccordionProps = {
   messageName: string;
