@@ -102,6 +102,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
   // Convert chunk groups to LangChain messages
   const langchainMessages = useMemo(() => {
     if (!groupedChunks || groupedChunks.length === 0) return [];
+    const completedIds = new Set(groupedChunks.filter(c => c.type === "tool" && c.isComplete).map(c => (c as ToolChunkGroup).toolCallId));
     return groupedChunks
       .map((chunk) => {
         if (chunk.type === "ai") {
@@ -117,9 +118,21 @@ export function useStream(chatId: Id<"chats"> | "new") {
             return new LangChainToolMessage({
               content: chunk.output as string,
               name: chunk.toolName,
-              tool_call_id: `streaming-tool-${chunk.toolName}`,
+              tool_call_id: chunk.toolCallId,
               additional_kwargs: {
                 input: JSON.parse(JSON.stringify(chunk.input)),
+                is_complete: true,
+              },
+            });
+          }
+          if (!completedIds.has(chunk.toolCallId)) {
+            return new LangChainToolMessage({
+              name: chunk.toolName,
+              tool_call_id: chunk.toolCallId,
+              content: "",
+              additional_kwargs: {
+                input: JSON.parse(JSON.stringify(chunk.input)),
+                is_complete: false,
               },
             });
           }

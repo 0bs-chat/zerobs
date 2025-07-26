@@ -9,17 +9,31 @@ import { SearchResultDisplay, type SearchResult } from "./search-results";
 import { DocumentResultDisplay, type DocumentResult } from "./document-results";
 import type { BaseMessage } from "@langchain/core/messages";
 import { FileDisplay } from "./file-result";
+import { Check, Loader2, TriangleAlert } from "lucide-react";
 
 type ToolAccordionProps = {
   messageName: string;
   input?: Record<string, any>;
   children: React.ReactNode;
+  isComplete?: boolean;
 };
-function ToolAccordion({ messageName, input, children }: ToolAccordionProps) {
+function ToolAccordion({
+  messageName,
+  input,
+  children,
+  isComplete,
+}: ToolAccordionProps) {
   return (
     <Accordion type="multiple" className="w-full">
       <AccordionItem value="tool-call" className="px-0 border-none">
         <AccordionTrigger className="py-1 gap-2 text-xs font-semibold items-center justify-start">
+          {isComplete === true ? (
+            <Check className="w-4 h-4 text-green-500" />
+          ) : isComplete === false ? (
+            <Loader2 className="w-4 h-4 text-yellow-500 animate-spin" />
+          ) : (
+            null
+          )}
           <span className="text-muted-foreground translate-y-[.1rem]">
             Tool Call ({messageName})
           </span>
@@ -111,7 +125,11 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
   // MIXED: files + text blocks
   if (parsedContent.type === "mixed") {
     return (
-      <ToolAccordion messageName={message.name ?? "unknown"} input={input}>
+      <ToolAccordion
+        messageName={message.name ?? "unknown"}
+        input={input}
+        isComplete={(message.additional_kwargs as any)?.is_complete}
+      >
         <div className="flex flex-col gap-4">
           {parsedContent.content.map((item, idx) => {
             if (item.type === "file" && item.file?.file_id) {
@@ -136,7 +154,11 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
 
   // GENERIC: just dump the string or JSON
   return (
-    <ToolAccordion messageName={message.name ?? "unknown"} input={input}>
+    <ToolAccordion
+      messageName={message.name ?? "unknown"}
+      input={input}
+      isComplete={(message.additional_kwargs as any)?.is_complete}
+    >
       {typeof parsedContent.content === "string" ? (
         <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
           {parsedContent.content}

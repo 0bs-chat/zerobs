@@ -231,7 +231,7 @@ export const models: {
     model_name: "qwen3-235b-a22b-2507",
     model: "qwen/qwen3-235b-a22b-2507:free",
     isThinking: false,
-    toolSupport: true,
+    toolSupport: false,
     provider: "openai",
     modalities: ["text"],
     image:
@@ -245,7 +245,7 @@ export const models: {
     model_name: "qwen3-coder",
     model: "qwen/qwen3-coder:free",
     isThinking: false,
-    toolSupport: true,
+    toolSupport: false,
     provider: "openai",
     modalities: ["text"],
     image:
