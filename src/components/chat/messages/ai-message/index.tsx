@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { PlanningStep } from "./planning-step";
 import { AiMessageContent } from "./ai-message";
 import type { MessageGroup } from "../../../../../convex/chatMessages/helpers";
-import { AiUtilsBar } from "../utils-bar";
+import { AiUtilsBar } from "../utils-bar/ai-utils-bar";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { springTransition } from "@/lib/motion";
 import { useMutation } from "convex/react";

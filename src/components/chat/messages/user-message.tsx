@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getDocTagInfo } from "@/lib/helper";
 import { models } from "../../../../convex/langchain/models";
-import { UserUtilsBar } from "./utils-bar";
+import { UserUtilsBar } from "./utils-bar/user-utils-bar";
 
 const DocumentButton = ({
   fileId,
