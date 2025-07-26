@@ -68,8 +68,34 @@ export const updateInput = mutation({
         chatId: message?.chatId!,
         parentId: message?.parentId!,
         message: newMessage.message,
+        minimized: message?.minimized!,
       });
     }
+  },
+});
+
+export const toggleMinimized = mutation({
+  args: {
+    id: v.id("chatMessages"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const message = await ctx.db.get(args.id);
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    // Verify ownership
+    await ctx.runQuery(api.chats.queries.get, {
+      chatId: message.chatId!,
+    });
+
+    await ctx.db.patch(args.id, {
+      minimized: !message.minimized,
+    });
+
+    return args.id;
   },
 });
 
@@ -112,6 +138,7 @@ export const create = mutation({
         ])[0],
       ),
       parentId: args.parentId!,
+      minimized: false,
     });
   },
 });
@@ -143,6 +170,7 @@ export const regenerate = internalMutation({
       chatId: messageToRegenerate.chatId,
       parentId: messageToRegenerate.parentId,
       message: messageToRegenerate.message,
+      minimized: messageToRegenerate.minimized,
     });
   },
 });

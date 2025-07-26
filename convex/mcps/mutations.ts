@@ -38,7 +38,7 @@ export const create = mutation({
     );
 
     const newMCPId = await ctx.db.insert("mcps", {
-      name: args.name ?? "",
+      name: (args.name ?? "").replace(/ /g, "_"),
       type: args.type,
       dockerImage: args.dockerImage,
       dockerPort: args.dockerPort,

@@ -92,7 +92,10 @@ async function baseAgent(
 
 async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
-  const availableToolsDescription = await getAvailableToolsDescription(state, formattedConfig);
+  const availableToolsDescription = await getAvailableToolsDescription(
+    state,
+    formattedConfig,
+  );
   const promptTemplate = createPlannerPrompt(availableToolsDescription);
 
   const model = await getModel(
@@ -102,13 +105,15 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   );
 
   // Get model config to check if it's anthropic
-  const modelConfig = models.find((m) => m.model_name === formattedConfig.chat.model!);
+  const modelConfig = models.find(
+    (m) => m.model_name === formattedConfig.chat.model!,
+  );
   const isFunctionCallingParser = modelConfig?.parser === "functionCalling";
 
   const modelWithOutputParser = promptTemplate.pipe(
     isFunctionCallingParser
       ? model.withStructuredOutput(planSchema, { method: "functionCalling" })
-      : model.withStructuredOutput(planSchema)
+      : model.withStructuredOutput(planSchema),
   );
 
   const formattedMessages = await formatMessages(
@@ -199,7 +204,10 @@ async function replanner(
   config: RunnableConfig,
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
-  const availableToolsDescription = await getAvailableToolsDescription(state, formattedConfig);
+  const availableToolsDescription = await getAvailableToolsDescription(
+    state,
+    formattedConfig,
+  );
   const promptTemplate = createReplannerPrompt(availableToolsDescription);
 
   const model = await getModel(
@@ -209,8 +217,10 @@ async function replanner(
   );
 
   // Get model config to check if it's anthropic
-  const outputSchema = replannerOutputSchema(formattedConfig.chat.artifacts)
-  const modelConfig = models.find((m) => m.model_name === formattedConfig.chat.model!);
+  const outputSchema = replannerOutputSchema(formattedConfig.chat.artifacts);
+  const modelConfig = models.find(
+    (m) => m.model_name === formattedConfig.chat.model!,
+  );
   const isFunctionCallingParser = modelConfig?.parser === "functionCalling";
   const modelWithOutputParser = promptTemplate.pipe(
     isFunctionCallingParser

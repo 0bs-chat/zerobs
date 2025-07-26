@@ -1,14 +1,19 @@
 import { memo } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, SetStateAction, ReactNode } from "react";
 import { BranchNavigation } from "./branch-navigation";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, GitFork, PenSquare, RefreshCcw, Star, X } from "lucide-react";
+import {
+  Check,
+  CheckCheck,
+  GitBranch,
+  Pencil,
+  RefreshCcw,
+  X,
+} from "lucide-react";
+import { ActionDropdown } from "./action-dropdown";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import type {
-  MessageWithBranchInfo,
-  NavigateBranch,
-} from "@/hooks/chats/use-messages";
+import type { MessageWithBranchInfo } from "@/hooks/chats/use-messages";
 import {
   Tooltip,
   TooltipContent,
@@ -18,11 +23,53 @@ import {
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { CopyButton } from "./copy-button";
 import { groupMessages } from "../../../../../convex/chatMessages/helpers";
+import { useNavigate } from "@tanstack/react-router";
+import { useNavigateBranch } from "@/hooks/chats/use-messages";
 
 interface MessageContent {
   type: string;
   text?: string;
 }
+
+// Helper component to reduce tooltip boilerplate
+const TooltipButton = ({
+  onClick,
+  icon,
+  tooltip,
+  ariaLabel,
+}: {
+  onClick: () => void;
+  icon: ReactNode;
+  tooltip: string;
+  ariaLabel?: string;
+}) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClick}
+          aria-label={ariaLabel}
+        >
+          {icon}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
+// Helper function for navigation logic
+const navigateToChat = (
+  navigate: ReturnType<typeof useNavigate>,
+  chatId: Id<"chats">,
+) => {
+  navigate({
+    to: "/chat/$chatId",
+    params: { chatId },
+  });
+};
 
 export const UtilsBar = memo(
   ({
@@ -32,7 +79,6 @@ export const UtilsBar = memo(
     editedText,
     onDone,
     isAI,
-    navigateBranch,
     groupedMessages,
   }: {
     item: MessageWithBranchInfo;
@@ -41,13 +87,25 @@ export const UtilsBar = memo(
     editedText?: string;
     onDone?: () => void;
     isAI?: boolean;
-    navigateBranch: NavigateBranch;
     groupedMessages: ReturnType<typeof groupMessages>;
   }) => {
-    const regenerate = useAction(api.langchain.index.regenerate);
-    const branchChat = useAction(api.langchain.index.branchChat);
+    const regenerate = useAction(
+      api.langchain.index.regenerate,
+    ) as unknown as (args: {
+      messageId: Id<"chatMessages">;
+      model?: string;
+    }) => Promise<void>;
+    const branchChat = useAction(
+      api.langchain.index.branchChat,
+    ) as unknown as (args: {
+      chatId: Id<"chats">;
+      branchFrom: Id<"chatMessages">;
+      model?: string;
+    }) => Promise<{ newChatId: Id<"chats"> }>;
     const updateMessage = useMutation(api.chatMessages.mutations.updateInput);
     const chat = useAction(api.langchain.index.chat);
+    const navigate = useNavigate();
+    const navigateBranch = useNavigateBranch();
 
     const copyText = (() => {
       const content = item.message.message.content;
@@ -71,6 +129,26 @@ export const UtilsBar = memo(
       return typeof content === "string" ? content : "";
     })();
 
+    // Helper functions for common actions
+    const handleBranch = async (model?: string) => {
+      const result = await branchChat({
+        chatId: item.message.chatId!,
+        branchFrom: item.message._id,
+        ...(model && { model }),
+      });
+      if (result?.newChatId) {
+        navigateToChat(navigate, result.newChatId);
+      }
+    };
+
+    const handleRegenerate = (model?: string) => {
+      navigateBranch?.(item.depth, item.totalBranches);
+      regenerate({
+        messageId: item.message._id,
+        ...(model && { model }),
+      });
+    };
+
     const handleSubmit = (applySame: boolean) => {
       if (applySame === false) {
         navigateBranch?.(item.depth, item.totalBranches);
@@ -90,50 +168,21 @@ export const UtilsBar = memo(
     if (isEditing) {
       return (
         <div className="flex flex-row items-center gap-1 self-start">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setEditing?.(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Cancel</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleSubmit(true)}
-                >
-                  <CheckCheck className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Submit</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleSubmit(false)}
-                >
-                  <Star className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Submit and Regenerate</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <TooltipButton
+            onClick={() => setEditing?.(null)}
+            icon={<X className="h-4 w-4" />}
+            tooltip="Cancel"
+          />
+          <TooltipButton
+            onClick={() => handleSubmit(true)}
+            icon={<Check className="h-4 w-4" />}
+            tooltip="Submit"
+          />
+          <TooltipButton
+            onClick={() => handleSubmit(false)}
+            icon={<CheckCheck className="h-4 w-4" />}
+            tooltip="Submit and Regenerate"
+          />
         </div>
       );
     }
@@ -142,28 +191,36 @@ export const UtilsBar = memo(
       return (
         <div className={`flex flex-row items-center gap-1 self-start`}>
           <BranchNavigation item={item} navigateBranch={navigateBranch!} />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              branchChat({
-                chatId: item.message.chatId!,
-                branchFrom: item.message._id,
-              });
-            }}
-          >
-            <GitFork className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              navigateBranch?.(item.depth, item.totalBranches);
-              regenerate({ messageId: item.message._id });
-            }}
-          >
-            <RefreshCcw className="h-4 w-4" />
-          </Button>
+          <ActionDropdown
+            trigger={
+              <Button variant="ghost" size="icon">
+                <GitBranch className="h-4 w-4" />
+              </Button>
+            }
+            actionLabel={
+              <>
+                <GitBranch className="h-4 w-4 mr-2" />
+                Branch
+              </>
+            }
+            onAction={() => handleBranch()}
+            onActionWithModel={handleBranch}
+          />
+          <ActionDropdown
+            trigger={
+              <Button variant="ghost" size="icon">
+                <RefreshCcw className="h-4 w-4" />
+              </Button>
+            }
+            actionLabel={
+              <>
+                <RefreshCcw className="h-4 w-4 mr-2" />
+                Regenerate
+              </>
+            }
+            onAction={() => handleRegenerate()}
+            onActionWithModel={handleRegenerate}
+          />
           {copyText && <CopyButton text={copyText} />}
         </div>
       );
@@ -172,35 +229,44 @@ export const UtilsBar = memo(
     return (
       <div className={`flex flex-row items-center gap-1 self-start`}>
         <BranchNavigation item={item} navigateBranch={navigateBranch!} />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setEditing?.(item.message._id)}
-        >
-          <PenSquare className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            branchChat({
-              chatId: item.message.chatId!,
-              branchFrom: item.message._id,
-            });
-          }}
-        >
-          <GitFork className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            navigateBranch?.(item.depth, item.totalBranches);
-            regenerate({ messageId: item.message._id });
-          }}
-        >
-          <RefreshCcw className="h-4 w-4" />
-        </Button>
+        {setEditing && (
+          <TooltipButton
+            onClick={() => setEditing(item.message._id)}
+            icon={<Pencil className="h-4 w-4" />}
+            tooltip="Edit"
+            ariaLabel="Edit"
+          />
+        )}
+        <ActionDropdown
+          trigger={
+            <Button variant="ghost" size="icon">
+              <GitBranch className="h-4 w-4" />
+            </Button>
+          }
+          actionLabel={
+            <>
+              <GitBranch className="h-4 w-4 mr-2" />
+              Branch
+            </>
+          }
+          onAction={() => handleBranch()}
+          onActionWithModel={handleBranch}
+        />
+        <ActionDropdown
+          trigger={
+            <Button variant="ghost" size="icon">
+              <RefreshCcw className="h-4 w-4" />
+            </Button>
+          }
+          actionLabel={
+            <>
+              <RefreshCcw className="h-4 w-4 mr-2" />
+              Regenerate
+            </>
+          }
+          onAction={() => handleRegenerate()}
+          onActionWithModel={handleRegenerate}
+        />
         {copyText && <CopyButton text={copyText} />}
       </div>
     );

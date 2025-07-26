@@ -19,7 +19,9 @@ export const ProjectChatList = ({ projectId }: ProjectChatListProps) => {
       <Card className="p-4">
         <div className="flex flex-col items-center justify-center text-center py-8">
           <MessageSquareIcon className="w-8 h-8 text-muted-foreground mb-2" />
-          <p className="text-muted-foreground">No chats found for this project</p>
+          <p className="text-muted-foreground">
+            No chats found for this project
+          </p>
           <p className="text-sm text-muted-foreground mt-1">
             Start a new chat to see it here
           </p>
@@ -45,7 +47,9 @@ export const ProjectChatList = ({ projectId }: ProjectChatListProps) => {
                 <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                   <ClockIcon className="w-3 h-3" />
                   <span>
-                    {formatDistanceToNow(chat._creationTime, { addSuffix: true })}
+                    {formatDistanceToNow(chat._creationTime, {
+                      addSuffix: true,
+                    })}
                   </span>
                 </div>
               </div>

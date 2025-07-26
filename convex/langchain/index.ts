@@ -15,10 +15,7 @@ import {
 import { MemorySaver } from "@langchain/langgraph";
 import type { GraphState, AIChunkGroup, ToolChunkGroup } from "./state";
 import { v } from "convex/values";
-import {
-  buildMessageLookups,
-  getThreadFromMessage,
-} from "../chatMessages/helpers";
+import { getThreadFromMessage } from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
 
@@ -63,15 +60,16 @@ export const generateTitle = internalAction({
 export const chat = action({
   args: v.object({
     chatId: v.id("chats"),
+    model: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     const { chatId } = args;
     const prep = await ctx.runMutation(internal.langchain.utils.prepareChat, {
       chatId,
+      model: args.model,
     });
     const { chat, message, messages, customPrompt } = prep!;
-    const { messageMap } = buildMessageLookups(messages);
-    const thread = getThreadFromMessage(message, messageMap);
+    const thread = getThreadFromMessage(message, messages);
 
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
@@ -102,22 +100,27 @@ export const chat = action({
           if (buffer.length > 0) {
             const chunks = buffer;
             buffer = [];
-            streamDoc = await ctx.runMutation(internal.streams.mutations.flush, {
-              chatId,
-              chunks,
-              completedSteps: [
-                ...(localCheckpoint?.pastSteps?.map(
-                  (pastStep) => pastStep[0],
-                ) ?? []),
-                ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
-                  ? [
-                    ...(localCheckpoint.plan[0].type === "parallel"
-                      ? localCheckpoint.plan[0].data.map((step) => step.step)
-                      : [localCheckpoint.plan[0].data.step]),
-                  ]
-                  : []),
-              ],
-            });
+            streamDoc = await ctx.runMutation(
+              internal.streams.mutations.flush,
+              {
+                chatId,
+                chunks,
+                completedSteps: [
+                  ...(localCheckpoint?.pastSteps?.map(
+                    (pastStep) => pastStep[0],
+                  ) ?? []),
+                  ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
+                    ? [
+                        ...(localCheckpoint.plan[0].type === "parallel"
+                          ? localCheckpoint.plan[0].data.map(
+                              (step) => step.step,
+                            )
+                          : [localCheckpoint.plan[0].data.step]),
+                      ]
+                    : []),
+                ],
+              },
+            );
           }
           if (streamDoc?.status === "cancelled") {
             abort.abort();
@@ -296,6 +299,7 @@ export const chat = action({
 export const regenerate = action({
   args: v.object({
     messageId: v.id("chatMessages"),
+    model: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     const message = await ctx.runQuery(internal.chatMessages.crud.read, {
@@ -309,6 +313,7 @@ export const regenerate = action({
     });
     await ctx.runAction(api.langchain.index.chat, {
       chatId: message.chatId,
+      model: args.model,
     });
   },
 });
@@ -317,15 +322,16 @@ export const branchChat = action({
   args: v.object({
     chatId: v.id("chats"),
     branchFrom: v.id("chatMessages"),
+    model: v.optional(v.string()),
   }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ newChatId: Id<"chats"> }> => {
     const chatDoc = await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });
 
     const newChatId = await ctx.runMutation(api.chats.mutations.create, {
       name: `Branched: ${chatDoc.name}`,
-      model: chatDoc.model,
+      model: args.model ?? chatDoc.model,
       reasoningEffort: chatDoc.reasoningEffort,
       projectId: chatDoc.projectId,
       conductorMode: chatDoc.conductorMode,
@@ -345,12 +351,13 @@ export const branchChat = action({
       throw new Error("Branch message not found");
     }
 
-    const { messageMap } = buildMessageLookups(allMessages);
-    const thread = getThreadFromMessage(branchFromMessage, messageMap);
+    const thread = getThreadFromMessage(branchFromMessage, allMessages);
 
     const lastMessage = thread.at(-1);
     if (lastMessage) {
-      const storedMessage = mapChatMessagesToStoredMessages([lastMessage.message])[0];
+      const storedMessage = mapChatMessagesToStoredMessages([
+        lastMessage.message,
+      ])[0];
       if (storedMessage.type === "ai") {
         thread.pop();
       }
@@ -360,13 +367,18 @@ export const branchChat = action({
       await ctx.runMutation(internal.chats.mutations.createRaw, {
         chatId: newChatId,
         messages: thread.map((m) => ({
-          message: messageMap.get(m._id)!.message,
+          message: JSON.stringify(
+            mapChatMessagesToStoredMessages([m.message])[0],
+          ),
         })),
       });
     }
 
     await ctx.runAction(api.langchain.index.chat, {
       chatId: newChatId,
+      model: args.model,
     });
+
+    return { newChatId };
   },
 });

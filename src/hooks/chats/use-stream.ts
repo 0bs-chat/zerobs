@@ -2,7 +2,10 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { useQuery, useConvex } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import type { ToolChunkGroup, AIChunkGroup } from "../../../convex/langchain/state";
+import type {
+  ToolChunkGroup,
+  AIChunkGroup,
+} from "../../../convex/langchain/state";
 import {
   AIMessage,
   ToolMessage as LangChainToolMessage,

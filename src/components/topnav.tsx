@@ -1,5 +1,5 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ModeToggle } from "@/components/theme-switcher";
+import { ModeToggle } from "@/components/theme-provider";
 import {
   resizePanelOpenAtom,
   selectedArtifactAtom,
@@ -28,6 +28,7 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useEffect } from "react";
 
 export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
@@ -43,6 +44,28 @@ export function TopNav() {
   // Check if we're on a chat route by looking for chatId parameter
   const params = useParams({ strict: false });
   const isOnChatRoute = !!params.chatId;
+
+  // Minimal global shortcut for toggling resizable panel (Ctrl/Cmd+I)
+  useEffect(() => {
+    if (!isOnChatRoute) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const tag = (event.target as HTMLElement)?.tagName;
+      const isEditable =
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        (event.target as HTMLElement)?.isContentEditable;
+      if (isEditable) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i") {
+        event.preventDefault();
+        setResizePanelOpen((open) => {
+          if (!open) setSelectedArtifact(undefined);
+          return !open;
+        });
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOnChatRoute, setResizePanelOpen, setSelectedArtifact]);
 
   return (
     <div

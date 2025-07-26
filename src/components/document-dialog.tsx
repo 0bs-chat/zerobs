@@ -8,7 +8,7 @@ import { documentDialogOpenAtom } from "@/store/chatStore";
 import { api } from "../../convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { Button } from "@/components/ui/button";
-import { getTagInfo } from "@/lib/helpers";
+import { getDocTagInfo } from "@/lib/helper";
 import { formatBytes } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -27,32 +27,64 @@ export const DocumentDialog = () => {
     api.documents.mutations.generateDownloadUrl,
   );
 
+  const documentName = document?.name ?? "";
+  const {
+    icon: Icon,
+    className: IconClassName,
+    tag,
+  } = document
+    ? getDocTagInfo(document)
+    : { icon: () => null, className: "", tag: "" };
+
   useEffect(() => {
     const loadPreviewUrl = async () => {
       if (!document) return;
-
-      if (document.type === "file") {
-        const url = await generateDownloadUrl({
-          documentId: document._id!,
-        });
-        setPreviewUrl(url);
-      } else if (document.type === "url" || document.type === "site") {
-        setPreviewUrl(document.key as string);
-      } else if (document.type === "youtube") {
-        setPreviewUrl(`https://www.youtube.com/embed/${document.key}`);
+      switch (tag) {
+        case "image":
+        case "pdf":
+        case "file": {
+          // Only files need download URL
+          const url = await generateDownloadUrl({
+            documentId: document._id!,
+          });
+          setPreviewUrl(url);
+          break;
+        }
+        case "url":
+        case "site": {
+          setPreviewUrl(document.key as string);
+          break;
+        }
+        case "youtube": {
+          setPreviewUrl(`https://www.youtube.com/embed/${document.key}`);
+          break;
+        }
+        default:
+          if (["file", "text", "github"].includes(document.type)) {
+            const url = await generateDownloadUrl({
+              documentId: document._id!,
+            });
+            setPreviewUrl(url);
+            break;
+          } else {
+            setPreviewUrl(document.key as string);
+          }
+          break;
       }
     };
-
     loadPreviewUrl();
-  }, [document, generateDownloadUrl]);
+  }, [document, tag, generateDownloadUrl]);
+
+  // Early return if dialog is not open
+  if (!documentDialogOpen) {
+    return null;
+  }
 
   const handleDownload = async () => {
-    if (!document || document.type !== "file") return;
-
+    if (!document || tag !== "file") return;
     const url = await generateDownloadUrl({
       documentId: document._id!,
     });
-
     if (url) {
       window.open(url, "_blank");
     }
@@ -60,38 +92,12 @@ export const DocumentDialog = () => {
 
   const handleOpen = () => {
     if (!document) return;
-
-    if (document.type === "url" || document.type === "site") {
+    if (tag === "url" || tag === "site") {
       window.open(document.key as string, "_blank");
-    } else if (document.type === "youtube") {
+    } else if (tag === "youtube") {
       window.open(`https://youtube.com/watch?v=${document.key}`, "_blank");
     }
   };
-
-  if (!documentDialogOpen) {
-    return null;
-  }
-
-  const getFileType = () => {
-    if (!document?.name) return null;
-    const extension = document.name.toLowerCase().split(".").pop();
-    if (!extension) return null;
-
-    if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
-      return "image";
-    } else if (extension === "pdf") {
-      return "pdf";
-    }
-    return null;
-  };
-
-  const fileType = document?.type === "file" ? getFileType() : null;
-  const documentName = document?.name ?? "";
-
-  const { icon: Icon, className: IconClassName } = getTagInfo(
-    document?.type!,
-    document?.status!,
-  );
 
   return (
     <Dialog
@@ -120,61 +126,80 @@ export const DocumentDialog = () => {
             )}
           </div>
 
-          {previewUrl &&
-            (document?.type === "youtube" ||
-              document?.type === "url" ||
-              document?.type === "site" ||
-              fileType) && (
-              <div className="flex-grow relative min-h-0 bg-muted rounded-md border overflow-hidden">
-                {fileType === "image" ? (
-                  <img
-                    src={previewUrl}
-                    alt={documentName}
-                    className="absolute inset-0 w-full h-full object-contain"
-                  />
-                ) : fileType === "pdf" ? (
-                  <object
-                    data={previewUrl}
-                    className="absolute inset-0 w-full h-full"
-                    type="application/pdf"
-                  >
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                      PDF preview not supported in your browser. Please download
-                      the file to view it.
-                    </div>
-                  </object>
-                ) : document?.type === "youtube" ? (
-                  <iframe
-                    src={previewUrl}
-                    className="absolute inset-0 w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : (
-                  <iframe
-                    src={previewUrl}
-                    className="absolute inset-0 w-full h-full"
-                    sandbox="allow-same-origin allow-scripts"
-                    style={{
-                      transform: "scale(0.95)",
-                      transformOrigin: "top left",
-                      width: "105.3%", // 100/0.95 to compensate for scale
-                      height: "105.3%",
-                    }}
-                  />
-                )}
-              </div>
-            )}
+          {previewUrl && (
+            <div className="flex-grow relative min-h-0 bg-muted rounded-md border overflow-hidden">
+              {(() => {
+                if (tag === "image") {
+                  return (
+                    <img
+                      src={previewUrl}
+                      alt={documentName}
+                      className="absolute inset-0 w-full h-full object-contain"
+                    />
+                  );
+                } else if (tag === "pdf") {
+                  return (
+                    <object
+                      data={previewUrl}
+                      className="absolute inset-0 w-full h-full"
+                      type="application/pdf"
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                        PDF preview not supported in your browser. Please
+                        download the file to view it.
+                      </div>
+                    </object>
+                  );
+                } else if (tag === "youtube") {
+                  return (
+                    <iframe
+                      src={previewUrl}
+                      className="absolute inset-0 w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  );
+                } else if (tag === "url" || tag === "site") {
+                  return (
+                    <iframe
+                      src={previewUrl}
+                      className="absolute inset-0 w-full h-full"
+                      sandbox="allow-same-origin allow-scripts"
+                      style={{
+                        transform: "scale(0.95)",
+                        transformOrigin: "top left",
+                        width: "105.3%", // 100/0.95 to compensate for scale
+                        height: "105.3%",
+                      }}
+                    />
+                  );
+                } else if (tag === "file") {
+                  // fallback for unknown file types
+                  return (
+                    <object
+                      data={previewUrl}
+                      className="absolute inset-0 w-full h-full"
+                      type="application/octet-stream"
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                        File preview not supported. Please download the file to
+                        view it.
+                      </div>
+                    </object>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 mt-4">
-          {document?.type === "file" ? (
+          {tag === "file" ? (
             <Button onClick={handleDownload}>Download</Button>
-          ) : document?.type === "url" ||
-            document?.type === "site" ||
-            document?.type === "youtube" ? (
+          ) : tag === "url" || tag === "site" || tag === "youtube" ? (
             <Button onClick={handleOpen}>
-              Open {document.type === "youtube" ? "in YouTube" : "in Browser"}
+              Open {tag === "youtube" ? "in YouTube" : "in Browser"}
             </Button>
           ) : null}
           <Button

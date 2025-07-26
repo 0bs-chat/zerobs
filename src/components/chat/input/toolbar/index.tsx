@@ -105,11 +105,18 @@ export const ToolBar = () => {
   // Generic toggle handler
   const handleToggle = (key: ToggleKey, value: boolean) => {
     if (chatId === "new") {
-      setNewChat((prev) => ({ ...prev, [key]: value }));
+      setNewChat((prev) => ({
+        ...prev,
+        [key]: value,
+        ...(key === "orchestratorMode" && value && { webSearch: true }),
+      }));
     } else {
       updateChatMutation({
         chatId,
-        updates: { [key]: value },
+        updates: {
+          [key]: value,
+          ...(key === "orchestratorMode" && value && { webSearch: true }),
+        },
       });
     }
   };
@@ -189,7 +196,12 @@ export const ToolBar = () => {
                     !chat[toggle.key as keyof typeof chat]
                   )
                 }
-                className="flex items-center justify-between pr-2 cursor-pointer"
+                className={[
+                  "flex items-center justify-between pr-2",
+                  toggle.key === "orchestratorMode"
+                    ? "bg-gradient-to-r from-input to-card"
+                    : "",
+                ].join(" ")}
               >
                 <span className="flex items-center gap-2">
                   {/* Add motion to icon */}

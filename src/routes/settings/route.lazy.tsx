@@ -1,4 +1,4 @@
-import { ModeToggle } from "@/components/theme-switcher";
+import { ModeToggle } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {

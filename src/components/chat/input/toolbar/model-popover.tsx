@@ -7,7 +7,7 @@ import {
 import { Hammer, ChevronDownIcon, Search } from "lucide-react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../../convex/langchain/models";
-import { getTagInfo, hammerTagInfo, thinkingTagInfo } from "@/lib/helpers";
+import { getTagInfo } from "@/lib/helper";
 import { api } from "../../../../../convex/_generated/api";
 import { useMutation } from "convex/react";
 import { newChatAtom } from "@/store/chatStore";
@@ -47,6 +47,8 @@ export function ModelPopover({
   );
   const [searchModel, setSearchModel] = useState("");
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const toolSupportTag = getTagInfo("toolSupport");
+  const thinkingTagInfo = getTagInfo("thinking");
 
   const handleModelSelect = async (modelName: string) => {
     if (
@@ -94,7 +96,7 @@ export function ModelPopover({
             )
             .map((model) => (
               <div
-                key={model.model}
+                key={model.model_name}
                 className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60`}
                 onClick={() => handleModelSelect(model.model_name)}
               >
@@ -132,10 +134,10 @@ export function ModelPopover({
                     })}
                   {model.toolSupport && (
                     <div
-                      className={`p-1 rounded-md ${hammerTagInfo.parentClassName}`}
+                      className={`p-1 rounded-md ${toolSupportTag.parentClassName}`}
                     >
                       <Hammer
-                        className={`h-4 w-4 ${hammerTagInfo.className}`}
+                        className={`h-4 w-4 ${toolSupportTag.className}`}
                       />
                     </div>
                   )}

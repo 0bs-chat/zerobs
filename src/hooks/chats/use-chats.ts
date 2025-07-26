@@ -24,18 +24,18 @@ export const useHandleSubmit = () => {
   const { setValue, getValue } = useTextAreaRef();
   const params = useParams({ strict: false });
 
-  const handleSubmit = async (
-    chat: Doc<"chats">,
-  ) => {
+  const handleSubmit = async (chat: Doc<"chats">) => {
     try {
       const messageText = getValue();
       setValue("");
 
       if (chat._id === "new") {
         // If we're on a project page, use that project ID
-        const projectIdFromRoute = params.projectId as Id<"projects"> | undefined;
+        const projectIdFromRoute = params.projectId as
+          | Id<"projects">
+          | undefined;
         const finalProjectId = projectIdFromRoute || chat.projectId;
-        
+
         setNewChat((prev) => ({
           ...prev,
           text: "",

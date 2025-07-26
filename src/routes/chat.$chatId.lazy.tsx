@@ -10,15 +10,16 @@ import { Panel } from "@/components/chat/panels";
 import { DocumentDialog } from "@/components/document-dialog";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
 import { useAtomValue, useSetAtom } from "jotai";
-import { chatAtom, resizePanelOpenAtom, selectedArtifactAtom } from "@/store/chatStore";
+import {
+  chatAtom,
+  resizePanelOpenAtom,
+  selectedArtifactAtom,
+} from "@/store/chatStore";
 import { useEffect } from "react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useParams } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "motion/react";
-import {
-  slideInFromRight,
-  layoutTransition,
-} from "@/lib/motion";
+import { slideInFromRight, layoutTransition } from "@/lib/motion";
 import { api } from "../../convex/_generated/api";
 import { useQuery } from "convex/react";
 import { newChatAtom } from "@/store/chatStore";
@@ -56,20 +57,22 @@ function RouteComponent() {
             layout
             transition={layoutTransition}
           >
-            <ChatMessages />
+            <ChatMessages chatId={chatId} />
           </motion.div>
-          <motion.div
-            className="flex-none"
-            layout
-            transition={layoutTransition}
-          >
-            <ChatInput />
-          </motion.div>
+          <ChatInput />
         </ResizablePanel>
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           {resizePanelOpen && (
             <>
-              <ResizableHandle />
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={layoutTransition}
+                style={{ display: "flex", alignItems: "stretch" }}
+              >
+                <ResizableHandle />
+              </motion.div>
               <ResizablePanel defaultSize={40} minSize={25} maxSize={60}>
                 <motion.div
                   variants={slideInFromRight}

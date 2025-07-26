@@ -20,6 +20,8 @@ import { ArrowDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { fadeInUp, smoothTransition } from "@/lib/motion";
 import { useTextAreaRef } from "@/hooks/chats/use-textarea";
+import { useUploadDocuments } from "@/hooks/use-documents";
+import { useState, useCallback } from "react";
 
 export const ChatInput = () => {
   const chatId = useAtomValue(chatIdAtom);
@@ -30,6 +32,8 @@ export const ChatInput = () => {
   const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
   const { scrollToBottom, isAtBottom } = useScroll();
   const { ref: textareaRef, setRef, focus } = useTextAreaRef();
+  const [isDragActive, setIsDragActive] = useState(false);
+  const handleFileUpload = useUploadDocuments({ type: "file", chat });
 
   useEffect(() => {
     if (chat) {
@@ -45,10 +49,6 @@ export const ChatInput = () => {
 
   const handleChange = useDebouncedCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setNewChat((prev) => ({
-        ...prev,
-        text: e.target.value,
-      }));
       if (chatId !== "new") {
         updateChatMutation({
           chatId,
@@ -59,14 +59,51 @@ export const ChatInput = () => {
     300
   );
 
+  // Handle drag and drop
+  const handleDrop = useCallback(
+    async (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDragActive(false);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        await handleFileUpload(e.dataTransfer.files);
+      }
+    },
+    [handleFileUpload],
+  );
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      if (!isDragActive) setIsDragActive(true);
+    },
+    [isDragActive],
+  );
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragActive(false);
+  }, []);
+
   return (
     <motion.div
-      className="relative flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg"
+      className={`relative flex flex-col max-w-4xl w-full mx-auto bg-muted rounded-lg ${isDragActive ? "ring-2 ring-primary/60" : ""}`}
       variants={fadeInUp}
       initial="initial"
       animate="animate"
       transition={smoothTransition}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragOver}
+      onDragLeave={handleDragLeave}
     >
+      {/* Drag overlay */}
+      {isDragActive && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 pointer-events-none rounded-lg">
+          <span className="text-lg font-semibold text-white">
+            Drop files to upload
+          </span>
+        </div>
+      )}
       <AnimatePresence>
         {!isAtBottom && (
           <motion.div
@@ -102,6 +139,10 @@ export const ChatInput = () => {
           defaultValue={chat?.text}
           className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
           onChange={(e) => {
+            setNewChat((prev) => ({
+              ...prev,
+              text: e.target.value,
+            }));
             handleChange(e);
           }}
           onKeyDown={(e) => {

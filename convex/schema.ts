@@ -60,6 +60,7 @@ export const ChatMessages = Table("chatMessages", {
   chatId: v.id("chats"),
   message: v.string(),
   parentId: v.union(v.id("chatMessages"), v.null()),
+  minimized: v.optional(v.boolean()),
 });
 
 export const Streams = Table("streams", {
