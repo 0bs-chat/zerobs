@@ -82,17 +82,19 @@ export const ChatInput = () => {
 
       if (imageFiles.length > 0) {
         e.preventDefault();
-        
+
         // Create a FileList from the image files
         const dataTransfer = new DataTransfer();
-        imageFiles.forEach(file => dataTransfer.items.add(file));
+        imageFiles.forEach((file) => dataTransfer.items.add(file));
         const fileList = dataTransfer.files;
 
         await handleFileUpload(fileList);
-        toast.success(`${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""} pasted and uploaded`);
+        toast.success(
+          `${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""} pasted and uploaded`
+        );
       }
     },
-    [handleFileUpload],
+    [handleFileUpload]
   );
 
   // Handle drag and drop
@@ -104,7 +106,7 @@ export const ChatInput = () => {
         await handleFileUpload(e.dataTransfer.files);
       }
     },
-    [handleFileUpload],
+    [handleFileUpload]
   );
 
   const handleDragOver = useCallback(
@@ -112,7 +114,7 @@ export const ChatInput = () => {
       e.preventDefault();
       if (!isDragActive) setIsDragActive(true);
     },
-    [isDragActive],
+    [isDragActive]
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -122,7 +124,7 @@ export const ChatInput = () => {
 
   return (
     <div
-      className={`relative flex flex-col max-w-4xl w-full mx-auto bg-background shadow-sm outline-1 outline-border rounded-lg ${isDragActive ? "ring-2 ring-primary/60" : ""}`}
+      className={`relative flex flex-col max-w-4xl w-full mx-auto bg-background shadow-sm outline-1 outline-border rounded-lg `}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragEnter={handleDragOver}
@@ -130,8 +132,8 @@ export const ChatInput = () => {
     >
       {/* Drag overlay */}
       {isDragActive && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 pointer-events-none rounded-lg">
-          <span className="text-lg font-semibold text-white">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-accent/50 pointer-events-none rounded-lg backdrop-blur-sm transition duration-300">
+          <span className="text-lg font-semibold text-accent-foreground">
             Drop files to upload
           </span>
         </div>
@@ -177,7 +179,10 @@ export const ChatInput = () => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
 
-            if (e.currentTarget.value.trim() === "" && chat?.documents.length === 0) {
+            if (
+              e.currentTarget.value.trim() === "" &&
+              chat?.documents.length === 0
+            ) {
               toast.error("Please enter a message before sending");
               return;
             }

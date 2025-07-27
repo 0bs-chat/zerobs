@@ -16,7 +16,7 @@ import { PlusIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { toast } from "sonner";
-import { validateMCP } from "@/hooks/use-mcp";
+import { validateMCP } from "@/hooks/chats/use-mcp";
 import {
   initialMCPState,
   selectedMCPTemplateAtom,
