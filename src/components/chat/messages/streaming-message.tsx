@@ -17,11 +17,11 @@ export const StreamingMessage = memo(() => {
     return (
       <PlanningStep
         message={streamData.planningStepsMessage}
-        isStreaming={streamData.isStreaming}
+        isStreaming={streamData.status === "streaming"}
         messageId={messageId}
       />
     );
-  }, [streamData?.planningStepsMessage, streamData?.isStreaming, messageId]);
+  }, [streamData?.planningStepsMessage, streamData?.status, messageId]);
 
   const regularContent = useMemo(() => {
     if (!streamData?.langchainMessages) return [];
@@ -33,6 +33,7 @@ export const StreamingMessage = memo(() => {
 
       return (
         <motion.div
+          key={`${messageId}-${index}`}
           variants={streamingVariants}
           initial="initial"
           animate="animate"
@@ -50,9 +51,9 @@ export const StreamingMessage = memo(() => {
         </motion.div>
       );
     });
-  }, [streamData?.langchainMessages, messageId, streamData?.isStreaming]);
+  }, [streamData?.langchainMessages, messageId, streamData?.status]);
 
-  if (!streamData?.chunkGroups || streamData.chunkGroups.length === 0)
+  if (!streamData?.langchainMessages || streamData.langchainMessages.length === 0)
     return null;
 
   return (

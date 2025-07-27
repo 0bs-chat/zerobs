@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { ActionDropdown } from "./action-dropdown";
-import { useAction, useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { MessageWithBranchInfo } from "@/hooks/chats/use-messages";
 import type { Id } from "../../../../../convex/_generated/dataModel";
@@ -22,8 +22,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CopyButton } from "./copy-button";
-import { useNavigate } from "@tanstack/react-router";
-import { useNavigateBranch } from "@/hooks/chats/use-messages";
+import { useMessageActions } from "./index";
 
 interface MessageContent {
   type: string;
@@ -59,17 +58,6 @@ const TooltipButton = ({
   </TooltipProvider>
 );
 
-// Helper function for navigation logic
-const navigateToChat = (
-  navigate: ReturnType<typeof useNavigate>,
-  chatId: Id<"chats">,
-) => {
-  navigate({
-    to: "/chat/$chatId",
-    params: { chatId },
-  });
-};
-
 interface UserUtilsBarProps {
   input: MessageWithBranchInfo;
   isEditing?: boolean;
@@ -88,12 +76,9 @@ export const UserUtilsBar = memo(
     editedDocuments,
     onDone,
   }: UserUtilsBarProps) => {
-    const regenerate = useAction(api.langchain.index.regenerate);
-    const branchChat = useAction(api.langchain.index.branchChat);
+    const { handleBranch, handleRegenerate, navigateBranch } = useMessageActions();
     const updateMessage = useMutation(api.chatMessages.mutations.updateInput);
     const chat = useAction(api.langchain.index.chat);
-    const navigate = useNavigate();
-    const navigateBranch = useNavigateBranch();
 
     const copyText = (() => {
       const content = input?.message.message.content;
@@ -107,26 +92,6 @@ export const UserUtilsBar = memo(
       }
       return typeof content === "string" ? content : "";
     })();
-
-    // Helper functions for common actions
-    const handleBranch = async (model?: string) => {
-      const result = await branchChat({
-        chatId: input.message.chatId!,
-        branchFrom: input.message._id,
-        ...(model && { model }),
-      });
-      if (result?.newChatId) {
-        navigateToChat(navigate, result.newChatId);
-      }
-    };
-
-    const handleRegenerate = (model?: string) => {
-      navigateBranch?.(input.depth, input.totalBranches);
-      regenerate({
-        messageId: input.message._id,
-        ...(model && { model }),
-      });
-    };
 
     const handleSubmit = (applySame: boolean) => {
       if (applySame === false) {
@@ -189,8 +154,8 @@ export const UserUtilsBar = memo(
               Branch
             </>
           }
-          onAction={() => handleBranch()}
-          onActionWithModel={handleBranch}
+          onAction={() => handleBranch(input)}
+          onActionWithModel={(model) => handleBranch(input, model)}
         />
         <ActionDropdown
           trigger={
@@ -204,8 +169,8 @@ export const UserUtilsBar = memo(
               Regenerate
             </>
           }
-          onAction={() => handleRegenerate()}
-          onActionWithModel={handleRegenerate}
+          onAction={() => handleRegenerate(input)}
+          onActionWithModel={(model) => handleRegenerate(input, model)}
         />
         {copyText && <CopyButton text={copyText} />}
       </div>

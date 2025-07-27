@@ -2,7 +2,7 @@ import { DocumentList } from "./document-list";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { ToolBar } from "./toolbar";
 import { useHandleSubmit } from "@/hooks/chats/use-chats";
-import { useAtom, useSetAtom, useAtomValue } from "jotai";
+import { useSetAtom, useAtomValue } from "jotai";
 import {
   newChatAtom,
   selectedProjectIdAtom,
@@ -20,13 +20,13 @@ import { ArrowDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { smoothTransition } from "@/lib/motion";
 import { useTextAreaRef } from "@/hooks/chats/use-textarea";
-import { useUploadDocuments } from "@/hooks/use-documents";
+import { useUploadDocuments } from "@/hooks/chats/use-documents";
 import { useState, useCallback } from "react";
 
 export const ChatInput = () => {
   const chatId = useAtomValue(chatIdAtom);
   const updateChatMutation = useMutation(api.chats.mutations.update);
-  const [newChat, setNewChat] = useAtom(newChatAtom);
+  const setNewChat = useSetAtom(newChatAtom);
   const chat = useAtomValue(chatAtom);
   const handleSubmit = useHandleSubmit();
   const setSelectedProjectId = useSetAtom(selectedProjectIdAtom);
@@ -54,9 +54,45 @@ export const ChatInput = () => {
           chatId,
           updates: { text: e.target.value },
         });
+      } else {
+        setNewChat((prev) => ({
+          ...prev,
+          text: e.target.value,
+        }));
       }
     },
     300
+  );
+
+  // Handle paste events for images
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const items = e.clipboardData.items;
+      const imageFiles: File[] = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            imageFiles.push(file);
+          }
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        
+        // Create a FileList from the image files
+        const dataTransfer = new DataTransfer();
+        imageFiles.forEach(file => dataTransfer.items.add(file));
+        const fileList = dataTransfer.files;
+
+        await handleFileUpload(fileList);
+        toast.success(`${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""} pasted and uploaded`);
+      }
+    },
+    [handleFileUpload],
   );
 
   // Handle drag and drop
@@ -134,25 +170,14 @@ export const ChatInput = () => {
         defaultValue={chat?.text}
         className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
         onChange={(e) => {
-          setNewChat((prev) => ({
-            ...prev,
-            text: e.target.value,
-          }));
           handleChange(e);
         }}
+        onPaste={handlePaste}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
 
-            if (
-              (!newChat.text || newChat.text.trim() === "") &&
-              chat &&
-              chat.documents.length === 0
-            ) {
-              toast.error("Please enter a message");
-              return;
-            }
-            if (e.currentTarget.value.trim() === "") {
+            if (e.currentTarget.value.trim() === "" && chat?.documents.length === 0) {
               toast.error("Please enter a message before sending");
               return;
             }

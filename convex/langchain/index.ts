@@ -164,6 +164,7 @@ export const chat = action({
                     toolName: evt.name,
                     input: evt.data?.input,
                     isComplete: false,
+                    toolCallId: evt.run_id,
                   } as ToolChunkGroup),
                 );
               } else if (evt.event === "on_tool_end") {
@@ -196,6 +197,7 @@ export const chat = action({
                     input: evt.data?.input,
                     output,
                     isComplete: true,
+                    toolCallId: evt.run_id,
                   } as ToolChunkGroup),
                 );
               }
@@ -373,12 +375,7 @@ export const branchChat = action({
         })),
       });
     }
-
-    await ctx.runAction(api.langchain.index.chat, {
-      chatId: newChatId,
-      model: args.model,
-    });
-
+    
     return { newChatId };
   },
 });

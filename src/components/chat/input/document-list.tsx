@@ -6,7 +6,7 @@ import { XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { documentDialogOpenAtom } from "@/store/chatStore";
-import { useRemoveDocument } from "@/hooks/use-documents";
+import { useRemoveDocument } from "@/hooks/chats/use-documents";
 import { getDocTagInfo } from "@/lib/helper";
 import React, { useCallback } from "react";
 import { useSetAtom } from "jotai";

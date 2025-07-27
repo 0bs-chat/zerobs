@@ -3,29 +3,14 @@ import { BranchNavigation } from "./branch-navigation";
 import { Button } from "@/components/ui/button";
 import { GitBranch, RefreshCcw } from "lucide-react";
 import { ActionDropdown } from "./action-dropdown";
-import { useAction } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
 import type { MessageWithBranchInfo } from "@/hooks/chats/use-messages";
-import type { Id } from "../../../../../convex/_generated/dataModel";
 import { CopyButton } from "./copy-button";
-import { useNavigate } from "@tanstack/react-router";
-import { useNavigateBranch } from "@/hooks/chats/use-messages";
+import { useMessageActions } from "./index";
 
 interface MessageContent {
   type: string;
   text?: string;
 }
-
-// Helper function for navigation logic
-const navigateToChat = (
-  navigate: ReturnType<typeof useNavigate>,
-  chatId: Id<"chats">,
-) => {
-  navigate({
-    to: "/chat/$chatId",
-    params: { chatId },
-  });
-};
 
 interface AiUtilsBarProps {
   input: MessageWithBranchInfo;
@@ -33,10 +18,7 @@ interface AiUtilsBarProps {
 }
 
 export const AiUtilsBar = memo(({ input, response }: AiUtilsBarProps) => {
-  const regenerate = useAction(api.langchain.index.regenerate);
-  const branchChat = useAction(api.langchain.index.branchChat);
-  const navigate = useNavigate();
-  const navigateBranch = useNavigateBranch();
+  const { handleBranch, handleRegenerate, navigateBranch } = useMessageActions();
 
   const copyText = (() => {
     if (!response || response.length === 0) return "";
@@ -59,38 +41,9 @@ export const AiUtilsBar = memo(({ input, response }: AiUtilsBarProps) => {
     return responseTexts.join("\n");
   })();
 
-  // Helper functions for common actions
-  const handleBranch = async (model?: string) => {
-    const result = await branchChat({
-      chatId: input.message.chatId!,
-      branchFrom: input.message._id,
-      ...(model && { model }),
-    });
-    if (result?.newChatId) {
-      navigateToChat(navigate, result.newChatId);
-    }
-  };
-
-  const handleRegenerate = (model?: string) => {
-    // Use the first response item for navigation context
-    const firstResponse = response[0];
-    if (firstResponse) {
-      navigateBranch?.(firstResponse.depth, firstResponse.totalBranches);
-    }
-    regenerate({
-      messageId: input.message._id,
-      ...(model && { model }),
-    });
-  };
-
-  // Use the first response item for branch navigation
-  const firstResponse = response[0];
-
   return (
     <div className={`flex flex-row items-center gap-1 self-start`}>
-      {firstResponse && (
-        <BranchNavigation item={firstResponse} navigateBranch={navigateBranch!} />
-      )}
+      <BranchNavigation item={input} navigateBranch={navigateBranch!} />
       <ActionDropdown
         trigger={
           <Button variant="ghost" size="icon">
@@ -103,8 +56,8 @@ export const AiUtilsBar = memo(({ input, response }: AiUtilsBarProps) => {
             Branch
           </>
         }
-        onAction={() => handleBranch()}
-        onActionWithModel={handleBranch}
+        onAction={() => handleBranch(input)}
+        onActionWithModel={(model) => handleBranch(input, model)}
       />
       <ActionDropdown
         trigger={
@@ -118,8 +71,8 @@ export const AiUtilsBar = memo(({ input, response }: AiUtilsBarProps) => {
             Regenerate
           </>
         }
-        onAction={() => handleRegenerate()}
-        onActionWithModel={handleRegenerate}
+        onAction={() => handleRegenerate(input)}
+        onActionWithModel={(model) => handleRegenerate(input, model)}
       />
       {copyText && <CopyButton text={copyText} />}
     </div>

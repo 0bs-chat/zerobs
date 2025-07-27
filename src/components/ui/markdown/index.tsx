@@ -13,7 +13,7 @@ import {
   atomDark,
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { useCopy } from "@/hooks/use-copy";
+import { useCopy } from "@/hooks/chats/use-copy";
 import { wrapLongLinesAtom } from "@/store/chatStore";
 import { useAtom, useAtomValue } from "jotai";
 import { themeAtom } from "@/store/settings";
@@ -163,6 +163,7 @@ export const MarkdownBlock = memo(
           ${className}`}
         style={{
           fontFamily: "Rubik",
+          wordBreak: "break-word",
         }}
       >
         <ReactMarkdown

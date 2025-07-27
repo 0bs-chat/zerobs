@@ -1,26 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { Check, Copy } from "lucide-react";
-import { useState } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useCopy } from "@/hooks/chats/use-copy";
 
 export const CopyButton = ({
   text,
   className,
+  duration = 2000,
 }: {
   text: string;
   className?: string;
+  duration?: number;
 }) => {
-  const [copied, setCopied] = useState(false);
+  const { copy, copied } = useCopy({ duration });
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = () => {
+    copy(text);
   };
 
   return (

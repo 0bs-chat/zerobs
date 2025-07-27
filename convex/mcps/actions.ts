@@ -1,6 +1,6 @@
 "use node";
 
-import { api, internal } from "../_generated/api";
+import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { fly } from "../utils/flyio";
@@ -90,11 +90,12 @@ export const restart = internalAction({
       const mcp = await ctx.runQuery(internal.mcps.crud.read, {
         id: args.mcpId,
       });
+
       if (!mcp) {
         throw new Error("MCP not found");
       }
-      if (mcp.type !== "http") {
-        throw new Error("MCP is not an http type");
+      if (!["docker", "stdio"].includes(mcp.type)) {
+        throw new Error("MCP is not a docker or stdio type");
       }
       if (!mcp.url) {
         throw new Error("MCP URL is not defined");
@@ -103,29 +104,39 @@ export const restart = internalAction({
         throw new Error("MCP is still creating");
       }
 
-      await ctx.runMutation(api.mcps.mutations.update, {
-        mcpId: args.mcpId,
-        updates: { status: "creating" },
+      await ctx.runMutation(internal.mcps.crud.update, {
+        id: args.mcpId,
+        patch: { status: "creating" },
       });
+
       const appName = String(mcp._id);
       const app: FlyApp | null = await fly.getApp(appName);
+
       if (app && app.name) {
         const machines = await fly.listMachines(app.name);
+
         if (machines && machines.length > 0) {
+          const machinesWithId = machines.filter((machine) => machine.id);
+
+          // Stop machines
           await Promise.all(
-            machines.map((machine) => {
-              if (machine.id) {
-                return fly.stopMachine(app.name!, machine.id);
-              }
-            }),
+            machinesWithId.map((machine) => fly.stopMachine(app.name!, machine.id!)),
           );
 
+          // Wait for machines to stop
+          for (let i = 0; i < 30; i++) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const updatedMachines = await fly.listMachines(app.name!);
+            if (updatedMachines?.every(m =>
+              !machinesWithId.some(original => original.id === m.id) || m.state === 'stopped'
+            )) {
+              break;
+            }
+          }
+
+          // Start machines
           await Promise.all(
-            machines.map((machine) => {
-              if (machine.id) {
-                return fly.startMachine(app.name!, machine.id);
-              }
-            }),
+            machinesWithId.map((machine) => fly.startMachine(app.name!, machine.id!)),
           );
         }
       }

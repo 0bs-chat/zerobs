@@ -22,7 +22,7 @@ const MCP_TEMPLATES: McpTemplate[] = [
   {
     name: "Github Repo",
     type: "stdio",
-    status: "created",
+    status: "creating",
     restartOnNewChat: false,
     command: "bunx github-repo-mcp",
     description:
@@ -36,7 +36,7 @@ const MCP_TEMPLATES: McpTemplate[] = [
     type: "docker",
     dockerImage: "mantrakp04/py_exec:latest",
     dockerPort: 8000,
-    status: "created",
+    status: "creating",
     restartOnNewChat: false,
     description:
       "Executes Python code in a sandboxed Docker environment, providing a secure and isolated space for running Python scripts and applications.",
@@ -48,7 +48,7 @@ const MCP_TEMPLATES: McpTemplate[] = [
     name: "Memory",
     type: "stdio",
     command: "bunx @modelcontextprotocol/server-memory",
-    status: "created",
+    status: "creating",
     restartOnNewChat: false,
     description:
       "Manages a knowledge graph to provide persistent memory for AI models. It allows for the creation, modification, and retrieval of entities, their relationships, and observations, enabling AI to retain and recall information across conversations.",
@@ -60,11 +60,23 @@ const MCP_TEMPLATES: McpTemplate[] = [
     name: "Context7 Docs",
     type: "http",
     url: "https://mcp.context7.com/mcp",
-    status: "created",
+    status: "creating",
     restartOnNewChat: false,
     description:
       "Provides up-to-date, version-specific documentation and code examples for various libraries and frameworks. It helps AI models avoid hallucinations and generate accurate code by supplying relevant, real-time context directly from official sources.",
     image: "https://context7.com/favicon.ico",
+    official: true,
+  },
+  {
+    name: "Sequential Thinking",
+    type: "stdio",
+    command: "bunx @modelcontextprotocol/server-sequential-thinking",
+    status: "creating",
+    restartOnNewChat: false,
+    description:
+      "Enables AI models to break down complex problems into sequential steps, improving reasoning capabilities and providing structured thinking processes for better problem-solving and decision-making.",
+    image:
+      "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
     official: true,
   },
 ];

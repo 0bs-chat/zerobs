@@ -15,7 +15,7 @@ import {
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
-import { useUploadDocuments } from "@/hooks/use-documents";
+import { useUploadDocuments } from "@/hooks/chats/use-documents";
 import { useAtomValue } from "jotai";
 import { chatIdAtom } from "@/store/chatStore";
 

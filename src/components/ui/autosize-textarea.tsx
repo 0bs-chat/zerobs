@@ -28,20 +28,26 @@ export const useAutosizeTextArea = ({
       textAreaElement.style.maxHeight = `${maxHeight}px`;
     }
 
-    // Reset height to calculate proper scrollHeight
-    textAreaElement.style.height = `${minHeight + offsetBorder}px`;
+    // Use requestAnimationFrame to ensure the DOM is ready
+    const adjustHeight = () => {
+      // Reset height to calculate proper scrollHeight
+      textAreaElement.style.height = `${minHeight + offsetBorder}px`;
 
-    // Get the actual content height
-    const scrollHeight = textAreaElement.scrollHeight;
+      // Get the actual content height
+      const scrollHeight = textAreaElement.scrollHeight;
 
-    // Apply appropriate height based on content
-    if (scrollHeight > minHeight + offsetBorder) {
-      if (scrollHeight > maxHeight) {
-        textAreaElement.style.height = `${maxHeight}px`;
-      } else {
-        textAreaElement.style.height = `${scrollHeight}px`;
+      // Apply appropriate height based on content
+      if (scrollHeight > minHeight + offsetBorder) {
+        if (scrollHeight > maxHeight) {
+          textAreaElement.style.height = `${maxHeight}px`;
+        } else {
+          textAreaElement.style.height = `${scrollHeight}px`;
+        }
       }
-    }
+    };
+
+    // Use requestAnimationFrame to ensure proper timing
+    requestAnimationFrame(adjustHeight);
   }, [triggerAutoSize, maxHeight, minHeight]);
 };
 

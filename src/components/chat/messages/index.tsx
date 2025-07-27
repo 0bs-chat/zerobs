@@ -4,20 +4,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessagesList } from "./messages";
 import { StreamingMessage } from "./streaming-message";
 import { TriangleAlertIcon } from "lucide-react";
-import { useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { streamStatusAtom } from "@/store/chatStore";
+import { streamStatusAtom, userLoadableAtom } from "@/store/chatStore";
 import { useAtomValue } from "jotai";
 
 export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
-  const user = useQuery(api.auth.getUser);
+  const userLoadable = useAtomValue(userLoadableAtom);
   const { isLoading, isEmpty } = useMessages({ chatId });
 
   const streamStatus = useAtomValue(streamStatusAtom);
 
   const mainContent = useMemo(() => {
     if (chatId === "new") {
+      // Get user name from loadable state
+      const userName = userLoadable.state === 'hasData' ? userLoadable.data?.name : '';
+
       return (
         <div className="flex items-center justify-center h-full flex-col gap-4 -translate-y-30">
           <div
@@ -28,7 +29,7 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
           >
             how can i help you
             <br />
-            {user?.name} ?
+            {userName} ?
           </div>
         </div>
       );
@@ -76,7 +77,7 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
         </div>
       </ScrollArea>
     );
-  }, [isLoading, isEmpty, streamStatus, chatId]);
+  }, [isLoading, isEmpty, streamStatus, chatId, userLoadable]);
 
   return mainContent;
 };

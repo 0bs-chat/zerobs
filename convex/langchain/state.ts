@@ -73,5 +73,6 @@ export interface ToolChunkGroup {
   input?: unknown;
   output?: unknown;
   isComplete: boolean;
+  toolCallId: string;
 }
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
