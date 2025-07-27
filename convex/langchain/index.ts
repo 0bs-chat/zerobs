@@ -375,12 +375,7 @@ export const branchChat = action({
         })),
       });
     }
-
-    await ctx.runAction(api.langchain.index.chat, {
-      chatId: newChatId,
-      model: args.model,
-    });
-
+    
     return { newChatId };
   },
 });

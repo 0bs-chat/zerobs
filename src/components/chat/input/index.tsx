@@ -64,6 +64,37 @@ export const ChatInput = () => {
     300,
   );
 
+  // Handle paste events for images
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const items = e.clipboardData.items;
+      const imageFiles: File[] = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            imageFiles.push(file);
+          }
+        }
+      }
+
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        
+        // Create a FileList from the image files
+        const dataTransfer = new DataTransfer();
+        imageFiles.forEach(file => dataTransfer.items.add(file));
+        const fileList = dataTransfer.files;
+
+        await handleFileUpload(fileList);
+        toast.success(`${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""} pasted and uploaded`);
+      }
+    },
+    [handleFileUpload],
+  );
+
   // Handle drag and drop
   const handleDrop = useCallback(
     async (e: React.DragEvent<HTMLDivElement>) => {
@@ -141,6 +172,7 @@ export const ChatInput = () => {
         onChange={(e) => {
           handleChange(e);
         }}
+        onPaste={handlePaste}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();

@@ -301,12 +301,15 @@ export const ToolBar = () => {
               <FoldersIcon className="w-4 h-4" />
               <span className="max-w-32 truncate">{project.name}</span>
             </span>
-            <button onClick={(e) => {
-              e.stopPropagation();
-              handleRemoveProject();
-            }} className="hidden group-hover:block">
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemoveProject();
+              }} 
+              className="hidden group-hover:block cursor-pointer"
+            >
               <XIcon className="w-4 h-4 text-destructive" />
-            </button>
+            </div>
           </Button>
         )}
       </div>

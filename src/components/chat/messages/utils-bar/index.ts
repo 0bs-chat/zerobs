@@ -4,6 +4,8 @@ import { api } from "../../../../../convex/_generated/api";
 import type { MessageWithBranchInfo } from "@/hooks/chats/use-messages";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useNavigateBranch } from "@/hooks/chats/use-messages";
+export { UserUtilsBar } from "./user-utils-bar";
+export { AiUtilsBar } from "./ai-utils-bar";
 
 // Helper function for navigation logic
 const navigateToChat = (
@@ -19,6 +21,7 @@ const navigateToChat = (
 export function useMessageActions() {
   const regenerate = useAction(api.langchain.index.regenerate);
   const branchChat = useAction(api.langchain.index.branchChat);
+  const chat = useAction(api.langchain.index.chat);
   const navigate = useNavigate();
   const navigateBranch = useNavigateBranch();
 
@@ -29,6 +32,10 @@ export function useMessageActions() {
       ...(model && { model }),
     });
     if (result?.newChatId) {
+      chat({
+        chatId: result.newChatId,
+        model: model,
+      });
       navigateToChat(navigate, result.newChatId);
     }
   };
