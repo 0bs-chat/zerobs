@@ -77,7 +77,7 @@ export function TopNav() {
 
   return (
     <div
-      className={`fixed right-0 py-2  flex items-center w-full bg-transparent justify-between pointer-events-none z-50 px-1.5`}
+      className={`fixed right-0 py-2 flex items-center w-full bg-transparent justify-between pointer-events-none z-50 px-1.5`}
     >
       <div
         className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/20 border bg-accent/25 dark:bg-accent/35"}`}

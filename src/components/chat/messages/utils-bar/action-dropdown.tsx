@@ -23,7 +23,10 @@ export function ActionDropdown({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80" align="end">
+      <DropdownMenuContent
+        className=" w-80 h-96 p-1 overflow-y-auto scrollbar-none relative bg-background "
+        align="end"
+      >
         <DropdownMenuItem onClick={onAction}>{actionLabel}</DropdownMenuItem>
         <DropdownMenuSeparator />
         {models
@@ -34,14 +37,20 @@ export function ActionDropdown({
             return (
               <DropdownMenuItem
                 key={model.model_name}
-                className="justify-between"
+                className="justify-between px-2 py-2"
                 onClick={() => onActionWithModel(model.model_name)}
               >
                 <div className="text-foreground flex gap-2 items-center">
                   <img
                     src={model.image}
                     alt={model.label}
-                    className="h-4 w-4"
+                    className={`h-4 w-4 ${
+                      ["openai", "x-ai", "openrouter", "anthropic"].includes(
+                        model.owner
+                      )
+                        ? "dark:invert"
+                        : ""
+                    } `}
                   />
                   {model.label}
                 </div>
