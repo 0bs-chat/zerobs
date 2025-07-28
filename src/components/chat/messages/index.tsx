@@ -17,19 +17,19 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const mainContent = useMemo(() => {
     if (chatId === "new") {
       // Get user name from loadable state
-      const userName = userLoadable.state === 'hasData' ? userLoadable.data?.name : '';
+      const userName =
+        userLoadable.state === "hasData" ? userLoadable.data?.name : "";
 
       return (
         <div className="flex items-center justify-center h-full flex-col gap-4 -translate-y-30">
           <div
-            className="flex flex-col items-center gap-2 text-5xl font-semibold text-muted-foreground/40"
+            className="flex items-center gap-2 text-5xl font-semibold text-primary/50"
             style={{
               fontFamily: "Rubik",
             }}
           >
-            how can i help you
-            <br />
-            {userName} ?
+            how can i help you,
+            <span className="text-primary/50">{userName} ?</span>
           </div>
         </div>
       );

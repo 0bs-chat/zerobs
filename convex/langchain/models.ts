@@ -27,6 +27,17 @@ export const models: {
   modalities: ("text" | "image" | "pdf")[];
   image: string;
   description: string;
+  owner:
+    | "openai"
+    | "google"
+    | "x-ai"
+    | "anthropic"
+    | "deepseek"
+    | "moonshotai"
+    | "openrouter"
+    | "cypher"
+    | "qwen"
+    | "kimi";
   usageRateMultiplier: number;
   hidden?: boolean;
   type?: "chat" | "embeddings";
@@ -45,6 +56,7 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "Gemini 2.5 Flash is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    owner: "google",
     usageRateMultiplier: 1.0,
     temperature: 0.5,
     parser: "functionCalling",
@@ -61,6 +73,7 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "Gemini 2.5 Flash Thinking is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    owner: "google",
     usageRateMultiplier: 1.0,
     temperature: 0.5,
     parser: "functionCalling",
@@ -77,6 +90,7 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
+    owner: "google",
     usageRateMultiplier: 1.5,
     temperature: 0.5,
     parser: "functionCalling",
@@ -90,9 +104,10 @@ export const models: {
     provider: "openai",
     modalities: ["text", "image"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     description:
       "GPT-4.1 is a state-of-the-art language model capable of understanding and generating human-like text.",
+    owner: "openai",
     usageRateMultiplier: 1.0,
   },
   {
@@ -104,9 +119,10 @@ export const models: {
     provider: "openai",
     modalities: ["text", "image"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     description:
       "o4 mini is a state-of-the-art language model capable of understanding and generating human-like text.",
+    owner: "openai",
     usageRateMultiplier: 1.0,
   },
   {
@@ -118,9 +134,10 @@ export const models: {
     provider: "openai",
     modalities: ["text", "image"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     description:
       "o3 is a state-of-the-art language model capable of understanding and generating human-like text.",
+    owner: "openai",
     usageRateMultiplier: 1.5,
   },
   {
@@ -132,9 +149,10 @@ export const models: {
     provider: "openai",
     modalities: ["text", "image", "pdf"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSCRxLvQkYbi8sZjauXl0P9cm7wv6oqd4TkgLy",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqERtPmCxK7iJruFcAblpzLxNM30vHj4R1XQGm",
     description:
       "Claude 4 is a versatile model that excels in various text and image processing tasks.",
+    owner: "anthropic",
     usageRateMultiplier: 2.0,
     temperature: 0.5,
     parser: "functionCalling",
@@ -151,6 +169,7 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "The Worker model is designed for specialized tasks requiring high efficiency.",
+    owner: "openai",
     usageRateMultiplier: 1.0,
     hidden: true,
     temperature: 0.5,
@@ -168,6 +187,7 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSc6tHQtOkQ3diauvF12HnrWNtOmhI0eYwBKzf",
     description:
       "Deepseek R1 is a model focused on deep learning tasks with a strong emphasis on text processing.",
+    owner: "deepseek",
     usageRateMultiplier: 1.0,
   },
   {
@@ -184,6 +204,7 @@ export const models: {
       "The Embeddings model is designed for generating high-quality text embeddings.",
     usageRateMultiplier: 1.0,
     hidden: true,
+    owner: "google",
     type: "embeddings",
   },
   {
@@ -194,9 +215,11 @@ export const models: {
     toolSupport: true,
     provider: "openai",
     modalities: ["text"],
-    image: "https://x.ai/favicon.ico",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqTWQGWJKcCZGuB4JXj70amYe8kDsr5IfyOV6o",
     description:
       "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    owner: "x-ai",
     usageRateMultiplier: 1.5,
   },
   {
@@ -207,9 +230,11 @@ export const models: {
     toolSupport: true,
     provider: "openai",
     modalities: ["text", "image"],
-    image: "https://x.ai/favicon.ico",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqTWQGWJKcCZGuB4JXj70amYe8kDsr5IfyOV6o",
     description:
       "Grok 4 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    owner: "x-ai",
     usageRateMultiplier: 2.0,
   },
   {
@@ -224,6 +249,7 @@ export const models: {
       "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://moonshot.ai&size=256",
     description:
       "Kimi K2 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    owner: "moonshotai",
     usageRateMultiplier: 1.0,
   },
   {
@@ -233,9 +259,9 @@ export const models: {
     isThinking: false,
     toolSupport: false,
     provider: "openai",
+    owner: "qwen",
     modalities: ["text"],
-    image:
-      "https://www.google.com/s2/favicons?domain=chat.qwen.ai&sz=256",
+    image: "https://www.google.com/s2/favicons?domain=chat.qwen.ai&sz=256",
     description:
       "Qwen 3 235B is a large language model from Qwen, suitable for a wide range of text generation tasks.",
     usageRateMultiplier: 1.0,
@@ -247,9 +273,9 @@ export const models: {
     isThinking: false,
     toolSupport: false,
     provider: "openai",
+    owner: "qwen",
     modalities: ["text"],
-    image:
-      "https://www.google.com/s2/favicons?domain=chat.qwen.ai&sz=256",
+    image: "https://www.google.com/s2/favicons?domain=chat.qwen.ai&sz=256",
     description:
       "Qwen 3 Coder is a code-focused model from Qwen, designed for programming and code generation tasks.",
     usageRateMultiplier: 1.0,
@@ -260,7 +286,7 @@ export async function getModel(
   ctx: ActionCtx,
   model: string,
   reasoningEffort: "low" | "medium" | "high" | undefined,
-  userId?: string,
+  userId?: string
 ): Promise<BaseChatModel> {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -299,7 +325,7 @@ export async function getModel(
 export async function getEmbeddingModel(
   ctx: ActionCtx,
   model: string,
-  userId?: string,
+  userId?: string
 ) {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -346,7 +372,7 @@ export async function getEmbeddingModel(
 export async function formatMessages(
   ctx: ActionCtx,
   messages: BaseMessage[],
-  model: string,
+  model: string
 ): Promise<BaseMessage[]> {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -379,7 +405,7 @@ export async function formatMessages(
                     api.documents.queries.get,
                     {
                       documentId,
-                    },
+                    }
                   );
                   if (document.type === "file") {
                     const mimeType =
@@ -390,17 +416,17 @@ export async function formatMessages(
                         : mimeType.split("/")[0];
                     if (
                       supportedTags.includes(
-                        fileType as "text" | "image" | "pdf",
+                        fileType as "text" | "image" | "pdf"
                       )
                     ) {
                       const base64 = Base64.fromByteArray(
                         new Uint8Array(
                           await (
                             await ctx.storage.get(
-                              document.key as Id<"_storage">,
+                              document.key as Id<"_storage">
                             )
-                          )?.arrayBuffer()!,
-                        ),
+                          )?.arrayBuffer()!
+                        )
                       );
                       if (fileType === "image") {
                         return {
@@ -425,7 +451,7 @@ export async function formatMessages(
                     }
                   } else if (["text", "github"].includes(document.type)) {
                     const blob = await ctx.storage.get(
-                      document.key as Id<"_storage">,
+                      document.key as Id<"_storage">
                     );
                     return {
                       type: "text",
@@ -440,7 +466,7 @@ export async function formatMessages(
               } else {
                 return contentItem;
               }
-            }),
+            })
           );
 
           // Create new message with processed content
@@ -452,7 +478,7 @@ export async function formatMessages(
       } else {
         return message;
       }
-    }),
+    })
   );
 
   return formattedMessages;
@@ -460,7 +486,7 @@ export async function formatMessages(
 
 export async function getVectorText(
   ctx: ActionCtx,
-  document: Doc<"documents">,
+  document: Doc<"documents">
 ): Promise<MessageContentComplex | DataContentBlock> {
   // Fall back to vector processing for unsupported file types
   let doc = document;
