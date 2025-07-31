@@ -15,6 +15,7 @@ import {
 } from "@/store/github";
 import type { RepoItem } from "@/hooks/chats/github/types";
 import { toast } from "sonner";
+import { useMemo } from "react";
 
 const FileTree = () => {
   const { items, stats } = useAtomValue(githubCombinedItemsAtom);
@@ -91,7 +92,10 @@ const FileTree = () => {
     };
   };
 
-  const { rootItems, getChildren } = organizeItemsHierarchically(items);
+  const { rootItems, getChildren } = useMemo(
+    () => organizeItemsHierarchically(items),
+    [items]
+  );
 
   if (isLoading) {
     return (

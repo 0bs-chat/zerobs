@@ -49,9 +49,9 @@ export const BrowseMCPDialog = () => {
             <div
               key={idx}
               role="listitem"
-              className={`group bg-card rounded-lg border border-border p-4 hover:border-primary/50 hover:shadow-md hover:shadow-primary/5 transition-all duration-200 h-full flex flex-col relative z-10 overflow-hidden cursor-pointer ${
+              className={`group bg-card rounded-lg  border-transparent p-4 hover:border-primary/50 hover:shadow-md hover:shadow-primary/5 transition-all duration-200 h-full flex flex-col relative z-10 overflow-hidden cursor-pointer border-2 ${
                 selected === idx
-                  ? "border-primary/50 shadow-md shadow-primary/5"
+                  ? "border-primary dark:border-primary/50 shadow-md shadow-primary/5"
                   : ""
               }`}
               onClick={() => setSelected(idx)}

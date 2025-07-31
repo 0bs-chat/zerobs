@@ -42,15 +42,15 @@ function RouteComponent() {
         layout
         transition={layoutTransition}
       >
-        <div className="flex items-center justify-center h-full flex-col gap-4 -translate-y-30">
+        <div className="flex items-center justify-center h-full flex-col gap-4">
           <div
-            className="flex items-center gap-2 text-5xl font-semibold text-primary/50"
+            className="flex items-center gap-2 text-4xl font-medium text-primary/30"
             style={{
               fontFamily: "Rubik",
             }}
           >
             how can i help you,
-            <span className="text-primary/50">{userName} ?</span>
+            <span className="text-primary/30">{userName} ?</span>
           </div>
         </div>
       </motion.div>
