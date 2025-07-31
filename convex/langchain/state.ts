@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { Annotation } from "@langchain/langgraph/web";
 import { BaseMessage } from "@langchain/core/messages";
-import type { Id } from "../_generated/dataModel";
 
 export const planStep = z.object({
   step: z
