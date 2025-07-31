@@ -282,32 +282,63 @@ export const models: {
   },
 ];
 
+/**
+ * Helper function to get model configuration with error handling
+ */
+function getModelConfig(model: string) {
+  const modelConfig = models.find((m) => m.model_name === model);
+  if (!modelConfig) {
+    throw new Error(`Model ${model} not found in configuration`);
+  }
+  return modelConfig;
+}
+
+/**
+ * Helper function to get API key with fallback to environment variable
+ */
+async function getApiKey(
+  ctx: ActionCtx,
+  keyName: string,
+  envFallback: string,
+  userId?: string
+): Promise<string | undefined> {
+  return (
+    (
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
+        key: keyName,
+        userId,
+      })
+    )?.value ?? process.env[envFallback]
+  );
+}
+
+/**
+ * Helper function to get storage blob with error handling
+ */
+async function getStorageBlob(
+  ctx: ActionCtx,
+  storageKey: Id<"_storage">
+): Promise<ArrayBuffer> {
+  const blob = await ctx.storage.get(storageKey);
+  if (!blob) {
+    throw new Error(`Storage blob not found for key: ${storageKey}`);
+  }
+  return await blob.arrayBuffer();
+}
+
 export async function getModel(
   ctx: ActionCtx,
   model: string,
   reasoningEffort: "low" | "medium" | "high" | undefined,
   userId?: string
 ): Promise<BaseChatModel> {
-  const modelConfig = models.find((m) => m.model_name === model);
+  const modelConfig = getModelConfig(model);
 
-  if (!modelConfig) {
-    throw new Error(`Model ${model} not found in configuration`);
+  const OPENAI_API_KEY = await getApiKey(ctx, "OPENAI_API_KEY", "OPENAI_API_KEY", userId);
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY not found");
   }
-
-  const OPENAI_API_KEY =
-    (
-      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
-        key: "OPENAI_API_KEY",
-        userId,
-      })
-    )?.value ?? process.env.OPENAI_API_KEY;
-  const OPENAI_BASE_URL =
-    (
-      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
-        key: "OPENAI_BASE_URL",
-        userId,
-      })
-    )?.value ?? "https://openrouter.ai/api/v1";
+  const OPENAI_BASE_URL = await getApiKey(ctx, "OPENAI_BASE_URL", "OPENAI_BASE_URL", userId) ?? "https://openrouter.ai/api/v1";
 
   return new ChatOpenAI({
     model: modelConfig.model,
@@ -327,25 +358,23 @@ export async function getEmbeddingModel(
   model: string,
   userId?: string
 ) {
-  const modelConfig = models.find((m) => m.model_name === model);
+  const modelConfig = getModelConfig(model);
 
-  if (!modelConfig || !modelConfig.modalities.includes("text")) {
-    throw new Error(`Model ${model} not found in configuration`);
+  if (!modelConfig.modalities.includes("text")) {
+    throw new Error(`Model ${model} does not support text embeddings`);
   }
 
-  const API_KEY =
-    (
-      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
-        key:
-          modelConfig.provider === "google"
-            ? "GOOGLE_EMBEDDING_API_KEY"
-            : "OPENAI_EMBEDDING_API_KEY",
-        userId,
-      })
-    )?.value ??
-    process.env[
-      modelConfig.provider === "google" ? "GOOGLE_API_KEY" : "OPENAI_API_KEY"
-    ];
+  const keyName = modelConfig.provider === "google" 
+    ? "GOOGLE_EMBEDDING_API_KEY" 
+    : "OPENAI_EMBEDDING_API_KEY";
+  const envFallback = modelConfig.provider === "google" 
+    ? "GOOGLE_API_KEY" 
+    : "OPENAI_API_KEY";
+  
+  const API_KEY = await getApiKey(ctx, keyName, envFallback, userId);
+  if (!API_KEY) {
+    throw new Error(`${keyName} not found`);
+  }
 
   if (modelConfig.provider === "google") {
     return new GoogleGenerativeAIEmbeddings({
@@ -374,7 +403,7 @@ export async function formatMessages(
   messages: BaseMessage[],
   model: string
 ): Promise<BaseMessage[]> {
-  const modelConfig = models.find((m) => m.model_name === model);
+  const modelConfig = getModelConfig(model);
 
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);
@@ -397,16 +426,20 @@ export async function formatMessages(
         if (Array.isArray(content)) {
           // Process all content items in parallel
           const processedContent = await Promise.all(
-            content.map(async (contentItem) => {
+            content.map(async (contentItem, index) => {
               if (typeof contentItem === "object") {
                 if (contentItem.type === "file" && "file" in contentItem) {
                   const documentId = contentItem.file?.file_id;
+                  // Use internal query to avoid authentication issues in internal actions
                   const document = await ctx.runQuery(
-                    api.documents.queries.get,
+                    internal.documents.crud.read,
                     {
-                      documentId,
+                      id: documentId as Id<"documents">,
                     }
                   );
+                  if (!document) {
+                    return contentItem;
+                  }
                   if (document.type === "file") {
                     const mimeType =
                       mime.getType(document.name) ?? "application/octet-stream";
@@ -419,13 +452,25 @@ export async function formatMessages(
                         fileType as "text" | "image" | "pdf"
                       )
                     ) {
+                      // Special handling for CSV files - only pass first 10 rows
+                      if (mimeType === "text/csv") {
+                        const blob = await ctx.storage.get(
+                          document.key as Id<"_storage">
+                        );
+                        const csvText = await blob?.text() || "";
+                        const lines = csvText.split('\n');
+                        const header = lines[0];
+                        const dataRows = lines.slice(1, 11); // Take first 10 data rows (excluding header)
+                        const truncatedCsv = [header, ...dataRows].join('\n');
+                        return {
+                          type: "text",
+                          text: `# ${document.name} (first 10 rows, file is avilable at /mnt/data/${index-1}_${document.name})\n${truncatedCsv}\n`,
+                        };
+                      }
+                      
                       const base64 = Base64.fromByteArray(
                         new Uint8Array(
-                          await (
-                            await ctx.storage.get(
-                              document.key as Id<"_storage">
-                            )
-                          )?.arrayBuffer()!
+                          await getStorageBlob(ctx, document.key as Id<"_storage">)
                         )
                       );
                       if (fileType === "image") {
@@ -514,7 +559,7 @@ export async function getVectorText(
 }
 
 export function modelSupportsTools(model: string): boolean {
-  const modelConfig = models.find((m) => m.model_name === model);
+  const modelConfig = getModelConfig(model);
 
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);

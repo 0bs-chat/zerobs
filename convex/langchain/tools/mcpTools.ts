@@ -10,8 +10,10 @@ import type { ActionCtx } from "../../_generated/server";
 import type { Id } from "../../_generated/dataModel";
 import { fly } from "../../utils/flyio";
 import { getUrl } from "../../utils/helpers";
+import { extractFileIdsFromMessage } from "../helpers";
+import type { GraphState } from "../state";
 
-export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
+export const getMCPTools = async (ctx: ActionCtx, state: typeof GraphState.State) => {
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
     paginationOpts: {
       numItems: 100,
@@ -108,37 +110,42 @@ export const getMCPTools = async (ctx: ActionCtx, chatId?: Id<"chats">) => {
     }
   }
 
-  if (chatId) {
-    const chat = await ctx.runQuery(api.chats.queries.get, {
-      chatId,
-    });
+  // Extract file IDs from the last message content instead of chat document
+  if (state) {
+    if (state.messages && state.messages.length > 0) {
+      const lastMessage = state.messages[state.messages.length - 1];
+      const messageContent = lastMessage.content;
+      
+      // Extract file IDs from the message content using helper function
+      const fileIds = extractFileIdsFromMessage(messageContent);
 
-    const files: { name: string; url: string }[] = (
-      await Promise.all(
-        chat.documents?.map(async (documentId, index) => {
-          const document = await ctx.runQuery(api.documents.queries.get, {
-            documentId,
-          });
-          // Include various document types for upload (file, image, github, text)
-          const url = await getUrl(ctx, document.key);
-          return {
-            name: `${index + 1}_${document.name}`,
-            url,
-          };
-        }) ?? [],
+      const files: { name: string; url: string }[] = (
+        await Promise.all(
+          fileIds.map(async (documentId, index) => {
+            const documentDoc = await ctx.runQuery(internal.documents.crud.read, {
+              id: documentId as Id<"documents">,
+            });
+            if (!documentDoc) return null;
+            // Include various document types for upload (file, image, github, text)
+            const url = await getUrl(ctx, documentDoc.key);
+            return {
+              name: `${index}_${documentDoc.name}`,
+              url,
+            };
+          })
+        )
       )
-    )
-      // Filter out any null results from documents without URLs
-      .filter((file): file is { name: string; url: string } => file !== null);
+        // Filter out any null results from documents without URLs
+        .filter((file): file is { name: string; url: string } => file !== null);
 
-    // Upload files to all stdio-type MCPs
-    await Promise.all(
-      mcps.page.map(async (mcp) => {
-        if (mcp.type === "stdio" && files.length > 0) {
-          await fly.uploadFileToAllMachines(mcp._id, files);
-        }
-      }),
-    );
+      await Promise.all(
+        mcps.page.map(async (mcp) => {
+          if (["stdio", "docker"].includes(mcp.type) && files.length > 0) {
+            await fly.uploadFileToAllMachines(mcp._id, files);
+          }
+        }),
+      );
+    }
   }
 
   return {

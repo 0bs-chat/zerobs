@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Annotation } from "@langchain/langgraph/web";
 import { BaseMessage } from "@langchain/core/messages";
+import { Id } from "../_generated/dataModel";
 
 export const planStep = z.object({
   step: z
@@ -56,6 +57,10 @@ export const GraphState = Annotation.Root({
     reducer: (x, y) => y ?? x ?? [],
   }),
   pastSteps: Annotation<CompletedStep[]>({
+    reducer: (x, y) => y ?? x ?? [],
+    default: () => [],
+  }),
+  fileIds: Annotation<Id<"documents">[]>({
     reducer: (x, y) => y ?? x ?? [],
     default: () => [],
   }),

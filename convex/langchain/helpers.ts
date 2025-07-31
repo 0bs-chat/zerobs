@@ -2,7 +2,7 @@
 
 import type { RunnableConfig } from "@langchain/core/runnables";
 import type { ActionCtx } from "../_generated/server";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import {
   BaseMessage,
   AIMessage,
@@ -27,6 +27,35 @@ export type ExtendedRunnableConfig = RunnableConfig & {
   chat: Doc<"chats">;
   customPrompt?: string;
 };
+
+
+
+/**
+ * Helper function to get all available tools for a chat
+ */
+async function getAllTools(
+  ctx: ActionCtx,
+  state: typeof GraphState.State,
+  config: ExtendedRunnableConfig
+) {
+  const chat = config.chat;
+  const tools = await getMCPTools(ctx, state);
+  const retrievalTools = await getRetrievalTools(state, config, true);
+  const googleTools = await getGoogleTools(config, true);
+
+  return {
+    mcpTools: tools.tools,
+    retrievalTools,
+    googleTools,
+    allTools: [
+      ...(tools.tools.length > 0 ? tools.tools : []),
+      ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
+      ...(chat.webSearch ? [retrievalTools.webSearch] : []),
+      ...(googleTools.length > 0 ? googleTools : []),
+    ],
+    groupedTools: tools.groupedTools,
+  };
+}
 
 export async function createSimpleAgent(
   _state: typeof GraphState.State,
@@ -53,16 +82,7 @@ export async function createAgentWithTools(
   plannerMode: boolean = false,
 ) {
   const chat = config.chat;
-  const tools = await getMCPTools(config.ctx, chat._id);
-  const retrievalTools = await getRetrievalTools(state, config, true);
-  const googleTools = await getGoogleTools(config, true);
-
-  const allTools = [
-    ...(tools.tools.length > 0 ? tools.tools : []),
-    ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
-    ...(chat.webSearch ? [retrievalTools.webSearch] : []),
-    ...(googleTools.length > 0 ? googleTools : []),
-  ];
+  const { allTools, groupedTools, retrievalTools } = await getAllTools(config.ctx, state, config);
 
   if (!chat.conductorMode) {
     const model = await getModel(config.ctx, chat.model, chat.reasoningEffort);
@@ -83,7 +103,7 @@ export async function createAgentWithTools(
       prompt: promptTemplate,
     });
   } else {
-    if (Object.keys(tools.groupedTools).length === 0) {
+    if (Object.keys(groupedTools).length === 0) {
       throw new Error("Need atleast 1 mcp enabled to use conductor mode");
     }
     const llm = await getModel(config.ctx, "worker", undefined);
@@ -92,7 +112,7 @@ export async function createAgentWithTools(
       chat.model!,
       chat.reasoningEffort,
     );
-    const agents = Object.entries(tools.groupedTools).map(
+    const agents = Object.entries(groupedTools).map(
       ([groupName, tools]) =>
         createReactAgent({
           llm: llm,
@@ -101,32 +121,34 @@ export async function createAgentWithTools(
           prompt: `You are a ${groupName} assistant`,
         }),
     );
+    
+    const additionalAgents = [
+      ...(chat.webSearch
+        ? [
+            createReactAgent({
+              llm: llm,
+              tools: [retrievalTools.webSearch],
+              name: "WebSearch",
+              prompt:
+                "You are a WebSearch assistant specialized in searching the internet for current information. Use web search to find up-to-date information from various online sources.",
+            }),
+          ]
+        : []),
+      ...(chat.projectId
+        ? [
+            createReactAgent({
+              llm: llm,
+              tools: [retrievalTools.vectorSearch],
+              name: "VectorSearch",
+              prompt:
+                "You are a VectorSearch assistant specialized in searching through project documents and uploaded files. Use vector similarity search to find relevant information from the user's project documents.",
+            }),
+          ]
+        : []),
+    ];
+
     return createSupervisor({
-      agents: [
-        ...agents,
-        ...(chat.webSearch
-          ? [
-              createReactAgent({
-                llm: llm,
-                tools: [retrievalTools.webSearch],
-                name: "WebSearch",
-                prompt:
-                  "You are a WebSearch assistant specialized in searching the internet for current information. Use web search to find up-to-date information from various online sources.",
-              }),
-            ]
-          : []),
-        ...(chat.projectId
-          ? [
-              createReactAgent({
-                llm: llm,
-                tools: [retrievalTools.vectorSearch],
-                name: "VectorSearch",
-                prompt:
-                  "You are a VectorSearch assistant specialized in searching through project documents and uploaded files. Use vector similarity search to find relevant information from the user's project documents.",
-              }),
-            ]
-          : []),
-      ],
+      agents: [...agents, ...additionalAgents],
       llm: supervisorLlm,
       prompt: createAgentSystemMessage(
         chat.model,
@@ -179,14 +201,12 @@ export async function getAvailableTools(
   config: ExtendedRunnableConfig,
 ): Promise<Array<{ name: string; description: string }>> {
   const chat = config.chat;
-  const tools = await getMCPTools(config.ctx, chat._id);
-  const retrievalTools = await getRetrievalTools(state, config, true);
-  const googleTools = await getGoogleTools(config, true);
+  const { mcpTools, retrievalTools, googleTools } = await getAllTools(config.ctx, state, config);
 
   const toolsInfo: Array<{ name: string; description: string }> = [];
 
   // Add MCP tools
-  tools.tools.forEach((tool) => {
+  mcpTools.forEach((tool) => {
     toolsInfo.push({
       name: tool.name,
       description: tool.description || "No description available",
@@ -232,4 +252,45 @@ export async function getAvailableToolsDescription(
   return toolsInfo
     .map((tool) => `- ${tool.name}: ${tool.description}`)
     .join("\n");
+}
+
+export function extractFileIdsFromMessage(messageContent: any): Id<"documents">[] {
+  const fileIds: Id<"documents">[] = [];
+  
+  try {
+    // Handle different message content structures
+    let content;
+    if (messageContent.data && messageContent.data.content) {
+      if (typeof messageContent.data.content === "string") {
+        content = JSON.parse(messageContent.data.content);
+      } else {
+        content = messageContent.data.content;
+      }
+    } else if (messageContent.content) {
+      if (typeof messageContent.content === "string") {
+        content = JSON.parse(messageContent.content);
+      } else {
+        content = messageContent.content;
+      }
+    } else {
+      // If messageContent is already an array, use it directly
+      if (Array.isArray(messageContent)) {
+        content = messageContent;
+      } else {
+        return fileIds;
+      }
+    }
+
+    if (Array.isArray(content)) {
+      content.forEach((item) => {
+        if (item.type === "file" && item.file && item.file.file_id) {
+          fileIds.push(item.file.file_id);
+        }
+      });
+    }
+  } catch (error) {
+    console.log("Failed to parse message content for file IDs:", error);
+  }
+
+  return fileIds;
 }
