@@ -14,7 +14,7 @@ export const AiMessage = memo(({ group }: { group: MessageGroup }) => {
   const minimized = firstResponse?.message.minimized ?? false;
 
   const toggleMinimized = useMutation(
-    api.chatMessages.mutations.toggleMinimized,
+    api.chatMessages.mutations.toggleMinimized
   ).withOptimisticUpdate((_localStore, _args) => {});
 
   const handleToggle = (e: React.MouseEvent) => {
@@ -61,15 +61,10 @@ export const AiMessage = memo(({ group }: { group: MessageGroup }) => {
           group-hover:opacity-100
           group-hover:bg-background/80
           group-hover:hover:bg-accent
-          group-hover:hover:bg-accent
           `}
         aria-label={!minimized ? "Collapse" : "Expand"}
       >
-        {!minimized ? (
-          <ChevronUp size={18} />
-        ) : (
-          <ChevronDown size={18} />
-        )}
+        {!minimized ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
       </button>
       <AnimatePresence initial={false}>
         {!minimized && (
@@ -103,10 +98,7 @@ export const AiMessage = memo(({ group }: { group: MessageGroup }) => {
               })}
               {group.response.length > 0 && (
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <AiUtilsBar
-                    input={group.input}
-                    response={group.response}
-                  />
+                  <AiUtilsBar input={group.input} response={group.response} />
                 </div>
               )}
             </div>

@@ -21,6 +21,7 @@ export function AppSidebar() {
   const { pinnedChats, historyChats, status, loadMore } = useInfiniteChats();
   const { searchQuery, setSearchQuery, searchResults } = useSearchChats();
   const loadMoreRef = React.useRef<HTMLButtonElement>(null);
+  const CHAT_PAGE_SIZE = 15;
 
   const handleNavigateToProjects = () => {
     navigate({
@@ -44,7 +45,7 @@ export function AppSidebar() {
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting) {
-          loadMore(15);
+          loadMore(CHAT_PAGE_SIZE);
         }
       },
       {
@@ -156,7 +157,7 @@ export function AppSidebar() {
                     ref={loadMoreRef}
                     variant="ghost"
                     className="w-full mt-2"
-                    onClick={() => loadMore(15)}
+                    onClick={() => loadMore(CHAT_PAGE_SIZE)}
                   >
                     Load More
                   </Button>

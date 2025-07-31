@@ -62,10 +62,7 @@ export const useHandleSubmit = () => {
           text: messageText,
           parentId: null,
         });
-        navigate({
-          to: "/chat/$chatId",
-          params: { chatId: chat._id },
-        });
+        navigate({ to: "/chat/$chatId", params: { chatId: chat._id } });
         await sendAction({ chatId: chat._id });
       } else {
         await updateChatMutation({
@@ -182,11 +179,7 @@ export const chatHandlers = () => {
 
   const handleDelete = async (chatId: string) => {
     if (params.chatId === chatId) {
-      navigate({
-        to: "/chat/$chatId",
-        params: { chatId: "new" },
-        replace: true,
-      });
+      navigate({ to: "/chat/new", replace: true });
     }
     await removeChat({ chatId: chatId as Id<"chats"> });
     toast.success("Chat deleted");

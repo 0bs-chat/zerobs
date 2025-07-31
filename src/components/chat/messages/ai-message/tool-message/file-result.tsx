@@ -10,7 +10,7 @@ interface FileDisplayProps {
 
 export const FileDisplay = ({ fileId }: FileDisplayProps) => {
   const generateDownloadUrl = useMutation(
-    api.documents.mutations.generateDownloadUrl,
+    api.documents.mutations.generateDownloadUrl
   );
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,10 +39,13 @@ export const FileDisplay = ({ fileId }: FileDisplayProps) => {
   }
 
   return (
-    <img
-      src={imageUrl}
-      alt="Tool output"
-      className="rounded-md max-h-[400px] w-auto object-contain"
-    />
+    <div className="rounded-md max-h-[400px] w-auto">
+      {/* Could conditionally render based on file type */}
+      <img
+        src={imageUrl}
+        alt="Tool output"
+        className="rounded-md max-h-[400px] w-auto object-contain"
+      />
+    </div>
   );
 };

@@ -24,7 +24,11 @@ const ArtifactsList = ({ artifacts }: { artifacts: Artifact[] }) => {
       >
         <div className="flex flex-col gap-3">
           {artifacts.map((artifact) => (
-            <ArtifactCard key={`${artifact.id}`} artifact={artifact} />
+            <ArtifactCard
+              key={`${artifact.id}`}
+              artifact={artifact}
+              aria-label={`Artifact ${artifact.id}`}
+            />
           ))}
         </div>
       </ScrollArea>
@@ -36,14 +40,12 @@ export const ArtifactsPanel = () => {
   const [selectedArtifact, setSelectedArtifact] = useAtom(selectedArtifactAtom);
   const allArtifacts = useAtomValue(allArtifactsAtom);
 
-  const memoizedArtifacts = React.useMemo(() => allArtifacts, [allArtifacts]);
   const artifactToView = React.useMemo(() => {
     if (!selectedArtifact) return null;
     return (
-      memoizedArtifacts.find((a) => a.id === selectedArtifact.id) ||
-      selectedArtifact
+      allArtifacts.find((a) => a.id === selectedArtifact.id) || selectedArtifact
     );
-  }, [selectedArtifact, memoizedArtifacts]);
+  }, [selectedArtifact, allArtifacts]);
 
   const handleCloseViewer = () => {
     setSelectedArtifact(undefined);
@@ -51,9 +53,13 @@ export const ArtifactsPanel = () => {
 
   if (artifactToView) {
     return (
-      <ArtifactViewer artifact={artifactToView} onClose={handleCloseViewer} />
+      <ArtifactViewer
+        artifact={artifactToView}
+        onClose={handleCloseViewer}
+        aria-label="Artifact viewer"
+      />
     );
   }
 
-  return <ArtifactsList artifacts={memoizedArtifacts} />;
+  return <ArtifactsList artifacts={allArtifacts} />;
 };

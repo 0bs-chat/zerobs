@@ -34,7 +34,13 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { chatIdAtom } from "@/store/chatStore";
 import { useRef, useState } from "react";
 import GitHubDialog from "../github";
-import { streamStatusAtom, newChatAtom, chatAtom, resizePanelOpenAtom, selectedPanelTabAtom } from "@/store/chatStore";
+import {
+  streamStatusAtom,
+  newChatAtom,
+  chatAtom,
+  resizePanelOpenAtom,
+  selectedPanelTabAtom,
+} from "@/store/chatStore";
 import { models } from "../../../../../convex/langchain/models";
 import { StopButtonIcon } from "./stop-button-icon";
 import { motion } from "motion/react";
@@ -47,6 +53,8 @@ import {
 import { ModelPopover } from "./model-popover";
 import { useRouter } from "@tanstack/react-router";
 
+type AnimationType = "scale" | "rotate";
+
 // Toggle registry for DRY logic
 const TOGGLES = [
   {
@@ -54,28 +62,28 @@ const TOGGLES = [
     label: "Artifacts",
     icon: <FileIcon className="h-4 w-4" />,
     tooltip: undefined,
-    animation: "scale",
+    animation: "scale" as AnimationType,
   },
   {
     key: "webSearch" as const,
     label: "Web Search",
     icon: <Globe2Icon className="h-4 w-4" />,
     tooltip: "Search the web",
-    animation: "rotate",
+    animation: "rotate" as AnimationType,
   },
   {
     key: "conductorMode" as const,
     label: "Conductor",
     icon: <Network className="h-4 w-4" />,
     tooltip: undefined,
-    animation: "scale",
+    animation: "scale" as AnimationType,
   },
   {
     key: "orchestratorMode" as const,
     label: "Orchestrator",
     icon: <Binoculars className="h-4 w-4" />,
     tooltip: undefined,
-    animation: "scale",
+    animation: "scale" as AnimationType,
   },
 ] as const;
 
@@ -94,7 +102,7 @@ export const ToolBar = () => {
   const selectedModel = chat.model;
   const reasoningEffort = chat.reasoningEffort;
   const selectedModelConfig = models.find(
-    (m) => m.model_name === selectedModel,
+    (m) => m.model_name === selectedModel
   );
   const showReasoningEffort = selectedModelConfig?.isThinking ?? false;
   const router = useRouter();
@@ -105,7 +113,7 @@ export const ToolBar = () => {
   // Get project details if chat has a project
   const project = useQuery(
     api.projects.queries.get,
-    chat.projectId ? { projectId: chat.projectId } : "skip",
+    chat.projectId ? { projectId: chat.projectId } : "skip"
   );
 
   const handleFileUpload = useUploadDocuments({ type: "file", chat });
@@ -149,7 +157,7 @@ export const ToolBar = () => {
 
   // Render selected toggles as buttons
   const selectedToggles = TOGGLES.filter(
-    (t) => chat[t.key as keyof typeof chat],
+    (t) => chat[t.key as keyof typeof chat]
   );
 
   return (
@@ -214,7 +222,7 @@ export const ToolBar = () => {
                 onClick={() =>
                   handleToggle(
                     toggle.key,
-                    !chat[toggle.key as keyof typeof chat],
+                    !chat[toggle.key as keyof typeof chat]
                   )
                 }
                 className={[
@@ -301,11 +309,11 @@ export const ToolBar = () => {
               <FoldersIcon className="w-4 h-4" />
               <span className="max-w-32 truncate">{project.name}</span>
             </span>
-            <div 
+            <div
               onClick={(e) => {
                 e.stopPropagation();
                 handleRemoveProject();
-              }} 
+              }}
               className="hidden group-hover:block cursor-pointer"
             >
               <XIcon className="w-4 h-4 text-destructive" />

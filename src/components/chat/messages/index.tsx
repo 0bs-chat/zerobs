@@ -14,6 +14,14 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
 
   const streamStatus = useAtomValue(streamStatusAtom);
 
+  const getStreamErrorClass = (status: string) => {
+    const baseClass =
+      "flex flex-row gap-2 items-center justify-start p-2 rounded-lg";
+    return status === "cancelled"
+      ? `${baseClass} bg-yellow-500/10`
+      : `${baseClass} bg-red-500/10`;
+  };
+
   const mainContent = useMemo(() => {
     if (isLoading) {
       return (
@@ -43,9 +51,7 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
             </div>
           )}
           {["cancelled", "error"].includes(streamStatus ?? "") && (
-            <div
-              className={`flex flex-row gap-2 items-center justify-start p-2 rounded-lg ${streamStatus === "cancelled" ? "bg-yellow-500/10" : "bg-red-500/10"}`}
-            >
+            <div className={getStreamErrorClass(streamStatus ?? "")}>
               <TriangleAlertIcon className="w-4 h-4" />
               <div className="text-muted-foreground">
                 {streamStatus === "cancelled"
