@@ -12,7 +12,7 @@ import {
   ToolMessage,
 } from "@langchain/core/messages";
 import type { Doc, Id } from "../_generated/dataModel";
-import { api, internal } from "../_generated/api";
+import { internal } from "../_generated/api";
 import mime from "mime";
 import { Base64 } from "convex/values";
 import { getUrl } from "../utils/helpers";
@@ -280,51 +280,23 @@ export const models: {
       "Qwen 3 Coder is a code-focused model from Qwen, designed for programming and code generation tasks.",
     usageRateMultiplier: 1.0,
   },
+  {
+    label: "Horizon Alpha",
+    model_name: "horizon-alpha",
+    model: "openrouter/horizon-alpha",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text"],
+    image: "https://www.google.com/s2/favicons?domain=openrouter.ai&sz=256",
+    description:
+      "Horizon Alpha is a cloaked model provided to the community to gather feedback. It's free to use during testing and supports text generation with tool calling capabilities.",
+    owner: "openrouter",
+    usageRateMultiplier: 1.0,
+    temperature: 0.7,
+    parser: "functionCalling",
+  },
 ];
-
-/**
- * Helper function to get model configuration with error handling
- */
-function getModelConfig(model: string) {
-  const modelConfig = models.find((m) => m.model_name === model);
-  if (!modelConfig) {
-    throw new Error(`Model ${model} not found in configuration`);
-  }
-  return modelConfig;
-}
-
-/**
- * Helper function to get API key with fallback to environment variable
- */
-async function getApiKey(
-  ctx: ActionCtx,
-  keyName: string,
-  envFallback: string,
-  userId?: string
-): Promise<string | undefined> {
-  return (
-    (
-      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
-        key: keyName,
-        userId,
-      })
-    )?.value ?? process.env[envFallback]
-  );
-}
-
-/**
- * Helper function to get storage blob with error handling
- */
-async function getStorageBlob(
-  ctx: ActionCtx,
-  storageKey: Id<"_storage">
-): Promise<ArrayBuffer> {
-  const blob = await ctx.storage.get(storageKey);
-  if (!blob) {
-    throw new Error(`Storage blob not found for key: ${storageKey}`);
-  }
-  return await blob.arrayBuffer();
-}
 
 export async function getModel(
   ctx: ActionCtx,
@@ -332,13 +304,26 @@ export async function getModel(
   reasoningEffort: "low" | "medium" | "high" | undefined,
   userId?: string
 ): Promise<BaseChatModel> {
-  const modelConfig = getModelConfig(model);
+  const modelConfig = models.find((m) => m.model_name === model);
 
-  const OPENAI_API_KEY = await getApiKey(ctx, "OPENAI_API_KEY", "OPENAI_API_KEY", userId);
-  if (!OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY not found");
+  if (!modelConfig) {
+    throw new Error(`Model ${model} not found in configuration`);
   }
-  const OPENAI_BASE_URL = await getApiKey(ctx, "OPENAI_BASE_URL", "OPENAI_BASE_URL", userId) ?? "https://openrouter.ai/api/v1";
+
+  const OPENAI_API_KEY =
+    (
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
+        key: "OPENAI_API_KEY",
+        userId,
+      })
+    )?.value ?? process.env.OPENAI_API_KEY;
+  const OPENAI_BASE_URL =
+    (
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
+        key: "OPENAI_BASE_URL",
+        userId,
+      })
+    )?.value ?? "https://openrouter.ai/api/v1";
 
   return new ChatOpenAI({
     model: modelConfig.model,
@@ -358,23 +343,25 @@ export async function getEmbeddingModel(
   model: string,
   userId?: string
 ) {
-  const modelConfig = getModelConfig(model);
+  const modelConfig = models.find((m) => m.model_name === model);
 
-  if (!modelConfig.modalities.includes("text")) {
-    throw new Error(`Model ${model} does not support text embeddings`);
+  if (!modelConfig || !modelConfig.modalities.includes("text")) {
+    throw new Error(`Model ${model} not found in configuration`);
   }
 
-  const keyName = modelConfig.provider === "google" 
-    ? "GOOGLE_EMBEDDING_API_KEY" 
-    : "OPENAI_EMBEDDING_API_KEY";
-  const envFallback = modelConfig.provider === "google" 
-    ? "GOOGLE_API_KEY" 
-    : "OPENAI_API_KEY";
-  
-  const API_KEY = await getApiKey(ctx, keyName, envFallback, userId);
-  if (!API_KEY) {
-    throw new Error(`${keyName} not found`);
-  }
+  const API_KEY =
+    (
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
+        key:
+          modelConfig.provider === "google"
+            ? "GOOGLE_EMBEDDING_API_KEY"
+            : "OPENAI_EMBEDDING_API_KEY",
+        userId,
+      })
+    )?.value ??
+    process.env[
+      modelConfig.provider === "google" ? "GOOGLE_API_KEY" : "OPENAI_API_KEY"
+    ];
 
   if (modelConfig.provider === "google") {
     return new GoogleGenerativeAIEmbeddings({
@@ -403,7 +390,7 @@ export async function formatMessages(
   messages: BaseMessage[],
   model: string
 ): Promise<BaseMessage[]> {
-  const modelConfig = getModelConfig(model);
+  const modelConfig = models.find((m) => m.model_name === model);
 
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);
@@ -470,7 +457,11 @@ export async function formatMessages(
                       
                       const base64 = Base64.fromByteArray(
                         new Uint8Array(
-                          await getStorageBlob(ctx, document.key as Id<"_storage">)
+                          await (
+                            await ctx.storage.get(
+                              document.key as Id<"_storage">
+                            )
+                          )?.arrayBuffer()!
                         )
                       );
                       if (fileType === "image") {
@@ -559,7 +550,7 @@ export async function getVectorText(
 }
 
 export function modelSupportsTools(model: string): boolean {
-  const modelConfig = getModelConfig(model);
+  const modelConfig = models.find((m) => m.model_name === model);
 
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);

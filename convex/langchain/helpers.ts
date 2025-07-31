@@ -28,35 +28,6 @@ export type ExtendedRunnableConfig = RunnableConfig & {
   customPrompt?: string;
 };
 
-
-
-/**
- * Helper function to get all available tools for a chat
- */
-async function getAllTools(
-  ctx: ActionCtx,
-  state: typeof GraphState.State,
-  config: ExtendedRunnableConfig
-) {
-  const chat = config.chat;
-  const tools = await getMCPTools(ctx, state);
-  const retrievalTools = await getRetrievalTools(state, config, true);
-  const googleTools = await getGoogleTools(config, true);
-
-  return {
-    mcpTools: tools.tools,
-    retrievalTools,
-    googleTools,
-    allTools: [
-      ...(tools.tools.length > 0 ? tools.tools : []),
-      ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
-      ...(chat.webSearch ? [retrievalTools.webSearch] : []),
-      ...(googleTools.length > 0 ? googleTools : []),
-    ],
-    groupedTools: tools.groupedTools,
-  };
-}
-
 export async function createSimpleAgent(
   _state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
@@ -82,7 +53,16 @@ export async function createAgentWithTools(
   plannerMode: boolean = false,
 ) {
   const chat = config.chat;
-  const { allTools, groupedTools, retrievalTools } = await getAllTools(config.ctx, state, config);
+  const tools = await getMCPTools(config.ctx, state);
+  const retrievalTools = await getRetrievalTools(state, config, true);
+  const googleTools = await getGoogleTools(config, true);
+
+  const allTools = [
+    ...(tools.tools.length > 0 ? tools.tools : []),
+    ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
+    ...(chat.webSearch ? [retrievalTools.webSearch] : []),
+    ...(googleTools.length > 0 ? googleTools : []),
+  ];
 
   if (!chat.conductorMode) {
     const model = await getModel(config.ctx, chat.model, chat.reasoningEffort);
@@ -103,7 +83,7 @@ export async function createAgentWithTools(
       prompt: promptTemplate,
     });
   } else {
-    if (Object.keys(groupedTools).length === 0) {
+    if (Object.keys(tools.groupedTools).length === 0) {
       throw new Error("Need atleast 1 mcp enabled to use conductor mode");
     }
     const llm = await getModel(config.ctx, "worker", undefined);
@@ -112,7 +92,7 @@ export async function createAgentWithTools(
       chat.model!,
       chat.reasoningEffort,
     );
-    const agents = Object.entries(groupedTools).map(
+    const agents = Object.entries(tools.groupedTools).map(
       ([groupName, tools]) =>
         createReactAgent({
           llm: llm,
@@ -121,34 +101,32 @@ export async function createAgentWithTools(
           prompt: `You are a ${groupName} assistant`,
         }),
     );
-    
-    const additionalAgents = [
-      ...(chat.webSearch
-        ? [
-            createReactAgent({
-              llm: llm,
-              tools: [retrievalTools.webSearch],
-              name: "WebSearch",
-              prompt:
-                "You are a WebSearch assistant specialized in searching the internet for current information. Use web search to find up-to-date information from various online sources.",
-            }),
-          ]
-        : []),
-      ...(chat.projectId
-        ? [
-            createReactAgent({
-              llm: llm,
-              tools: [retrievalTools.vectorSearch],
-              name: "VectorSearch",
-              prompt:
-                "You are a VectorSearch assistant specialized in searching through project documents and uploaded files. Use vector similarity search to find relevant information from the user's project documents.",
-            }),
-          ]
-        : []),
-    ];
-
     return createSupervisor({
-      agents: [...agents, ...additionalAgents],
+      agents: [
+        ...agents,
+        ...(chat.webSearch
+          ? [
+              createReactAgent({
+                llm: llm,
+                tools: [retrievalTools.webSearch],
+                name: "WebSearch",
+                prompt:
+                  "You are a WebSearch assistant specialized in searching the internet for current information. Use web search to find up-to-date information from various online sources.",
+              }),
+            ]
+          : []),
+        ...(chat.projectId
+          ? [
+              createReactAgent({
+                llm: llm,
+                tools: [retrievalTools.vectorSearch],
+                name: "VectorSearch",
+                prompt:
+                  "You are a VectorSearch assistant specialized in searching through project documents and uploaded files. Use vector similarity search to find relevant information from the user's project documents.",
+              }),
+            ]
+          : []),
+      ],
       llm: supervisorLlm,
       prompt: createAgentSystemMessage(
         chat.model,
@@ -201,12 +179,14 @@ export async function getAvailableTools(
   config: ExtendedRunnableConfig,
 ): Promise<Array<{ name: string; description: string }>> {
   const chat = config.chat;
-  const { mcpTools, retrievalTools, googleTools } = await getAllTools(config.ctx, state, config);
+  const tools = await getMCPTools(config.ctx, state);
+  const retrievalTools = await getRetrievalTools(state, config, true);
+  const googleTools = await getGoogleTools(config, true);
 
   const toolsInfo: Array<{ name: string; description: string }> = [];
 
   // Add MCP tools
-  mcpTools.forEach((tool) => {
+  tools.tools.forEach((tool) => {
     toolsInfo.push({
       name: tool.name,
       description: tool.description || "No description available",
