@@ -15,7 +15,10 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
 import { Route as SettingsBillingRouteImport } from './routes/settings/billing'
 import { Route as SettingsApiKeysRouteImport } from './routes/settings/apiKeys'
+<<<<<<< HEAD
 import { Route as ChatNewRouteImport } from './routes/chat.new'
+=======
+>>>>>>> main
 
 const ProjectsLazyRouteImport = createFileRoute('/projects')()
 const SettingsRouteLazyRouteImport = createFileRoute('/settings')()
@@ -66,17 +69,23 @@ const SettingsApiKeysRoute = SettingsApiKeysRouteImport.update({
   path: '/apiKeys',
   getParentRoute: () => SettingsRouteLazyRoute,
 } as any)
+<<<<<<< HEAD
 const ChatNewRoute = ChatNewRouteImport.update({
   id: '/chat/new',
   path: '/chat/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+=======
+>>>>>>> main
 
 export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects': typeof ProjectsLazyRoute
+<<<<<<< HEAD
   '/chat/new': typeof ChatNewRoute
+=======
+>>>>>>> main
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -87,7 +96,10 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects': typeof ProjectsLazyRoute
+<<<<<<< HEAD
   '/chat/new': typeof ChatNewRoute
+=======
+>>>>>>> main
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -99,7 +111,10 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects': typeof ProjectsLazyRoute
+<<<<<<< HEAD
   '/chat/new': typeof ChatNewRoute
+=======
+>>>>>>> main
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -112,7 +127,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/projects'
+<<<<<<< HEAD
     | '/chat/new'
+=======
+>>>>>>> main
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
@@ -123,7 +141,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/projects'
+<<<<<<< HEAD
     | '/chat/new'
+=======
+>>>>>>> main
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
@@ -134,7 +155,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/projects'
+<<<<<<< HEAD
     | '/chat/new'
+=======
+>>>>>>> main
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
@@ -146,7 +170,10 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren
   ProjectsLazyRoute: typeof ProjectsLazyRoute
+<<<<<<< HEAD
   ChatNewRoute: typeof ChatNewRoute
+=======
+>>>>>>> main
   ChatChatIdLazyRoute: typeof ChatChatIdLazyRoute
   ProjectProjectIdLazyRoute: typeof ProjectProjectIdLazyRoute
 }
@@ -208,6 +235,7 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/apiKeys'
       preLoaderRoute: typeof SettingsApiKeysRouteImport
       parentRoute: typeof SettingsRouteLazyRoute
+<<<<<<< HEAD
     }
     '/chat/new': {
       id: '/chat/new'
@@ -215,6 +243,8 @@ declare module '@tanstack/react-router' {
       fullPath: '/chat/new'
       preLoaderRoute: typeof ChatNewRouteImport
       parentRoute: typeof rootRouteImport
+=======
+>>>>>>> main
     }
   }
 }
@@ -238,7 +268,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   SettingsRouteLazyRoute: SettingsRouteLazyRouteWithChildren,
   ProjectsLazyRoute: ProjectsLazyRoute,
+<<<<<<< HEAD
   ChatNewRoute: ChatNewRoute,
+=======
+>>>>>>> main
   ChatChatIdLazyRoute: ChatChatIdLazyRoute,
   ProjectProjectIdLazyRoute: ProjectProjectIdLazyRoute,
 }

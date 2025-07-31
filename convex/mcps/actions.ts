@@ -45,7 +45,7 @@ export const create = internalAction({
             MCP_COMMAND: mcp.command || "",
             HOST: "https://" + appName + ".fly.dev",
           },
-          guest: { cpus: 1, memory_mb: 1024, cpu_kind: "shared" },
+          guest: { cpus: 2, memory_mb: 2048, cpu_kind: "shared" },
           services: [
             {
               ports: [{ port: 443, handlers: ["tls", "http"] }],

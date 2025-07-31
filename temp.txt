@@ -11,3 +11,9 @@
 5. special ui for our mcps (mainly v0 and memory)
 
 
+
+solve conflicts.
+do the changes.
+pr push
+
+then small changes on main.

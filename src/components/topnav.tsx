@@ -158,6 +158,7 @@ export function TopNav() {
           </DropdownMenu>
         ) : null}
         {!resizePanelOpen ? <ModeToggle /> : null}
+
         {(isOnChatRoute || isOnNewChatRoute) && (
           <Button
             variant="ghost"

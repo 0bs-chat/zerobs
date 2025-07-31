@@ -12,10 +12,6 @@ import {
   GithubIcon,
   BrainIcon,
   Hammer,
-  FileIcon,
-  Globe2Icon,
-  Network,
-  Binoculars,
   XIcon, // <-- Add this
   FoldersIcon,
 } from "lucide-react";
@@ -52,40 +48,7 @@ import {
 } from "@/lib/motion";
 import { ModelPopover } from "./model-popover";
 import { useRouter } from "@tanstack/react-router";
-
-type AnimationType = "scale" | "rotate";
-
-// Toggle registry for DRY logic
-const TOGGLES = [
-  {
-    key: "artifacts" as const,
-    label: "Artifacts",
-    icon: <FileIcon className="h-4 w-4" />,
-    tooltip: undefined,
-    animation: "scale" as AnimationType,
-  },
-  {
-    key: "webSearch" as const,
-    label: "Web Search",
-    icon: <Globe2Icon className="h-4 w-4" />,
-    tooltip: "Search the web",
-    animation: "rotate" as AnimationType,
-  },
-  {
-    key: "conductorMode" as const,
-    label: "Conductor",
-    icon: <Network className="h-4 w-4" />,
-    tooltip: undefined,
-    animation: "scale" as AnimationType,
-  },
-  {
-    key: "orchestratorMode" as const,
-    label: "Orchestrator",
-    icon: <Binoculars className="h-4 w-4" />,
-    tooltip: undefined,
-    animation: "scale" as AnimationType,
-  },
-] as const;
+import { TOGGLES } from "@/constants/toggles";
 
 type ToggleKey = (typeof TOGGLES)[number]["key"];
 
@@ -242,7 +205,7 @@ export const ToolBar = () => {
                     animate="animate"
                     transition={smoothTransition}
                   >
-                    {toggle.icon}
+                    <toggle.icon className="h-4 w-4" />
                   </motion.span>
                   {toggle.label}
                 </span>
@@ -287,7 +250,7 @@ export const ToolBar = () => {
               transition={smoothTransition}
               className="group-hover:hidden"
             >
-              {toggle.icon}
+              <toggle.icon className="h-4 w-4" />
             </motion.span>
             {/* X icon: visible only on hover, fully replaces toggle icon */}
             <span className="absolute inset-0 flex items-center justify-center hidden group-hover:flex">

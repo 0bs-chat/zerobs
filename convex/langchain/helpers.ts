@@ -2,7 +2,7 @@
 
 import type { RunnableConfig } from "@langchain/core/runnables";
 import type { ActionCtx } from "../_generated/server";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import {
   BaseMessage,
   AIMessage,
@@ -30,7 +30,7 @@ export type ExtendedRunnableConfig = RunnableConfig & {
 
 export async function createSimpleAgent(
   _state: typeof GraphState.State,
-  config: ExtendedRunnableConfig,
+  config: ExtendedRunnableConfig
 ) {
   const chat = config.chat;
   const model = await getModel(config.ctx, chat.model, chat.reasoningEffort);
@@ -40,7 +40,7 @@ export async function createSimpleAgent(
       undefined,
       config.customPrompt,
       false,
-      chat.artifacts,
+      chat.artifacts
     ),
     new MessagesPlaceholder("messages"),
   ]);
@@ -50,10 +50,10 @@ export async function createSimpleAgent(
 export async function createAgentWithTools(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
-  plannerMode: boolean = false,
+  plannerMode: boolean = false
 ) {
   const chat = config.chat;
-  const tools = await getMCPTools(config.ctx, chat._id);
+  const tools = await getMCPTools(config.ctx, state);
   const retrievalTools = await getRetrievalTools(state, config, true);
   const googleTools = await getGoogleTools(config, true);
 
@@ -72,7 +72,7 @@ export async function createAgentWithTools(
         plannerMode,
         plannerMode ? undefined : config.customPrompt,
         true,
-        plannerMode ? false : chat.artifacts,
+        plannerMode ? false : chat.artifacts
       ),
       new MessagesPlaceholder("messages"),
     ]);
@@ -90,7 +90,7 @@ export async function createAgentWithTools(
     const supervisorLlm = await getModel(
       config.ctx,
       chat.model!,
-      chat.reasoningEffort,
+      chat.reasoningEffort
     );
     const agents = Object.entries(tools.groupedTools).map(
       ([groupName, tools]) =>
@@ -99,7 +99,7 @@ export async function createAgentWithTools(
           tools: tools,
           name: groupName,
           prompt: `You are a ${groupName} assistant`,
-        }),
+        })
     );
     return createSupervisor({
       agents: [
@@ -133,7 +133,7 @@ export async function createAgentWithTools(
         plannerMode,
         plannerMode ? undefined : config.customPrompt,
         true,
-        plannerMode ? false : chat.artifacts,
+        plannerMode ? false : chat.artifacts
       ),
     }).compile();
   }
@@ -142,7 +142,7 @@ export async function createAgentWithTools(
 export function getPlannerAgentResponse(messages: BaseMessage[]): BaseMessage {
   // filter and concat all ai messages
   const aiResponses = messages.filter(
-    (message) => typeof message === typeof AIMessage,
+    (message) => typeof message === typeof AIMessage
   );
   const storedAIResponses = mapChatMessagesToStoredMessages(aiResponses);
   return mapStoredMessagesToChatMessages([
@@ -160,7 +160,7 @@ export function getPlannerAgentResponse(messages: BaseMessage[]): BaseMessage {
 
 export function getLastMessage(
   messages: BaseMessage[],
-  type: "ai" | "human",
+  type: "ai" | "human"
 ): { message: BaseMessage; index: number } | null {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
@@ -176,10 +176,10 @@ export function getLastMessage(
 
 export async function getAvailableTools(
   state: typeof GraphState.State,
-  config: ExtendedRunnableConfig,
+  config: ExtendedRunnableConfig
 ): Promise<Array<{ name: string; description: string }>> {
   const chat = config.chat;
-  const tools = await getMCPTools(config.ctx, chat._id);
+  const tools = await getMCPTools(config.ctx, state);
   const retrievalTools = await getRetrievalTools(state, config, true);
   const googleTools = await getGoogleTools(config, true);
 
@@ -221,7 +221,7 @@ export async function getAvailableTools(
 
 export async function getAvailableToolsDescription(
   state: typeof GraphState.State,
-  config: ExtendedRunnableConfig,
+  config: ExtendedRunnableConfig
 ): Promise<string> {
   const toolsInfo = await getAvailableTools(state, config);
 
@@ -232,4 +232,47 @@ export async function getAvailableToolsDescription(
   return toolsInfo
     .map((tool) => `- ${tool.name}: ${tool.description}`)
     .join("\n");
+}
+
+export function extractFileIdsFromMessage(
+  messageContent: any
+): Id<"documents">[] {
+  const fileIds: Id<"documents">[] = [];
+
+  try {
+    // Handle different message content structures
+    let content;
+    if (messageContent.data && messageContent.data.content) {
+      if (typeof messageContent.data.content === "string") {
+        content = JSON.parse(messageContent.data.content);
+      } else {
+        content = messageContent.data.content;
+      }
+    } else if (messageContent.content) {
+      if (typeof messageContent.content === "string") {
+        content = JSON.parse(messageContent.content);
+      } else {
+        content = messageContent.content;
+      }
+    } else {
+      // If messageContent is already an array, use it directly
+      if (Array.isArray(messageContent)) {
+        content = messageContent;
+      } else {
+        return fileIds;
+      }
+    }
+
+    if (Array.isArray(content)) {
+      content.forEach((item) => {
+        if (item.type === "file" && item.file && item.file.file_id) {
+          fileIds.push(item.file.file_id);
+        }
+      });
+    }
+  } catch (error) {
+    console.log("Failed to parse message content for file IDs:", error);
+  }
+
+  return fileIds;
 }

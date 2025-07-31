@@ -12,7 +12,7 @@ import {
   ToolMessage,
 } from "@langchain/core/messages";
 import type { Doc, Id } from "../_generated/dataModel";
-import { api, internal } from "../_generated/api";
+import { internal } from "../_generated/api";
 import mime from "mime";
 import { Base64 } from "convex/values";
 import { getUrl } from "../utils/helpers";
@@ -280,6 +280,22 @@ export const models: {
       "Qwen 3 Coder is a code-focused model from Qwen, designed for programming and code generation tasks.",
     usageRateMultiplier: 1.0,
   },
+  {
+    label: "Horizon Alpha",
+    model_name: "horizon-alpha",
+    model: "openrouter/horizon-alpha",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text"],
+    image: "https://www.google.com/s2/favicons?domain=openrouter.ai&sz=256",
+    description:
+      "Horizon Alpha is a cloaked model provided to the community to gather feedback. It's free to use during testing and supports text generation with tool calling capabilities.",
+    owner: "openrouter",
+    usageRateMultiplier: 1.0,
+    temperature: 0.7,
+    parser: "functionCalling",
+  },
 ];
 
 export async function getModel(
@@ -397,16 +413,20 @@ export async function formatMessages(
         if (Array.isArray(content)) {
           // Process all content items in parallel
           const processedContent = await Promise.all(
-            content.map(async (contentItem) => {
+            content.map(async (contentItem, index) => {
               if (typeof contentItem === "object") {
                 if (contentItem.type === "file" && "file" in contentItem) {
                   const documentId = contentItem.file?.file_id;
+                  // Use internal query to avoid authentication issues in internal actions
                   const document = await ctx.runQuery(
-                    api.documents.queries.get,
+                    internal.documents.crud.read,
                     {
-                      documentId,
+                      id: documentId as Id<"documents">,
                     }
                   );
+                  if (!document) {
+                    return contentItem;
+                  }
                   if (document.type === "file") {
                     const mimeType =
                       mime.getType(document.name) ?? "application/octet-stream";
@@ -419,6 +439,22 @@ export async function formatMessages(
                         fileType as "text" | "image" | "pdf"
                       )
                     ) {
+                      // Special handling for CSV files - only pass first 10 rows
+                      if (mimeType === "text/csv") {
+                        const blob = await ctx.storage.get(
+                          document.key as Id<"_storage">
+                        );
+                        const csvText = (await blob?.text()) || "";
+                        const lines = csvText.split("\n");
+                        const header = lines[0];
+                        const dataRows = lines.slice(1, 11); // Take first 10 data rows (excluding header)
+                        const truncatedCsv = [header, ...dataRows].join("\n");
+                        return {
+                          type: "text",
+                          text: `# ${document.name} (first 10 rows, file is avilable at /mnt/data/${index - 1}_${document.name})\n${truncatedCsv}\n`,
+                        };
+                      }
+
                       const base64 = Base64.fromByteArray(
                         new Uint8Array(
                           await (

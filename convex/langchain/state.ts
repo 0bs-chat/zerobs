@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Annotation } from "@langchain/langgraph/web";
 import { BaseMessage } from "@langchain/core/messages";
+import type { Id } from "../_generated/dataModel";
 
 export const planStep = z.object({
   step: z
@@ -8,7 +9,7 @@ export const planStep = z.object({
     .describe(
       "A short, specific instruction (ideally < 6 words) describing the subtask to be performed " +
         "by an agent. Should be actionable, unambiguous, and clearly distinct from other steps to ensure effective division " +
-        "of labor and prevent overlap.",
+        "of labor and prevent overlap."
     ),
   context: z
     .string()
@@ -16,7 +17,7 @@ export const planStep = z.object({
       "A concise explanation of the background, objective, and constraints for this step," +
         "written to help a subagent understand exactly what is needed, what tools or sources to use, and any boundaries or" +
         " heuristics to follow. Should clarify the subtask's purpose, avoid ambiguity, and prevent duplication or" +
-        " misinterpretation by other agents.",
+        " misinterpretation by other agents."
     ),
 });
 
@@ -36,7 +37,7 @@ export const planArray = z
     "A step-by-step plan for decomposing a complex research objective into clear, non-overlapping subtasks. " +
       "Each step should be concise, actionable, and include enough context for a subagent to execute independently. " +
       "The plan should scale in complexity with the query, allocate effort efficiently, and ensure that all necessary aspects of the research are covered without redundancy. " +
-      "If multiple tasks should be executed in parallel, group them together in a nested list (i.e., use an array of plan steps within the main array) to indicate parallel execution.",
+      "If multiple tasks should be executed in parallel, group them together in a nested list (i.e., use an array of plan steps within the main array) to indicate parallel execution."
   )
   .min(1)
   .max(9);
