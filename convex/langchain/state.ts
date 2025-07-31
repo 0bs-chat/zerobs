@@ -59,11 +59,7 @@ export const GraphState = Annotation.Root({
   pastSteps: Annotation<CompletedStep[]>({
     reducer: (x, y) => y ?? x ?? [],
     default: () => [],
-  }),
-  fileIds: Annotation<Id<"documents">[]>({
-    reducer: (x, y) => y ?? x ?? [],
-    default: () => [],
-  }),
+  })
 });
 
 export interface AIChunkGroup {
