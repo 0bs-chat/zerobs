@@ -8,7 +8,7 @@ import {
   SidebarHeader,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { SearchIcon, XIcon, PlusIcon, FolderIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,16 +21,6 @@ export function AppSidebar() {
   const { pinnedChats, historyChats, status, loadMore } = useInfiniteChats();
   const { searchQuery, setSearchQuery, searchResults } = useSearchChats();
   const loadMoreRef = React.useRef<HTMLButtonElement>(null);
-
-  const handleNewChat = () => {
-    navigate({
-      to: "/chat/$chatId",
-      params: {
-        chatId: "new",
-      },
-      replace: true,
-    });
-  };
 
   const handleNavigateToProjects = () => {
     navigate({
@@ -90,12 +80,14 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="overflow-hidden gap-0 px-1">
         <SidebarGroup className="gap-2">
-          <Button className="w-full cursor-pointer" onClick={handleNewChat}>
-            <div className="flex items-center gap-2">
-              <PlusIcon className="w-4 h-4" />
-              New chat
-            </div>
-          </Button>
+          <Link to="/chat/new" preload="intent">
+            <Button className="w-full cursor-pointer">
+              <div className="flex items-center gap-2">
+                <PlusIcon className="w-4 h-4" />
+                New chat
+              </div>
+            </Button>
+          </Link>
 
           <Button
             variant="outline"

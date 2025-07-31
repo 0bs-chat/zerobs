@@ -26,7 +26,12 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useLocation,
+} from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -52,6 +57,7 @@ export function TopNav() {
   // Check if we're on a chat route by looking for chatId parameter
   const params = useParams({ strict: false });
   const isOnChatRoute = !!params.chatId;
+  const isOnNewChatRoute = useLocation().pathname === "/chat/new";
 
   // Minimal global shortcut for toggling resizable panel (Ctrl/Cmd+I)
   useEffect(() => {
@@ -83,16 +89,15 @@ export function TopNav() {
         className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/20 border bg-accent/25 dark:bg-accent/35"}`}
       >
         <SidebarTrigger />
-        <Button
-          variant="ghost"
+        <Link
+          to="/chat/new"
+          preload="intent"
           className={`${sidebarOpen ? "hidden" : ""} size-8`}
-          size="icon"
-          onClick={() => {
-            navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
-          }}
         >
-          <PlusIcon />
-        </Button>
+          <Button variant="ghost" size="icon" className="size-8">
+            <PlusIcon />
+          </Button>
+        </Link>
       </div>
       <div
         className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "border-border/20 border bg-accent/25 dark:bg-accent/35"} `}
@@ -153,7 +158,7 @@ export function TopNav() {
           </DropdownMenu>
         ) : null}
         {!resizePanelOpen ? <ModeToggle /> : null}
-        {isOnChatRoute && (
+        {(isOnChatRoute || isOnNewChatRoute) && (
           <Button
             variant="ghost"
             size="icon"

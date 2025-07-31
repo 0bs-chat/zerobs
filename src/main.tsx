@@ -45,7 +45,7 @@ if (rootElement && !rootElement.innerHTML) {
           <RouterProvider router={router} />
         </ConvexQueryCacheProvider>
       </ConvexAuthProvider>
-    </StrictMode>,
+    </StrictMode>
   );
 }
 

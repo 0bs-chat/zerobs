@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { Link } from "@tanstack/react-router";
 
 interface ChatItemProps {
   chat: Doc<"chats">;
@@ -32,13 +33,8 @@ interface ChatItemProps {
 
 export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
   function ChatItem({ chat, isPinned }, ref) {
-    const {
-      handleNavigate,
-      handlePin,
-      handleUnpin,
-      handleDelete,
-      handleSelect,
-    } = chatHandlers();
+    const { handlePin, handleUnpin, handleDelete, handleSelect } =
+      chatHandlers();
     const currentChatId = useAtomValue(chatIdAtom);
     const isSelected = currentChatId === chat._id;
 
@@ -67,7 +63,12 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
     }, [chat.name]);
 
     return (
-      <>
+      <Link
+        to="/chat/$chatId"
+        preload="intent"
+        params={{ chatId: chat._id }}
+        className="py-0.5"
+      >
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <SidebarMenuButton
@@ -75,7 +76,6 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
               className="py-2 group/item cursor-pointer w-full h-full"
               asChild
               onClick={() => {
-                handleNavigate(chat._id);
                 handleSelect(chat._id);
               }}
             >
@@ -83,7 +83,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
                 ref={ref}
                 className={cn(
                   "relative flex w-full items-center isolate justify-between overflow-hidden rounded-md",
-                  isSelected && "bg-secondary/50",
+                  isSelected && "bg-secondary/50"
                 )}
               >
                 <span className="truncate">{chat.name}</span>
@@ -155,7 +155,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
             </form>
           </DialogContent>
         </Dialog>
-      </>
+      </Link>
     );
-  },
+  }
 );

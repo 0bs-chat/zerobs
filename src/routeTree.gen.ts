@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
 import { Route as SettingsBillingRouteImport } from './routes/settings/billing'
 import { Route as SettingsApiKeysRouteImport } from './routes/settings/apiKeys'
+import { Route as ChatNewRouteImport } from './routes/chat.new'
 
 const ProjectsLazyRouteImport = createFileRoute('/projects')()
 const SettingsRouteLazyRouteImport = createFileRoute('/settings')()
@@ -65,11 +66,17 @@ const SettingsApiKeysRoute = SettingsApiKeysRouteImport.update({
   path: '/apiKeys',
   getParentRoute: () => SettingsRouteLazyRoute,
 } as any)
+const ChatNewRoute = ChatNewRouteImport.update({
+  id: '/chat/new',
+  path: '/chat/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects': typeof ProjectsLazyRoute
+  '/chat/new': typeof ChatNewRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects': typeof ProjectsLazyRoute
+  '/chat/new': typeof ChatNewRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects': typeof ProjectsLazyRoute
+  '/chat/new': typeof ChatNewRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/projects'
+    | '/chat/new'
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/projects'
+    | '/chat/new'
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/projects'
+    | '/chat/new'
     | '/settings/apiKeys'
     | '/settings/billing'
     | '/settings/integrations'
@@ -134,6 +146,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren
   ProjectsLazyRoute: typeof ProjectsLazyRoute
+  ChatNewRoute: typeof ChatNewRoute
   ChatChatIdLazyRoute: typeof ChatChatIdLazyRoute
   ProjectProjectIdLazyRoute: typeof ProjectProjectIdLazyRoute
 }
@@ -196,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsApiKeysRouteImport
       parentRoute: typeof SettingsRouteLazyRoute
     }
+    '/chat/new': {
+      id: '/chat/new'
+      path: '/chat/new'
+      fullPath: '/chat/new'
+      preLoaderRoute: typeof ChatNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -218,6 +238,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   SettingsRouteLazyRoute: SettingsRouteLazyRouteWithChildren,
   ProjectsLazyRoute: ProjectsLazyRoute,
+  ChatNewRoute: ChatNewRoute,
   ChatChatIdLazyRoute: ChatChatIdLazyRoute,
   ProjectProjectIdLazyRoute: ProjectProjectIdLazyRoute,
 }

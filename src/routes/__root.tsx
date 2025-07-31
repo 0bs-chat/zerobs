@@ -14,6 +14,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useConvexAuth } from "convex/react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopNav } from "@/components/topnav";
+import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 export const Route = createRootRoute({
   component: () => {
@@ -63,18 +64,19 @@ export const Route = createRootRoute({
 
             {/* Redirect authenticated users away from public routes */}
             {isAuthenticated && publicRoutes.includes(location.pathname) && (
-              <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
+              <Navigate to="/chat/new" />
             )}
 
             {/* Redirect authenticated users from root to chat */}
             {isAuthenticated && location.pathname === "/" && (
-              <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
+              <Navigate to="/chat/new" />
             )}
             {/* Render the appropriate outlet */}
             <Outlet />
           </SidebarProvider>
         </motion.div>
         <Toaster />
+        <TanStackRouterDevtools position="bottom-right" />
       </ThemeProvider>
     );
   },

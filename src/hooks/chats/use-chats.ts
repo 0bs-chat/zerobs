@@ -90,7 +90,7 @@ export const useHandleSubmit = () => {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to send message. Please try again.",
+          : "Failed to send message. Please try again."
       );
     }
   };
@@ -104,7 +104,7 @@ export const useInfiniteChats = () => {
     {},
     {
       initialNumItems: 15,
-    },
+    }
   );
 
   const pinnedChats = results?.filter((chat) => chat.pinned) ?? [];
@@ -124,14 +124,14 @@ export const useSearchChats = () => {
 
   const searchResults = useQuery(
     api.chats.queries.search,
-    debouncedQuery.trim() ? { query: debouncedQuery } : "skip",
+    debouncedQuery.trim() ? { query: debouncedQuery } : "skip"
   );
 
   // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
-    }, 300);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
