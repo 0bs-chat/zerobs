@@ -66,6 +66,7 @@ export const AiMessageContent = memo(
             <Reasoning
               reasoning={reasoning}
               messageId={messageId}
+              // Only show streaming state when no content is rendered yet
               isStreaming={renderedContent.length > 0 ? false : isStreaming}
             />
             <div className={className}>{renderedContent}</div>
@@ -84,7 +85,7 @@ export const AiMessageContent = memo(
     }, [type, reasoning, messageId, renderedContent, message, className]);
 
     return <>{messageContent}</>;
-  },
+  }
 );
 
 AiMessageContent.displayName = "AiMessageContent";

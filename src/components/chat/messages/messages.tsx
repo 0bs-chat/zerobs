@@ -20,7 +20,7 @@ export const MessagesList = () => {
       className="flex flex-col gap-1"
     >
       <AnimatePresence mode="popLayout">
-        {groupedMessages?.map((group) => (
+        {groupedMessages.map((group) => (
           <motion.div
             key={group.input.message._id}
             variants={chatMessageVariants}
@@ -30,10 +30,7 @@ export const MessagesList = () => {
             transition={springTransition}
             className="flex flex-col gap-1"
           >
-            <UserMessage
-              item={group.input}
-              groupedMessages={groupedMessages}
-            />
+            <UserMessage item={group.input} groupedMessages={groupedMessages} />
             <AiMessage group={group} />
           </motion.div>
         ))}

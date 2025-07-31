@@ -189,6 +189,8 @@ export const PlanningStep = memo(
             className="p-1 rounded-md hover:bg-muted"
             variants={buttonHover}
             initial="rest"
+            aria-label="Expand planning steps"
+            title="Expand planning steps"
             whileHover="hover"
             whileTap="tap"
           >
@@ -240,6 +242,8 @@ export const PlanningStep = memo(
           onClick={() => setIsMinimized(true)}
           className="absolute bottom-2 left-2 p-1 rounded-md bg-card hover:bg-muted border"
           variants={buttonHover}
+          aria-label="Minimize planning steps"
+          title="Minimize planning steps"
           initial="rest"
           whileHover="hover"
           whileTap="tap"
@@ -248,7 +252,7 @@ export const PlanningStep = memo(
         </motion.button>
       </motion.div>
     );
-  },
+  }
 );
 
 PlanningStep.displayName = "PlanningStep";

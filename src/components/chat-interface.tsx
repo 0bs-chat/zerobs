@@ -23,15 +23,7 @@ export function ChatInterface({ children }: { children: React.ReactNode }) {
         <AnimatePresence mode="popLayout">
           {resizePanelOpen && (
             <>
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={layoutTransition}
-                style={{ display: "flex", alignItems: "stretch" }}
-              >
-                <ResizableHandle />
-              </motion.div>
+              <ResizableHandle />
               <ResizablePanel defaultSize={40} minSize={25} maxSize={60}>
                 <motion.div
                   variants={slideInFromRight}

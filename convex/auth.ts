@@ -13,6 +13,9 @@ export const getUser = query({
   handler: async (ctx) => {
     const { userId } = await requireAuth(ctx);
     const user = await ctx.db.get(userId as Id<"users">);
+    if (!user) {
+      throw new Error(`User ${userId} not found`);
+    }
     return user;
   },
 });

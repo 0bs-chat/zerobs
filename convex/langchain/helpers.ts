@@ -98,7 +98,7 @@ export async function createAgentWithTools(
           llm: llm,
           tools: tools,
           name: groupName,
-          prompt: `You are a ${groupName} assistant`,
+          prompt: `You are a ${groupName} assistant specialized in using ${groupName} tools to help users with their requests. Focus on tasks that require the ${groupName} toolset.`,
         })
     );
     return createSupervisor({
@@ -186,12 +186,12 @@ export async function getAvailableTools(
   const toolsInfo: Array<{ name: string; description: string }> = [];
 
   // Add MCP tools
-  tools.tools.forEach((tool) => {
-    toolsInfo.push({
+  toolsInfo.push(
+    ...tools.tools.map((tool) => ({
       name: tool.name,
       description: tool.description || "No description available",
-    });
-  });
+    }))
+  );
 
   // Add retrieval tools
   if (chat.projectId) {
@@ -209,12 +209,12 @@ export async function getAvailableTools(
   }
 
   // Add Google tools
-  googleTools.forEach((tool) => {
-    toolsInfo.push({
+  toolsInfo.push(
+    ...googleTools.map((tool) => ({
       name: tool.name,
       description: tool.description || "No description available",
-    });
-  });
+    }))
+  );
 
   return toolsInfo;
 }

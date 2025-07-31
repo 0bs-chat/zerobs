@@ -22,7 +22,7 @@ export const FileDisplay = ({ fileId }: FileDisplayProps) => {
         const url = await generateDownloadUrl({ documentId: fileId });
         setImageUrl(url);
       } catch (e: any) {
-        setError(e.message);
+        setError(e.message || "Failed to load file");
       }
     };
     getUrl();
@@ -40,7 +40,6 @@ export const FileDisplay = ({ fileId }: FileDisplayProps) => {
 
   return (
     <div className="rounded-md max-h-[400px] w-auto">
-      {/* Could conditionally render based on file type */}
       <img
         src={imageUrl}
         alt="Tool output"

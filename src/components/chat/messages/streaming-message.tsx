@@ -37,7 +37,7 @@ export const StreamingMessage = memo(() => {
           variants={streamingVariants}
           initial="initial"
           animate="animate"
-          transition={{ delay: index * 0.1, ...springTransition }}
+          transition={{ delay: Math.min(index * 0.1, 1), ...springTransition }}
         >
           {message?.getType() === "ai" ? (
             <AiMessageContent
@@ -51,9 +51,12 @@ export const StreamingMessage = memo(() => {
         </motion.div>
       );
     });
-  }, [streamData?.langchainMessages, messageId, streamData?.status]);
+  }, [streamData?.langchainMessages, messageId]);
 
-  if (!streamData?.langchainMessages || streamData.langchainMessages.length === 0)
+  if (
+    !streamData?.langchainMessages ||
+    streamData.langchainMessages.length === 0
+  )
     return null;
 
   return (

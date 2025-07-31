@@ -155,11 +155,12 @@ export const cleanUp = internalMutation({
       .collect();
 
     // Get "error" streams that are more than 15 minutes old
-    const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
+    const errorStreamTimeoutMs = 15 * 60 * 1000;
+    const errorStreamTimeout = Date.now() - errorStreamTimeoutMs;
     const errorStreams = await ctx.db
       .query("streams")
       .withIndex("by_status_user", (q) => q.eq("status", "error"))
-      .filter((q) => q.lt(q.field("_creationTime"), fifteenMinutesAgo))
+      .filter((q) => q.lt(q.field("_creationTime"), errorStreamTimeout))
       .collect();
 
     const allStreamsToClean = [
@@ -173,8 +174,8 @@ export const cleanUp = internalMutation({
       allStreamsToClean.map((stream) =>
         ctx.runMutation(internal.streams.mutations.removeChunks, {
           streamId: stream._id,
-        }),
-      ),
+        })
+      )
     );
 
     // Sum up the total number of removed chunk references.

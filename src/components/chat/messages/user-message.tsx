@@ -122,6 +122,23 @@ export const UserMessage = memo(
 
     const isEditing = editingMessageId === item.message._id;
 
+    // Helper function to parse message content
+    const parseMessageContent = (content: any) => {
+      const textContent = Array.isArray(content)
+        ? ((
+            content.find((c) => c.type === "text") as
+              | { type: "text"; text: string }
+              | undefined
+          )?.text ?? "")
+        : "";
+      const documentIds = Array.isArray(content)
+        ? content
+            .filter((c) => c.type === "file")
+            .map((c) => (c as any).file.file_id as Id<"documents">)
+        : [];
+      return { textContent, documentIds };
+    };
+
     useEffect(() => {
       if (editingMessageId) {
         const messageToEdit = groupedMessages?.find(
@@ -129,18 +146,7 @@ export const UserMessage = memo(
         );
         if (messageToEdit) {
           const content = messageToEdit.input.message.message.content;
-          const textContent = Array.isArray(content)
-            ? ((
-                content.find((c) => c.type === "text") as
-                  | { type: "text"; text: string }
-                  | undefined
-              )?.text ?? "")
-            : "";
-          const documentIds = Array.isArray(content)
-            ? content
-                .filter((c) => c.type === "file")
-                .map((c) => (c as any).file.file_id as Id<"documents">)
-            : [];
+          const { textContent, documentIds } = parseMessageContent(content);
           setEditedText(textContent);
           setEditedDocuments(documentIds);
         }

@@ -14,15 +14,16 @@ export const parseContent = (rawContent: string): ContentPart[] => {
   const parts: ContentPart[] = [];
   const chunks = rawContent.split(/<artifact/);
 
+  const ARTIFACT_HEADER_REGEX =
+    /<artifact\s+id="([^"]+)"\s+type="([^"]+)"(?:\s+language="([^"]+)")?\s+title="([^"]+)"[^>]*>/;
+
   if (chunks[0] && chunks[0].length > 0) {
     parts.push({ type: "text", content: chunks[0] });
   }
 
   for (let i = 1; i < chunks.length; i++) {
     const fullChunk = "<artifact" + chunks[i];
-    const headerRegex =
-      /<artifact\s+id="([^"]+)"\s+type="([^"]+)"(?:\s+language="([^"]+)")?\s+title="([^"]+)"[^>]*>/;
-    const headerMatch = fullChunk.match(headerRegex);
+    const headerMatch = fullChunk.match(ARTIFACT_HEADER_REGEX);
 
     if (headerMatch) {
       const [, id, type, language, title] = headerMatch;
@@ -63,7 +64,7 @@ export const parseArtifacts = (content: string): Artifact[] => {
   return parseContent(content)
     .filter(
       (part): part is { type: "artifact"; artifact: Artifact } =>
-        part.type === "artifact",
+        part.type === "artifact"
     )
     .map((part) => part.artifact);
 };

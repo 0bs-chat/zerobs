@@ -9,12 +9,13 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 
 export async function getUrl(
   ctx: ActionCtx | MutationCtx,
-  key: Doc<"documents">["key"],
+  key: Doc<"documents">["key"]
 ) {
   try {
     return await ctx.storage.getUrl(key);
   } catch (error) {
-    return key;
+    console.error("Failed to get URL for key:", key, error);
+    return null;
   }
 }
 

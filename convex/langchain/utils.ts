@@ -10,7 +10,7 @@ export const prepareChat = internalMutation({
   }),
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<
     | {
         chat: Doc<"chats">;
@@ -82,7 +82,7 @@ export const prepareChat = internalMutation({
 
     const message = messages.slice(-1)[0];
     if (!message) {
-      throw new Error("Message not found");
+      throw new Error(`No messages found for chat ${args.chatId}`);
     }
 
     return {

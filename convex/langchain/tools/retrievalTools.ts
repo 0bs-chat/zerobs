@@ -15,12 +15,13 @@ import { getUrl } from "../../utils/helpers";
 export const getRetrievalTools = async (
   _state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
-  returnString: boolean = false,
+  returnString: boolean = false
 ) => {
   const vectorSearchTool = new DynamicStructuredTool({
     name: "searchProjectDocuments",
     description:
-      "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents." +
+      "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents. " +
+      "Use this tool when you need to find specific information from the user's uploaded documents and files. " +
       "You are always supposed to use this tool if you are asked about something specific to find information but no additional information is provided.",
     schema: z.object({
       query: z.string().describe("The search query to find relevant documents"),
@@ -45,7 +46,7 @@ export const getRetrievalTools = async (
         {
           projectId: config.chat.projectId!,
           selected: true,
-        },
+        }
       );
 
       if (includedProjectDocuments.length === 0) {
@@ -60,14 +61,14 @@ export const getRetrievalTools = async (
             ...includedProjectDocuments.map((document) =>
               q.eq("metadata", {
                 source: document.documentId,
-              }),
-            ),
+              })
+            )
           ),
       });
 
       const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
       includedProjectDocuments.forEach((projectDocument) =>
-        documentsMap.set(projectDocument.documentId, projectDocument.document!),
+        documentsMap.set(projectDocument.documentId, projectDocument.document!)
       );
 
       const documents = await Promise.all(
@@ -86,7 +87,7 @@ export const getRetrievalTools = async (
               type: "document",
             },
           });
-        }),
+        })
       );
 
       if (returnString) {
@@ -132,7 +133,7 @@ export const getRetrievalTools = async (
             `- Include exact metrics, dates, technical terms, and proper nouns in queries` +
             `- Make searches progressively more specific as you gather context` +
             `- Search for recent developments, trends, and updates on topics` +
-            `- Always verify information with multiple searches from different sources`,
+            `- Always verify information with multiple searches from different sources`
         )
         .nullable()
         .optional(),

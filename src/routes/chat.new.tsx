@@ -44,7 +44,7 @@ function RouteComponent() {
       >
         <div className="flex items-center justify-center h-full flex-col gap-4">
           <div
-            className="flex items-center gap-2 text-4xl font-medium text-primary/30"
+            className="flex items-center gap-2 text-4xl font-medium text-primary/30 -translate-y-8"
             style={{
               fontFamily: "Rubik",
             }}

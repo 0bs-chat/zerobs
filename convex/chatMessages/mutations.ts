@@ -56,7 +56,7 @@ export const updateInput = mutation({
                 : []),
             ],
           }),
-        ])[0],
+        ])[0]
       ),
     };
 
@@ -88,7 +88,7 @@ export const toggleMinimized = mutation({
 
     // Verify ownership
     await ctx.runQuery(api.chats.queries.get, {
-      chatId: message.chatId!,
+      chatId: message.chatId,
     });
 
     await ctx.db.patch(args.id, {
@@ -114,11 +114,11 @@ export const create = mutation({
 
     // Verify ownership
     await ctx.runQuery(api.chats.queries.get, {
-      chatId: args.chatId!,
+      chatId: args.chatId,
     });
 
     return await ctx.db.insert("chatMessages", {
-      chatId: args.chatId!,
+      chatId: args.chatId,
       message: JSON.stringify(
         mapChatMessagesToStoredMessages([
           new HumanMessage({
@@ -135,9 +135,9 @@ export const create = mutation({
               })),
             ],
           }),
-        ])[0],
+        ])[0]
       ),
-      parentId: args.parentId!,
+      parentId: args.parentId,
       minimized: false,
     });
   },
@@ -156,14 +156,14 @@ export const regenerate = internalMutation({
     }
 
     await ctx.runQuery(api.chats.queries.get, {
-      chatId: message.chatId!,
+      chatId: message.chatId,
     });
 
     const messageToRegenerate = await ctx.runQuery(
       internal.chatMessages.queries.getMessageToRegenerate,
       {
         message: message,
-      },
+      }
     );
 
     return await ctx.db.insert("chatMessages", {
