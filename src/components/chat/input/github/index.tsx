@@ -5,7 +5,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -17,7 +17,7 @@ import {
 import { useDebouncedCallback } from "use-debounce";
 import FileTree from "./file-tree";
 import { Button } from "@/components/ui/button";
-import useGithub from "@/hooks/github/use-github";
+import useGithub from "@/hooks/chats/github/use-github";
 import { toast } from "sonner";
 import TokenUsageCounter from "./token-usage";
 import {
@@ -26,13 +26,15 @@ import {
   githubCurrentBranchAtom,
   githubAvailableBranchesAtom,
 } from "@/store/github";
-import { useUploadDocuments } from "@/hooks/use-documents";
+import { useUploadDocuments } from "@/hooks/chats/use-documents";
 import { useAtom, useAtomValue } from "jotai";
+import type { Doc } from "../../../../../convex/_generated/dataModel";
 
 interface GitHubDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children?: React.ReactNode;
+  chat: Doc<"chats">;
 }
 
 const RepoLoader = () => {
@@ -161,12 +163,14 @@ const RepoLoader = () => {
 
 function RepoActions({
   onCloseDialog,
+  chat,
 }: {
   onCloseDialog: (open: boolean) => void;
+  chat: Doc<"chats">;
 }) {
   const uploadDocuments = useUploadDocuments({
     type: "github",
-    addToChatInput: true,
+    chat,
   });
   const { combineSelectedFilesForChat } = useGithub();
   const selectedFiles = useAtomValue(selectedFilesAtom);
@@ -206,29 +210,34 @@ function RepoActions({
   );
 }
 
-export const GitHubDialog = ({
+const GitHubDialog = ({
   open,
   onOpenChange,
   children,
+  chat,
 }: GitHubDialogProps) => {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent
-        className={`sm:max-w-[800px]`}
-        aria-description="let's you add github repository to your chat"
-      >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <p>Add from GitHub</p>
-          </DialogTitle>
-        </DialogHeader>
-        <div className="py-4 w-full flex flex-col gap-4">
-          <RepoLoader />
-          <FileTree />
-          <RepoActions onCloseDialog={onOpenChange} />
-        </div>
-      </DialogContent>
-    </Dialog>
+    <Suspense fallback={<div>...</div>}>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogTrigger asChild>{children}</DialogTrigger>
+        <DialogContent
+          className={`sm:max-w-[800px]`}
+          aria-description="let's you add github repository to your chat"
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <p>Add from GitHub</p>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 w-full flex flex-col gap-4">
+            <RepoLoader />
+            <FileTree />
+            <RepoActions onCloseDialog={onOpenChange} chat={chat} />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Suspense>
   );
 };
+
+export default GitHubDialog;

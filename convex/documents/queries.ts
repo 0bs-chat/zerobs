@@ -2,8 +2,8 @@ import { internalQuery, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { paginationOptsValidator } from "convex/server";
-import { api } from "../_generated/api";
-import type { Doc } from "../_generated/dataModel";
+import { api, internal } from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
 
 export const get = query({
   args: {
@@ -21,7 +21,7 @@ export const get = query({
   },
 });
 
-export const getAll = internalQuery({
+export const getAll = query({
   args: {
     paginationOpts: paginationOptsValidator,
   },
@@ -76,16 +76,62 @@ export const getByKey = query({
   },
 });
 
-export const getAllVectors = internalQuery({
+export const getVectorPaginated = internalQuery({
   args: {
     documentId: v.id("documents"),
+    paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
     const vectors = await ctx.db
       .query("documentVectors")
-      .filter((q) => q.eq(q.field("metadata.source"), args.documentId))
+      .filter((q) => q.eq(q.field("metadata"), { source: args.documentId }))
       .order("asc")
-      .collect();
+      .paginate(args.paginationOpts);
+
+    return {
+      isDone: vectors.isDone,
+      continueCursor: vectors.continueCursor,
+      page: vectors.page.map((v) => ({
+        text: v.text,
+        source: v.metadata.source,
+      })),
+    };
+  },
+});
+
+export const getAllVectors = internalQuery({
+  args: {
+    documentId: v.id("documents"),
+  },
+  returns: v.array(
+    v.object({
+      text: v.string(),
+      source: v.id("documents"),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    let cursor: string | null = null;
+    const vectors: { text: string; source: Id<"documents"> }[] = [];
+
+    while (true) {
+      const result: {
+        isDone: boolean;
+        continueCursor: string | null;
+        page: { text: string; source: Id<"documents"> }[];
+      } = await ctx.runQuery(internal.documents.queries.getVectorPaginated, {
+        documentId: args.documentId,
+        paginationOpts: {
+          cursor,
+          numItems: 100,
+        },
+      });
+
+      vectors.push(...result.page);
+
+      if (result.isDone) break;
+      cursor = result.continueCursor;
+    }
+
     return vectors;
   },
 });

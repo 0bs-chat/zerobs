@@ -1,9 +1,8 @@
+// convex/convex.config.ts
 import { defineApp } from "convex/server";
-import workflow from "@convex-dev/workflow/convex.config";
-import prosemirrorSync from "@convex-dev/prosemirror-sync/convex.config";
+import migrations from "@convex-dev/migrations/convex.config";
 
 const app = defineApp();
-app.use(workflow);
-app.use(prosemirrorSync);
+app.use(migrations);
 
 export default app;

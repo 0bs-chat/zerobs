@@ -19,6 +19,7 @@ body {
 }
 code {
   font-family: var(--font-mono);
+  max-width: 100% !important;
 }
 :root {
   --background: oklch(0.9777 0.0041 301.4256);
@@ -239,6 +240,39 @@ code {
   }
 }
 
+/* View Transition Fade Effect */
+::view-transition-old(body),
+::view-transition-new(body) {
+  animation-duration: 0.3s;
+  animation-timing-function: ease-in-out;
+}
+
+::view-transition-old(root) {
+  animation-name: fade-out;
+}
+
+::view-transition-new(root) {
+  animation-name: fade-in;
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .mermaid-width-mode > svg {
   max-width: 100%;
   height: auto;
@@ -249,69 +283,11 @@ code {
   max-height: 80vh;
 }
 
-/* Custom markdown content styles */
-.markdown-content {
-  font-family: "Rubik", sans-serif !important;
-  font-weight: 500 !important;
+::selection {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
-.markdown-content p {
-  font-family: "Rubik", sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 1.1rem !important;
-  line-height: 1.6 !important;
-}
-
-.markdown-content h1,
-.markdown-content h2,
-.markdown-content h3,
-.markdown-content h4,
-.markdown-content h5,
-.markdown-content h6 {
-  font-family: "Rubik", sans-serif !important;
-  font-weight: 700 !important;
-}
-
-.markdown-content h1 {
-  font-size: 2rem !important;
-}
-
-.markdown-content h2 {
-  font-size: 1.75rem !important;
-}
-
-.markdown-content h3 {
-  font-size: 1.5rem !important;
-}
-
-.markdown-content h4 {
-  font-size: 1.25rem !important;
-}
-
-.markdown-content h5 {
-  font-size: 1.125rem !important;
-}
-
-.markdown-content h6 {
-  font-size: 1rem !important;
-}
-
-.markdown-content li {
-  font-family: "Rubik", sans-serif !important;
-  font-weight: 600 !important;
-  font-size: 1.1rem !important;
-}
-
-.markdown-content strong {
-  font-weight: 700 !important;
-}
-
-.markdown-content em {
-  font-weight: 500 !important;
-}
-
-.markdown-content blockquote {
-  font-family: "Rubik", sans-serif !important;
-  font-weight: 500 !important;
-  font-size: 1.1rem !important;
+.scrollbar-none {
+  scrollbar-width: none;
 }

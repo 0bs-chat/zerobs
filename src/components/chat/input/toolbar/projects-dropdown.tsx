@@ -9,13 +9,14 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { FoldersIcon, PlusIcon } from "lucide-react";
 import {
-  projectDialogOpenAtom,
-  rightPanelVisibilityAtom,
-  rightPanelActiveTabAtom,
+  createProjectDialogOpenAtom,
+  newChatAtom,
+  resizePanelOpenAtom,
+  selectedPanelTabAtom,
 } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
-import type { Id } from "convex/_generated/dataModel";
-import { useParams } from "@tanstack/react-router";
+import { useAtomValue } from "jotai";
+import { chatIdAtom } from "@/store/chatStore";
 
 interface ProjectsDropdownProps {
   onCloseDropdown: () => void;
@@ -24,15 +25,15 @@ interface ProjectsDropdownProps {
 export const ProjectsDropdown = ({
   onCloseDropdown,
 }: ProjectsDropdownProps) => {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats"> | "new";
+  const chatId = useAtomValue(chatIdAtom);
   const projects = useQuery(api.projects.queries.getAll, {
     paginationOpts: { numItems: 3, cursor: null },
   });
-  const updateChatInputMutation = useMutation(api.chatInputs.mutations.update);
-  const setProjectDialogOpen = useSetAtom(projectDialogOpenAtom);
-  const setRightPanelVisible = useSetAtom(rightPanelVisibilityAtom);
-  const setRightPanelActiveTab = useSetAtom(rightPanelActiveTabAtom);
+  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
+  const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
+  const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
+  const setNewChat = useSetAtom(newChatAtom);
 
   return (
     <DropdownMenuSub>
@@ -47,15 +48,19 @@ export const ProjectsDropdown = ({
           <DropdownMenuItem
             key={project._id}
             onSelect={() => {
-              updateChatInputMutation({
-                chatId,
-                updates: {
-                  projectId: project._id,
-                },
-              });
+              if (chatId === "new") {
+                setNewChat((prev) => ({ ...prev, projectId: project._id }));
+              } else {
+                updateChatMutation({
+                  chatId,
+                  updates: {
+                    projectId: project._id,
+                  },
+                });
+              }
               onCloseDropdown();
-              setRightPanelVisible(true);
-              setRightPanelActiveTab("projects");
+              setResizePanelOpen(true);
+              setSelectedPanelTab("projects");
             }}
           >
             {project.name}

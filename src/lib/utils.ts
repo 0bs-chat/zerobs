@@ -14,3 +14,25 @@ export function formatBytes(bytes: number): string {
 
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
+
+export function formatDate(dateInput: string | number): string | null {
+  if (!dateInput) return null;
+  try {
+    const date = new Date(dateInput);
+    return date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return typeof dateInput === "string" ? dateInput : null;
+  }
+}
+
+export function extractDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace("www.", "");
+  } catch {
+    return url;
+  }
+}

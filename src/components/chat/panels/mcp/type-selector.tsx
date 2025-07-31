@@ -1,9 +1,8 @@
 import { Globe, Terminal, Container } from "lucide-react";
-import type { MCPType } from "./types";
 
 interface TypeSelectorProps {
-  type: MCPType;
-  onTypeChange: (type: MCPType) => void;
+  type: "http" | "stdio" | "docker";
+  onTypeChange: (type: "http" | "stdio" | "docker") => void;
 }
 
 export const TypeSelector = ({ type, onTypeChange }: TypeSelectorProps) => {
@@ -12,14 +11,14 @@ export const TypeSelector = ({ type, onTypeChange }: TypeSelectorProps) => {
       <button
         type="button"
         className={`flex flex-col items-center justify-center space-y-2 rounded-lg border p-4 transition-colors ${
-          type === "sse"
+          type === "http"
             ? "border-primary bg-primary/10 text-primary"
             : "border-input hover:bg-accent"
         }`}
-        onClick={() => onTypeChange("sse")}
+        onClick={() => onTypeChange("http")}
       >
         <Globe className="h-5 w-5" />
-        <span className="text-sm font-medium">SSE</span>
+        <span className="text-sm font-medium">HTTP</span>
         <span className="text-xs text-muted-foreground text-center">
           Server-Sent Events
         </span>

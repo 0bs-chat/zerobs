@@ -8,18 +8,23 @@ import { useDebouncedCallback } from "use-debounce";
 import { AddDocumentControls } from "./add-document-controls";
 import { ProjectDocumentList } from "./document-list";
 import type { ProjectDetailsProps } from "./types";
-import { useParams } from "@tanstack/react-router";
-import type { Id } from "convex/_generated/dataModel";
+import { useAtomValue } from "jotai";
+import { chatIdAtom } from "@/store/chatStore";
+import { useSetAtom } from "jotai";
+import { newChatAtom } from "@/store/chatStore";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 
 export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
-  const params = useParams({ strict: false });
-  const chatId = params.chatId as Id<"chats"> | "new";
+  const chatId = useAtomValue(chatIdAtom);
+  const navigate = useNavigate();
+  const router = useRouter();
   const project = useQuery(
     api.projects.queries.get,
     projectId ? { projectId } : "skip",
   );
   const updateProject = useMutation(api.projects.mutations.update);
-  const updateChatInput = useMutation(api.chatInputs.mutations.update);
+  const updateChatInput = useMutation(api.chats.mutations.update);
+  const setNewChat = useSetAtom(newChatAtom);
 
   const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
     updateProject({
@@ -42,12 +47,25 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
             size="icon"
             className="cursor-pointer"
             onClick={() => {
-              updateChatInput({
-                chatId,
-                updates: {
+              // Only navigate to /projects if we're on the /project/{id} route
+              if (router.state.location.pathname.startsWith("/project/")) {
+                navigate({ to: "/projects" });
+              }
+
+              // Always clear the project selection
+              if (chatId !== "new") {
+                updateChatInput({
+                  chatId,
+                  updates: {
+                    projectId: null,
+                  },
+                });
+              } else {
+                setNewChat((prev) => ({
+                  ...prev,
                   projectId: null,
-                },
-              });
+                }));
+              }
             }}
           >
             <XIcon className="size-5" />
@@ -63,14 +81,14 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
         <AutosizeTextarea
           defaultValue={project.systemPrompt}
           onChange={(e) => debouncedUpdateSystemPrompt(e.target.value)}
-          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-2"
+          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-2 rounded-xl"
           minHeight={80}
           maxHeight={200}
         />
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between ">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold">Documents</h3>
           </div>

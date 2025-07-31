@@ -1,5 +1,5 @@
 import { requireAuth } from "../utils/helpers";
-import { internalQuery, query } from "../_generated/server";
+import { query, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
 import type { Id, Doc } from "../_generated/dataModel";
@@ -28,16 +28,10 @@ export const get = query({
     const project = await ctx.runQuery(api.projects.queries.get, {
       projectId: projectDocument.projectId as Id<"projects">,
     });
-    if (!project) {
-      throw new Error("Project not found");
-    }
 
     const document = await ctx.runQuery(api.documents.queries.get, {
       documentId: projectDocument.documentId as Id<"documents">,
     });
-    if (!document) {
-      throw new Error("Document not found");
-    }
 
     return {
       ...projectDocument,
@@ -193,6 +187,18 @@ export const getSelected = internalQuery({
       .filter((q) => q.eq(q.field("selected"), args.selected))
       .collect();
 
-    return projectDocuments;
+    const documents = await ctx.runQuery(api.documents.queries.getMultiple, {
+      documentIds: projectDocuments.map(
+        (projectDocument) => projectDocument.documentId,
+      ),
+    });
+
+    const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
+    documents.forEach((document) => documentsMap.set(document._id, document));
+
+    return projectDocuments.map((projectDocument) => ({
+      ...projectDocument,
+      document: documentsMap.get(projectDocument.documentId),
+    }));
   },
 });

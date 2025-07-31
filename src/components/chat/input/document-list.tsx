@@ -5,55 +5,24 @@ import type { Id, Doc } from "../../../../convex/_generated/dataModel";
 import { XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  documentDialogDocumentIdAtom,
-  documentDialogOpenAtom,
-} from "@/store/chatStore";
-import { useRemoveDocument } from "@/hooks/use-documents";
-import { getTagInfo } from "@/lib/helpers";
+import { documentDialogOpenAtom } from "@/store/chatStore";
+import { useRemoveDocument } from "@/hooks/chats/use-documents";
+import { getDocTagInfo } from "@/lib/helper";
 import React, { useCallback } from "react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../convex/langchain/models";
-import mime from "mime";
 
 type DocumentBadgeProps = {
   doc: Doc<"documents">;
   onPreview: (documentId: Id<"documents">) => void;
-  onRemove: (documentId: Id<"documents">) => void;
+  onRemove: () => void;
   modalities?: string[];
 };
 
 const DocumentBadge = React.memo(
   ({ doc, onPreview, onRemove, modalities }: DocumentBadgeProps) => {
-    // Map file extensions to tags so loader logic recognizes supported modalities.
-    let resolvedTag: string = doc.type;
-    if (doc.type === "file") {
-      const mimeType = mime.getType(doc.name) || "";
-
-      if (mimeType === "application/pdf") {
-        resolvedTag = "pdf";
-      } else if (mimeType.startsWith("image/")) {
-        resolvedTag = "image";
-      } else if (mimeType.startsWith("video/")) {
-        resolvedTag = "video";
-      } else if (mimeType.startsWith("audio/")) {
-        resolvedTag = "audio";
-      } else if (mimeType.startsWith("text/")) {
-        resolvedTag = "text";
-      } else {
-        // Fallback: derive from extension if mime type couldn't classify
-        const extension =
-          mime.getExtension(mimeType) ??
-          doc.name.split(".").pop()?.toLowerCase();
-        if (extension === "pdf") {
-          resolvedTag = "pdf";
-        }
-      }
-    }
-
-    const { icon: Icon, className: IconClassName } = getTagInfo(
-      resolvedTag,
-      doc.status,
+    const { icon: Icon, className: IconClassName } = getDocTagInfo(
+      doc,
       modalities,
     );
 
@@ -64,9 +33,9 @@ const DocumentBadge = React.memo(
     const handleRemove = useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation();
-        onRemove(doc._id);
+        onRemove();
       },
-      [onRemove, doc._id],
+      [onRemove],
     );
 
     return (
@@ -101,17 +70,14 @@ export const DocumentList = ({
   const documents = useQuery(api.documents.queries.getMultiple, {
     documentIds,
   });
-  const removeDocument = useRemoveDocument();
-
-  const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
+  const removeDocument = useRemoveDocument();
 
   const handlePreview = useCallback(
     (documentId: Id<"documents">) => {
-      setDocumentDialogDocumentId(documentId);
-      setDocumentDialogOpen(true);
+      setDocumentDialogOpen(documentId);
     },
-    [setDocumentDialogDocumentId, setDocumentDialogOpen],
+    [setDocumentDialogOpen],
   );
 
   const handleRemove = useCallback(
@@ -134,7 +100,7 @@ export const DocumentList = ({
             key={doc._id}
             doc={doc}
             onPreview={handlePreview}
-            onRemove={handleRemove}
+            onRemove={() => handleRemove(doc._id)}
             modalities={modalities}
           />
         ))}

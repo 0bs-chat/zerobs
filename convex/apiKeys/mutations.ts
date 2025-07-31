@@ -1,15 +1,13 @@
-import { internalMutation, mutation } from "../_generated/server";
+import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { createJwt } from "../utils/encryption";
-import { api } from "../_generated/api";
-import * as schema from "../schema";
-import { partial } from "convex-helpers/validators";
+import { internal } from "../_generated/api";
 
-export const create = internalMutation({
+export const create = mutation({
   args: {
-    ...schema.ApiKeys.table.validator.fields,
-    ...partial(schema.ApiKeys.systemFields),
+    key: v.string(),
+    value: v.string(),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -37,31 +35,6 @@ export const create = internalMutation({
   },
 });
 
-export const createPublic = internalMutation({
-  args: {
-    ...schema.ApiKeys.table.validator.fields,
-    ...partial(schema.ApiKeys.systemFields),
-  },
-  handler: async (ctx, args) => {
-    const existingApiKeyDoc = await ctx.runQuery(
-      api.apiKeys.queries.getPublicFromKey,
-      {
-        key: args.key,
-      },
-    );
-    if (existingApiKeyDoc) {
-      await ctx.db.delete(existingApiKeyDoc._id);
-    }
-
-    const jwt = await createJwt(null, args.key, args.value);
-
-    return await ctx.db.insert("apiKeys", {
-      key: args.key,
-      value: jwt,
-    });
-  },
-});
-
 export const remove = mutation({
   args: {
     key: v.string(),
@@ -69,7 +42,7 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    const apiKey = await ctx.runQuery(api.apiKeys.queries.getFromKey, {
+    const apiKey = await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
       key: args.key,
     });
 

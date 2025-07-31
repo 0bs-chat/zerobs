@@ -3,13 +3,10 @@ import { Trash2Icon, EyeIcon } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { ProjectDocument } from "./types";
-import { getTagInfo } from "@/lib/helpers";
+import { getDocTagInfo } from "@/lib/helper";
 import { Button } from "@/components/ui/button";
 import { useSetAtom } from "jotai";
-import {
-  documentDialogOpenAtom,
-  documentDialogDocumentIdAtom,
-} from "@/store/chatStore";
+import { documentDialogOpenAtom } from "@/store/chatStore";
 import { Card } from "@/components/ui/card";
 
 export function ProjectDocumentListItem({
@@ -22,12 +19,11 @@ export function ProjectDocumentListItem({
   );
   const removeDocument = useMutation(api.projectDocuments.mutations.remove);
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
-  const setDocumentDialogDocumentId = useSetAtom(documentDialogDocumentIdAtom);
 
   return (
     <Card
       key={projectDocument._id}
-      className={`flex flex-row items-center justify-between rounded-md p-3 transition-colors ${projectDocument.selected ? "bg-muted/50" : ""}`}
+      className={`flex flex-row items-center justify-between rounded-xl p-3 transition-colors ${projectDocument.selected ? "bg-muted/50" : ""}`}
     >
       <div className="flex items-center gap-3">
         <Checkbox
@@ -40,9 +36,8 @@ export function ProjectDocumentListItem({
           }
         />
         {(() => {
-          const { icon: Icon, className } = getTagInfo(
-            projectDocument.document.type,
-            projectDocument.document.status,
+          const { icon: Icon, className } = getDocTagInfo(
+            projectDocument.document,
           );
           return <Icon className={className} />;
         })()}
@@ -63,8 +58,7 @@ export function ProjectDocumentListItem({
           variant="ghost"
           size="icon"
           onClick={() => {
-            setDocumentDialogOpen(true);
-            setDocumentDialogDocumentId(projectDocument.document._id);
+            setDocumentDialogOpen(projectDocument.document._id);
           }}
         >
           <EyeIcon className="size-4" />

@@ -1,7 +1,7 @@
 import { internalMutation, mutation } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
-import { requireAuth } from "../utils/helpers";
+import { getUrl, requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
 import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
@@ -25,7 +25,7 @@ export const generateDownloadUrl = mutation({
     const document = await ctx.runQuery(api.documents.queries.get, {
       documentId: args.documentId,
     });
-    const url = await ctx.storage.getUrl(document.key as Id<"_storage">);
+    const url = await getUrl(ctx, document.key);
     if (!url) {
       throw new Error("Failed to generate download url");
     }
@@ -34,82 +34,29 @@ export const generateDownloadUrl = mutation({
   },
 });
 
-export const createMultiple = mutation({
+export const create = mutation({
   args: {
-    documents: v.array(
-      v.object({
-        name: schema.Documents.table.validator.fields.name,
-        type: schema.Documents.table.validator.fields.type,
-        size: schema.Documents.table.validator.fields.size,
-        key: schema.Documents.table.validator.fields.key,
-        ...partial(schema.Documents.systemFields),
-      }),
-    ),
+    name: schema.Documents.table.validator.fields.name,
+    type: schema.Documents.table.validator.fields.type,
+    size: schema.Documents.table.validator.fields.size,
+    key: schema.Documents.table.validator.fields.key,
+    ...partial(schema.Documents.systemFields),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<Id<"documents">> => {
     const { userId } = await requireAuth(ctx);
 
-    const documentIds = await Promise.all(
-      args.documents.map(async (document) => {
-        const documentId = await ctx.db.insert("documents", {
-          ...document,
-          userId,
-          status: "processing",
-        });
-
-        return documentId;
-      }),
-    );
-
-    await Promise.all(
-      documentIds.map(async (documentId) => {
-        await ctx.scheduler.runAfter(
-          0,
-          internal.documents.actions.addDocument,
-          {
-            documentId,
-          },
-        );
-      }),
-    );
-
-    return documentIds;
-  },
-});
-
-export const updateJsonDoc = mutation({
-  args: {
-    documentId: v.id("documents"),
-    update: v.object({
-      key: v.id("_storage"),
-    }),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
-    const document = await ctx.runQuery(api.documents.queries.get, {
-      documentId: args.documentId,
+    const document = await ctx.runMutation(internal.documents.crud.create, {
+      ...args,
+      userId,
+      status: "processing",
     });
 
-    await ctx.storage.delete(document.key as Id<"_storage">);
-
-    return await ctx.db.patch(args.documentId, {
-      key: args.update.key,
+    await ctx.scheduler.runAfter(0, internal.documents.actions.addDocument, {
+      documentId: document._id,
+      userId,
     });
-  },
-});
 
-export const updateStatus = internalMutation({
-  args: {
-    documentId: v.id("documents"),
-    update: v.object({
-      status: schema.Documents.table.validator.fields.status,
-    }),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.documentId, {
-      status: args.update.status,
-    });
+    return document._id;
   },
 });
 
@@ -121,13 +68,11 @@ export const removeVectorsPaginated = internalMutation({
   handler: async (ctx, args) => {
     const vectors = await ctx.db
       .query("documentVectors")
-      .filter((q) => q.eq(q.field("metadata.source"), args.documentId))
+      .filter((q) => q.eq(q.field("metadata"), { source: args.documentId }))
       .order("asc")
       .paginate(args.paginationOpts);
 
-    await Promise.all(
-      vectors.page.map((vector) => ctx.db.delete(vector._id)),
-    );
+    await Promise.all(vectors.page.map((vector) => ctx.db.delete(vector._id)));
 
     return {
       isDone: vectors.isDone,
@@ -136,7 +81,7 @@ export const removeVectorsPaginated = internalMutation({
   },
 });
 
-export const remove = internalMutation({
+export const remove = mutation({
   args: {
     documentId: v.id("documents"),
   },
@@ -160,13 +105,19 @@ export const remove = internalMutation({
     let isDone = false;
     let cursor = null;
     while (!isDone) {
-      const { isDone: isDone2, continueCursor }: { isDone: boolean, continueCursor: string } = await ctx.runMutation(internal.documents.mutations.removeVectorsPaginated, {
-        documentId: args.documentId,
-        paginationOpts: {
-          cursor,
-          numItems: 20,
+      const {
+        isDone: isDone2,
+        continueCursor,
+      }: { isDone: boolean; continueCursor: string } = await ctx.runMutation(
+        internal.documents.mutations.removeVectorsPaginated,
+        {
+          documentId: args.documentId,
+          paginationOpts: {
+            cursor,
+            numItems: 20,
+          },
         },
-      });
+      );
       isDone = isDone2;
       cursor = continueCursor;
     }

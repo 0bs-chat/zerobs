@@ -11,61 +11,48 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EnvVarInput } from "./env-var-input";
 import { TypeSelector } from "./type-selector";
-import { mcpAtom } from "@/store/chatStore";
-import { useAtomValue, useSetAtom } from "jotai";
-import { useMCPs } from "@/hooks/use-mcp";
+import { useMCPs } from "@/hooks/chats/use-mcp";
 import { PlusIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { Doc } from "../../../../../convex/_generated/dataModel";
 
-interface CreateDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
-  const mcp = useAtomValue(mcpAtom);
-  const setMcp = useSetAtom(mcpAtom);
-  const { handleCreate } = useMCPs();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const validateMCP = () => {
-    if (!mcp.name.trim()) {
-      toast.error("MCP name is required");
-      return false;
-    }
-
-    if (mcp.type === "stdio" && !mcp.command.trim()) {
-      toast.error("Command is required for STDIO type");
-      return false;
-    }
-
-    if (mcp.type === "sse" && !mcp.url.trim()) {
-      toast.error("URL is required for SSE type");
-      return false;
-    }
-
-    if (mcp.type === "docker") {
-      if (!mcp.dockerImage.trim()) {
-        toast.error("Docker image is required for Docker type");
-        return false;
-      }
-      if (!mcp.dockerPort || mcp.dockerPort <= 0) {
-        toast.error("Valid Docker port is required for Docker type");
-        return false;
-      }
-    }
-
-    return true;
+export const MCPDialog = () => {
+  const initialMcp = {
+    name: "",
+    type: "http" as const,
+    command: "",
+    url: "",
+    dockerImage: "",
+    dockerPort: 0,
+    dockerCommand: "",
+    restartOnNewChat: false,
+    env: {},
+    status: "creating" as const,
   };
 
-  const handleSubmit = async () => {
-    if (!validateMCP()) return;
+  const [mcp, setMcp] =
+    useState<
+      Omit<
+        Doc<"mcps">,
+        "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
+      >
+    >(initialMcp);
+  const { handleCreate } = useMCPs();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
+  const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      await handleCreate(mcp, onOpenChange);
+      await handleCreate(mcp, (open) => {
+        if (!open) {
+          // Reset form state when dialog closes after successful creation
+          setMcp(initialMcp);
+        }
+        setIsOpen(open);
+      });
     } catch (error) {
       console.error("Failed to create MCP:", error);
       toast.error("Failed to create MCP");
@@ -75,7 +62,17 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange} modal>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !isLoading) {
+          // Reset form state when dialog closes
+          setMcp(initialMcp);
+        }
+        setIsOpen(open);
+      }}
+      modal
+    >
       <DialogTrigger asChild>
         <Button variant="default" size="sm" className="cursor-pointer">
           <PlusIcon className="size-4" />
@@ -103,7 +100,17 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
             <Label>Type *</Label>
             <TypeSelector
               type={mcp.type}
-              onTypeChange={(type) => setMcp((prev) => ({ ...prev, type }))}
+              onTypeChange={(type) =>
+                setMcp((prev) => ({
+                  ...prev,
+                  type,
+                  command: type === "stdio" ? prev.command : "",
+                  url: type === "http" ? prev.url : "",
+                  dockerImage: type === "docker" ? prev.dockerImage : "",
+                  dockerPort: type === "docker" ? prev.dockerPort : 0,
+                  dockerCommand: type === "docker" ? prev.dockerCommand : "",
+                }))
+              }
             />
           </div>
 
@@ -121,12 +128,12 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
             </div>
           )}
 
-          {mcp.type === "sse" && (
+          {mcp.type === "http" && (
             <div className="flex flex-col gap-2">
               <Label htmlFor="mcp-url">URL *</Label>
               <Input
                 id="mcp-url"
-                placeholder="SSE URL (e.g., http://localhost:3000/sse)"
+                placeholder="HTTP URL (e.g., http://localhost:3000/sse)"
                 value={mcp.url}
                 onChange={(e) =>
                   setMcp((prev) => ({ ...prev, url: e.target.value }))
@@ -163,16 +170,30 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
                   }
                 />
               </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="mcp-docker-command">Docker Command</Label>
+                <Input
+                  id="mcp-docker-command"
+                  placeholder="Command to run in container (optional)"
+                  value={mcp.dockerCommand}
+                  onChange={(e) =>
+                    setMcp((prev) => ({
+                      ...prev,
+                      dockerCommand: e.target.value,
+                    }))
+                  }
+                />
+              </div>
             </>
           )}
 
           <div className="flex flex-col gap-2">
             <Label>
-              {mcp.type === "sse" ? "Headers" : "Environment Variables"}
+              {mcp.type === "http" ? "Headers" : "Environment Variables"}
             </Label>
             <EnvVarInput
-              envVars={mcp.envVars}
-              onUpdate={(envVars) => setMcp((prev) => ({ ...prev, envVars }))}
+              envVars={mcp.env || {}}
+              onUpdate={(env) => setMcp((prev) => ({ ...prev, env }))}
             />
           </div>
 
@@ -190,7 +211,10 @@ export const MCPDialog = ({ isOpen, onOpenChange }: CreateDialogProps) => {
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              setMcp(initialMcp);
+              setIsOpen(false);
+            }}
             disabled={isLoading}
           >
             Cancel

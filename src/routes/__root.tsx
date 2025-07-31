@@ -1,19 +1,30 @@
-import { Navigate, Outlet, createRootRoute } from "@tanstack/react-router";
-// import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import {
+  Navigate,
+  Outlet,
+  createRootRoute,
+  useLocation,
+} from "@tanstack/react-router";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { useConvexAuth } from "convex/react";
 import { Loader2 } from "lucide-react";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { motion } from "motion/react";
+import { sidebarOpenAtom } from "@/store/chatStore";
+import { useAtomValue, useSetAtom } from "jotai";
+import { useConvexAuth } from "convex/react";
+import { AppSidebar } from "@/components/app-sidebar";
+import { TopNav } from "@/components/topnav";
+
 export const Route = createRootRoute({
   component: () => {
+    const location = useLocation();
     const { isLoading, isAuthenticated } = useConvexAuth();
-    const urlPath = location.pathname;
 
-    const privateRoutes = ["/chat", "/"];
+    const publicRoutes = ["/auth"];
+    const sidebarOpen = useAtomValue(sidebarOpenAtom);
+    const setSidebarOpen = useSetAtom(sidebarOpenAtom);
 
-    const publicRoutes = ["/landing", "/auth"];
-
-    if (isLoading && !isAuthenticated) {
+    if (isLoading) {
       return (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <div className="flex justify-center items-center h-screen font-sans bg-background">
@@ -23,31 +34,46 @@ export const Route = createRootRoute({
       );
     }
 
+    if (!isAuthenticated && !publicRoutes.includes(location.pathname)) {
+      return <Navigate to="/auth" />;
+    }
+
     return (
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        {/* landing route */}
-        {!isAuthenticated && !publicRoutes.includes(urlPath) && (
-          <Navigate
-            to="/landing"
-            viewTransition={true}
-            reloadDocument={true}
-            replace
-          />
-        )}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <SidebarProvider
+            className="font-sans h-svh relative before:content-[''] before:fixed before:inset-0 before:bg-[url('/images/noise.png')] before:opacity-50 before:pointer-events-none before:z-[-1]"
+            open={sidebarOpen}
+            onOpenChange={() => {
+              setSidebarOpen(!sidebarOpen);
+            }}
+          >
+            {/* AppSidebar and TopNav are now available on all routes */}
+            {isAuthenticated && (
+              <>
+                <AppSidebar />
+                <TopNav />
+              </>
+            )}
 
-        {isAuthenticated && publicRoutes.includes(urlPath) && (
-          <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
-        )}
+            {/* Redirect authenticated users away from public routes */}
+            {isAuthenticated && publicRoutes.includes(location.pathname) && (
+              <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
+            )}
 
-        {/* auth routes */}
-        {!isAuthenticated && publicRoutes.includes(urlPath) && <Outlet />}
-
-        {isAuthenticated && privateRoutes.includes(urlPath) && (
-          <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
-        )}
-
-        {/* authenticated route */}
-        {isAuthenticated && <Outlet />}
+            {/* Redirect authenticated users from root to chat */}
+            {isAuthenticated && location.pathname === "/" && (
+              <Navigate to="/chat/$chatId" params={{ chatId: "new" }} />
+            )}
+            {/* Render the appropriate outlet */}
+            <Outlet />
+          </SidebarProvider>
+        </motion.div>
         <Toaster />
       </ThemeProvider>
     );

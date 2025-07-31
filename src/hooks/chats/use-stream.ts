@@ -1,151 +1,163 @@
-// hooks/useStream.ts
-"use client";
-
-import { useEffect, useRef, useState, useMemo } from "react";
-import { useConvex, useQuery } from "convex/react";
+import { useEffect, useState, useMemo } from "react";
+import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
-import type { StreamEvent } from "@langchain/core/tracers/log_stream";
-import type { PaginationResult } from "convex/server";
+import type { Id } from "../../../convex/_generated/dataModel";
+import type {
+  ToolChunkGroup,
+  AIChunkGroup,
+} from "../../../convex/langchain/state";
+import {
+  AIMessage,
+  ToolMessage as LangChainToolMessage,
+  mapChatMessagesToStoredMessages,
+} from "@langchain/core/messages";
 
-export interface AIChunkGroup {
-  type: "ai";
-  content: string;
-  reasoning?: string;
-}
-
-export interface ToolChunkGroup {
-  type: "tool";
-  toolName: string;
-  input?: unknown;
-  output?: unknown;
-  isComplete: boolean;
-}
+export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 
 export function useStream(chatId: Id<"chats"> | "new") {
-  const convex = useConvex();
-  const lastTimeRef = useRef<number | undefined>(undefined);
-  const [chunks, setChunks] = useState<StreamEvent[]>([]);
-  const stream = useQuery(api.streams.queries.getFromChatId, {
-    chatId,
-  });
+  const stream = useQuery(
+    api.streams.queries.get,
+    chatId !== "new" ? { chatId } : "skip",
+  );
 
-  // polling for new chunks
+  const [groupedChunks, setGroupedChunks] = useState<ChunkGroup[]>([]);
+  const [lastSeenTime, setLastSeenTime] = useState<number | undefined>(undefined);
+
+  // Reset state when chat or stream changes
   useEffect(() => {
-    if (!stream) return;
-    let cancelled = false;
-    lastTimeRef.current = undefined;
-    setChunks([]);
+    setLastSeenTime(undefined);
+    setGroupedChunks([]);
+  }, [chatId, stream?._id]);
 
-    async function pollChunks() {
-      if (stream?.status !== "streaming" || cancelled) return;
-
-      let cursor: string | null = null;
-      let hasMore = true;
-
-      while (hasMore && !cancelled) {
-        const result: PaginationResult<Doc<"streamChunks">> =
-          await convex.query(api.streams.queries.getChunks, {
-            streamId: stream._id,
-            lastChunkTime: lastTimeRef.current,
-            paginationOpts: { numItems: 50, cursor },
-          });
-
-        if (cancelled) return;
-
-        if (result.page.length > 0) {
-          const events: StreamEvent[] = [];
-          result.page.forEach((d) =>
-            d.chunks.forEach((chunkStr) =>
-              events.push(JSON.parse(chunkStr) as StreamEvent),
-            ),
-          );
-          setChunks((prev) => [...prev, ...events]);
-          lastTimeRef.current =
-            result.page[result.page.length - 1]._creationTime;
+  // Reactive query for chunks - uses stream._creationTime as dependency for reactivity
+  // but still filters by lastSeenTime for bandwidth optimization
+  const chunksResult = useQuery(
+    api.streams.queries.getChunks,
+    stream && stream.status === "streaming"
+      ? {
+          chatId: stream.chatId,
+          lastChunkTime: lastSeenTime,
+          paginationOpts: { numItems: 200, cursor: null },
         }
+      : "skip",
+  );
 
-        hasMore = !result.isDone;
-        cursor = result.continueCursor;
-      }
+  // Process new chunks when they arrive
+  useEffect(() => {
+    if (!chunksResult?.chunks.page.length) return;
 
-      if (!cancelled) {
-        // throttle before next poll
-        await new Promise((r) => setTimeout(r, 300));
-        pollChunks();
-      }
-    }
+    const newEvents: ChunkGroup[] = chunksResult.chunks.page.flatMap(
+      (chunkDoc: any) =>
+        chunkDoc.chunks.map(
+          (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup,
+        ),
+    );
 
-    pollChunks();
-    return () => {
-      cancelled = true;
-    };
-  }, [convex, stream]);
+    if (newEvents.length > 0) {
+      setGroupedChunks((prev) => {
+        const newGroups = [...prev];
+        let lastGroup =
+          newGroups.length > 0 ? newGroups[newGroups.length - 1] : null;
 
-  // process raw chunks into grouped AI/tool events
-  const { chunkGroups } = useMemo(() => {
-    const groups: (AIChunkGroup | ToolChunkGroup)[] = [];
-    let aiBuffer: AIChunkGroup | null = null;
-    const toolMap = new Map<string, ToolChunkGroup>();
-
-    const flushAI = () => {
-      if (aiBuffer) {
-        groups.push(aiBuffer);
-        aiBuffer = null;
-      }
-    };
-
-    for (const chunk of chunks) {
-      const id = chunk.run_id ?? String(chunk.name);
-      switch (chunk.event) {
-        case "on_chat_model_stream": {
-          const { content = "", additional_kwargs = {} } =
-            chunk.data.chunk.kwargs;
-          const reasoningPart = additional_kwargs.reasoning_content as
-            | string
-            | undefined;
-          if (!aiBuffer) aiBuffer = { type: "ai", content: "" };
-          aiBuffer.content += content;
-          if (reasoningPart) {
-            aiBuffer.reasoning = (aiBuffer.reasoning ?? "") + reasoningPart;
-          }
-          break;
-        }
-        case "on_tool_start": {
-          flushAI();
-          const tool: ToolChunkGroup = {
-            type: "tool",
-            toolName: chunk.name || "Tool",
-            input: chunk.data?.input,
-            isComplete: false,
-          };
-          groups.push(tool);
-          toolMap.set(id, tool);
-          break;
-        }
-        case "on_tool_end": {
-          flushAI();
-          const tool = toolMap.get(id);
-          if (tool) {
-            tool.output = chunk.data?.output;
-            tool.isComplete = true;
-            toolMap.delete(id);
+        for (const chunk of newEvents) {
+          if (chunk.type === "ai") {
+            if (lastGroup?.type === "ai") {
+              lastGroup.content += chunk.content;
+              if (chunk.reasoning) {
+                lastGroup.reasoning =
+                  (lastGroup.reasoning ?? "") + chunk.reasoning;
+              }
+            } else {
+              lastGroup = { ...chunk };
+              newGroups.push(lastGroup);
+            }
           } else {
-            groups.push({
-              type: "tool",
-              toolName: chunk.name || "Tool",
-              output: chunk.data?.output,
-              isComplete: true,
+            lastGroup = chunk;
+            newGroups.push(chunk);
+          }
+        }
+        return newGroups;
+      });
+
+      // Update lastSeenTime to the latest chunk time for next query
+      const latestChunkTime =
+        chunksResult.chunks.page[chunksResult.chunks.page.length - 1]._creationTime;
+      setLastSeenTime(latestChunkTime);
+    }
+  }, [chunksResult]);
+
+  // Clear chunks when stream is not active
+  useEffect(() => {
+    if (!stream || stream.status !== "streaming") {
+      setGroupedChunks([]);
+    }
+  }, [stream?.status]);
+
+  // Convert chunk groups to LangChain messages
+  const langchainMessages = useMemo(() => {
+    if (!groupedChunks || groupedChunks.length === 0) return [];
+    const completedIds = new Set(groupedChunks.filter(c => c.type === "tool" && c.isComplete).map(c => (c as ToolChunkGroup).toolCallId));
+    return groupedChunks
+      .map((chunk) => {
+        if (chunk.type === "ai") {
+          return new AIMessage({
+            content: chunk.content,
+            additional_kwargs: chunk.reasoning
+              ? { reasoning_content: chunk.reasoning }
+              : {},
+          });
+        }
+        if (chunk.type === "tool") {
+          if (chunk.isComplete) {
+            return new LangChainToolMessage({
+              content: chunk.output as string,
+              name: chunk.toolName,
+              tool_call_id: chunk.toolCallId,
+              additional_kwargs: {
+                input: JSON.parse(JSON.stringify(chunk.input)),
+                is_complete: true,
+              },
             });
           }
-          break;
+          if (!completedIds.has(chunk.toolCallId)) {
+            return new LangChainToolMessage({
+              name: chunk.toolName,
+              tool_call_id: chunk.toolCallId,
+              content: "",
+              additional_kwargs: {
+                input: JSON.parse(JSON.stringify(chunk.input)),
+                is_complete: false,
+              },
+            });
+          }
         }
-      }
-    }
+        return undefined;
+      })
+      .filter(Boolean) as (AIMessage | LangChainToolMessage)[];
+  }, [groupedChunks]);
 
-    flushAI();
-    return { chunkGroups: groups };
-  }, [chunks]);
+  // Generate planning steps message
+  const planningStepsMessage = useMemo(() => {
+    if (!stream?.completedSteps || stream.completedSteps.length === 0)
+      return null;
 
-  return { chunkGroups, status: stream?.status };
+    return new AIMessage({
+      content: "",
+      additional_kwargs: {
+        pastSteps: [
+          [
+            stream.completedSteps[0],
+            mapChatMessagesToStoredMessages(langchainMessages),
+          ],
+          ...stream.completedSteps.slice(1).map((step) => [step, []]),
+        ],
+      },
+    });
+  }, [stream?.completedSteps, langchainMessages]);
+
+  return {
+    status: stream?.status,
+    langchainMessages,
+    planningStepsMessage,
+  };
 }

@@ -1,0 +1,13 @@
+--ui changes need to be made  --
+1. make settings page. [done]
+
+
+-------- todo --------------------
+
+1. projects page.
+2. orchestrator (where it searches more and longer)
+3. regenerate n branch chat wth model selector,
+4. default mcps (gonna work on a proper jupyter for code exec, memory mcp, v0 like mcp)
+5. special ui for our mcps (mainly v0 and memory)
+
+

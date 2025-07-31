@@ -1,20 +1,49 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X } from "lucide-react";
-import type { EnvVar } from "./types";
 
 interface EnvVarInputProps {
-  envVars: EnvVar[];
-  onUpdate: (envVars: EnvVar[]) => void;
+  envVars: Record<string, string>;
+  onUpdate: (envVars: Record<string, string>) => void;
+}
+
+interface EnvVar {
+  key: string;
+  value: string;
 }
 
 export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
+  // Convert Record to array for easier manipulation
+  const envVarArray: EnvVar[] = Object.entries(envVars).map(([key, value]) => ({
+    key,
+    value,
+  }));
+
+  // Ensure there's always at least one empty row
+  const displayEnvVars =
+    envVarArray.length === 0
+      ? [{ key: "", value: "" }]
+      : [...envVarArray, { key: "", value: "" }];
+
+  const convertToRecord = (envArray: EnvVar[]): Record<string, string> => {
+    const result: Record<string, string> = {};
+    envArray.forEach(({ key, value }) => {
+      if (key.trim() !== "") {
+        result[key.trim()] = value;
+      }
+    });
+    return result;
+  };
+
   const addEnvVar = () => {
-    onUpdate([...envVars, { key: "", value: "" }]);
+    // Add another empty row to the existing env vars
+    onUpdate(convertToRecord([...envVarArray, { key: "", value: "" }]));
   };
 
   const removeEnvVar = (index: number) => {
-    onUpdate(envVars.filter((_, i) => i !== index));
+    // Remove the env var at the given index from the actual env vars array
+    const newEnvVars = envVarArray.filter((_, i) => i !== index);
+    onUpdate(convertToRecord(newEnvVars));
   };
 
   const updateEnvVar = (
@@ -22,41 +51,57 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
     field: "key" | "value",
     value: string,
   ) => {
-    onUpdate(
-      envVars.map((env, i) => (i === index ? { ...env, [field]: value } : env)),
-    );
+    const newEnvVars = [...displayEnvVars];
+    newEnvVars[index] = { ...newEnvVars[index], [field]: value };
+
+    // Filter out the last empty row before converting to record
+    const envVarsToUpdate = newEnvVars.slice(0, -1);
+
+    // If we're updating the last (empty) row and it now has content, include it
+    if (
+      index === newEnvVars.length - 1 &&
+      (newEnvVars[index].key.trim() || newEnvVars[index].value.trim())
+    ) {
+      envVarsToUpdate.push(newEnvVars[index]);
+    }
+
+    onUpdate(convertToRecord(envVarsToUpdate));
   };
 
   const handlePaste = (
     e: React.ClipboardEvent<HTMLInputElement>,
     index: number,
   ) => {
-    // Only process paste if the input is empty
-    const currentEnvVar = envVars[index];
-    if (currentEnvVar.key !== "" || currentEnvVar.value !== "") {
+    // Only try bulk parsing if pasting into an empty row's key field
+    const currentEnvVar = displayEnvVars[index];
+    const isEmptyRow = currentEnvVar.key === "" && currentEnvVar.value === "";
+    const isKeyField = (e.target as HTMLInputElement).placeholder === "Key";
+
+    if (!isEmptyRow || !isKeyField) {
+      // Allow normal paste behavior
       return;
     }
-
-    // Prevent default paste behavior
-    e.preventDefault();
 
     // Get pasted text
     const pastedText = e.clipboardData.getData("text");
     if (!pastedText.trim()) return;
 
-    // Try to parse as environment variables
+    // Try to parse as environment variables (only if it looks like env vars)
     const parsedEnvVars = parseEnvVars(pastedText);
 
-    // If we have parsed env vars, update state with them
-    if (parsedEnvVars.length > 0) {
+    // Only prevent default paste if we successfully parsed multiple env vars
+    if (parsedEnvVars.length > 1) {
+      e.preventDefault();
+
       // Replace the current empty env var with the parsed ones
       const newEnvVars = [
-        ...envVars.slice(0, index),
+        ...displayEnvVars.slice(0, index),
         ...parsedEnvVars,
-        ...envVars.slice(index + 1),
+        ...displayEnvVars.slice(index + 1),
       ];
-      onUpdate(newEnvVars);
+      onUpdate(convertToRecord(newEnvVars));
     }
+    // If parsedEnvVars.length <= 1, allow normal paste behavior
   };
 
   const parseEnvVars = (text: string): EnvVar[] => {
@@ -72,12 +117,35 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
       if (!trimmedLine || trimmedLine.startsWith("#")) continue;
 
       // Try to match KEY=VALUE pattern
-      const match = trimmedLine.match(/^([^=]+)=(.*)$/);
-      if (match) {
+      const keyValueMatch = trimmedLine.match(/^([^=]+)=(.*)$/);
+      if (keyValueMatch) {
         result.push({
-          key: match[1].trim(),
-          value: match[2].trim(),
+          key: keyValueMatch[1].trim(),
+          value: keyValueMatch[2].trim(),
         });
+        continue;
+      }
+
+      // Try to match JSON-style "KEY": "VALUE" pattern (with or without trailing comma)
+      const jsonMatch = trimmedLine.match(/^"([^"]+)"\s*:\s*"([^"]*)"[,]?$/);
+      if (jsonMatch) {
+        result.push({
+          key: jsonMatch[1].trim(),
+          value: jsonMatch[2].trim(),
+        });
+        continue;
+      }
+
+      // Try to match JSON-style "KEY": value pattern (for non-string values like numbers, booleans)
+      const jsonValueMatch = trimmedLine.match(
+        /^"([^"]+)"\s*:\s*([^,\s]+)[,]?$/,
+      );
+      if (jsonValueMatch) {
+        result.push({
+          key: jsonValueMatch[1].trim(),
+          value: jsonValueMatch[2].trim(),
+        });
+        continue;
       }
     }
 
@@ -86,7 +154,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
 
   return (
     <div className="space-y-2">
-      {envVars.map((env, index) => (
+      {displayEnvVars.map((env, index) => (
         <div key={index} className="flex gap-2">
           <Input
             placeholder="Key"
@@ -101,7 +169,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
             onChange={(e) => updateEnvVar(index, "value", e.target.value)}
             onPaste={(e) => handlePaste(e, index)}
           />
-          {index === envVars.length - 1 ? (
+          {index === displayEnvVars.length - 1 ? (
             <Button
               type="button"
               variant="outline"

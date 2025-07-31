@@ -1,8 +1,7 @@
 "use node";
 
 import { internal } from "../_generated/api";
-import type { ActionCtx } from "../_generated/server";
-import { internalAction } from "../_generated/server";
+import { type ActionCtx, internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
 import type { Doc } from "../_generated/dataModel";
@@ -15,6 +14,7 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 export const addDocument = internalAction({
   args: {
     documentId: v.id("documents"),
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     const document = await ctx.runQuery(internal.documents.crud.read, {
@@ -37,9 +37,9 @@ export const addDocument = internalAction({
         result = await processYoutubeVideo(ctx, document);
       } else {
         if (["text", "github"].includes(document.type)) {
-          await ctx.runMutation(internal.documents.mutations.updateStatus, {
-            documentId: args.documentId,
-            update: {
+          await ctx.runMutation(internal.documents.crud.update, {
+            id: args.documentId,
+            patch: {
               status: "done" as const,
             },
           });
@@ -57,7 +57,7 @@ export const addDocument = internalAction({
 
       // Create embeddings
       const vectorStore = new ConvexVectorStore(
-        getEmbeddingModel("embeddings"),
+        await getEmbeddingModel(ctx, "embeddings", args.userId),
         {
           ctx,
           table: "documentVectors",
@@ -85,16 +85,16 @@ export const addDocument = internalAction({
       });
       await vectorStore.addDocuments(chunks);
 
-      await ctx.runMutation(internal.documents.mutations.updateStatus, {
-        documentId: args.documentId,
-        update: {
+      await ctx.runMutation(internal.documents.crud.update, {
+        id: args.documentId,
+        patch: {
           status: "done" as const,
         },
       });
     } catch (error) {
-      await ctx.runMutation(internal.documents.mutations.updateStatus, {
-        documentId: args.documentId,
-        update: {
+      await ctx.runMutation(internal.documents.crud.update, {
+        id: args.documentId,
+        patch: {
           status: "error" as const,
         },
       });

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
 import { partial } from "convex-helpers/validators";
@@ -7,17 +7,28 @@ import * as schema from "../schema";
 
 export const create = mutation({
   args: {
-    ...schema.Chats.table.validator.fields,
-    ...partial(schema.Chats.withoutSystemFields),
+    name: v.string(),
+    model: v.string(),
+    reasoningEffort: v.optional(
+      v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    ),
+    projectId: v.union(v.id("projects"), v.null()),
+    conductorMode: v.boolean(),
+    orchestratorMode: v.boolean(),
+    webSearch: v.boolean(),
+    artifacts: v.boolean(),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
     const chatId = ctx.db.insert("chats", {
       ...args,
       userId,
-      name: args.name ?? "New Chat",
       pinned: false,
+      reasoningEffort: args.reasoningEffort ?? "medium",
       updatedAt: Date.now(),
+      public: false,
+      documents: [],
+      text: "",
     });
     return chatId;
   },
@@ -45,40 +56,42 @@ export const remove = mutation({
     chatId: v.id("chats"),
   },
   handler: async (ctx, args) => {
-    const { userId } = await requireAuth(ctx);
+    await requireAuth(ctx);
 
     await ctx.runQuery(api.chats.queries.get, {
       chatId: args.chatId,
     });
 
-    // Delete associated chat stream
-    const chatStream = await ctx.db
-      .query("streams")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-
-    if (chatStream) {
-      await ctx.runMutation(internal.streams.mutations.remove, {
-        streamId: chatStream._id,
-      });
-    }
-
-    // Delete associated chat input
-    const chatInput = await ctx.db
-      .query("chatInputs")
-      .withIndex("by_chat_user", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
-      )
-      .first();
-
-    if (chatInput) {
-      await ctx.runMutation(internal.chatInputs.mutations.remove, {
-        chatId: args.chatId,
-      });
-    }
-
-    // Finally delete the chat itself
     await ctx.db.delete(args.chatId);
+
+    return null;
+  },
+});
+
+export const createRaw = internalMutation({
+  args: {
+    chatId: v.id("chats"),
+    messages: v.array(
+      v.object({
+        message: v.string(),
+        parentId: v.optional(v.id("chatMessages")),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    // Create messages sequentially to maintain parent-child relationships
+    let currentParent = args.messages[0]?.parentId ?? null;
+
+    for (const message of args.messages) {
+      const created = await ctx.runMutation(internal.chatMessages.crud.create, {
+        chatId: args.chatId,
+        parentId: currentParent,
+        message: message.message,
+        minimized: false,
+      });
+      // Set the current message as parent for the next message
+      currentParent = created._id;
+    }
 
     return null;
   },

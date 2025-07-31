@@ -9,13 +9,10 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
 import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
-
-// Import the generated route tree
 import { routeTree } from "./routeTree.gen";
-
 import "./styles.css";
 import reportWebVitals from "./reportWebVitals.ts";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
 
 // Create a new router instance
 const router = createRouter({
@@ -35,10 +32,7 @@ declare module "@tanstack/react-router" {
 }
 
 // Create a new Convex client instance
-const convex = new ConvexReactClient(
-  import.meta.env.VITE_CONVEX_URL as string,
-  { verbose: true },
-);
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 // Render the app
 const rootElement = document.getElementById("app");

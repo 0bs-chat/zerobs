@@ -1,31 +1,27 @@
-import type { Id } from "../_generated/dataModel";
+import { ConvexError } from "convex/values";
+import type { Doc } from "../_generated/dataModel";
 import {
   type QueryCtx,
   type MutationCtx,
   type ActionCtx,
-  query,
-  mutation,
-  action,
-  internalAction,
 } from "../_generated/server.js";
-import { ConvexError } from "convex/values";
-import {
-  zCustomAction,
-  zCustomMutation,
-  zCustomQuery,
-} from "convex-helpers/server/zod";
-import { NoOp } from "convex-helpers/server/customFunctions";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
-export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
-  const user = await ctx.auth.getUserIdentity();
-  if (!user) {
-    throw new ConvexError("Unauthorized");
+export async function getUrl(
+  ctx: ActionCtx | MutationCtx,
+  key: Doc<"documents">["key"],
+) {
+  try {
+    return await ctx.storage.getUrl(key);
+  } catch (error) {
+    return key;
   }
-  const userId = user.subject.split("|")[0] as Id<"users">;
-  return { user, userId };
 }
 
-export const zodQuery = zCustomQuery(query, NoOp);
-export const zodMutation = zCustomMutation(mutation, NoOp);
-export const zodAction = zCustomAction(action, NoOp);
-export const zodInternalAction = zCustomAction(internalAction, NoOp);
+export async function requireAuth(ctx: QueryCtx | MutationCtx | ActionCtx) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    throw new ConvexError("Unauthorized");
+  }
+  return { userId };
+}

@@ -1,4 +1,8 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect } from "react";
+import { useAtom } from "jotai";
+import { themeAtom } from "@/store/settings";
+import { Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type Theme = "dark" | "light" | "system";
 
@@ -20,15 +24,8 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
-export function ThemeProvider({
-  children,
-  defaultTheme = "system",
-  storageKey = "vite-ui-theme",
-  ...props
-}: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
-  );
+export function ThemeProvider({ children }: ThemeProviderProps) {
+  const [theme, setTheme] = useAtom(themeAtom);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -49,15 +46,12 @@ export function ThemeProvider({
   }, [theme]);
 
   const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
-    },
+    theme: theme as Theme,
+    setTheme,
   };
 
   return (
-    <ThemeProviderContext.Provider {...props} value={value}>
+    <ThemeProviderContext.Provider value={value}>
       {children}
     </ThemeProviderContext.Provider>
   );
@@ -71,3 +65,22 @@ export const useTheme = () => {
 
   return context;
 };
+
+export function ModeToggle() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-9 w-9 cursor-pointer"
+      onClick={() => {
+        setTheme(theme === "dark" ? "light" : "dark");
+      }}
+    >
+      <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+      <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0 " />
+      <span className="sr-only">Toggle theme</span>
+    </Button>
+  );
+}

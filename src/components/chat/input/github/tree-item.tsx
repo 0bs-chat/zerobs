@@ -10,7 +10,7 @@ import {
   ChevronDown,
   AlertTriangle,
 } from "lucide-react";
-import type { RepoItem } from "@/hooks/github/types";
+import type { RepoItem } from "@/hooks/chats/github/types";
 import {
   toggleFileSelectionAtom,
   toggleFolderSelectionAtom,

@@ -1,19 +1,21 @@
 "use node";
 
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import { Embeddings } from "@langchain/core/embeddings";
 import type { ActionCtx } from "../_generated/server";
 import {
   BaseMessage,
   HumanMessage,
   type MessageContentComplex,
   type DataContentBlock,
+  ToolMessage,
 } from "@langchain/core/messages";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
 import mime from "mime";
+import { Base64 } from "convex/values";
+import { getUrl } from "../utils/helpers";
 
 export const models: {
   label: string;
@@ -25,14 +27,27 @@ export const models: {
   modalities: ("text" | "image" | "pdf")[];
   image: string;
   description: string;
+  owner:
+    | "openai"
+    | "google"
+    | "x-ai"
+    | "anthropic"
+    | "deepseek"
+    | "moonshotai"
+    | "openrouter"
+    | "cypher"
+    | "qwen"
+    | "kimi";
   usageRateMultiplier: number;
   hidden?: boolean;
   type?: "chat" | "embeddings";
+  temperature?: number;
+  parser?: "base" | "functionCalling";
 }[] = [
   {
     label: "Gemini 2.5 Flash",
     model_name: "gemini-2.5-flash",
-    model: "google/gemini-2.5-flash-preview-05-20",
+    model: "google/gemini-2.5-flash",
     isThinking: false,
     toolSupport: true,
     provider: "openai",
@@ -41,7 +56,27 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "Gemini 2.5 Flash is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    owner: "google",
     usageRateMultiplier: 1.0,
+    temperature: 0.5,
+    parser: "functionCalling",
+  },
+  {
+    label: "Gemini 2.5 Flash Thinking",
+    model_name: "gemini-2.5-flash-thinking",
+    model: "google/gemini-2.5-flash",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image", "pdf"],
+    image:
+      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+    description:
+      "Gemini 2.5 Flash Thinking is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    owner: "google",
+    usageRateMultiplier: 1.0,
+    temperature: 0.5,
+    parser: "functionCalling",
   },
   {
     label: "Gemini 2.5 Pro",
@@ -55,7 +90,10 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
-    usageRateMultiplier: 1.0,
+    owner: "google",
+    usageRateMultiplier: 1.5,
+    temperature: 0.5,
+    parser: "functionCalling",
   },
   {
     label: "GPT-4.1",
@@ -66,10 +104,41 @@ export const models: {
     provider: "openai",
     modalities: ["text", "image"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5RsZQzuF5zDMLZP3RO4xGwmVtnqFcNKharf0",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     description:
       "GPT-4.1 is a state-of-the-art language model capable of understanding and generating human-like text.",
+    owner: "openai",
     usageRateMultiplier: 1.0,
+  },
+  {
+    label: "o4 mini",
+    model_name: "o4-mini",
+    model: "openai/o4-mini",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image"],
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    description:
+      "o4 mini is a state-of-the-art language model capable of understanding and generating human-like text.",
+    owner: "openai",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "o3",
+    model_name: "o3",
+    model: "openai/o3",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image"],
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    description:
+      "o3 is a state-of-the-art language model capable of understanding and generating human-like text.",
+    owner: "openai",
+    usageRateMultiplier: 1.5,
   },
   {
     label: "Claude 4",
@@ -80,10 +149,13 @@ export const models: {
     provider: "openai",
     modalities: ["text", "image", "pdf"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSCRxLvQkYbi8sZjauXl0P9cm7wv6oqd4TkgLy",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqERtPmCxK7iJruFcAblpzLxNM30vHj4R1XQGm",
     description:
       "Claude 4 is a versatile model that excels in various text and image processing tasks.",
-    usageRateMultiplier: 1.0,
+    owner: "anthropic",
+    usageRateMultiplier: 2.0,
+    temperature: 0.5,
+    parser: "functionCalling",
   },
   {
     label: "Worker",
@@ -97,8 +169,11 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
     description:
       "The Worker model is designed for specialized tasks requiring high efficiency.",
+    owner: "openai",
     usageRateMultiplier: 1.0,
     hidden: true,
+    temperature: 0.5,
+    parser: "functionCalling",
   },
   {
     label: "Deepseek R1",
@@ -112,6 +187,7 @@ export const models: {
       "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWSc6tHQtOkQ3diauvF12HnrWNtOmhI0eYwBKzf",
     description:
       "Deepseek R1 is a model focused on deep learning tasks with a strong emphasis on text processing.",
+    owner: "deepseek",
     usageRateMultiplier: 1.0,
   },
   {
@@ -128,6 +204,7 @@ export const models: {
       "The Embeddings model is designed for generating high-quality text embeddings.",
     usageRateMultiplier: 1.0,
     hidden: true,
+    owner: "google",
     type: "embeddings",
   },
   {
@@ -139,54 +216,163 @@ export const models: {
     provider: "openai",
     modalities: ["text"],
     image:
-      "https://fcleqc6g9s.ufs.sh/f/FPLT8dMDdrWS5y4g1AF5zDMLZP3RO4xGwmVtnqFcNKharf0I",
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqTWQGWJKcCZGuB4JXj70amYe8kDsr5IfyOV6o",
     description:
       "Grok 3 Mini is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    owner: "x-ai",
+    usageRateMultiplier: 1.5,
+  },
+  {
+    label: "Grok 4",
+    model_name: "grok-4",
+    model: "x-ai/grok-4",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text", "image"],
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqTWQGWJKcCZGuB4JXj70amYe8kDsr5IfyOV6o",
+    description:
+      "Grok 4 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    owner: "x-ai",
+    usageRateMultiplier: 2.0,
+  },
+  {
+    label: "Kimi K2",
+    model_name: "kimi-k2",
+    model: "moonshotai/kimi-k2:free",
+    isThinking: false,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text"],
+    image:
+      "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://moonshot.ai&size=256",
+    description:
+      "Kimi K2 is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
+    owner: "moonshotai",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "Qwen 3 235B",
+    model_name: "qwen3-235b-a22b-2507",
+    model: "qwen/qwen3-235b-a22b-2507:free",
+    isThinking: false,
+    toolSupport: false,
+    provider: "openai",
+    owner: "qwen",
+    modalities: ["text"],
+    image: "https://www.google.com/s2/favicons?domain=chat.qwen.ai&sz=256",
+    description:
+      "Qwen 3 235B is a large language model from Qwen, suitable for a wide range of text generation tasks.",
+    usageRateMultiplier: 1.0,
+  },
+  {
+    label: "Qwen 3 Coder",
+    model_name: "qwen3-coder",
+    model: "qwen/qwen3-coder:free",
+    isThinking: false,
+    toolSupport: false,
+    provider: "openai",
+    owner: "qwen",
+    modalities: ["text"],
+    image: "https://www.google.com/s2/favicons?domain=chat.qwen.ai&sz=256",
+    description:
+      "Qwen 3 Coder is a code-focused model from Qwen, designed for programming and code generation tasks.",
     usageRateMultiplier: 1.0,
   },
 ];
 
-export function getModel(model: string): BaseChatModel {
+export async function getModel(
+  ctx: ActionCtx,
+  model: string,
+  reasoningEffort: "low" | "medium" | "high" | undefined,
+  userId?: string
+): Promise<BaseChatModel> {
   const modelConfig = models.find((m) => m.model_name === model);
 
   if (!modelConfig) {
     throw new Error(`Model ${model} not found in configuration`);
   }
 
-  const API_KEY = process.env.OPENAI_API_KEY;
+  const OPENAI_API_KEY =
+    (
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
+        key: "OPENAI_API_KEY",
+        userId,
+      })
+    )?.value ?? process.env.OPENAI_API_KEY;
+  const OPENAI_BASE_URL =
+    (
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
+        key: "OPENAI_BASE_URL",
+        userId,
+      })
+    )?.value ?? "https://openrouter.ai/api/v1";
 
   return new ChatOpenAI({
     model: modelConfig.model,
-    apiKey: API_KEY,
-    temperature: 0.3,
+    apiKey: OPENAI_API_KEY,
+    temperature: modelConfig.temperature ?? 0.3,
     reasoning: {
-      effort: "medium",
+      effort: reasoningEffort,
     },
     configuration: {
-      baseURL: `https://openrouter.ai/api/v1`,
+      baseURL: OPENAI_BASE_URL,
     },
   });
 }
 
-export function getEmbeddingModel(model: string): Embeddings {
+export async function getEmbeddingModel(
+  ctx: ActionCtx,
+  model: string,
+  userId?: string
+) {
   const modelConfig = models.find((m) => m.model_name === model);
 
   if (!modelConfig || !modelConfig.modalities.includes("text")) {
     throw new Error(`Model ${model} not found in configuration`);
   }
 
-  const API_KEY = process.env.GOOGLE_API_KEY;
+  const API_KEY =
+    (
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
+        key:
+          modelConfig.provider === "google"
+            ? "GOOGLE_EMBEDDING_API_KEY"
+            : "OPENAI_EMBEDDING_API_KEY",
+        userId,
+      })
+    )?.value ??
+    process.env[
+      modelConfig.provider === "google" ? "GOOGLE_API_KEY" : "OPENAI_API_KEY"
+    ];
 
-  return new GoogleGenerativeAIEmbeddings({
-    model: modelConfig.model,
-    apiKey: API_KEY,
-  });
+  if (modelConfig.provider === "google") {
+    return new GoogleGenerativeAIEmbeddings({
+      model: modelConfig.model,
+      apiKey: API_KEY,
+    });
+  } else {
+    const OPENAI_BASE_URL = (
+      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
+        key: "OPENAI_EMBEDDING_BASE_URL",
+      })
+    )?.value;
+
+    return new OpenAIEmbeddings({
+      model: modelConfig.model,
+      apiKey: API_KEY,
+      configuration: {
+        baseURL: OPENAI_BASE_URL,
+      },
+    });
+  }
 }
 
 export async function formatMessages(
   ctx: ActionCtx,
   messages: BaseMessage[],
-  model: string,
+  model: string
 ): Promise<BaseMessage[]> {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -199,7 +385,7 @@ export async function formatMessages(
   // Process all messages in parallel
   const formattedMessages = await Promise.all(
     messages.map(async (message) => {
-      if (message instanceof HumanMessage) {
+      if (message instanceof HumanMessage || message instanceof ToolMessage) {
         const content = message.content;
 
         // If content is a string, no processing needed
@@ -212,18 +398,14 @@ export async function formatMessages(
           // Process all content items in parallel
           const processedContent = await Promise.all(
             content.map(async (contentItem) => {
-              if (typeof contentItem === "string") {
-                return contentItem;
-              }
-
-              if (typeof contentItem === "object" && contentItem !== null) {
+              if (typeof contentItem === "object") {
                 if (contentItem.type === "file" && "file" in contentItem) {
                   const documentId = contentItem.file?.file_id;
                   const document = await ctx.runQuery(
                     api.documents.queries.get,
                     {
                       documentId,
-                    },
+                    }
                   );
                   if (document.type === "file") {
                     const mimeType =
@@ -234,15 +416,23 @@ export async function formatMessages(
                         : mimeType.split("/")[0];
                     if (
                       supportedTags.includes(
-                        fileType as "text" | "image" | "pdf",
+                        fileType as "text" | "image" | "pdf"
                       )
                     ) {
-                      const url = await ctx.storage.getUrl(document.key);
+                      const base64 = Base64.fromByteArray(
+                        new Uint8Array(
+                          await (
+                            await ctx.storage.get(
+                              document.key as Id<"_storage">
+                            )
+                          )?.arrayBuffer()!
+                        )
+                      );
                       if (fileType === "image") {
                         return {
                           type: "image_url",
                           image_url: {
-                            url: url,
+                            url: `data:${mimeType};base64,${base64}`,
                             format: mimeType,
                             detail: "high",
                           },
@@ -250,10 +440,9 @@ export async function formatMessages(
                       } else {
                         return {
                           type: "file",
-                          source_type: "id",
-                          id: url,
-                          metadata: {
-                            format: mimeType,
+                          file: {
+                            filename: document.name,
+                            file_data: `data:${mimeType};base64,${base64}`,
                           },
                         };
                       }
@@ -261,10 +450,12 @@ export async function formatMessages(
                       return await getVectorText(ctx, document);
                     }
                   } else if (["text", "github"].includes(document.type)) {
-                    const blob = await ctx.storage.get(document.key);
+                    const blob = await ctx.storage.get(
+                      document.key as Id<"_storage">
+                    );
                     return {
                       type: "text",
-                      text: `# ${document.name}\n${await blob?.text()}\n`,
+                      text: `# ${document.name}\n${blob?.text()}\n`,
                     };
                   } else {
                     return await getVectorText(ctx, document);
@@ -275,7 +466,7 @@ export async function formatMessages(
               } else {
                 return contentItem;
               }
-            }),
+            })
           );
 
           // Create new message with processed content
@@ -287,7 +478,7 @@ export async function formatMessages(
       } else {
         return message;
       }
-    }),
+    })
   );
 
   return formattedMessages;
@@ -295,16 +486,16 @@ export async function formatMessages(
 
 export async function getVectorText(
   ctx: ActionCtx,
-  document: Doc<"documents">,
+  document: Doc<"documents">
 ): Promise<MessageContentComplex | DataContentBlock> {
   // Fall back to vector processing for unsupported file types
   let doc = document;
   let maxAttempts = 50;
   while (doc.status === "processing" && maxAttempts > 0) {
     await new Promise((resolve) => setTimeout(resolve, 3000));
-    doc = await ctx.runQuery(api.documents.queries.get, {
-      documentId: document._id,
-    });
+    doc = (await ctx.runQuery(internal.documents.crud.read, {
+      id: document._id,
+    }))!;
     maxAttempts--;
   }
   const vectors = await ctx.runQuery(internal.documents.queries.getAllVectors, {
@@ -314,9 +505,11 @@ export async function getVectorText(
     vectors.length > 0
       ? vectors.map((vector) => vector.text).join("\n")
       : "No text found";
+
+  const url = await getUrl(ctx, doc.key);
   return {
     type: "text",
-    text: `# ${doc.name}\n${text}\n`,
+    text: `# [${doc.name}](${url})\n${text}\n`,
   };
 }
 

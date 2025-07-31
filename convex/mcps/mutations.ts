@@ -14,8 +14,20 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    if (!args.command && !args.url) {
-      throw new Error("Command or URL is required");
+    if (!args.type) {
+      throw new Error("MCP type is required");
+    }
+
+    if (args.type === "stdio" && !args.command) {
+      throw new Error("Command is required for stdio type");
+    } else if (args.type === "http" && !args.url) {
+      throw new Error("URL is required for http type");
+    } else if (
+      args.type === "docker" &&
+      !args.dockerImage &&
+      !args.dockerPort
+    ) {
+      throw new Error("Docker image and port are required for docker type");
     }
 
     const envJwts: Record<string, string> = {};
@@ -26,23 +38,25 @@ export const create = mutation({
     );
 
     const newMCPId = await ctx.db.insert("mcps", {
-      name: args.name ?? "",
-      type: args.command ? "stdio" : args.dockerImage ? "docker" : "sse",
+      name: (args.name ?? "").replace(/ /g, "_"),
+      type: args.type,
       dockerImage: args.dockerImage,
-      dockerPort: args.dockerImage ? args.dockerPort : undefined,
+      dockerPort: args.dockerPort,
       command: args.command,
       env: envJwts,
       url: args.url,
       enabled: args.enabled ?? false,
-      status: "creating",
+      status: args.type === "http" ? "created" : "creating",
       restartOnNewChat: args.restartOnNewChat ?? false,
       userId: userId,
       updatedAt: Date.now(),
     });
 
-    await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
-      mcpId: newMCPId,
-    });
+    if (args.type !== "http") {
+      await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
+        mcpId: newMCPId,
+      });
+    }
 
     return newMCPId;
   },
@@ -84,13 +98,15 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
-    await ctx.runQuery(api.mcps.queries.get, {
+    const mcp = await ctx.runQuery(api.mcps.queries.get, {
       mcpId: args.mcpId,
     });
 
-    await ctx.scheduler.runAfter(0, internal.mcps.actions.remove, {
-      mcpId: args.mcpId,
-    });
+    if (mcp.type !== "http") {
+      await ctx.scheduler.runAfter(0, internal.mcps.actions.remove, {
+        mcpId: args.mcpId,
+      });
+    }
 
     await ctx.db.delete(args.mcpId);
 

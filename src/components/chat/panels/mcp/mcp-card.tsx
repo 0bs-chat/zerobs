@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Loader2, Play, Square, Trash2, RotateCcw } from "lucide-react";
-import type { MCPCardProps } from "./types";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import type { Doc, Id } from "convex/_generated/dataModel";
 
 export const MCPCard = ({
   mcp,
@@ -10,15 +10,24 @@ export const MCPCard = ({
   onStartStop,
   onDelete,
   onRestart,
-}: MCPCardProps) => {
+}: {
+  mcp: Doc<"mcps">;
+  status: "creating" | "created" | "error";
+  onStartStop: (mcpId: Id<"mcps">, enabled: boolean) => Promise<void>;
+  onDelete: (mcpId: Id<"mcps">) => Promise<void>;
+  onRestart?: (mcpId: Id<"mcps">) => Promise<void>;
+}) => {
   const getDisplayValue = () => {
     switch (mcp.type) {
       case "stdio":
         return mcp.command;
-      case "sse":
+      case "http":
         return mcp.url;
       case "docker":
-        return `${mcp.dockerImage}:${mcp.dockerPort}`;
+        const dockerInfo = `${mcp.dockerImage}:${mcp.dockerPort}`;
+        return mcp.dockerCommand
+          ? `${dockerInfo} - ${mcp.dockerCommand}`
+          : dockerInfo;
       default:
         return "";
     }
@@ -38,16 +47,16 @@ export const MCPCard = ({
   };
 
   const shouldShowStatusDot = () => {
-    // Don't show status dots for SSE MCPs
-    return mcp.type !== "sse";
+    // Don't show status dots for HTTP MCPs
+    return mcp.type !== "http";
   };
 
   return (
-    <Card className="px-4 py-3 rounded-md">
+    <Card className="px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex flex-col justify-center flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <CardTitle className="text-lg font-semibold">{mcp.name}</CardTitle>
+            <CardTitle className="text-md font-semibold">{mcp.name}</CardTitle>
             <Badge variant="secondary" className="text-xs flex-shrink-0">
               {mcp.type.toUpperCase()}
             </Badge>

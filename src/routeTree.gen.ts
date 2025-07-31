@@ -8,150 +8,219 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-// Import Routes
+import { createFileRoute } from '@tanstack/react-router'
 
-import { Route as rootRoute } from "./routes/__root";
-import { Route as AuthImport } from "./routes/auth";
-import { Route as IndexImport } from "./routes/index";
-import { Route as LandingIndexImport } from "./routes/landing/index";
-import { Route as ChatChatIdIndexImport } from "./routes/chat_/$chatId/index";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
+import { Route as SettingsBillingRouteImport } from './routes/settings/billing'
+import { Route as SettingsApiKeysRouteImport } from './routes/settings/apiKeys'
 
-// Create/Update Routes
+const ProjectsLazyRouteImport = createFileRoute('/projects')()
+const SettingsRouteLazyRouteImport = createFileRoute('/settings')()
+const ProjectProjectIdLazyRouteImport = createFileRoute('/project/$projectId')()
+const ChatChatIdLazyRouteImport = createFileRoute('/chat/$chatId')()
 
-const AuthRoute = AuthImport.update({
-  id: "/auth",
-  path: "/auth",
-  getParentRoute: () => rootRoute,
-} as any);
-
-const IndexRoute = IndexImport.update({
-  id: "/",
-  path: "/",
-  getParentRoute: () => rootRoute,
-} as any);
-
-const LandingIndexRoute = LandingIndexImport.update({
-  id: "/landing/",
-  path: "/landing/",
-  getParentRoute: () => rootRoute,
-} as any);
-
-const ChatChatIdIndexRoute = ChatChatIdIndexImport.update({
-  id: "/chat_/$chatId/",
-  path: "/chat/$chatId/",
-  getParentRoute: () => rootRoute,
-} as any);
-
-// Populate the FileRoutesByPath interface
-
-declare module "@tanstack/react-router" {
-  interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/auth": {
-      id: "/auth";
-      path: "/auth";
-      fullPath: "/auth";
-      preLoaderRoute: typeof AuthImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/landing/": {
-      id: "/landing/";
-      path: "/landing";
-      fullPath: "/landing";
-      preLoaderRoute: typeof LandingIndexImport;
-      parentRoute: typeof rootRoute;
-    };
-    "/chat_/$chatId/": {
-      id: "/chat_/$chatId/";
-      path: "/chat/$chatId";
-      fullPath: "/chat/$chatId";
-      preLoaderRoute: typeof ChatChatIdIndexImport;
-      parentRoute: typeof rootRoute;
-    };
-  }
-}
-
-// Create and export the route tree
+const ProjectsLazyRoute = ProjectsLazyRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/projects.lazy').then((d) => d.Route))
+const SettingsRouteLazyRoute = SettingsRouteLazyRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/settings/route.lazy').then((d) => d.Route),
+)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectProjectIdLazyRoute = ProjectProjectIdLazyRouteImport.update({
+  id: '/project/$projectId',
+  path: '/project/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/project.$projectId.lazy').then((d) => d.Route),
+)
+const ChatChatIdLazyRoute = ChatChatIdLazyRouteImport.update({
+  id: '/chat/$chatId',
+  path: '/chat/$chatId',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/chat.$chatId.lazy').then((d) => d.Route))
+const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => SettingsRouteLazyRoute,
+} as any)
+const SettingsBillingRoute = SettingsBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => SettingsRouteLazyRoute,
+} as any)
+const SettingsApiKeysRoute = SettingsApiKeysRouteImport.update({
+  id: '/apiKeys',
+  path: '/apiKeys',
+  getParentRoute: () => SettingsRouteLazyRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/auth": typeof AuthRoute;
-  "/landing": typeof LandingIndexRoute;
-  "/chat/$chatId": typeof ChatChatIdIndexRoute;
+  '/auth': typeof AuthRoute
+  '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/projects': typeof ProjectsLazyRoute
+  '/settings/apiKeys': typeof SettingsApiKeysRoute
+  '/settings/billing': typeof SettingsBillingRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/chat/$chatId': typeof ChatChatIdLazyRoute
+  '/project/$projectId': typeof ProjectProjectIdLazyRoute
 }
-
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/auth": typeof AuthRoute;
-  "/landing": typeof LandingIndexRoute;
-  "/chat/$chatId": typeof ChatChatIdIndexRoute;
+  '/auth': typeof AuthRoute
+  '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/projects': typeof ProjectsLazyRoute
+  '/settings/apiKeys': typeof SettingsApiKeysRoute
+  '/settings/billing': typeof SettingsBillingRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/chat/$chatId': typeof ChatChatIdLazyRoute
+  '/project/$projectId': typeof ProjectProjectIdLazyRoute
 }
-
 export interface FileRoutesById {
-  __root__: typeof rootRoute;
-  "/": typeof IndexRoute;
-  "/auth": typeof AuthRoute;
-  "/landing/": typeof LandingIndexRoute;
-  "/chat_/$chatId/": typeof ChatChatIdIndexRoute;
+  __root__: typeof rootRouteImport
+  '/auth': typeof AuthRoute
+  '/settings': typeof SettingsRouteLazyRouteWithChildren
+  '/projects': typeof ProjectsLazyRoute
+  '/settings/apiKeys': typeof SettingsApiKeysRoute
+  '/settings/billing': typeof SettingsBillingRoute
+  '/settings/integrations': typeof SettingsIntegrationsRoute
+  '/chat/$chatId': typeof ChatChatIdLazyRoute
+  '/project/$projectId': typeof ProjectProjectIdLazyRoute
 }
-
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/auth" | "/landing" | "/chat/$chatId";
-  fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/auth" | "/landing" | "/chat/$chatId";
-  id: "__root__" | "/" | "/auth" | "/landing/" | "/chat_/$chatId/";
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/auth'
+    | '/settings'
+    | '/projects'
+    | '/settings/apiKeys'
+    | '/settings/billing'
+    | '/settings/integrations'
+    | '/chat/$chatId'
+    | '/project/$projectId'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/auth'
+    | '/settings'
+    | '/projects'
+    | '/settings/apiKeys'
+    | '/settings/billing'
+    | '/settings/integrations'
+    | '/chat/$chatId'
+    | '/project/$projectId'
+  id:
+    | '__root__'
+    | '/auth'
+    | '/settings'
+    | '/projects'
+    | '/settings/apiKeys'
+    | '/settings/billing'
+    | '/settings/integrations'
+    | '/chat/$chatId'
+    | '/project/$projectId'
+  fileRoutesById: FileRoutesById
 }
-
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AuthRoute: typeof AuthRoute;
-  LandingIndexRoute: typeof LandingIndexRoute;
-  ChatChatIdIndexRoute: typeof ChatChatIdIndexRoute;
+  AuthRoute: typeof AuthRoute
+  SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren
+  ProjectsLazyRoute: typeof ProjectsLazyRoute
+  ChatChatIdLazyRoute: typeof ChatChatIdLazyRoute
+  ProjectProjectIdLazyRoute: typeof ProjectProjectIdLazyRoute
 }
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
-  LandingIndexRoute: LandingIndexRoute,
-  ChatChatIdIndexRoute: ChatChatIdIndexRoute,
-};
-
-export const routeTree = rootRoute
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
-
-/* ROUTE_MANIFEST_START
-{
-  "routes": {
-    "__root__": {
-      "filePath": "__root.tsx",
-      "children": [
-        "/",
-        "/auth",
-        "/landing/",
-        "/chat_/$chatId/"
-      ]
-    },
-    "/": {
-      "filePath": "index.tsx"
-    },
-    "/auth": {
-      "filePath": "auth.tsx"
-    },
-    "/landing/": {
-      "filePath": "landing/index.tsx"
-    },
-    "/chat_/$chatId/": {
-      "filePath": "chat_/$chatId/index.tsx"
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/project/$projectId': {
+      id: '/project/$projectId'
+      path: '/project/$projectId'
+      fullPath: '/project/$projectId'
+      preLoaderRoute: typeof ProjectProjectIdLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat/$chatId': {
+      id: '/chat/$chatId'
+      path: '/chat/$chatId'
+      fullPath: '/chat/$chatId'
+      preLoaderRoute: typeof ChatChatIdLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/integrations': {
+      id: '/settings/integrations'
+      path: '/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof SettingsIntegrationsRouteImport
+      parentRoute: typeof SettingsRouteLazyRoute
+    }
+    '/settings/billing': {
+      id: '/settings/billing'
+      path: '/billing'
+      fullPath: '/settings/billing'
+      preLoaderRoute: typeof SettingsBillingRouteImport
+      parentRoute: typeof SettingsRouteLazyRoute
+    }
+    '/settings/apiKeys': {
+      id: '/settings/apiKeys'
+      path: '/apiKeys'
+      fullPath: '/settings/apiKeys'
+      preLoaderRoute: typeof SettingsApiKeysRouteImport
+      parentRoute: typeof SettingsRouteLazyRoute
     }
   }
 }
-ROUTE_MANIFEST_END */
+
+interface SettingsRouteLazyRouteChildren {
+  SettingsApiKeysRoute: typeof SettingsApiKeysRoute
+  SettingsBillingRoute: typeof SettingsBillingRoute
+  SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
+}
+
+const SettingsRouteLazyRouteChildren: SettingsRouteLazyRouteChildren = {
+  SettingsApiKeysRoute: SettingsApiKeysRoute,
+  SettingsBillingRoute: SettingsBillingRoute,
+  SettingsIntegrationsRoute: SettingsIntegrationsRoute,
+}
+
+const SettingsRouteLazyRouteWithChildren =
+  SettingsRouteLazyRoute._addFileChildren(SettingsRouteLazyRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  AuthRoute: AuthRoute,
+  SettingsRouteLazyRoute: SettingsRouteLazyRouteWithChildren,
+  ProjectsLazyRoute: ProjectsLazyRoute,
+  ChatChatIdLazyRoute: ChatChatIdLazyRoute,
+  ProjectProjectIdLazyRoute: ProjectProjectIdLazyRoute,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
