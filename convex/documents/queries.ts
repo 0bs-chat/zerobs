@@ -47,8 +47,8 @@ export const getMultiple = query({
       args.documentIds.map((id) =>
         ctx.runQuery(api.documents.queries.get, {
           documentId: id,
-        }),
-      ),
+        })
+      )
     );
 
     return docs;
@@ -65,7 +65,7 @@ export const getByKey = query({
     const source = await ctx.db
       .query("documents")
       .withIndex("by_key_user", (q) =>
-        q.eq("key", args.key).eq("userId", userId),
+        q.eq("key", args.key).eq("userId", userId)
       )
       .first();
     if (!source) {
@@ -107,7 +107,7 @@ export const getAllVectors = internalQuery({
     v.object({
       text: v.string(),
       source: v.id("documents"),
-    }),
+    })
   ),
   handler: async (ctx, args) => {
     let cursor: string | null = null;

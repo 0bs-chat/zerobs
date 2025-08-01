@@ -84,7 +84,7 @@ export async function createAgentWithTools(
     });
   } else {
     if (Object.keys(tools.groupedTools).length === 0) {
-      throw new Error("Need atleast 1 mcp enabled to use conductor mode");
+      throw new Error("Need at least 1 mcp enabled to use conductor mode");
     }
     const llm = await getModel(config.ctx, "worker", undefined);
     const supervisorLlm = await getModel(

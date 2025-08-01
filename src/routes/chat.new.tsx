@@ -9,7 +9,7 @@ import {
 } from "@/store/chatStore";
 import { motion } from "motion/react";
 import { layoutTransition } from "@/lib/motion";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { ChatInterface } from "@/components/chat-interface";
 
 export const Route = createFileRoute("/chat/new")({
@@ -26,14 +26,13 @@ function RouteComponent() {
 
   useEffect(() => {
     setSelectedArtifact(undefined);
-  }, [setSelectedArtifact]);
-
-  useEffect(() => {
     setChat(newChat);
-  }, [newChat, setChat]);
+  }, [newChat, setChat, setSelectedArtifact]);
 
-  const userName =
-    userLoadable.state === "hasData" ? userLoadable.data?.name : "";
+  const userName = useMemo(
+    () => (userLoadable.state === "hasData" ? userLoadable.data?.name : ""),
+    [userLoadable]
+  );
 
   return (
     <ChatInterface>
