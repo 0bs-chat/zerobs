@@ -1,4 +1,3 @@
-import { ModeToggle } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -61,7 +60,7 @@ function SettingsPage() {
                 Back to chat
               </Button>
             </Link>
-            <ModeToggle />
+            {/* <ModeToggle /> */}
           </div>
 
           <div className="space-y-1">

@@ -9,7 +9,8 @@ export type McpTemplate = Omit<
   official: boolean;
 };
 
-export const MCP_TEMPLATES: McpTemplate[] = [
+// Type-safe MCP template data
+export const MCP_TEMPLATES: readonly McpTemplate[] = [
   {
     name: "Github Repo",
     type: "stdio",
@@ -70,4 +71,4 @@ export const MCP_TEMPLATES: McpTemplate[] = [
       "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
     official: true,
   },
-];
+] as const;

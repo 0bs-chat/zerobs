@@ -124,7 +124,7 @@ export const initialMCPState = {
   command: "",
   url: "",
   dockerImage: "",
-  dockerPort: 0,
+  dockerPort: 8000,
   dockerCommand: "",
   restartOnNewChat: false,
   env: {},
@@ -147,8 +147,6 @@ export type McpTemplate = Omit<
 export const selectedMCPTemplateAtom = atom<
   McpTemplate | typeof initialMCPState
 >(initialMCPState);
-
-// example files
 
 export const exampleFiles = [
   "https://qujy6f1uxq.ufs.sh/f/MC8BmHgZR3uvaIG6am46YCrm1uwUl3He2itzSBL9kXapDGfZ",

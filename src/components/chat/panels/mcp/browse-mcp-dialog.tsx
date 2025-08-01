@@ -8,12 +8,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { ServerIcon } from "lucide-react";
-import { BadgeCheck, Globe, Activity } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Activity, Globe, ServerIcon } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
+import { MCP_TEMPLATES } from "@/constants/mcp-templates";
 import { selectedMCPTemplateAtom, mcpDialogOpenAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
-import { MCP_TEMPLATES } from "@/constants/mcp-templates";
+import type { McpTemplate } from "@/constants/mcp-templates";
+import { Badge } from "@/components/ui/badge";
 
 export const BrowseMCPDialog = () => {
   const [selected, setSelected] = useState<number | undefined>(undefined);
@@ -24,19 +25,51 @@ export const BrowseMCPDialog = () => {
   const handleImport = () => {
     if (selected !== undefined) {
       const selectedTemplate = MCP_TEMPLATES[selected];
-      // Set the selected template data in the atom
       setMcp(selectedTemplate);
-      // Close browse dialog
       setIsOpen(false);
-      // Open MCP creation dialog
+
       setMcpDialogOpen(true);
     }
+  };
+
+  const MCPTypeBadge = ({ type }: { type: McpTemplate["type"] }) => {
+    const badgeConfig = {
+      http: {
+        icon: Globe,
+        className: "bg-blue-500/10 text-blue-500/80",
+        label: "HTTP",
+      },
+      stdio: {
+        icon: Activity,
+        className: "bg-green-500/10 text-green-500/80",
+        label: "STDIO",
+      },
+      docker: {
+        icon: ServerIcon,
+        className: "bg-orange-500/10 text-orange-500/80",
+        label: "Docker",
+      },
+    } as const;
+
+    const config = badgeConfig[type];
+    const Icon = config.icon;
+
+    return (
+      <Badge variant="outline" className={config.className}>
+        <Icon className="w-3 h-3 mr-1" />
+        {config.label}
+      </Badge>
+    );
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" className="size-8">
+        <Button
+          size="icon"
+          className="size-8"
+          aria-label="Browse MCP templates"
+        >
           <ServerIcon />
         </Button>
       </DialogTrigger>
@@ -55,11 +88,17 @@ export const BrowseMCPDialog = () => {
                   : ""
               }`}
               onClick={() => setSelected(idx)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelected(idx);
+                }
+              }}
             >
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-3">
                   <img
-                    alt={tpl.name}
+                    alt={`${tpl.name} icon`}
                     loading="lazy"
                     width={28}
                     height={28}
@@ -77,19 +116,17 @@ export const BrowseMCPDialog = () => {
                         {tpl.name}
                       </h3>
                       {tpl.official && (
-                        <BadgeCheck className="w-4 h-4 text-primary" />
+                        <BadgeCheck
+                          className="w-4 h-4 text-primary"
+                          aria-label="Official MCP"
+                        />
                       )}
                     </div>
                     <div className="-mt-0.5">
                       <div className="text-muted-foreground text-sm flex items-center max-w-[80%] sm:max-w-xs">
-                        <button
-                          className="hover:text-foreground transition-colors cursor-pointer flex items-center gap-1 max-w-full"
-                          type="button"
-                        >
-                          <span className="truncate">
-                            {tpl.command || tpl.dockerImage || tpl.url}
-                          </span>
-                        </button>
+                        <span className="truncate">
+                          {tpl.command || tpl.dockerImage || tpl.url}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -99,34 +136,7 @@ export const BrowseMCPDialog = () => {
                 </p>
               </div>
               <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between">
-                {/* Type indicator */}
-                {tpl.type === "http" && (
-                  <Badge
-                    variant="outline"
-                    className="bg-blue-500/10 text-blue-500/80"
-                  >
-                    <Globe />
-                    HTTP
-                  </Badge>
-                )}
-                {tpl.type === "stdio" && (
-                  <Badge
-                    variant="outline"
-                    className="bg-green-500/10 text-green-500/80"
-                  >
-                    <Activity />
-                    STDIO
-                  </Badge>
-                )}
-                {tpl.type === "docker" && (
-                  <Badge
-                    variant="outline"
-                    className="bg-orange-500/10 text-orange-500/80"
-                  >
-                    <ServerIcon />
-                    Docker
-                  </Badge>
-                )}
+                <MCPTypeBadge type={tpl.type} />
               </div>
             </div>
           ))}

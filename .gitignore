@@ -14,3 +14,4 @@ convex/_generated/
 scripts/__pycache__/
 */__pycache__/*
 .tanstack
+bun.lock
