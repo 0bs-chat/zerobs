@@ -13,6 +13,7 @@ import { routeTree } from "./routeTree.gen";
 import "./styles.css";
 import reportWebVitals from "./reportWebVitals.ts";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ThemeProvider } from "@/components/theme-provider";
 
 // Create a new router instance
 const router = createRouter({
@@ -40,11 +41,13 @@ if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <ConvexAuthProvider client={convex}>
-        <ConvexQueryCacheProvider>
-          <RouterProvider router={router} />
-        </ConvexQueryCacheProvider>
-      </ConvexAuthProvider>
+      <ThemeProvider>
+        <ConvexAuthProvider client={convex}>
+          <ConvexQueryCacheProvider>
+            <RouterProvider router={router} />
+          </ConvexQueryCacheProvider>
+        </ConvexAuthProvider>
+      </ThemeProvider>
     </StrictMode>,
   );
 }
