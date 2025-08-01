@@ -244,7 +244,7 @@ export function createReplannerPrompt(availableToolsDescription: string) {
         ` - **If ready to respond:** Set type to "respond_to_user" and data as the response. Formulate the complete, synthesized response. This is not a draft; it is the complete, polished answer.\n` +
         ` - **If not ready:** Set type to "continue_planning" and provide a new plan containing **only the remaining steps needed** to fill ` +
         `the gaps you identified.\n\n` +
-        `**ALWAYS** output valid JSON, do not include any extraneous text or explanations.`,
+        `**ALWAYS** output valid JSON, do not include any extraneous text or explanations, make sure you understand unions in the output format and respond correctly`,
     ],
   ]);
 }
