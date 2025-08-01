@@ -7,7 +7,7 @@ export const Route = createLazyFileRoute("/projects")({
 
 function RouteComponent() {
   return (
-    <div className="min-w-4xl py-4 mx-auto">
+    <div className="min-w-4xl p-3 mx-auto flex h-screen flex-col overflow-y-auto w-full">
       <ProjectsList />
     </div>
   );

@@ -27,9 +27,9 @@ export const ProjectsList = () => {
 
   return (
     <>
-      <div className="flex flex-col gap-3 h-full ">
-        <div className="flex items-center text-center justify-between">
-          <h2 className="text-xl font-bold">Select a Project</h2>
+      <div className="container mx-auto flex max-w-6xl flex-1 flex-col p-3 pb-6 lg:max-h-dvh lg:overflow-y-hidden lg:p-6">
+        <div className="flex items-center text-center justify-between mb-8 ">
+          <h2 className="text-3xl font-bold">Projects</h2>
           <Button
             variant="default"
             size="sm"

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 import {
   createLazyFileRoute,
@@ -7,10 +8,15 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, KeyIcon, Plug, Wallet2 } from "lucide-react";
+import { ArrowLeft, KeyIcon, Plug, User, Wallet2 } from "lucide-react";
 import { useEffect } from "react";
 
 const settingsNavItems = [
+  {
+    title: "Profile",
+    href: "/settings/profile",
+    icon: User,
+  },
   {
     title: "API Keys",
     href: "/settings/apiKeys",
@@ -42,7 +48,7 @@ function SettingsPage() {
       location.pathname === "/settings/"
     ) {
       navigate({
-        to: "/settings/apiKeys",
+        to: "/settings/profile",
         replace: true,
       });
     }
@@ -60,7 +66,9 @@ function SettingsPage() {
                 Back to chat
               </Button>
             </Link>
-            {/* <ModeToggle /> */}
+            <Button variant="outline" size="icon" className="cursor-pointer">
+              <ModeToggle />
+            </Button>
           </div>
 
           <div className="space-y-1">
