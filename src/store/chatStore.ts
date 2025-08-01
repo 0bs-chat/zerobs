@@ -36,19 +36,19 @@ export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
 export const resizePanelOpenAtom = atomWithStorage("resizePanelOpen", false);
 export const selectedPanelTabAtom = atomWithStorage(
   "selectedPanelTab",
-  "projects",
+  "projects"
 );
 export const resizePanelWidthAtom = atomWithStorage("resizePanelWidth", 40);
 
 export const documentDialogOpenAtom = atom<Id<"documents"> | undefined>(
-  undefined,
+  undefined
 );
 export const createProjectDialogOpenAtom = atom(false);
 
 export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", false);
 
 export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
-  undefined,
+  undefined
 );
 export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
 
@@ -56,20 +56,20 @@ export const currentThreadAtom = atom<
   ReturnType<typeof buildThread> | undefined
 >(undefined);
 export const groupedMessagesAtom = selectAtom(currentThreadAtom, (thread) =>
-  thread ? groupMessages(thread) : [],
+  thread ? groupMessages(thread) : []
 );
 export const lastChatMessageAtom = selectAtom(currentThreadAtom, (thread) =>
   thread && thread.length > 0
     ? thread[thread.length - 1].message._id
-    : undefined,
+    : undefined
 );
 
 export const useStreamAtom = atom<ReturnType<typeof useStream> | undefined>(
-  undefined,
+  undefined
 );
 export const streamStatusAtom = selectAtom(
   useStreamAtom,
-  (stream) => stream?.status,
+  (stream) => stream?.status
 );
 
 export const allArtifactsAtom = atom((get) => {
@@ -114,3 +114,36 @@ export const allArtifactsAtom = atom((get) => {
 
   return artifacts;
 });
+
+// mcp atoms
+
+export type McpType = "http" | "stdio" | "docker";
+export const initialMCPState = {
+  name: "",
+  type: "http" as McpType,
+  command: "",
+  url: "",
+  dockerImage: "",
+  dockerPort: 8000,
+  dockerCommand: "",
+  restartOnNewChat: false,
+  env: {},
+  status: "creating" as const,
+};
+
+export const mcpBrowsePanelOpenAtom = atom(false);
+export const mcpDialogOpenAtom = atom(false);
+
+// Example MCP templates (static for now)
+export type McpTemplate = Omit<
+  Doc<"mcps">,
+  "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
+> & {
+  description: string;
+  image: string;
+  official: boolean;
+};
+
+export const selectedMCPTemplateAtom = atom<
+  McpTemplate | typeof initialMCPState
+>(initialMCPState);

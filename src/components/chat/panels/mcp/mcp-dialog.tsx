@@ -16,40 +16,33 @@ import { PlusIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { Doc } from "../../../../../convex/_generated/dataModel";
+import {
+  initialMCPState,
+  selectedMCPTemplateAtom,
+  mcpDialogOpenAtom,
+  type McpType,
+} from "@/store/chatStore";
+import { useAtom } from "jotai";
 
 export const MCPDialog = () => {
-  const initialMcp = {
-    name: "",
-    type: "http" as const,
-    command: "",
-    url: "",
-    dockerImage: "",
-    dockerPort: 0,
-    dockerCommand: "",
-    restartOnNewChat: false,
-    env: {},
-    status: "creating" as const,
-  };
-
-  const [mcp, setMcp] =
-    useState<
-      Omit<
-        Doc<"mcps">,
-        "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
-      >
-    >(initialMcp);
-  const { handleCreate } = useMCPs();
+  const [mcp, setMcp] = useAtom(selectedMCPTemplateAtom);
+  const [isOpen, setIsOpen] = useAtom(mcpDialogOpenAtom);
+  const { handleCreate, validateMCP } = useMCPs();
   const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
 
   const handleSubmit = async () => {
+
+    if (
+      !validateMCP(mcp)
+    )
+      return;
+
     setIsLoading(true);
     try {
       await handleCreate(mcp, (open) => {
         if (!open) {
           // Reset form state when dialog closes after successful creation
-          setMcp(initialMcp);
+          setMcp(initialMCPState);
         }
         setIsOpen(open);
       });
@@ -61,13 +54,41 @@ export const MCPDialog = () => {
     }
   };
 
+  const handleTypeChange = (type: McpType) => {
+    setMcp((prev) => {
+      // Create a new object with proper type handling
+      const updated = {
+        ...prev,
+        type,
+        // Clear type-specific fields when switching types
+        command: type === "stdio" ? prev.command || "" : "",
+        url: type === "http" ? prev.url || "" : "",
+        dockerImage: type === "docker" ? prev.dockerImage || "" : "",
+        dockerPort: type === "docker" ? prev.dockerPort || 0 : 0,
+        dockerCommand: type === "docker" ? prev.dockerCommand || "" : "",
+      };
+
+      // Preserve template-specific fields if they exist
+      if ("description" in prev) {
+        return {
+          ...updated,
+          description: prev.description,
+          image: prev.image,
+          official: prev.official,
+        };
+      }
+
+      return updated;
+    });
+  };
+
   return (
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
         if (!open && !isLoading) {
           // Reset form state when dialog closes
-          setMcp(initialMcp);
+          setMcp(initialMCPState);
         }
         setIsOpen(open);
       }}
@@ -98,20 +119,7 @@ export const MCPDialog = () => {
 
           <div className="flex flex-col gap-2">
             <Label>Type *</Label>
-            <TypeSelector
-              type={mcp.type}
-              onTypeChange={(type) =>
-                setMcp((prev) => ({
-                  ...prev,
-                  type,
-                  command: type === "stdio" ? prev.command : "",
-                  url: type === "http" ? prev.url : "",
-                  dockerImage: type === "docker" ? prev.dockerImage : "",
-                  dockerPort: type === "docker" ? prev.dockerPort : 0,
-                  dockerCommand: type === "docker" ? prev.dockerCommand : "",
-                }))
-              }
-            />
+            <TypeSelector type={mcp.type} onTypeChange={handleTypeChange} />
           </div>
 
           {mcp.type === "stdio" && (
@@ -212,7 +220,7 @@ export const MCPDialog = () => {
           <Button
             variant="outline"
             onClick={() => {
-              setMcp(initialMcp);
+              setMcp(initialMCPState);
               setIsOpen(false);
             }}
             disabled={isLoading}

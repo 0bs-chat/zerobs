@@ -10,21 +10,16 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { ServerIcon } from "lucide-react";
 import { BadgeCheck, Globe, Activity } from "lucide-react";
-import type { Doc } from "../../../../../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
-import { useMCPs } from "@/hooks/chats/use-mcp";
+import {
+  selectedMCPTemplateAtom,
+  mcpDialogOpenAtom,
+  type McpTemplate,
+} from "@/store/chatStore";
+import { useSetAtom } from "jotai";
 
-// Example MCP templates (static for now)
-type McpTemplate = Omit<
-  Doc<"mcps">,
-  "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
-> & {
-  description: string;
-  image: string;
-  official: boolean;
-};
-
-const MCP_TEMPLATES: McpTemplate[] = [
+// Type-safe MCP template data
+const MCP_TEMPLATES: readonly McpTemplate[] = [
   {
     name: "Github Repo",
     type: "stdio",
@@ -81,33 +76,66 @@ const MCP_TEMPLATES: McpTemplate[] = [
     restartOnNewChat: false,
     description:
       "Enables AI models to break down complex problems into sequential steps, improving reasoning capabilities and providing structured thinking processes for better problem-solving and decision-making.",
-    image: "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
+    image:
+      "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
     official: true,
   },
-];
+] as const;
+
+// Reusable badge component for MCP types
+const MCPTypeBadge = ({ type }: { type: McpTemplate["type"] }) => {
+  const badgeConfig = {
+    http: {
+      icon: Globe,
+      className: "bg-blue-500/10 text-blue-500/80",
+      label: "HTTP",
+    },
+    stdio: {
+      icon: Activity,
+      className: "bg-green-500/10 text-green-500/80",
+      label: "STDIO",
+    },
+    docker: {
+      icon: ServerIcon,
+      className: "bg-orange-500/10 text-orange-500/80",
+      label: "Docker",
+    },
+  } as const;
+
+  const config = badgeConfig[type];
+  const Icon = config.icon;
+
+  return (
+    <Badge variant="outline" className={config.className}>
+      <Icon className="w-3 h-3 mr-1" />
+      {config.label}
+    </Badge>
+  );
+};
 
 export const BrowseMCPDialog = () => {
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | undefined>(undefined);
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const { handleCreate } = useMCPs();
+  const setMcp = useSetAtom(selectedMCPTemplateAtom);
+  const setMcpDialogOpen = useSetAtom(mcpDialogOpenAtom);
 
-  // Helper to transform template to MCPFormState
-  function templateToMCPFormState(tpl: McpTemplate) {
-    // Remove description, image, official
-    const { description, image, official, ...rest } = tpl;
-    return rest;
-  }
+  const handleImport = () => {
+    if (selected !== undefined) {
+      const selectedTemplate = MCP_TEMPLATES[selected];
+      setMcp(selectedTemplate);
+      setIsOpen(false);
+      setMcpDialogOpen(true);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" className="size-8">
+        <Button size="icon" className="size-8" aria-label="Browse MCP templates">
           <ServerIcon />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[90vw] sm:max-w-[80vw]">
-        {/* Added max-w classes to the DialogContent for better responsiveness */}
         <DialogHeader>
           <DialogTitle>Browse MCP Templates</DialogTitle>
         </DialogHeader>
@@ -115,18 +143,26 @@ export const BrowseMCPDialog = () => {
           {MCP_TEMPLATES.map((tpl, idx) => (
             <div
               key={idx}
-              role="listitem"
+              role="button"
+              tabIndex={0}
+              aria-label={`Select ${tpl.name} MCP template`}
               className={`group bg-card rounded-lg border border-border p-4 hover:border-primary/50 hover:shadow-md hover:shadow-primary/5 transition-all duration-200 h-full flex flex-col relative z-10 overflow-hidden cursor-pointer ${
                 selected === idx
                   ? "border-primary/50 shadow-md shadow-primary/5"
                   : ""
               }`}
               onClick={() => setSelected(idx)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelected(idx);
+                }
+              }}
             >
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-3">
                   <img
-                    alt={tpl.name}
+                    alt={`${tpl.name} icon`}
                     loading="lazy"
                     width={28}
                     height={28}
@@ -144,19 +180,17 @@ export const BrowseMCPDialog = () => {
                         {tpl.name}
                       </h3>
                       {tpl.official && (
-                        <BadgeCheck className="w-4 h-4 text-primary" />
+                        <BadgeCheck 
+                          className="w-4 h-4 text-primary" 
+                          aria-label="Official MCP"
+                        />
                       )}
                     </div>
                     <div className="-mt-0.5">
                       <div className="text-muted-foreground text-sm flex items-center max-w-[80%] sm:max-w-xs">
-                        <button
-                          className="hover:text-foreground transition-colors cursor-pointer flex items-center gap-1 max-w-full"
-                          type="button"
-                        >
-                          <span className="truncate">
-                            {tpl.command || tpl.dockerImage || tpl.url}
-                          </span>
-                        </button>
+                        <span className="truncate">
+                          {tpl.command || tpl.dockerImage || tpl.url}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -166,34 +200,7 @@ export const BrowseMCPDialog = () => {
                 </p>
               </div>
               <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between">
-                {/* Type indicator */}
-                {tpl.type === "http" && (
-                  <Badge
-                    variant="outline"
-                    className="bg-blue-500/10 text-blue-500/80"
-                  >
-                    <Globe />
-                    HTTP
-                  </Badge>
-                )}
-                {tpl.type === "stdio" && (
-                  <Badge
-                    variant="outline"
-                    className="bg-green-500/10 text-green-500/80"
-                  >
-                    <Activity />
-                    STDIO
-                  </Badge>
-                )}
-                {tpl.type === "docker" && (
-                  <Badge
-                    variant="outline"
-                    className="bg-orange-500/10 text-orange-500/80"
-                  >
-                    <ServerIcon />
-                    Docker
-                  </Badge>
-                )}
+                <MCPTypeBadge type={tpl.type} />
               </div>
             </div>
           ))}
@@ -203,22 +210,13 @@ export const BrowseMCPDialog = () => {
             Cancel
           </Button>
           <Button
-            disabled={selected === null || loading}
-            onClick={async () => {
-              if (selected !== null) {
-                setLoading(true);
-                try {
-                  await handleCreate(
-                    templateToMCPFormState(MCP_TEMPLATES[selected]),
-                    setIsOpen,
-                  );
-                } finally {
-                  setLoading(false);
-                }
-              }
+            disabled={selected === undefined}
+            onClick={() => {
+              setSelected(undefined);
+              handleImport();
             }}
           >
-            {loading ? "Importing..." : "Import MCP"}
+            Import MCP
           </Button>
         </DialogFooter>
       </DialogContent>
