@@ -15,7 +15,7 @@ interface AccordionContextType {
 }
 
 const AccordionContext = createContext<AccordionContextType | undefined>(
-  undefined,
+  undefined
 );
 
 function useAccordion() {
@@ -54,7 +54,7 @@ function Accordion({
 
   const currentValue = value !== undefined ? value : internalValue;
   const expandedItems = new Set(
-    Array.isArray(currentValue) ? currentValue : [currentValue].filter(Boolean),
+    Array.isArray(currentValue) ? currentValue : [currentValue].filter(Boolean)
   );
 
   const toggleItem = (itemValue: string) => {
@@ -137,7 +137,7 @@ function AccordionTrigger({
         data-slot="accordion-trigger"
         className={cn(
           "focus-visible:border-ring focus-visible:ring-ring/50 flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50",
-          className,
+          className
         )}
         data-state={isOpen ? "open" : "closed"}
         onClick={handleClick}
@@ -146,8 +146,9 @@ function AccordionTrigger({
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
+          className="translate-y-0.5"
         >
-          <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4 shrink-0 translate-y-0.5" />
+          <ChevronDownIcon className="text-muted-foreground pointer-events-none h-4 w-4 shrink-0" />
         </motion.div>
         {children}
       </motion.button>
@@ -199,7 +200,7 @@ function AccordionContent({
 
 // Context for AccordionItem to pass value to children
 const AccordionItemContext = createContext<{ value: string } | undefined>(
-  undefined,
+  undefined
 );
 
 // Enhanced AccordionItem with context
