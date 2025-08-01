@@ -9,7 +9,7 @@ import { chatIdAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { createProjectDialogOpenAtom, newChatAtom } from "@/store/chatStore";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 
 export const ProjectsList = () => {
   const chatId = useAtomValue(chatIdAtom);
@@ -25,11 +25,21 @@ export const ProjectsList = () => {
 
   const setNewChat = useSetAtom(newChatAtom);
 
+  const isOnProjectsRoute = useLocation().pathname === "/projects";
+
   return (
     <>
-      <div className="container mx-auto flex max-w-6xl flex-1 flex-col p-3 pb-6 lg:max-h-dvh lg:overflow-y-hidden lg:p-6">
-        <div className="flex items-center text-center justify-between mb-8 ">
-          <h2 className="text-3xl font-bold">Projects</h2>
+      <div
+        className={` ${isOnProjectsRoute ? "container mx-auto flex max-w-6xl flex-1 flex-col p-3 pb-6 lg:max-h-dvh lg:overflow-y-hidden lg:p-6" : "flex flex-col gap-3 h-full"}`}
+      >
+        <div
+          className={`flex items-center text-center justify-between ${isOnProjectsRoute ? "mb-8" : "mb-0"}`}
+        >
+          <h2
+            className={`${isOnProjectsRoute ? "text-3xl font-bold " : "text-xl font-bold"}`}
+          >
+            {isOnProjectsRoute ? "Projects" : "Select a Project"}
+          </h2>
           <Button
             variant="default"
             size="sm"
