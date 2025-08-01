@@ -98,7 +98,6 @@ export const artifactsGuidelines =
   `-   **Structure:** All components and logic must be in a single artifact. The main component should be named \`App\` and exported as the default.\n` +
   `-   **Patterns:** Use functional components and Hooks (\`useState\`, \`useEffect\`, etc.).\n` +
   `-   **Styling:** Use **Tailwind CSS** utility classes. No import is needed; it is assumed to be available.\n` +
-  `-   **UI Components:** Use **shadcn/ui** for pre-built components (\`Alert\`, \`Button\`, etc.) and **Recharts** for charts.\n` +
   `-   **Icons:** Use **lucide-react** for icons. Verify icon availability and use inline SVGs as a fallback.\n` +
   `-   **State Management:** Prefer React Context or Zustand for complex state.\n` +
   `-   **Navigation:** For multi-page views, use a state-driven \`switch\` case to render different components. Do not use a router library.\n` +
@@ -113,7 +112,7 @@ export const artifactsGuidelines =
   `    -   \`mathjs\`: \`import * as math from 'mathjs'\`\n` +
   `    -   \`papaparse\`: For CSV processing.\n` +
   `    -   \`sheetjs\`: For Excel processing.\n` +
-  `    -   \`shadcn/ui\`: \`import { Button } from '@/components/ui/button'\`\n\n` +
+  `    -   \`zustand\`: For state management.\n\n` +
   `#### **4.4. General Code (All Languages)**\n\n` +
   `-   **Comments:** Be thorough. Explain logic, algorithms, function headers, and complex sections. The code should be easily understood by another developer.\n` +
   `-   **Error Handling:** Implement robust error handling (e.g., \`try/catch\` blocks, error boundaries in React).\n\n` +
@@ -242,7 +241,7 @@ export function createReplannerPrompt(availableToolsDescription: string) {
         `2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.\n\n` +
         `3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.\n\n` +
         `4. **Update Your Plan:**\n` +
-        ` - **If ready to respond:** Set type to "respond_to_user" and data as the response. Formulate the complete, synthesized response.\n` +
+        ` - **If ready to respond:** Set type to "respond_to_user" and data as the response. Formulate the complete, synthesized response. This is not a draft; it is the complete, polished answer.\n` +
         ` - **If not ready:** Set type to "continue_planning" and provide a new plan containing **only the remaining steps needed** to fill ` +
         `the gaps you identified.\n\n` +
         `**ALWAYS** output valid JSON, do not include any extraneous text or explanations.`,
@@ -261,7 +260,11 @@ export const replannerOutputSchema = (artifacts: boolean) =>
         z
           .string()
           .describe(
-            "A comprehensive, final response to the user. Synthesize the results of all completed steps into a single, coherent answer. This is the only thing the user will see, so it must be complete and detailed." +
+            "The final, complete, and user-facing response, to be used ONLY when 'type' is 'respond_to_user'. " +
+              "This string MUST synthesize all gathered information and results from the previous steps into a single, " +
+              "coherent, and well-formatted answer. This is the ONLY output the end-user will see. It must fully and directly " +
+              "address the user's original query, leaving no questions unanswered. Do not include any conversational filler, " +
+              "apologies, or meta-commentary about the process; provide only the definitive answer." +
               `${artifacts ? ` Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`,
           ),
       ])
