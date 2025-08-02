@@ -1,5 +1,5 @@
 import { memo, useCallback, useRef, useState } from "react";
-import type { Dispatch, SetStateAction, ReactNode } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { BranchNavigation } from "./branch-navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,12 +16,7 @@ import { useMutation, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import type { MessageWithBranchInfo } from "@/hooks/chats/use-messages";
 import type { Id } from "../../../../../convex/_generated/dataModel";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipButton } from "@/components/ui/tooltip-button";
 import { CopyButton } from "./copy-button";
 import { useMessageActions } from "./index";
 import { useUploadDocuments } from "@/hooks/chats/use-documents";
@@ -30,35 +25,6 @@ interface MessageContent {
   type: string;
   text?: string;
 }
-
-// Helper component to reduce tooltip boilerplate
-const TooltipButton = ({
-  onClick,
-  icon,
-  tooltip,
-  ariaLabel,
-}: {
-  onClick: () => void;
-  icon: ReactNode;
-  tooltip: string;
-  ariaLabel?: string;
-}) => (
-  <TooltipProvider>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClick}
-          aria-label={ariaLabel}
-        >
-          {icon}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-);
 
 interface UserUtilsBarProps {
   input: MessageWithBranchInfo;

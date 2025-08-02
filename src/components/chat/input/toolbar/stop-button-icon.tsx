@@ -14,6 +14,8 @@ export const StopButtonIcon = ({ className }: { className?: string }) => {
   return (
     <video
       src={videoSrc}
+      aria-label="Stop button animation"
+      role="img"
       autoPlay
       loop
       muted

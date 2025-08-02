@@ -50,13 +50,10 @@ export function ModelPopover({
   const toolSupportTag = getTagInfo("toolSupport");
   const thinkingTagInfo = getTagInfo("thinking");
 
+  const isNewChat = !chatId || chatId === "new";
+
   const handleModelSelect = async (modelName: string) => {
-    if (
-      chatId === undefined ||
-      chatId === null ||
-      chatId === "" ||
-      chatId === "new"
-    ) {
+    if (isNewChat) {
       setNewChat((prev) => ({ ...prev, model: modelName }));
     } else {
       await updateChatMutation({
@@ -103,6 +100,7 @@ export function ModelPopover({
                 <div className="text-foreground flex gap-2 items-center justify-center ">
                   <img
                     src={model.image}
+                    aria-label={`${model.label} model icon`}
                     alt={model.label}
                     className={`h-4 w-4 ${
                       ["openai", "x-ai", "openrouter", "anthropic"].includes(

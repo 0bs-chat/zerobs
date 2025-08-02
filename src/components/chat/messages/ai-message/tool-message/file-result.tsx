@@ -10,7 +10,7 @@ interface FileDisplayProps {
 
 export const FileDisplay = ({ fileId }: FileDisplayProps) => {
   const generateDownloadUrl = useMutation(
-    api.documents.mutations.generateDownloadUrl,
+    api.documents.mutations.generateDownloadUrl
   );
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export const FileDisplay = ({ fileId }: FileDisplayProps) => {
         const url = await generateDownloadUrl({ documentId: fileId });
         setImageUrl(url);
       } catch (e: any) {
-        setError(e.message);
+        setError(e.message || "Failed to load file");
       }
     };
     getUrl();
@@ -39,10 +39,12 @@ export const FileDisplay = ({ fileId }: FileDisplayProps) => {
   }
 
   return (
-    <img
-      src={imageUrl}
-      alt="Tool output"
-      className="rounded-md max-h-[400px] w-auto object-contain"
-    />
+    <div className="rounded-md max-h-[400px] w-auto">
+      <img
+        src={imageUrl}
+        alt="Tool output"
+        className="rounded-md max-h-[400px] w-auto object-contain"
+      />
+    </div>
   );
 };

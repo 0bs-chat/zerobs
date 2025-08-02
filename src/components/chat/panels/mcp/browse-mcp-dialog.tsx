@@ -8,110 +8,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { ServerIcon } from "lucide-react";
-import { BadgeCheck, Globe, Activity } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import {
-  selectedMCPTemplateAtom,
-  mcpDialogOpenAtom,
-  type McpTemplate,
-} from "@/store/chatStore";
+import { Activity, Globe, ServerIcon } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
+import { MCP_TEMPLATES } from "@/constants/mcp-templates";
+import { selectedMCPTemplateAtom, mcpDialogOpenAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
-
-// Type-safe MCP template data
-const MCP_TEMPLATES: readonly McpTemplate[] = [
-  {
-    name: "Github Repo",
-    type: "stdio",
-    status: "creating",
-    restartOnNewChat: false,
-    command: "bunx github-repo-mcp",
-    description:
-      "Integrates with GitHub APIs to enable AI assistants to access up-to-date documentation, code, and repository data directly from any public GitHub project. This helps in automating workflows, analyzing data, and building AI tools with reduced hallucinations.",
-    image:
-      "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
-    official: false,
-  },
-  {
-    name: "Python Exec",
-    type: "docker",
-    dockerImage: "mantrakp04/py_exec:latest",
-    dockerPort: 8000,
-    status: "creating",
-    restartOnNewChat: false,
-    description:
-      "Executes Python code in a sandboxed Docker environment, providing a secure and isolated space for running Python scripts and applications.",
-    image:
-      "https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg",
-    official: false,
-  },
-  {
-    name: "Memory",
-    type: "stdio",
-    command: "bunx @modelcontextprotocol/server-memory",
-    status: "creating",
-    restartOnNewChat: false,
-    description:
-      "Manages a knowledge graph to provide persistent memory for AI models. It allows for the creation, modification, and retrieval of entities, their relationships, and observations, enabling AI to retain and recall information across conversations.",
-    image:
-      "https://res.cloudinary.com/teepublic/image/private/s--3_l7DcWs--/c_crop,x_10,y_10/c_fit,w_1109/c_crop,g_north_west,h_1260,w_1260,x_-76,y_-151/co_rgb:000000,e_colorize,u_Misc:One%20Pixel%20Gray/c_scale,g_north_west,h_1260,w_1260/fl_layer_apply,g_north_west,x_-76,y_-151/bo_0px_solid_white/e_overlay,fl_layer_apply,h_1260,l_Misc:Poster%20Bumpmap,w_1260/e_shadow,x_6,y_6/c_limit,h_1254,w_1254/c_lpad,g_center,h_1260,w_1260/b_rgb:eeeeee/c_limit,f_auto,h_630,q_auto:good:420,w_630/v1566300068/production/designs/5669783_0.jpg",
-    official: true,
-  },
-  {
-    name: "Context7 Docs",
-    type: "http",
-    url: "https://mcp.context7.com/mcp",
-    status: "creating",
-    restartOnNewChat: false,
-    description:
-      "Provides up-to-date, version-specific documentation and code examples for various libraries and frameworks. It helps AI models avoid hallucinations and generate accurate code by supplying relevant, real-time context directly from official sources.",
-    image: "https://context7.com/favicon.ico",
-    official: true,
-  },
-  {
-    name: "Sequential Thinking",
-    type: "stdio",
-    command: "bunx @modelcontextprotocol/server-sequential-thinking",
-    status: "creating",
-    restartOnNewChat: false,
-    description:
-      "Enables AI models to break down complex problems into sequential steps, improving reasoning capabilities and providing structured thinking processes for better problem-solving and decision-making.",
-    image:
-      "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
-    official: true,
-  },
-] as const;
-
-// Reusable badge component for MCP types
-const MCPTypeBadge = ({ type }: { type: McpTemplate["type"] }) => {
-  const badgeConfig = {
-    http: {
-      icon: Globe,
-      className: "bg-blue-500/10 text-blue-500/80",
-      label: "HTTP",
-    },
-    stdio: {
-      icon: Activity,
-      className: "bg-green-500/10 text-green-500/80",
-      label: "STDIO",
-    },
-    docker: {
-      icon: ServerIcon,
-      className: "bg-orange-500/10 text-orange-500/80",
-      label: "Docker",
-    },
-  } as const;
-
-  const config = badgeConfig[type];
-  const Icon = config.icon;
-
-  return (
-    <Badge variant="outline" className={config.className}>
-      <Icon className="w-3 h-3 mr-1" />
-      {config.label}
-    </Badge>
-  );
-};
+import type { McpTemplate } from "@/constants/mcp-templates";
+import { Badge } from "@/components/ui/badge";
 
 export const BrowseMCPDialog = () => {
   const [selected, setSelected] = useState<number | undefined>(undefined);
@@ -124,14 +27,49 @@ export const BrowseMCPDialog = () => {
       const selectedTemplate = MCP_TEMPLATES[selected];
       setMcp(selectedTemplate);
       setIsOpen(false);
+
       setMcpDialogOpen(true);
     }
+  };
+
+  const MCPTypeBadge = ({ type }: { type: McpTemplate["type"] }) => {
+    const badgeConfig = {
+      http: {
+        icon: Globe,
+        className: "bg-blue-500/10 text-blue-500/80",
+        label: "HTTP",
+      },
+      stdio: {
+        icon: Activity,
+        className: "bg-green-500/10 text-green-500/80",
+        label: "STDIO",
+      },
+      docker: {
+        icon: ServerIcon,
+        className: "bg-orange-500/10 text-orange-500/80",
+        label: "Docker",
+      },
+    } as const;
+
+    const config = badgeConfig[type];
+    const Icon = config.icon;
+
+    return (
+      <Badge variant="outline" className={config.className}>
+        <Icon className="w-3 h-3 mr-1" />
+        {config.label}
+      </Badge>
+    );
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button size="icon" className="size-8" aria-label="Browse MCP templates">
+        <Button
+          size="icon"
+          className="size-8"
+          aria-label="Browse MCP templates"
+        >
           <ServerIcon />
         </Button>
       </DialogTrigger>
@@ -143,12 +81,10 @@ export const BrowseMCPDialog = () => {
           {MCP_TEMPLATES.map((tpl, idx) => (
             <div
               key={idx}
-              role="button"
-              tabIndex={0}
-              aria-label={`Select ${tpl.name} MCP template`}
-              className={`group bg-card rounded-lg border border-border p-4 hover:border-primary/50 hover:shadow-md hover:shadow-primary/5 transition-all duration-200 h-full flex flex-col relative z-10 overflow-hidden cursor-pointer ${
+              role="listitem"
+              className={`group bg-card rounded-lg  border-transparent p-4 hover:border-primary/50 hover:shadow-md hover:shadow-primary/5 transition-all duration-200 h-full flex flex-col relative z-10 overflow-hidden cursor-pointer border-2 ${
                 selected === idx
-                  ? "border-primary/50 shadow-md shadow-primary/5"
+                  ? "border-primary dark:border-primary/50 shadow-md shadow-primary/5"
                   : ""
               }`}
               onClick={() => setSelected(idx)}
@@ -180,8 +116,8 @@ export const BrowseMCPDialog = () => {
                         {tpl.name}
                       </h3>
                       {tpl.official && (
-                        <BadgeCheck 
-                          className="w-4 h-4 text-primary" 
+                        <BadgeCheck
+                          className="w-4 h-4 text-primary"
                           aria-label="Official MCP"
                         />
                       )}
