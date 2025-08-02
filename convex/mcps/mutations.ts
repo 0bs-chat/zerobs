@@ -30,9 +30,18 @@ export const create = mutation({
       throw new Error("Docker image and port are required for docker type");
     }
 
+    const userApiKeys = await ctx.runQuery(api.apiKeys.queries.getAll, {});
+    const envWithApiKeys: Record<string, string> = {};
+    for (const apiKey of userApiKeys) {
+      envWithApiKeys[apiKey.key] = apiKey.value;
+    }
+    if (args.env) {
+      Object.assign(envWithApiKeys, args.env);
+    }
+    
     const envJwts: Record<string, string> = {};
     await Promise.all(
-      Object.entries(args.env ?? {}).map(async ([key, value]) => {
+      Object.entries(envWithApiKeys).map(async ([key, value]) => {
         envJwts[key] = await createJwt(userId, key, value);
       }),
     );

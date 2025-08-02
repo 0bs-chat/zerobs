@@ -7,6 +7,7 @@ export const getFromKey = internalQuery({
   args: {
     key: v.string(),
     userId: v.optional(v.string()),
+    forceReturn: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { userId } = args.userId
@@ -20,7 +21,7 @@ export const getFromKey = internalQuery({
       )
       .first();
 
-    if (!apiKeyDoc) {
+    if (!apiKeyDoc || (!apiKeyDoc.enabled && !args.forceReturn)) {
       return null;
     }
 

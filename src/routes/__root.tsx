@@ -4,7 +4,6 @@ import {
   createRootRoute,
   useLocation,
 } from "@tanstack/react-router";
-import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -27,11 +26,9 @@ export const Route = createRootRoute({
 
     if (isLoading) {
       return (
-        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-          <div className="flex justify-center items-center h-screen font-sans bg-background">
-            <Loader2 className="w-10 h-10 animate-spin [animation-duration:0.3s]" />
-          </div>
-        </ThemeProvider>
+        <div className="flex justify-center items-center h-screen font-sans bg-background">
+          <Loader2 className="w-10 h-10 animate-spin [animation-duration:0.3s]" />
+        </div>
       );
     }
 
@@ -40,7 +37,7 @@ export const Route = createRootRoute({
     }
 
     return (
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -77,7 +74,7 @@ export const Route = createRootRoute({
         </motion.div>
         <Toaster />
         <TanStackRouterDevtools position="bottom-right" />
-      </ThemeProvider>
+      </>
     );
   },
 });

@@ -7,6 +7,7 @@ export const ApiKeys = Table("apiKeys", {
   userId: v.string(),
   key: v.string(),
   value: v.string(),
+  enabled: v.boolean(),
 });
 
 export const Documents = Table("documents", {
