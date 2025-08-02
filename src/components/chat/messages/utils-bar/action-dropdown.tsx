@@ -46,7 +46,7 @@ export function ActionDropdown({
                     alt={model.label}
                     className={`h-4 w-4 ${
                       ["openai", "x-ai", "openrouter", "anthropic"].includes(
-                        model.owner
+                        model.owner,
                       )
                         ? "dark:invert"
                         : ""

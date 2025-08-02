@@ -31,11 +31,7 @@ export const MCPDialog = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
-
-    if (
-      !validateMCP(mcp)
-    )
-      return;
+    if (!validateMCP(mcp)) return;
 
     setIsLoading(true);
     try {

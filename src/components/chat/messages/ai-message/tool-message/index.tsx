@@ -40,7 +40,7 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
         const isMixed = maybeArr.some(
           (i) =>
             (i.type === "file" && i.file?.file_id) ||
-            (i.type === "text" && i.text)
+            (i.type === "text" && i.text),
         );
         if (isMixed) {
           return { type: "mixed" as const, content: maybeArr };

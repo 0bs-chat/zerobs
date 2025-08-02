@@ -18,7 +18,8 @@ interface AiUtilsBarProps {
 }
 
 export const AiUtilsBar = memo(({ input, response }: AiUtilsBarProps) => {
-  const { handleBranch, handleRegenerate, navigateBranch } = useMessageActions();
+  const { handleBranch, handleRegenerate, navigateBranch } =
+    useMessageActions();
 
   const copyText = (() => {
     if (!response || response.length === 0) return "";

@@ -46,7 +46,8 @@ export const UserUtilsBar = memo(
     onDone,
     onDocumentsChange,
   }: UserUtilsBarProps) => {
-    const { handleBranch, handleRegenerate, navigateBranch } = useMessageActions();
+    const { handleBranch, handleRegenerate, navigateBranch } =
+      useMessageActions();
     const updateMessage = useMutation(api.chatMessages.mutations.updateInput);
     const chat = useAction(api.langchain.index.chat);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +64,7 @@ export const UserUtilsBar = memo(
           }
         }
       },
-      [handleFileUpload, editedDocuments, onDocumentsChange]
+      [handleFileUpload, editedDocuments, onDocumentsChange],
     );
 
     const handleDrop = useCallback(
@@ -77,7 +78,7 @@ export const UserUtilsBar = memo(
           }
         }
       },
-      [handleFileUpload, editedDocuments, onDocumentsChange]
+      [handleFileUpload, editedDocuments, onDocumentsChange],
     );
 
     const handleDragOver = useCallback(
@@ -85,7 +86,7 @@ export const UserUtilsBar = memo(
         e.preventDefault();
         if (!isDragActive) setIsDragActive(true);
       },
-      [isDragActive]
+      [isDragActive],
     );
 
     const handleDragLeave = useCallback(
@@ -94,7 +95,7 @@ export const UserUtilsBar = memo(
         if (e.currentTarget.contains(e.relatedTarget as Node)) return;
         setIsDragActive(false);
       },
-      []
+      [],
     );
 
     const copyText = (() => {
@@ -128,7 +129,7 @@ export const UserUtilsBar = memo(
 
     if (isEditing) {
       return (
-        <div 
+        <div
           className="flex flex-row items-center gap-1 self-start"
           onDrop={handleDrop}
           onDragOver={handleDragOver}

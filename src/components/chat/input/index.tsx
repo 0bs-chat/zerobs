@@ -82,14 +82,16 @@ export const ChatInput = () => {
 
       if (imageFiles.length > 0) {
         e.preventDefault();
-        
+
         // Create a FileList from the image files
         const dataTransfer = new DataTransfer();
-        imageFiles.forEach(file => dataTransfer.items.add(file));
+        imageFiles.forEach((file) => dataTransfer.items.add(file));
         const fileList = dataTransfer.files;
 
         await handleFileUpload(fileList);
-        toast.success(`${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""} pasted and uploaded`);
+        toast.success(
+          `${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""} pasted and uploaded`,
+        );
       }
     },
     [handleFileUpload],
@@ -177,7 +179,10 @@ export const ChatInput = () => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
 
-            if (e.currentTarget.value.trim() === "" && chat?.documents.length === 0) {
+            if (
+              e.currentTarget.value.trim() === "" &&
+              chat?.documents.length === 0
+            ) {
               toast.error("Please enter a message before sending");
               return;
             }

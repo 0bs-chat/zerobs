@@ -57,7 +57,7 @@ const EditingDocumentList = ({
     (documentId: Id<"documents">) => {
       setDocumentDialogOpen(documentId);
     },
-    [setDocumentDialogOpen]
+    [setDocumentDialogOpen],
   );
 
   if (!documents?.length) return null;
@@ -71,7 +71,7 @@ const EditingDocumentList = ({
         {documents.map((doc) => {
           const { icon: Icon, className: IconClassName } = getDocTagInfo(
             doc,
-            modalities
+            modalities,
           );
 
           return (
@@ -112,11 +112,11 @@ export const UserMessage = memo(
   }) => {
     // State management moved from UserMessageGroup
     const [editingMessageId, setEditingMessageId] = useState<string | null>(
-      null
+      null,
     );
     const [editedText, setEditedText] = useState("");
     const [editedDocuments, setEditedDocuments] = useState<Id<"documents">[]>(
-      []
+      [],
     );
 
     const isEditing = editingMessageId === item.message._id;
@@ -124,7 +124,7 @@ export const UserMessage = memo(
     useEffect(() => {
       if (editingMessageId) {
         const messageToEdit = groupedMessages?.find(
-          (g) => g.input.message._id === editingMessageId
+          (g) => g.input.message._id === editingMessageId,
         );
         if (messageToEdit) {
           const content = messageToEdit.input.message.message.content;
@@ -158,9 +158,12 @@ export const UserMessage = memo(
       setEditedDocuments((prev) => prev.filter((id) => id !== documentId));
     }, []);
 
-    const handleDocumentsChange = useCallback((documents: Id<"documents">[]) => {
-      setEditedDocuments(documents);
-    }, []);
+    const handleDocumentsChange = useCallback(
+      (documents: Id<"documents">[]) => {
+        setEditedDocuments(documents);
+      },
+      [],
+    );
 
     // Memoize the content rendering to avoid unnecessary calculations
     const renderedContent = useMemo(() => {
@@ -228,7 +231,7 @@ export const UserMessage = memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 UserMessage.displayName = "UserMessage";

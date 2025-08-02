@@ -38,7 +38,7 @@ export const create = mutation({
     if (args.env) {
       Object.assign(envWithApiKeys, args.env);
     }
-    
+
     const envJwts: Record<string, string> = {};
     await Promise.all(
       Object.entries(envWithApiKeys).map(async ([key, value]) => {

@@ -38,7 +38,13 @@ const Icons = {
 };
 
 // Common link component
-const ExternalLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
+const ExternalLink = ({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) => (
   <a
     href={href}
     target="_blank"
@@ -97,7 +103,7 @@ const ExistingKeyDisplay = ({
   onRemove: () => void;
 }) => {
   const maskKey = (key: string) => "*".repeat(key.length);
-  
+
   return (
     <div className="flex items-center justify-between p-3 bg-input/80 rounded-md">
       <div className="flex items-center gap-1 truncate">
@@ -230,7 +236,9 @@ function RouteComponent() {
       key: config.key,
       enabled,
     });
-    toast.success(`${config.title} ${enabled ? 'enabled' : 'disabled'} successfully`);
+    toast.success(
+      `${config.title} ${enabled ? "enabled" : "disabled"} successfully`,
+    );
   };
 
   const handleRemove = async (config: ApiKeyConfig) => {

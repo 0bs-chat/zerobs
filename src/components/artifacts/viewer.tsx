@@ -29,7 +29,7 @@ import {
 
 const SandpackContent = memo(() => {
   const { sandpack } = useSandpack();
-  
+
   return (
     <SandpackLayout style={{ height: "100%" }}>
       <SandpackPreview
@@ -50,7 +50,7 @@ SandpackContent.displayName = "SandpackContent";
 
 const ReactComponentRenderer = memo(({ content }: { content: string }) => {
   const theme = useAtomValue(themeAtom);
-  
+
   return (
     <SandpackProvider
       template="react"
@@ -69,13 +69,13 @@ const ReactComponentRenderer = memo(({ content }: { content: string }) => {
           papaparse: "latest",
           sheetjs: "latest",
           zustand: "latest",
-        }
+        },
       }}
       files={{
-        "/App.js": content
+        "/App.js": content,
       }}
       options={{
-        externalResources: ["https://cdn.tailwindcss.com"]
+        externalResources: ["https://cdn.tailwindcss.com"],
       }}
       theme={theme === "light" ? "light" : "dark"}
       style={{ height: "100%" }}
@@ -126,7 +126,10 @@ const CodeRenderer = ({
 
 const SVGRenderer = ({ content }: { content: string }) => {
   return (
-    <div className="p-4 bg-background flex items-center justify-center" style={{ height: "100%" }}>
+    <div
+      className="p-4 bg-background flex items-center justify-center"
+      style={{ height: "100%" }}
+    >
       <div dangerouslySetInnerHTML={{ __html: content }} />
     </div>
   );

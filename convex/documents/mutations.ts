@@ -1,4 +1,8 @@
-import { internalAction, internalMutation, mutation } from "../_generated/server";
+import {
+  internalAction,
+  internalMutation,
+  mutation,
+} from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import { getUrl, requireAuth } from "../utils/helpers";
@@ -92,11 +96,11 @@ export const remove = mutation({
       .query("documents")
       .withIndex("by_id", (q) => q.eq("_id", args.documentId))
       .first();
-    
+
     if (!document) {
       throw new Error("Document not found");
     }
-    
+
     if (document.userId !== userId) {
       throw new Error("Unauthorized");
     }
@@ -104,9 +108,13 @@ export const remove = mutation({
     await ctx.db.delete(args.documentId);
 
     // Schedule async vector cleanup to prevent timeouts
-    await ctx.scheduler.runAfter(0, internal.documents.mutations.cleanupVectorsAsync, {
-      documentId: args.documentId,  
-    });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.documents.mutations.cleanupVectorsAsync,
+      {
+        documentId: args.documentId,
+      },
+    );
 
     // Clean up storage file
     try {
@@ -127,7 +135,7 @@ export const cleanupVectorsAsync = internalAction({
   handler: async (ctx, args) => {
     let isDone = false;
     let cursor = null;
-    
+
     while (!isDone) {
       const {
         isDone: isDone2,
@@ -145,7 +153,7 @@ export const cleanupVectorsAsync = internalAction({
       isDone = isDone2;
       cursor = continueCursor;
     }
-    
+
     return null;
   },
 });

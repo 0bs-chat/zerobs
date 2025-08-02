@@ -43,7 +43,7 @@ export function ModelPopover({
   const setNewChat = useSetAtom(newChatAtom);
   const updateChatMutation = useMutation(api.chats.mutations.update);
   const selectedModelConfig = models.find(
-    (m) => m.model_name === selectedModel
+    (m) => m.model_name === selectedModel,
   );
   const [searchModel, setSearchModel] = useState("");
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -89,7 +89,9 @@ export function ModelPopover({
           {models
             .filter((model) => !model.hidden)
             .filter((model) =>
-              model.model_name.toLowerCase().includes(searchModel.toLowerCase())
+              model.model_name
+                .toLowerCase()
+                .includes(searchModel.toLowerCase()),
             )
             .map((model) => (
               <div
@@ -104,7 +106,7 @@ export function ModelPopover({
                     alt={model.label}
                     className={`h-4 w-4 ${
                       ["openai", "x-ai", "openrouter", "anthropic"].includes(
-                        model.owner
+                        model.owner,
                       )
                         ? "dark:invert"
                         : ""

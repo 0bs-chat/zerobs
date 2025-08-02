@@ -13,7 +13,10 @@ import { getUrl } from "../../utils/helpers";
 import { extractFileIdsFromMessage } from "../helpers";
 import type { GraphState } from "../state";
 
-export const getMCPTools = async (ctx: ActionCtx, state: typeof GraphState.State) => {
+export const getMCPTools = async (
+  ctx: ActionCtx,
+  state: typeof GraphState.State,
+) => {
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
     paginationOpts: {
       numItems: 100,
@@ -115,16 +118,19 @@ export const getMCPTools = async (ctx: ActionCtx, state: typeof GraphState.State
     if (state.messages && state.messages.length > 0) {
       const lastMessage = state.messages[state.messages.length - 1];
       const messageContent = lastMessage.content;
-      
+
       // Extract file IDs from the message content using helper function
       const fileIds = extractFileIdsFromMessage(messageContent);
 
       const files: { name: string; url: string }[] = (
         await Promise.all(
           fileIds.map(async (documentId, index) => {
-            const documentDoc = await ctx.runQuery(internal.documents.crud.read, {
-              id: documentId as Id<"documents">,
-            });
+            const documentDoc = await ctx.runQuery(
+              internal.documents.crud.read,
+              {
+                id: documentId as Id<"documents">,
+              },
+            );
             if (!documentDoc) return null;
             // Include various document types for upload (file, image, github, text)
             const url = await getUrl(ctx, documentDoc.key);
@@ -132,7 +138,7 @@ export const getMCPTools = async (ctx: ActionCtx, state: typeof GraphState.State
               name: `${index}_${documentDoc.name}`,
               url,
             };
-          })
+          }),
         )
       )
         // Filter out any null results from documents without URLs

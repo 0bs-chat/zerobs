@@ -234,9 +234,11 @@ export async function getAvailableToolsDescription(
     .join("\n");
 }
 
-export function extractFileIdsFromMessage(messageContent: any): Id<"documents">[] {
+export function extractFileIdsFromMessage(
+  messageContent: any,
+): Id<"documents">[] {
   const fileIds: Id<"documents">[] = [];
-  
+
   try {
     // Handle different message content structures
     let content;

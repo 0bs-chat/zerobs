@@ -302,7 +302,7 @@ export async function getModel(
   ctx: ActionCtx,
   model: string,
   reasoningEffort: "low" | "medium" | "high" | undefined,
-  userId?: string
+  userId?: string,
 ): Promise<BaseChatModel> {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -341,7 +341,7 @@ export async function getModel(
 export async function getEmbeddingModel(
   ctx: ActionCtx,
   model: string,
-  userId?: string
+  userId?: string,
 ) {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -388,7 +388,7 @@ export async function getEmbeddingModel(
 export async function formatMessages(
   ctx: ActionCtx,
   messages: BaseMessage[],
-  model: string
+  model: string,
 ): Promise<BaseMessage[]> {
   const modelConfig = models.find((m) => m.model_name === model);
 
@@ -422,7 +422,7 @@ export async function formatMessages(
                     internal.documents.crud.read,
                     {
                       id: documentId as Id<"documents">,
-                    }
+                    },
                   );
                   if (!document) {
                     return contentItem;
@@ -436,33 +436,33 @@ export async function formatMessages(
                         : mimeType.split("/")[0];
                     if (
                       supportedTags.includes(
-                        fileType as "text" | "image" | "pdf"
+                        fileType as "text" | "image" | "pdf",
                       )
                     ) {
                       // Special handling for CSV files - only pass first 10 rows
                       if (mimeType === "text/csv") {
                         const blob = await ctx.storage.get(
-                          document.key as Id<"_storage">
+                          document.key as Id<"_storage">,
                         );
-                        const csvText = await blob?.text() || "";
-                        const lines = csvText.split('\n');
+                        const csvText = (await blob?.text()) || "";
+                        const lines = csvText.split("\n");
                         const header = lines[0];
                         const dataRows = lines.slice(1, 11); // Take first 10 data rows (excluding header)
-                        const truncatedCsv = [header, ...dataRows].join('\n');
+                        const truncatedCsv = [header, ...dataRows].join("\n");
                         return {
                           type: "text",
-                          text: `# ${document.name} (first 10 rows, file is avilable at /mnt/data/${index-1}_${document.name})\n${truncatedCsv}\n`,
+                          text: `# ${document.name} (first 10 rows, file is avilable at /mnt/data/${index - 1}_${document.name})\n${truncatedCsv}\n`,
                         };
                       }
-                      
+
                       const base64 = Base64.fromByteArray(
                         new Uint8Array(
                           await (
                             await ctx.storage.get(
-                              document.key as Id<"_storage">
+                              document.key as Id<"_storage">,
                             )
-                          )?.arrayBuffer()!
-                        )
+                          )?.arrayBuffer()!,
+                        ),
                       );
                       if (fileType === "image") {
                         return {
@@ -487,7 +487,7 @@ export async function formatMessages(
                     }
                   } else if (["text", "github"].includes(document.type)) {
                     const blob = await ctx.storage.get(
-                      document.key as Id<"_storage">
+                      document.key as Id<"_storage">,
                     );
                     return {
                       type: "text",
@@ -502,7 +502,7 @@ export async function formatMessages(
               } else {
                 return contentItem;
               }
-            })
+            }),
           );
 
           // Create new message with processed content
@@ -514,7 +514,7 @@ export async function formatMessages(
       } else {
         return message;
       }
-    })
+    }),
   );
 
   return formattedMessages;
@@ -522,7 +522,7 @@ export async function formatMessages(
 
 export async function getVectorText(
   ctx: ActionCtx,
-  document: Doc<"documents">
+  document: Doc<"documents">,
 ): Promise<MessageContentComplex | DataContentBlock> {
   // Fall back to vector processing for unsupported file types
   let doc = document;

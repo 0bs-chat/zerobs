@@ -44,9 +44,12 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
 
-    const apiKey = await ctx.db.query("apiKeys").withIndex("by_user_key", (q) =>
-      q.eq("userId", userId).eq("key", args.key),
-    ).first();
+    const apiKey = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_user_key", (q) =>
+        q.eq("userId", userId).eq("key", args.key),
+      )
+      .first();
 
     if (!apiKey) {
       throw new Error("API key not found");

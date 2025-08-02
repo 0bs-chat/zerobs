@@ -10,7 +10,7 @@ interface FileDisplayProps {
 
 export const FileDisplay = ({ fileId }: FileDisplayProps) => {
   const generateDownloadUrl = useMutation(
-    api.documents.mutations.generateDownloadUrl
+    api.documents.mutations.generateDownloadUrl,
   );
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

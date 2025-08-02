@@ -21,7 +21,9 @@ export function useStream(chatId: Id<"chats"> | "new") {
   );
 
   const [groupedChunks, setGroupedChunks] = useState<ChunkGroup[]>([]);
-  const [lastSeenTime, setLastSeenTime] = useState<number | undefined>(undefined);
+  const [lastSeenTime, setLastSeenTime] = useState<number | undefined>(
+    undefined,
+  );
 
   // Reset state when chat or stream changes
   useEffect(() => {
@@ -81,7 +83,8 @@ export function useStream(chatId: Id<"chats"> | "new") {
 
       // Update lastSeenTime to the latest chunk time for next query
       const latestChunkTime =
-        chunksResult.chunks.page[chunksResult.chunks.page.length - 1]._creationTime;
+        chunksResult.chunks.page[chunksResult.chunks.page.length - 1]
+          ._creationTime;
       setLastSeenTime(latestChunkTime);
     }
   }, [chunksResult]);
@@ -96,7 +99,11 @@ export function useStream(chatId: Id<"chats"> | "new") {
   // Convert chunk groups to LangChain messages
   const langchainMessages = useMemo(() => {
     if (!groupedChunks || groupedChunks.length === 0) return [];
-    const completedIds = new Set(groupedChunks.filter(c => c.type === "tool" && c.isComplete).map(c => (c as ToolChunkGroup).toolCallId));
+    const completedIds = new Set(
+      groupedChunks
+        .filter((c) => c.type === "tool" && c.isComplete)
+        .map((c) => (c as ToolChunkGroup).toolCallId),
+    );
     return groupedChunks
       .map((chunk) => {
         if (chunk.type === "ai") {

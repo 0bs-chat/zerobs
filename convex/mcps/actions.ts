@@ -120,23 +120,31 @@ export const restart = internalAction({
 
           // Stop machines
           await Promise.all(
-            machinesWithId.map((machine) => fly.stopMachine(app.name!, machine.id!)),
+            machinesWithId.map((machine) =>
+              fly.stopMachine(app.name!, machine.id!),
+            ),
           );
 
           // Wait for machines to stop
           for (let i = 0; i < 30; i++) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             const updatedMachines = await fly.listMachines(app.name!);
-            if (updatedMachines?.every(m =>
-              !machinesWithId.some(original => original.id === m.id) || m.state === 'stopped'
-            )) {
+            if (
+              updatedMachines?.every(
+                (m) =>
+                  !machinesWithId.some((original) => original.id === m.id) ||
+                  m.state === "stopped",
+              )
+            ) {
               break;
             }
           }
 
           // Start machines
           await Promise.all(
-            machinesWithId.map((machine) => fly.startMachine(app.name!, machine.id!)),
+            machinesWithId.map((machine) =>
+              fly.startMachine(app.name!, machine.id!),
+            ),
           );
         }
       }

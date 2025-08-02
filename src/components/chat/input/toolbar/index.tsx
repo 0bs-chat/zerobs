@@ -34,7 +34,13 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { chatIdAtom } from "@/store/chatStore";
 import { useRef, useState } from "react";
 import GitHubDialog from "../github";
-import { streamStatusAtom, newChatAtom, chatAtom, resizePanelOpenAtom, selectedPanelTabAtom } from "@/store/chatStore";
+import {
+  streamStatusAtom,
+  newChatAtom,
+  chatAtom,
+  resizePanelOpenAtom,
+  selectedPanelTabAtom,
+} from "@/store/chatStore";
 import { models } from "../../../../../convex/langchain/models";
 import { StopButtonIcon } from "./stop-button-icon";
 import { motion } from "motion/react";
@@ -301,11 +307,11 @@ export const ToolBar = () => {
               <FoldersIcon className="w-4 h-4" />
               <span className="max-w-32 truncate">{project.name}</span>
             </span>
-            <div 
+            <div
               onClick={(e) => {
                 e.stopPropagation();
                 handleRemoveProject();
-              }} 
+              }}
               className="hidden group-hover:block cursor-pointer"
             >
               <XIcon className="w-4 h-4 text-destructive" />

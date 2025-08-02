@@ -94,7 +94,7 @@ const FileTree = () => {
 
   const { rootItems, getChildren } = useMemo(
     () => organizeItemsHierarchically(items),
-    [items]
+    [items],
   );
 
   if (isLoading) {
