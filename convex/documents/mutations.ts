@@ -1,4 +1,4 @@
-import { internalMutation, mutation } from "../_generated/server";
+import { internalAction, internalMutation, mutation } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
 import { getUrl, requireAuth } from "../utils/helpers";
@@ -119,7 +119,7 @@ export const remove = mutation({
   },
 });
 
-export const cleanupVectorsAsync = internalMutation({
+export const cleanupVectorsAsync = internalAction({
   args: {
     documentId: v.id("documents"),
   },
@@ -138,7 +138,7 @@ export const cleanupVectorsAsync = internalMutation({
           documentId: args.documentId,
           paginationOpts: {
             cursor,
-            numItems: 50, // Increased batch size for faster processing
+            numItems: 50,
           },
         },
       );

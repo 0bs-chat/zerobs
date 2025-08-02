@@ -50,12 +50,14 @@ export const AddDocumentControls = ({
       );
     }
 
-    await updateChatInput({
-      chatId,
-      updates: {
-        projectId,
-      },
-    });
+    if (chatId !== "new") {
+      await updateChatInput({
+        chatId,
+        updates: {
+          projectId,
+        },
+      });
+    }
   };
 
   const handleUrlUpload = async () => {
