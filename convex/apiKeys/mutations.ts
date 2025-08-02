@@ -8,6 +8,7 @@ export const create = mutation({
   args: {
     key: v.string(),
     value: v.string(),
+    enabled: v.boolean(),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -29,9 +30,30 @@ export const create = mutation({
       userId: userId,
       key: args.key,
       value: jwt,
+      enabled: args.enabled,
     });
 
     return jwt;
+  },
+});
+
+export const update = mutation({
+  args: {
+    key: v.string(),
+    enabled: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    const apiKey = await ctx.db.query("apiKeys").withIndex("by_user_key", (q) =>
+      q.eq("userId", userId).eq("key", args.key),
+    ).first();
+
+    if (!apiKey) {
+      throw new Error("API key not found");
+    }
+
+    await ctx.db.patch(apiKey._id, { enabled: args.enabled });
   },
 });
 

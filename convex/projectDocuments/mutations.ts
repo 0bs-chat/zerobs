@@ -61,12 +61,10 @@ export const remove = mutation({
       },
     );
 
-    // Delete the associated document
     await ctx.runMutation(api.documents.mutations.remove, {
       documentId: projectDocument.documentId,
-    });
+    }); 
 
-    // Delete the project document
     await ctx.db.delete(args.projectDocumentId);
 
     return true;
