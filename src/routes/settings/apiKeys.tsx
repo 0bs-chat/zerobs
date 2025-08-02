@@ -12,10 +12,106 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { SaveIcon, TrashIcon } from "lucide-react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
+
+// Common icon components to reduce duplication
+const Icons = {
+  OpenAI: () => (
+    <div className="w-6 h-6 rounded-sm flex items-center justify-center">
+      <img src="/openai.svg" alt="OpenAI" className="w-4 h-4 dark:invert" />
+    </div>
+  ),
+  Google: () => (
+    <div className="w-6 h-6 rounded-sm flex items-center justify-center">
+      <img src="/google.svg" alt="Google" className="w-4 h-4" />
+    </div>
+  ),
+  Exa: () => (
+    <div className="w-6 h-6 bg-[#03037A] rounded-sm flex items-center justify-center">
+      <span className="text-xs text-white font-bold">E</span>
+    </div>
+  ),
+};
+
+// Common link component
+const ExternalLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-blue-500 hover:underline"
+  >
+    {children}
+  </a>
+);
+
+// Common input field component
+const ApiKeyInput = ({
+  config,
+  value,
+  onChange,
+  onSave,
+}: {
+  config: ApiKeyConfig;
+  value: string;
+  onChange: (value: string) => void;
+  onSave: () => void;
+}) => (
+  <div className="flex flex-row gap-1.5 w-full items-end">
+    <div className="flex flex-col flex-[3]">
+      <Label className="text-xs text-muted-foreground py-2">
+        {config.title}
+      </Label>
+      <Input
+        type={config.isPassword ? "password" : "text"}
+        placeholder={config.placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full focus:ring-0 focus:ring-offset-0 border-border focus-visible:ring-0 focus-visible:ring-offset-0 outline-none"
+      />
+    </div>
+    <Button
+      variant="default"
+      onClick={onSave}
+      className="flex-1 min-w-0"
+      style={{ flexBasis: "25%" }}
+    >
+      <SaveIcon className="h-4 w-4 mr-2" />
+      Save {config.title}
+    </Button>
+  </div>
+);
+
+// Common existing key display component
+const ExistingKeyDisplay = ({
+  config,
+  existingKey,
+  onRemove,
+}: {
+  config: ApiKeyConfig;
+  existingKey: { value: string };
+  onRemove: () => void;
+}) => {
+  const maskKey = (key: string) => "*".repeat(key.length);
+  
+  return (
+    <div className="flex items-center justify-between p-3 bg-input/80 rounded-md">
+      <div className="flex items-center gap-1 truncate">
+        <span className="text-sm font-medium">Current Value:</span>
+        <span className="text-sm font-mono">
+          {config.isPassword ? maskKey(existingKey.value) : existingKey.value}
+        </span>
+      </div>
+      <Button variant="ghost" size="sm" onClick={onRemove}>
+        <TrashIcon className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
 
 type ApiKeyConfig = {
   key: string;
@@ -33,21 +129,12 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     description: (
       <>
         Required for GPT models and AI-powered features. Get your API key from{" "}
-        <a
-          href="https://platform.openai.com/api-keys"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500 hover:underline"
-        >
+        <ExternalLink href="https://platform.openai.com/api-keys">
           OpenAI Platform
-        </a>
+        </ExternalLink>
       </>
     ),
-    icon: (
-      <div className="w-6 h-6 rounded-sm flex items-center justify-center">
-        <img src="/openai.svg" alt="OpenAI" className="w-4 h-4 dark:invert" />
-      </div>
-    ),
+    icon: <Icons.OpenAI />,
     placeholder: "sk-...",
     isPassword: true,
   },
@@ -56,11 +143,7 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     title: "OpenAI Base URL",
     description:
       "Custom base URL for OpenAI-compatible APIs (e.g., OpenRouter, local deployments). Defaults to OpenRouter if not set.",
-    icon: (
-      <div className="w-6 h-6 rounded-sm flex items-center justify-center">
-        <img src="/openai.svg" alt="OpenAI" className="w-4 h-4 dark:invert" />
-      </div>
-    ),
+    icon: <Icons.OpenAI />,
     placeholder: "https://api.openai.com/v1",
   },
   {
@@ -68,11 +151,7 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     title: "OpenAI Embedding Base URL",
     description:
       "Custom base URL for OpenAI embedding models. Leave empty to use the same as OpenAI Base URL.",
-    icon: (
-      <div className="w-6 h-6 rounded-sm flex items-center justify-center">
-        <img src="/openai.svg" alt="OpenAI" className="w-4 h-4 dark:invert" />
-      </div>
-    ),
+    icon: <Icons.OpenAI />,
     placeholder: "https://api.openai.com/v1",
   },
   {
@@ -80,11 +159,7 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     title: "Google Embedding API Key",
     description:
       "Required for Google embedding models. Get your API key from Google Cloud Console.",
-    icon: (
-      <div className="w-6 h-6 rounded-sm flex items-center justify-center">
-        <img src="/google.svg" alt="Google" className="w-4 h-4" />
-      </div>
-    ),
+    icon: <Icons.Google />,
     placeholder: "sk-...",
     isPassword: true,
   },
@@ -93,11 +168,7 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     title: "OpenAI Embedding API Key",
     description:
       "Required for OpenAI embedding models. Get your API key from OpenAI Platform.",
-    icon: (
-      <div className="w-6 h-6 rounded-sm flex items-center justify-center">
-        <img src="/openai.svg" alt="OpenAI" className="w-4 h-4 dark:invert" />
-      </div>
-    ),
+    icon: <Icons.OpenAI />,
     placeholder: "sk-...",
     isPassword: true,
   },
@@ -107,21 +178,10 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     description: (
       <>
         Required for enhanced web search capabilities. Get your API key from{" "}
-        <a
-          href="https://exa.ai"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500 hover:underline"
-        >
-          Exa
-        </a>
+        <ExternalLink href="https://exa.ai">Exa</ExternalLink>
       </>
     ),
-    icon: (
-      <div className="w-6 h-6 bg-[#03037A] rounded-sm flex items-center justify-center">
-        <span className=" text-xs text-white font-bold">E</span>
-      </div>
-    ),
+    icon: <Icons.Exa />,
     placeholder: "Enter your Exa API key...",
     isPassword: true,
   },
@@ -137,6 +197,7 @@ function RouteComponent() {
   // Get existing API keys
   const existingKeys = useQuery(api.apiKeys.queries.getAll);
   const createApiKey = useMutation(api.apiKeys.mutations.create);
+  const updateApiKey = useMutation(api.apiKeys.mutations.update);
   const removeApiKey = useMutation(api.apiKeys.mutations.remove);
 
   const updateInputValue = (key: string, value: string) => {
@@ -154,6 +215,7 @@ function RouteComponent() {
       await createApiKey({
         key: config.key,
         value,
+        enabled: true,
       });
       toast.success(`${config.title} saved successfully`);
       updateInputValue(config.key, "");
@@ -163,18 +225,17 @@ function RouteComponent() {
     }
   };
 
-  const handleRemove = async (config: ApiKeyConfig) => {
-    try {
-      await removeApiKey({ key: config.key });
-      toast.success(`${config.title} removed successfully`);
-    } catch (error) {
-      toast.error(`Failed to remove ${config.title}`);
-      console.error(error);
-    }
+  const handleToggle = async (config: ApiKeyConfig, enabled: boolean) => {
+    await updateApiKey({
+      key: config.key,
+      enabled,
+    });
+    toast.success(`${config.title} ${enabled ? 'enabled' : 'disabled'} successfully`);
   };
 
-  const maskKey = (key: string) => {
-    return "*".repeat(key.length);
+  const handleRemove = async (config: ApiKeyConfig) => {
+    await removeApiKey({ key: config.key });
+    toast.success(`${config.title} removed successfully`);
   };
 
   const getExistingKey = (key: string) => {
@@ -184,59 +245,40 @@ function RouteComponent() {
   const renderConfigField = (config: ApiKeyConfig) => {
     const existingKey = getExistingKey(config.key);
     const inputValue = inputValues[config.key] || "";
+    const isEnabled = existingKey ? existingKey.enabled : false;
 
     return (
       <Card key={config.key}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-1.5">
-            {config.icon}
-            {config.title}
-          </CardTitle>
-          <CardDescription>{config.description}</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <CardTitle className="flex items-center gap-1.5">
+              {config.icon}
+              {config.title}
+            </CardTitle>
+            <CardDescription>{config.description}</CardDescription>
+          </div>
+          <div className="flex items-center justify-end">
+            <Switch
+              id={`toggle-${config.key}`}
+              checked={isEnabled}
+              onCheckedChange={(checked) => handleToggle(config, checked)}
+            />
+          </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-1 h-full">
+        <CardContent className="flex flex-col gap-3 h-full">
           {existingKey?.value ? (
-            <div className="flex items-center justify-between p-3 bg-input/80 rounded-md">
-              <div className="flex items-center gap-1 truncate">
-                <span className="text-sm font-medium">Current Value:</span>
-                <span className="text-sm font-mono ">
-                  {config.isPassword
-                    ? maskKey(existingKey.value)
-                    : existingKey.value}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleRemove(config)}
-              >
-                <TrashIcon className="h-4 w-4" />
-              </Button>
-            </div>
+            <ExistingKeyDisplay
+              config={config}
+              existingKey={existingKey}
+              onRemove={() => handleRemove(config)}
+            />
           ) : (
-            <div className="flex flex-row gap-1.5 w-full items-end">
-              <div className="flex flex-col flex-[3]">
-                <Label className="text-xs text-muted-foreground py-2">
-                  {config.title}
-                </Label>
-                <Input
-                  type={config.isPassword ? "password" : "text"}
-                  placeholder={config.placeholder}
-                  value={inputValue}
-                  onChange={(e) => updateInputValue(config.key, e.target.value)}
-                  className="w-full focus:ring-0 focus:ring-offset-0 border-border focus-visible:ring-0 focus-visible:ring-offset-0 outline-none"
-                />
-              </div>
-              <Button
-                variant="default"
-                onClick={() => handleSave(config)}
-                className="flex-1 min-w-0"
-                style={{ flexBasis: "25%" }}
-              >
-                <SaveIcon className="h-4 w-4 mr-2" />
-                Save {config.title}
-              </Button>
-            </div>
+            <ApiKeyInput
+              config={config}
+              value={inputValue}
+              onChange={(value) => updateInputValue(config.key, value)}
+              onSave={() => handleSave(config)}
+            />
           )}
         </CardContent>
       </Card>
@@ -244,7 +286,7 @@ function RouteComponent() {
   };
 
   return (
-    <div className="flex flex-col gap-4 h-full ">
+    <div className="flex flex-col gap-4 h-full">
       <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1">
         {API_KEY_CONFIGS.map(renderConfigField)}
       </div>
