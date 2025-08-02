@@ -1,4 +1,4 @@
-import { memo, useMemo, useCallback, useRef, useState, useEffect } from "react";
+import { memo, useMemo, useCallback, useState, useEffect } from "react";
 
 import { Markdown } from "@/components/ui/markdown";
 import type {

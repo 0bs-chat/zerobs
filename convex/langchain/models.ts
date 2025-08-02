@@ -58,7 +58,7 @@ export const models: {
       "Gemini 2.5 Flash is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     owner: "google",
     usageRateMultiplier: 1.0,
-    temperature: 0.5,
+    temperature: 1.0,
     parser: "functionCalling",
   },
   {
@@ -75,7 +75,7 @@ export const models: {
       "Gemini 2.5 Flash Thinking is a powerful model that can handle a wide range of tasks, including text, image, and video generation.",
     owner: "google",
     usageRateMultiplier: 1.0,
-    temperature: 0.5,
+    temperature: 1.0,
     parser: "functionCalling",
   },
   {
@@ -92,7 +92,7 @@ export const models: {
       "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
     owner: "google",
     usageRateMultiplier: 1.5,
-    temperature: 0.5,
+    temperature: 1.0,
     parser: "functionCalling",
   },
   {
@@ -172,7 +172,7 @@ export const models: {
     owner: "openai",
     usageRateMultiplier: 1.0,
     hidden: true,
-    temperature: 0.5,
+    temperature: 1.0,
     parser: "functionCalling",
   },
   {

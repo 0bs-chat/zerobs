@@ -174,7 +174,8 @@ export function createAgentSystemMessage(
     `- Analyze the user's request and if you can answer the question, do so. If you cannot answer the question, use the available tools to reach to the answer.\n` +
     `- Think step-by-step about your plan of action.\n` +
     `- Avoid asking for clarification or context unless it is explicitly requested, try to reason what it could possibly mean.\n` +
-    `- NEVER refer to your tool names directly. Describe your actions in plain language (e.g., "I will search the web for...").\n`;
+    `- NEVER refer to your tool names directly. Describe your actions in plain language (e.g., "I will search the web for...").\n` +
+    `- If documents are provided, they are made avilable to in /mnt/data directory.\n`;
 
   return new SystemMessage(
     `${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`,
