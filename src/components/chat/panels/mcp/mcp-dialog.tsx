@@ -80,8 +80,10 @@ export const MCPDialog = () => {
       open={isOpen}
       onOpenChange={(open) => {
         if (!open && !isLoading) {
+          // Reset form state, but not the view. The view is set when the dialog
+          // is triggered, preventing a flash of content on close.
           setMcp(initialMCPState);
-		  setView("browse");
+          setSelectedTemplate(undefined);
         }
         setIsOpen(open);
       }}
