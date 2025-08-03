@@ -11,6 +11,8 @@ import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/settings/profile")({
   component: RouteComponent,
+  preloadStaleTime: 30 * 60 * 1000, // 30 minutes
+  staleTime: 30 * 60 * 1000, // 30 minutes
 });
 
 function RouteComponent() {

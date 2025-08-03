@@ -57,7 +57,7 @@ const EditingDocumentList = ({
     (documentId: Id<"documents">) => {
       setDocumentDialogOpen(documentId);
     },
-    [setDocumentDialogOpen],
+    [setDocumentDialogOpen]
   );
 
   if (!documents?.length) return null;
@@ -71,7 +71,7 @@ const EditingDocumentList = ({
         {documents.map((doc) => {
           const { icon: Icon, className: IconClassName } = getDocTagInfo(
             doc,
-            modalities,
+            modalities
           );
 
           return (
@@ -112,11 +112,11 @@ export const UserMessage = memo(
   }) => {
     // State management moved from UserMessageGroup
     const [editingMessageId, setEditingMessageId] = useState<string | null>(
-      null,
+      null
     );
     const [editedText, setEditedText] = useState("");
     const [editedDocuments, setEditedDocuments] = useState<Id<"documents">[]>(
-      [],
+      []
     );
 
     const isEditing = editingMessageId === item.message._id;
@@ -124,7 +124,7 @@ export const UserMessage = memo(
     useEffect(() => {
       if (editingMessageId) {
         const messageToEdit = groupedMessages?.find(
-          (g) => g.input.message._id === editingMessageId,
+          (g) => g.input.message._id === editingMessageId
         );
         if (messageToEdit) {
           const content = messageToEdit.input.message.message.content;
@@ -162,7 +162,7 @@ export const UserMessage = memo(
       (documents: Id<"documents">[]) => {
         setEditedDocuments(documents);
       },
-      [],
+      []
     );
 
     // Memoize the content rendering to avoid unnecessary calculations
@@ -214,9 +214,9 @@ export const UserMessage = memo(
             </div>
           </div>
         ) : (
-          <div className="bg-card flex flex-col  max-w-full self-end px-4 py-3 rounded-md shadow-sm">
+          <ScrollArea className="bg-card flex flex-col max-h-96 max-w-full self-end px-4 py-3 rounded-md shadow-sm">
             {renderedContent}
-          </div>
+          </ScrollArea>
         )}
         <div className="opacity-0 flex gap-2 group-hover:opacity-100 transition-opacity">
           <UserUtilsBar
@@ -231,7 +231,7 @@ export const UserMessage = memo(
         </div>
       </div>
     );
-  },
+  }
 );
 
 UserMessage.displayName = "UserMessage";

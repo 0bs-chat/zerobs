@@ -43,12 +43,15 @@ if (rootElement && !rootElement.innerHTML) {
     <StrictMode>
       <ThemeProvider>
         <ConvexAuthProvider client={convex}>
-          <ConvexQueryCacheProvider>
+          <ConvexQueryCacheProvider
+            expiration={1000 * 60 * 5}
+            maxIdleEntries={20}
+          >
             <RouterProvider router={router} />
           </ConvexQueryCacheProvider>
         </ConvexAuthProvider>
       </ThemeProvider>
-    </StrictMode>,
+    </StrictMode>
   );
 }
 
