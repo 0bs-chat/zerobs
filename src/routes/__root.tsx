@@ -3,6 +3,7 @@ import {
   Outlet,
   createRootRoute,
   useLocation,
+  HeadContent,
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
@@ -15,6 +16,49 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { TopNav } from "@/components/topnav";
 
 export const Route = createRootRoute({
+  head: () => ({
+    meta: [
+      {
+        charSet: 'utf-8',
+      },
+      {
+        name: 'viewport',
+        content: 'width=device-width, initial-scale=1.0',
+      },
+      {
+        name: 'theme-color',
+        content: '#000000',
+      },
+      {
+        name: 'description',
+        content: 'the everything ai app',
+      },
+    ],
+    links: [
+      {
+        rel: 'icon',
+        href: 'favicon.ico',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: 'favicon.ico',
+      },
+      {
+        rel: 'manifest',
+        href: 'manifest.json',
+      },
+    ],
+    scripts: [
+      {
+        src: 'https://cdn.databuddy.cc/databuddy.js',
+        'data-client-id': 'NSQmSNKXIn2VGySald6BR',
+        'data-enable-batching': 'true',
+        crossOrigin: 'anonymous',
+        async: true,
+      },
+    ],
+    title: '0bs',
+  }),
   component: () => {
     const location = useLocation();
     const { isLoading, isAuthenticated } = useConvexAuth();
@@ -37,6 +81,7 @@ export const Route = createRootRoute({
 
     return (
       <>
+        <HeadContent />
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
