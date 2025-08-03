@@ -132,18 +132,3 @@ export const initialMCPState = {
 };
 
 export const mcpBrowsePanelOpenAtom = atom(false);
-export const mcpDialogOpenAtom = atom(false);
-
-// Example MCP templates (static for now)
-export type McpTemplate = Omit<
-  Doc<"mcps">,
-  "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
-> & {
-  description: string;
-  image: string;
-  official: boolean;
-};
-
-export const selectedMCPTemplateAtom = atom<
-  McpTemplate | typeof initialMCPState
->(initialMCPState);
