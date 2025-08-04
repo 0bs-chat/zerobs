@@ -1,7 +1,6 @@
-import { MCPDialog } from "./mcp-dialog";
 import { MCPCard } from "./mcp-card";
 import { useMCPs } from "@/hooks/chats/use-mcp";
-import { BrowseMCPDialog } from "./browse-mcp-dialog";
+import { MCPDialog } from "./mcp-dialog";
 
 export const MCPPanel = () => {
   const { getAllMCPs, toggleMCP, handleDelete, restartMCP } = useMCPs();
@@ -13,7 +12,6 @@ export const MCPPanel = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">MCPs</h2>
         <div className="flex gap-2 items-center">
-          <BrowseMCPDialog />
           <MCPDialog />
         </div>
       </div>
