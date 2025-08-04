@@ -10,7 +10,11 @@
 
 <br/>
 
-caching implementation : (with convex cache provider and tanstack query)
+caching implementation : (tanstack query)
+
+1. normal queries.
+2. normal mutations.
+3. paginated and infinite queries.
 
 ---
 
@@ -37,3 +41,8 @@ try different frameworks:
 <br/>
 
 ## tanstack start
+
+### found out
+
+1. we can't go around the convex cache ttl. i was thinking of no refetching until or retrieving messages from cache. we are doing that but after a certain time (gctime it cleans the cache).
+2.

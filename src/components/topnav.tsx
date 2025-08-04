@@ -11,7 +11,8 @@ import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
 
@@ -23,7 +24,10 @@ export function TopNav() {
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
   const setUser = useSetAtom(userAtom);
   const location = useLocation();
-  const user = useQuery(api.auth.getUser);
+
+  const { data: user } = useQuery({
+    ...convexQuery(api.auth.getUser, {}),
+  });
 
   useEffect(() => {
     if (user) {
