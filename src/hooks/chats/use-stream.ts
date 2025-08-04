@@ -17,12 +17,12 @@ export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 export function useStream(chatId: Id<"chats"> | "new") {
   const stream = useQuery(
     api.streams.queries.get,
-    chatId !== "new" ? { chatId } : "skip",
+    chatId !== "new" ? { chatId } : "skip"
   );
 
   const [groupedChunks, setGroupedChunks] = useState<ChunkGroup[]>([]);
   const [lastSeenTime, setLastSeenTime] = useState<number | undefined>(
-    undefined,
+    undefined
   );
 
   // Reset state when chat or stream changes
@@ -41,7 +41,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
           lastChunkTime: lastSeenTime,
           paginationOpts: { numItems: 200, cursor: null },
         }
-      : "skip",
+      : "skip"
   );
 
   // Process new chunks when they arrive
@@ -51,8 +51,8 @@ export function useStream(chatId: Id<"chats"> | "new") {
     const newEvents: ChunkGroup[] = chunksResult.chunks.page.flatMap(
       (chunkDoc: any) =>
         chunkDoc.chunks.map(
-          (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup,
-        ),
+          (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup
+        )
     );
 
     if (newEvents.length > 0) {
@@ -74,8 +74,34 @@ export function useStream(chatId: Id<"chats"> | "new") {
               newGroups.push(lastGroup);
             }
           } else {
-            lastGroup = chunk;
-            newGroups.push(chunk);
+            // Handle tool chunks (start, stream, end)
+            if (
+              lastGroup?.type === "tool" &&
+              lastGroup.toolCallId === (chunk as ToolChunkGroup).toolCallId &&
+              !lastGroup.isComplete &&
+              !chunk.isComplete
+            ) {
+              // Same ongoing tool call → append partial output if present
+              if (chunk.output !== undefined) {
+                if (
+                  typeof lastGroup.output === "string" &&
+                  typeof chunk.output === "string"
+                ) {
+                  lastGroup.output = (lastGroup.output ?? "") + chunk.output;
+                } else if (
+                  Array.isArray(lastGroup.output) &&
+                  Array.isArray(chunk.output)
+                ) {
+                  lastGroup.output.push(...chunk.output);
+                } else {
+                  // Fallback: replace
+                  lastGroup.output = chunk.output;
+                }
+              }
+            } else {
+              lastGroup = chunk;
+              newGroups.push(chunk);
+            }
           }
         }
         return newGroups;
@@ -102,7 +128,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
     const completedIds = new Set(
       groupedChunks
         .filter((c) => c.type === "tool" && c.isComplete)
-        .map((c) => (c as ToolChunkGroup).toolCallId),
+        .map((c) => (c as ToolChunkGroup).toolCallId)
     );
     return groupedChunks
       .map((chunk) => {
@@ -130,7 +156,10 @@ export function useStream(chatId: Id<"chats"> | "new") {
             return new LangChainToolMessage({
               name: chunk.toolName,
               tool_call_id: chunk.toolCallId,
-              content: "",
+              content:
+                typeof chunk.output === "string"
+                  ? chunk.output
+                  : JSON.stringify(chunk.output ?? ""),
               additional_kwargs: {
                 input: JSON.parse(JSON.stringify(chunk.input)),
                 is_complete: false,
