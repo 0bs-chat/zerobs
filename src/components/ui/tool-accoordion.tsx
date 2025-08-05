@@ -5,6 +5,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { formatToolInput, getToolStatusText } from "@/lib/tool-utils";
 
 type ToolAccordionProps = {
   messageName: string;
@@ -20,7 +21,11 @@ function ToolAccordion({
   isComplete,
 }: ToolAccordionProps) {
   return (
-    <Accordion type="multiple" className="w-full">
+    <Accordion
+      type="multiple"
+      className="w-full bg-accent/20 px-2 py-1.5 rounded-lg cursor-pointer"
+      defaultValue={isComplete === false ? ["tool-call"] : []}
+    >
       <AccordionItem value="tool-call" className="px-0 border-none">
         <AccordionTrigger className="py-1 gap-2 text-xs font-semibold items-center justify-start">
           {isComplete === true ? (
@@ -28,16 +33,26 @@ function ToolAccordion({
           ) : isComplete === false ? (
             <Loader2 className="w-4 h-4 text-yellow-500 animate-spin" />
           ) : null}
-          <span className="text-muted-foreground translate-y-[.1rem]">
-            Tool Call ({messageName})
+          <span className="text-muted-foreground ">
+            {messageName}{" "}
+            {getToolStatusText(isComplete) &&
+              `(${getToolStatusText(isComplete)})`}
           </span>
         </AccordionTrigger>
-        <AccordionContent className="bg-card rounded-md p-2 border mt-2 max-h-[36rem] overflow-y-auto">
+        <AccordionContent
+          className={`rounded-md p-2 border mt-2 max-h-[38rem] overflow-y-auto ${
+            isComplete === false
+              ? "bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800"
+              : isComplete === true
+                ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+                : "bg-card"
+          }`}
+        >
           <h4 className="text-xs font-semibold mb-1 text-muted-foreground">
             Input
           </h4>
           <pre className="text-xs bg-input/50 p-2 rounded overflow-x-auto mb-2 whitespace-pre-wrap">
-            {JSON.stringify(input, null, 2)}
+            {formatToolInput(input)}
           </pre>
           <h4 className="text-xs font-semibold mb-1 text-muted-foreground">
             Output

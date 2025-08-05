@@ -81,6 +81,9 @@ export function useStream(chatId: Id<"chats"> | "new") {
               !lastGroup.isComplete &&
               !chunk.isComplete
             ) {
+              if (!lastGroup.toolName && chunk.toolName) {
+                lastGroup.toolName = chunk.toolName;
+              }
               // Same ongoing tool call → append partial output if present
               if (chunk.output !== undefined) {
                 if (

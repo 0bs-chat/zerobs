@@ -34,18 +34,10 @@ export const SearchResultDisplay = ({
   results,
   input,
 }: SearchResultDisplayProps) => {
-  if (!results || results.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg">
-        No search results found
-      </div>
-    );
-  }
-
   return (
     <Accordion
       type="multiple"
-      className="w-full py-1.5 rounded-lg cursor-pointer"
+      className="w-full bg-accent/20 px-2 py-2 rounded-lg cursor-pointer"
       // defaultValue={["web-search-results"]} // Remove this line to keep it closed by default
     >
       <AccordionItem value="web-search-results" className="px-0 border-none">

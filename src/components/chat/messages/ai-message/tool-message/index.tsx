@@ -4,12 +4,12 @@ import { DocumentResultDisplay, type DocumentResult } from "./document-results";
 import type { BaseMessage } from "@langchain/core/messages";
 import { FileDisplay } from "./file-result";
 import ToolAccordion from "@/components/ui/tool-accoordion";
+import { StreamingOutput } from "@/components/ui/streaming-output";
 
 export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
   const parsedContent = useMemo(() => {
     if (!message) return null;
 
-    // 1) Known “searchWeb” → SearchResult[]
     if (message.name === "searchWeb") {
       try {
         return {
@@ -21,7 +21,6 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
       }
     }
 
-    // 2) Known “searchProjectDocuments” → DocumentResult[]
     if (message.name === "searchProjectDocuments") {
       try {
         return {
@@ -33,14 +32,13 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
       }
     }
 
-    // 3) Mixed [ { type: "file", file: { file_id } } | { type: "text", text } ]
     try {
       const maybeArr = JSON.parse(message.content as string);
       if (Array.isArray(maybeArr)) {
         const isMixed = maybeArr.some(
           (i) =>
             (i.type === "file" && i.file?.file_id) ||
-            (i.type === "text" && i.text),
+            (i.type === "text" && i.text)
         );
         if (isMixed) {
           return { type: "mixed" as const, content: maybeArr };
@@ -57,15 +55,30 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
   const input = (message.additional_kwargs as any)?.input as
     | Record<string, any>
     | undefined;
+  const isComplete = (message.additional_kwargs as any)?.is_complete;
 
   if (!parsedContent) return null;
 
   // Search/Web calls render in their own specialized component
   if (parsedContent.type === "searchWeb") {
+    // Show streaming output if not complete
+    if (isComplete === false || !parsedContent.results.length) {
+      return (
+        <ToolAccordion
+          messageName={message.name ?? "unknown"}
+          input={input}
+          isComplete={isComplete}
+        >
+          <StreamingOutput content="" isComplete={isComplete} />
+        </ToolAccordion>
+      );
+    }
+
     return (
       <SearchResultDisplay results={parsedContent.results} input={input} />
     );
   }
+
   if (parsedContent.type === "document") {
     return <DocumentResultDisplay results={parsedContent.results} />;
   }
@@ -76,7 +89,7 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
       <ToolAccordion
         messageName={message.name ?? "unknown"}
         input={input}
-        isComplete={(message.additional_kwargs as any)?.is_complete}
+        isComplete={isComplete}
       >
         <div className="flex flex-col gap-4">
           {parsedContent.content.map((item, idx) => {
@@ -85,12 +98,11 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
             }
             if (item.type === "text" && item.text) {
               return (
-                <pre
+                <StreamingOutput
                   key={idx}
-                  className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap"
-                >
-                  {item.text}
-                </pre>
+                  content={item.text}
+                  isComplete={isComplete}
+                />
               );
             }
             return null;
@@ -105,17 +117,16 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
     <ToolAccordion
       messageName={message.name ?? "unknown"}
       input={input}
-      isComplete={(message.additional_kwargs as any)?.is_complete}
+      isComplete={isComplete}
     >
-      {typeof parsedContent.content === "string" ? (
-        <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-          {parsedContent.content}
-        </pre>
-      ) : (
-        <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-          {JSON.stringify(parsedContent.content, null, 2)}
-        </pre>
-      )}
+      <StreamingOutput
+        content={
+          typeof parsedContent.content === "string"
+            ? parsedContent.content
+            : JSON.stringify(parsedContent.content, null, 2)
+        }
+        isComplete={isComplete}
+      />
     </ToolAccordion>
   );
 });
