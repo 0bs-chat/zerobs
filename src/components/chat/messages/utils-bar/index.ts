@@ -32,10 +32,13 @@ export function useMessageActions() {
       ...(model && { model }),
     });
     if (result?.newChatId) {
-      chat({
-        chatId: result.newChatId,
-        model: model,
-      });
+      // Only trigger regeneration if a model is explicitly selected
+      if (model) {
+        chat({
+          chatId: result.newChatId,
+          model: model,
+        });
+      }
       navigateToChat(navigate, result.newChatId);
     }
   };

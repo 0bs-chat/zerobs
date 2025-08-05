@@ -491,7 +491,6 @@ export async function formatMessages(
                       document.key as Id<"_storage">,
                     );
                     const text = await blob?.text();
-                    console.log(text);
                     return {
                       type: "text",
                       text: `# ${document.name}\n${text}\n`,
