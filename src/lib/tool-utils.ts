@@ -1,6 +1,11 @@
 /**
  * Utility functions for tool display and formatting
  */
+const TOOL_NAME_MAPPINGS = {
+  searchWeb: "Web Search",
+  searchProjectDocuments: "Project Search",
+  vectorSearch: "Document Search",
+} as const;
 
 export function cleanToolName(
   rawName: string | null | undefined,
@@ -27,9 +32,9 @@ export function cleanToolName(
     }
   }
 
-  if (rawName === "searchWeb") return "Web Search";
-  if (rawName === "searchProjectDocuments") return "Project Search";
-  if (rawName === "vectorSearch") return "Document Search";
+  if (rawName in TOOL_NAME_MAPPINGS) {
+    return TOOL_NAME_MAPPINGS[rawName as keyof typeof TOOL_NAME_MAPPINGS];
+  }
 
   return rawName
     .replace(/_/g, " ")

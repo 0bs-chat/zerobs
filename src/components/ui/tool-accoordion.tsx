@@ -14,6 +14,19 @@ type ToolAccordionProps = {
   isComplete?: boolean;
 };
 
+const getContentClassName = (isComplete?: boolean) => {
+  const baseClasses =
+    "rounded-md p-2 border mt-2 max-h-[38rem] overflow-y-auto";
+
+  if (isComplete === false) {
+    return `${baseClasses} bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800`;
+  }
+  if (isComplete === true) {
+    return `${baseClasses} bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800`;
+  }
+  return `${baseClasses} bg-card`;
+};
+
 function ToolAccordion({
   messageName,
   input,
@@ -39,15 +52,7 @@ function ToolAccordion({
               `(${getToolStatusText(isComplete)})`}
           </span>
         </AccordionTrigger>
-        <AccordionContent
-          className={`rounded-md p-2 border mt-2 max-h-[38rem] overflow-y-auto ${
-            isComplete === false
-              ? "bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800"
-              : isComplete === true
-                ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
-                : "bg-card"
-          }`}
-        >
+        <AccordionContent className={getContentClassName(isComplete)}>
           <h4 className="text-xs font-semibold mb-1 text-muted-foreground">
             Input
           </h4>

@@ -55,7 +55,14 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
   const input = (message.additional_kwargs as any)?.input as
     | Record<string, any>
     | undefined;
-  const isComplete = (message.additional_kwargs as any)?.is_complete;
+
+  interface MessageAdditionalKwargs {
+    input?: Record<string, any>;
+    is_complete?: boolean;
+  }
+
+  const isComplete = (message.additional_kwargs as MessageAdditionalKwargs)
+    ?.is_complete;
 
   if (!parsedContent) return null;
 

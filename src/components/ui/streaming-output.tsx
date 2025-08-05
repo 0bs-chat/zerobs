@@ -19,7 +19,7 @@ export function StreamingOutput({
     );
   }
 
-  if (!content && isComplete === false) {
+  if (!content && (isComplete === true || isComplete === undefined)) {
     return (
       <div
         className={`text-xs text-muted-foreground italic flex items-center gap-2 ${className}`}
