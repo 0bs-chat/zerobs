@@ -18,6 +18,7 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { getMCPTools, getRetrievalTools } from "./tools";
 import { getGoogleTools } from "./tools/googleTools";
+import { getVibzTools } from "./tools/vibz";
 import { getModel } from "./models";
 import { createAgentSystemMessage } from "./prompts";
 import { GraphState } from "./state";
@@ -56,12 +57,14 @@ export async function createAgentWithTools(
   const tools = await getMCPTools(config.ctx, state);
   const retrievalTools = await getRetrievalTools(state, config, true);
   const googleTools = await getGoogleTools(config, true);
+  const vibzTools = chat.vibz ? await getVibzTools(state, config) : [];
 
   const allTools = [
     ...(tools.tools.length > 0 ? tools.tools : []),
     ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
     ...(chat.webSearch ? [retrievalTools.webSearch] : []),
     ...(googleTools.length > 0 ? googleTools : []),
+    ...(vibzTools.length > 0 ? vibzTools : []),
   ];
 
   if (!chat.conductorMode) {
@@ -182,6 +185,7 @@ export async function getAvailableTools(
   const tools = await getMCPTools(config.ctx, state);
   const retrievalTools = await getRetrievalTools(state, config, true);
   const googleTools = await getGoogleTools(config, true);
+  const vibzTools = chat.vibz ? await getVibzTools(state, config) : [];
 
   const toolsInfo: Array<{ name: string; description: string }> = [];
 
@@ -215,6 +219,16 @@ export async function getAvailableTools(
       description: tool.description || "No description available",
     });
   });
+
+  // Add Vibz tools
+  if (chat.vibz) {
+    vibzTools.forEach((tool: any) => {
+      toolsInfo.push({
+        name: tool.name,
+        description: tool.description || "No description available",
+      });
+    });
+  }
 
   return toolsInfo;
 }

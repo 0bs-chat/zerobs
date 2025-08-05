@@ -38,8 +38,8 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   if (!project) return null;
 
   return (
-    <div className="flex flex-col gap-4 h-full ">
-      <div className="flex flex-col gap-0 ">
+    <div className="flex flex-col gap-4 h-full">
+      <div className="flex flex-col gap-0">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">{project.name}</h2>
           <Button
@@ -87,7 +87,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
         />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 overflow-y-auto">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold">Documents</h3>

@@ -22,4 +22,13 @@ export const addEnabledFieldToApiKeys = migrations.define({
   },
 });
 
-export const runIt = migrations.runner(internal.migrations.addEnabledFieldToApiKeys);
+export const addVibzFieldToChats = migrations.define({
+  table: "chats",
+  migrateOne: async (ctx, doc) => {
+    if (doc.vibz === undefined) {
+      await ctx.db.patch(doc._id, { vibz: false });
+    }
+  },
+});
+
+export const runIt = migrations.runner(internal.migrations.addVibzFieldToChats);

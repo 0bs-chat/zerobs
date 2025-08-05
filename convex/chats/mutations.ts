@@ -17,6 +17,7 @@ export const create = mutation({
     orchestratorMode: v.boolean(),
     webSearch: v.boolean(),
     artifacts: v.boolean(),
+    vibz: v.boolean(),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);

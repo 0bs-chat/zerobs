@@ -18,6 +18,7 @@ import {
   Binoculars,
   XIcon, // <-- Add this
   FoldersIcon,
+  CodeIcon,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { useUploadDocuments } from "@/hooks/chats/use-documents";
@@ -60,6 +61,13 @@ const TOGGLES = [
     label: "Artifacts",
     icon: <FileIcon className="h-4 w-4" />,
     tooltip: undefined,
+    animation: "scale",
+  },
+  {
+    key: "vibz" as const,
+    label: "Vibz",
+    icon: <CodeIcon className="h-4 w-4" />,
+    tooltip: "Code generation mode",
     animation: "scale",
   },
   {

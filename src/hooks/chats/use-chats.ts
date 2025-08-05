@@ -45,6 +45,7 @@ export const useHandleSubmit = () => {
           webSearch: false,
           artifacts: false,
           conductorMode: false,
+          vibz: false,
         }));
         chat._id = await createChatMutation({
           name: chat.name,
@@ -55,6 +56,7 @@ export const useHandleSubmit = () => {
           orchestratorMode: chat.orchestratorMode,
           webSearch: chat.webSearch,
           artifacts: chat.artifacts,
+          vibz: chat.vibz,
         });
         await createMessageMutation({
           chatId: chat._id,
@@ -83,6 +85,7 @@ export const useHandleSubmit = () => {
           text: "",
           documents: [],
           projectId: null,
+          vibz: false,
         }));
         await sendAction({ chatId: chat._id });
       }
