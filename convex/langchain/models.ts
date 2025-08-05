@@ -298,6 +298,21 @@ export const models: {
     temperature: 0.3,
     parser: "functionCalling",
   },
+  {
+    label: "GPT OSS 120B",
+    model_name: "gpt-oss-120b",
+    model: "openai/gpt-oss-120b",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text"],
+    image: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    description:
+      "GPT OSS 120B is an open-weight, 117B-parameter Mixture-of-Experts (MoE) language model from OpenAI designed for high-reasoning, agentic, and general-purpose production use cases. It activates 5.1B parameters per forward pass and supports configurable reasoning depth, full chain-of-thought access, and native tool use.",
+    owner: "openai",
+    usageRateMultiplier: 1.0,
+    temperature: 0.3,
+  },
 ];
 
 export async function getModel(
