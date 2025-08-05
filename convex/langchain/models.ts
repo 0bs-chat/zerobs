@@ -295,7 +295,7 @@ export const models: {
       "Horizon Beta is an improved version of Horizon Alpha, provided to the community to gather feedback. It's free to use during testing and supports text generation with tool calling capabilities.",
     owner: "openrouter",
     usageRateMultiplier: 1.0,
-    temperature: 0.7,
+    temperature: 0.3,
     parser: "functionCalling",
   },
 ];
@@ -419,7 +419,6 @@ export async function formatMessages(
               if (typeof contentItem === "object") {
                 if (contentItem.type === "file" && "file" in contentItem) {
                   const documentId = contentItem.file?.file_id;
-                  // Use internal query to avoid authentication issues in internal actions
                   const document = await ctx.runQuery(
                     internal.documents.crud.read,
                     {
@@ -491,9 +490,11 @@ export async function formatMessages(
                     const blob = await ctx.storage.get(
                       document.key as Id<"_storage">,
                     );
+                    const text = await blob?.text();
+                    console.log(text);
                     return {
                       type: "text",
-                      text: `# ${document.name}\n${blob?.text()}\n`,
+                      text: `# ${document.name}\n${text}\n`,
                     };
                   } else {
                     return await getVectorText(ctx, document);

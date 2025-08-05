@@ -36,17 +36,14 @@ export function TopNav() {
   const isOnChatRoute = !!params.chatId;
   const isSettingsRoute = location.pathname.startsWith("/settings");
 
-  // Minimal global shortcut for toggling resizable panel (Ctrl/Cmd+I)
+  // Global shortcut for toggling resizable panel (Ctrl/Cmd+I)
   useEffect(() => {
     if (!isOnChatRoute) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      const tag = (event.target as HTMLElement)?.tagName;
-      const isEditable =
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        (event.target as HTMLElement)?.isContentEditable;
-      if (isEditable) return;
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i") {
+      if (
+        event.key === "i" &&
+        (event.metaKey || event.ctrlKey)
+      ) {
         event.preventDefault();
         setResizePanelOpen((open) => {
           if (!open) setSelectedArtifact(undefined);
@@ -54,6 +51,7 @@ export function TopNav() {
         });
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOnChatRoute, setResizePanelOpen, setSelectedArtifact]);

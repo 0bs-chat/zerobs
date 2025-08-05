@@ -82,8 +82,8 @@ export const getMCPTools = async (
         useNodeEventSource: true,
         reconnect: {
           enabled: true,
-          maxAttempts: 4,
-          delayMs: 15000,
+          maxAttempts: 30,
+          delayMs: 200,
         },
       },
     ]),
@@ -91,7 +91,6 @@ export const getMCPTools = async (
 
   // Initialize the MultiServerMCPClient
   const client = new MultiServerMCPClient({
-    throwOnLoadError: true,
     prefixToolNameWithServerName: true,
     additionalToolNamePrefix: "mcp",
     mcpServers,
