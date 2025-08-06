@@ -305,7 +305,7 @@ function RouteComponent() {
   };
 
   // Show error state if API keys failed to load
-  if (error) {
+  if (error && isError) {
     return (
       <div className="flex flex-col gap-4 h-full">
         <Card>
