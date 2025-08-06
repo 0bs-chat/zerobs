@@ -202,9 +202,11 @@ function RouteComponent() {
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
 
   // Get existing API keys
-  const { data: existingKeys } = useQuery(
-    convexQuery(api.apiKeys.queries.getAll, {})
-  );
+  const {
+    data: existingKeys,
+    error,
+    isError,
+  } = useQuery(convexQuery(api.apiKeys.queries.getAll, {}));
   const { mutateAsync: createApiKey } = useMutation({
     mutationFn: useConvexMutation(api.apiKeys.mutations.create),
   });
@@ -301,6 +303,26 @@ function RouteComponent() {
       </Card>
     );
   };
+
+  // Show error state if API keys failed to load
+  if (error) {
+    return (
+      <div className="flex flex-col gap-4 h-full">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <p className="text-destructive font-medium">
+                Failed to load API keys
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                {error?.message || "An unexpected error occurred"}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 h-full">

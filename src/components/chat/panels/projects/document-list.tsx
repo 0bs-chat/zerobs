@@ -46,35 +46,27 @@ export function ProjectDocumentList({
     );
   }
 
+  const allSelected = projectDocuments.projectDocuments.every(
+    (projectDocument) => projectDocument.selected
+  );
+
   return (
     <div className="flex flex-col gap-2 bg-card rounded-xl shadow-sm border p-4">
       <div className="flex items-center justify-start">
         <div className="flex items-center gap-2">
           <Toggle
-            pressed={projectDocuments.projectDocuments.every(
-              (projectDocument) => projectDocument.selected
-            )}
+            pressed={allSelected}
             onPressedChange={(pressed) => handleSelectAll(pressed)}
             disabled={isTogglingSelectAll}
             className="w-36 gap-2 cursor-pointer rounded-lg flex items-center justify-center"
-            variant={
-              projectDocuments.projectDocuments.every(
-                (projectDocument) => projectDocument.selected
-              )
-                ? "default"
-                : "outline"
-            }
+            variant={allSelected ? "default" : "outline"}
           >
             <span className="transition-all duration-200 ease-in-out">
               {isTogglingSelectAll
-                ? projectDocuments.projectDocuments.every(
-                    (projectDocument) => projectDocument.selected
-                  )
+                ? allSelected
                   ? "Deselecting..."
                   : "Selecting..."
-                : projectDocuments.projectDocuments.every(
-                      (projectDocument) => projectDocument.selected
-                    )
+                : allSelected
                   ? "Deselect All"
                   : "Select All"}
             </span>
