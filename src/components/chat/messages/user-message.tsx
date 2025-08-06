@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { documentDialogOpenAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { api } from "../../../../convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -26,8 +27,10 @@ const DocumentButton = ({
   fileId: string;
   setDocumentDialogOpen: (id: Id<"documents"> | undefined) => void;
 }) => {
-  const documentData = useQuery(api.documents.queries.get, {
-    documentId: fileId as Id<"documents">,
+  const { data: documentData } = useQuery({
+    ...convexQuery(api.documents.queries.get, {
+      documentId: fileId as Id<"documents">,
+    }),
   });
 
   return (
@@ -48,8 +51,8 @@ const EditingDocumentList = ({
   documentIds: Id<"documents">[];
   onRemove: (documentId: Id<"documents">) => void;
 }) => {
-  const documents = useQuery(api.documents.queries.getMultiple, {
-    documentIds,
+  const { data: documents } = useQuery({
+    ...convexQuery(api.documents.queries.getMultiple, { documentIds }),
   });
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
 

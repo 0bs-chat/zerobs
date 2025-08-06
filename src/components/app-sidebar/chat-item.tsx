@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useMutation } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
 
 interface ChatItemProps {
@@ -46,7 +47,9 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
     const [renameOpen, setRenameOpen] = React.useState(false);
     const [newName, setNewName] = React.useState(chat.name);
     const [loading, setLoading] = React.useState(false);
-    const updateChatMutation = useMutation(api.chats.mutations.update);
+    const { mutateAsync: updateChatMutation } = useMutation({
+      mutationFn: useConvexMutation(api.chats.mutations.update),
+    });
 
     const handleRename = async (e?: React.FormEvent) => {
       if (e) e.preventDefault();
@@ -83,7 +86,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
                 ref={ref}
                 className={cn(
                   "relative flex w-full items-center isolate justify-between overflow-hidden rounded-md",
-                  isSelected && "bg-secondary/50",
+                  isSelected && "bg-secondary/50"
                 )}
               >
                 <span className="truncate">{chat.name}</span>
@@ -157,5 +160,5 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
         </Dialog>
       </>
     );
-  },
+  }
 );

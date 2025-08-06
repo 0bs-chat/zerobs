@@ -12,7 +12,8 @@ import {
   PlusIcon,
   YoutubeIcon,
 } from "lucide-react";
-import { useMutation } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useUploadDocuments } from "@/hooks/chats/use-documents";
@@ -27,11 +28,15 @@ export const AddDocumentControls = ({
   const uploadDocuments = useUploadDocuments({
     type: "file",
   });
-  const createDocuments = useMutation(api.documents.mutations.create);
-  const createProjectDocuments = useMutation(
-    api.projectDocuments.mutations.create,
-  );
-  const updateChatInput = useMutation(api.chats.mutations.update);
+  const { mutateAsync: createDocuments } = useMutation({
+    mutationFn: useConvexMutation(api.documents.mutations.create),
+  });
+  const { mutateAsync: createProjectDocuments } = useMutation({
+    mutationFn: useConvexMutation(api.projectDocuments.mutations.create),
+  });
+  const { mutateAsync: updateChatInput } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
   const chatId = useAtomValue(chatIdAtom);
 
   const handleFileUpload = async (files: FileList) => {
@@ -45,8 +50,8 @@ export const AddDocumentControls = ({
             createProjectDocuments({
               projectId,
               documentId,
-            }),
-          ),
+            })
+          )
       );
     }
 

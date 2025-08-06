@@ -20,12 +20,17 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { pinnedChatsAccordionOpenAtom } from "@/store/chatStore";
+import { useAtom } from "jotai";
 
 export function AppSidebar() {
   const navigate = useNavigate();
   const { pinnedChats, historyChats, status, loadMore } = useInfiniteChats();
   const { searchQuery, setSearchQuery, searchResults } = useSearchChats();
   const loadMoreRef = React.useRef<HTMLButtonElement>(null);
+  const [pinnedChatsAccordionOpen, setPinnedChatsAccordionOpen] = useAtom(
+    pinnedChatsAccordionOpenAtom
+  );
 
   const handleNewChat = () => {
     navigate({
@@ -152,6 +157,10 @@ export function AppSidebar() {
               collapsible
               defaultValue="pinned"
               className="w-full"
+              value={pinnedChatsAccordionOpen ? "pinned" : ""}
+              onValueChange={(value) => {
+                setPinnedChatsAccordionOpen(value === "pinned");
+              }}
             >
               <AccordionItem value="pinned">
                 <div className="flex justify-between items-center w-full">

@@ -1,27 +1,33 @@
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { ProjectDocumentListItem } from "./document-list-item";
+import { Toggle } from "@/components/ui/toggle";
 
 export function ProjectDocumentList({
   projectId,
 }: {
   projectId: Id<"projects">;
 }) {
-  const projectDocuments = useQuery(
-    api.projectDocuments.queries.getAll,
-    projectId
-      ? {
-          projectId,
-          paginationOpts: { numItems: 50, cursor: null },
-        }
-      : "skip",
-  );
-  const toggleSelectAll = useMutation(
-    api.projectDocuments.mutations.toggleSelect,
-  );
+  const { data: projectDocuments } = useQuery({
+    ...convexQuery(
+      api.projectDocuments.queries.getAll,
+      projectId
+        ? {
+            projectId,
+            paginationOpts: { numItems: 25, cursor: null },
+          }
+        : "skip"
+    ),
+  });
+  const { mutate: toggleSelectAll, isPending: isTogglingSelectAll } =
+    useMutation({
+      mutationFn: useConvexMutation(
+        api.projectDocuments.mutations.toggleSelect
+      ),
+    });
 
   const handleSelectAll = async (checked: boolean) => {
     await toggleSelectAll({
@@ -42,24 +48,48 @@ export function ProjectDocumentList({
 
   return (
     <div className="flex flex-col gap-2 bg-card rounded-xl shadow-sm border p-4">
-      <div className="flex items-center px-3 gap-3">
-        <Checkbox
-          checked={projectDocuments.projectDocuments.every(
-            (projectDocument) => projectDocument.selected,
-          )}
-          onCheckedChange={(checked) =>
-            handleSelectAll(checked.valueOf() as boolean)
-          }
-        />
-        <label htmlFor="select-all" className="text-sm text-muted-foreground">
-          Select All (
-          {
-            projectDocuments.projectDocuments.filter(
-              (projectDocument) => projectDocument.selected,
-            ).length
-          }
-          /{projectDocuments.projectDocuments.length})
-        </label>
+      <div className="flex items-center justify-start">
+        <div className="flex items-center gap-2">
+          <Toggle
+            pressed={projectDocuments.projectDocuments.every(
+              (projectDocument) => projectDocument.selected
+            )}
+            onPressedChange={(pressed) => handleSelectAll(pressed)}
+            disabled={isTogglingSelectAll}
+            className="w-36 gap-2 cursor-pointer rounded-lg flex items-center justify-center"
+            variant={
+              projectDocuments.projectDocuments.every(
+                (projectDocument) => projectDocument.selected
+              )
+                ? "default"
+                : "outline"
+            }
+          >
+            <span className="transition-all duration-200 ease-in-out">
+              {isTogglingSelectAll
+                ? projectDocuments.projectDocuments.every(
+                    (projectDocument) => projectDocument.selected
+                  )
+                  ? "Deselecting..."
+                  : "Selecting..."
+                : projectDocuments.projectDocuments.every(
+                      (projectDocument) => projectDocument.selected
+                    )
+                  ? "Deselect All"
+                  : "Select All"}
+            </span>
+
+            <span className="transition-all duration-200 ease-in-out">
+              (
+              {
+                projectDocuments.projectDocuments.filter(
+                  (projectDocument) => projectDocument.selected
+                ).length
+              }
+              /{projectDocuments.projectDocuments.length})
+            </span>
+          </Toggle>
+        </div>
       </div>
       <div className="flex flex-col gap-2">
         {projectDocuments.projectDocuments.map((projectDocument) => (

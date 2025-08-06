@@ -1,6 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2Icon, EyeIcon } from "lucide-react";
-import { useMutation } from "convex/react";
+import { Trash2Icon, EyeIcon, Loader2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import type { ProjectDocument } from "./types";
 import { getDocTagInfo } from "@/lib/helper";
@@ -14,10 +15,17 @@ export function ProjectDocumentListItem({
 }: {
   projectDocument: ProjectDocument;
 }) {
-  const updateProjectDocument = useMutation(
-    api.projectDocuments.mutations.update,
+  const {
+    mutate: updateProjectDocument,
+    isPending: isUpdatingProjectDocument,
+  } = useMutation({
+    mutationFn: useConvexMutation(api.projectDocuments.mutations.update),
+  });
+  const { mutate: removeDocument, isPending: isRemovingDocument } = useMutation(
+    {
+      mutationFn: useConvexMutation(api.projectDocuments.mutations.remove),
+    }
   );
-  const removeDocument = useMutation(api.projectDocuments.mutations.remove);
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
 
   return (
@@ -27,6 +35,7 @@ export function ProjectDocumentListItem({
     >
       <div className="flex items-center gap-3">
         <Checkbox
+          className="size-5 cursor-pointer"
           checked={projectDocument.selected}
           onCheckedChange={(checked) =>
             updateProjectDocument({
@@ -37,20 +46,38 @@ export function ProjectDocumentListItem({
         />
         {(() => {
           const { icon: Icon, className } = getDocTagInfo(
-            projectDocument.document,
+            projectDocument.document
           );
-          return <Icon className={className} />;
+          return (
+            <>
+              {isRemovingDocument ? (
+                <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              ) : (
+                <Icon className={className} />
+              )}
+            </>
+          );
         })()}
         <div className="flex-1 min-w-0">
-          <p className="font-medium" style={{ wordBreak: "break-word" }}>
-            {projectDocument.document.name}
-          </p>
-          <p
-            className="text-sm text-muted-foreground"
-            style={{ wordBreak: "break-word" }}
-          >
-            Size: {(projectDocument.document.size / 1024).toFixed(2)} KB
-          </p>
+          <div className="flex flex-col gap-1">
+            {isRemovingDocument ? (
+              <p className="font-medium text-muted-foreground items-center flex gap-2">
+                Removing...
+              </p>
+            ) : (
+              <>
+                <p className="font-medium" style={{ wordBreak: "break-word" }}>
+                  {projectDocument.document.name}
+                </p>
+                <p
+                  className="text-sm text-muted-foreground"
+                  style={{ wordBreak: "break-word" }}
+                >
+                  Size: {(projectDocument.document.size / 1024).toFixed(2)} KB
+                </p>
+              </>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -60,6 +87,7 @@ export function ProjectDocumentListItem({
           onClick={() => {
             setDocumentDialogOpen(projectDocument.document._id);
           }}
+          disabled={isUpdatingProjectDocument}
         >
           <EyeIcon className="size-4" />
         </Button>
@@ -69,6 +97,7 @@ export function ProjectDocumentListItem({
           onClick={() =>
             removeDocument({ projectDocumentId: projectDocument._id })
           }
+          disabled={isRemovingDocument}
         >
           <Trash2Icon className="size-4" />
         </Button>

@@ -51,8 +51,8 @@ function RouteComponent() {
   });
 
   useEffect(() => {
-    setChat(chatId === "new" ? newChat : queryChat);
-  }, [queryChat, setChat]);
+    setChat(chatId !== "new" ? queryChat : newChat);
+  }, [queryChat, setChat, newChat]);
 
   return (
     <>

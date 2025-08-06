@@ -102,13 +102,12 @@ export const useHandleSubmit = () => {
 
   return handleSubmit;
 };
-
 export const useInfiniteChats = () => {
   const { results, status, loadMore } = usePaginatedQuery(
     api.chats.queries.getAll,
     {},
     {
-      initialNumItems: 15,
+      initialNumItems: 25,
     }
   );
 

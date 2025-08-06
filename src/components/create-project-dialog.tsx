@@ -8,7 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useMutation } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../convex/_generated/api";
 import {
   createProjectDialogOpenAtom,
@@ -20,12 +21,16 @@ import { chatIdAtom } from "@/store/chatStore";
 
 export const CreateProjectDialog = () => {
   const [projectDialogOpen, setProjectDialogOpen] = useAtom(
-    createProjectDialogOpenAtom,
+    createProjectDialogOpenAtom
   );
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
   const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
-  const createProject = useMutation(api.projects.mutations.create);
-  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const { mutateAsync: createProject } = useMutation({
+    mutationFn: useConvexMutation(api.projects.mutations.create),
+  });
+  const { mutateAsync: updateChatMutation } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
   const chatId = useAtomValue(chatIdAtom);
 
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {

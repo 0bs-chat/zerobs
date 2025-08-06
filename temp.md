@@ -2,6 +2,7 @@
 
 - pricing [imp]
 - usage
+- improve ux overall with loading states and whatnot.
 - google integration (the code is already there just need to setup oauth)
 - business related mcp with ability to autofill connection info (like auto fetching api key/oauth key for the headers in mcp using oauth, etc to reduce friction)
 
@@ -13,8 +14,8 @@
 caching implementation : (tanstack query)
 
 1. normal queries.
-2. normal mutations.
-3. paginated and infinite queries.
+2. normal mutations. (not needed because these are not reactive, so doesn't make any big difference.)
+3. paginated and infinite queries. (gotta figure something about it.)
 
 ---
 

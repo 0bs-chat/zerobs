@@ -9,7 +9,8 @@ import { useSetAtom } from "jotai";
 import { models } from "../../../../../convex/langchain/models";
 import { getTagInfo } from "@/lib/helper";
 import { api } from "../../../../../convex/_generated/api";
-import { useMutation } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { newChatAtom } from "@/store/chatStore";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useState } from "react";
@@ -41,9 +42,11 @@ export function ModelPopover({
   chatId: Id<"chats">;
 }) {
   const setNewChat = useSetAtom(newChatAtom);
-  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const { mutateAsync: updateChatMutation } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
   const selectedModelConfig = models.find(
-    (m) => m.model_name === selectedModel,
+    (m) => m.model_name === selectedModel
   );
   const [searchModel, setSearchModel] = useState("");
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -89,9 +92,7 @@ export function ModelPopover({
           {models
             .filter((model) => !model.hidden)
             .filter((model) =>
-              model.model_name
-                .toLowerCase()
-                .includes(searchModel.toLowerCase()),
+              model.model_name.toLowerCase().includes(searchModel.toLowerCase())
             )
             .map((model) => (
               <div
@@ -106,7 +107,7 @@ export function ModelPopover({
                     alt={model.label}
                     className={`h-4 w-4 ${
                       ["openai", "x-ai", "openrouter", "anthropic"].includes(
-                        model.owner,
+                        model.owner
                       )
                         ? "dark:invert"
                         : ""

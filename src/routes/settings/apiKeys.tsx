@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { SaveIcon, TrashIcon } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 
@@ -201,10 +202,18 @@ function RouteComponent() {
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
 
   // Get existing API keys
-  const existingKeys = useQuery(api.apiKeys.queries.getAll);
-  const createApiKey = useMutation(api.apiKeys.mutations.create);
-  const updateApiKey = useMutation(api.apiKeys.mutations.update);
-  const removeApiKey = useMutation(api.apiKeys.mutations.remove);
+  const { data: existingKeys } = useQuery(
+    convexQuery(api.apiKeys.queries.getAll, {})
+  );
+  const { mutateAsync: createApiKey } = useMutation({
+    mutationFn: useConvexMutation(api.apiKeys.mutations.create),
+  });
+  const { mutateAsync: updateApiKey } = useMutation({
+    mutationFn: useConvexMutation(api.apiKeys.mutations.update),
+  });
+  const { mutateAsync: removeApiKey } = useMutation({
+    mutationFn: useConvexMutation(api.apiKeys.mutations.remove),
+  });
 
   const updateInputValue = (key: string, value: string) => {
     setInputValues((prev) => ({ ...prev, [key]: value }));
@@ -237,7 +246,7 @@ function RouteComponent() {
       enabled,
     });
     toast.success(
-      `${config.title} ${enabled ? "enabled" : "disabled"} successfully`,
+      `${config.title} ${enabled ? "enabled" : "disabled"} successfully`
     );
   };
 
