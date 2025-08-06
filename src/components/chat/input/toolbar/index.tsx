@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { useUploadDocuments } from "@/hooks/chats/use-documents";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import {
   Select,
@@ -91,16 +92,20 @@ export const ToolBar = () => {
   const chatId = useAtomValue(chatIdAtom);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const { mutate: updateChatMutation } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const streamStatus = useAtomValue(streamStatusAtom);
-  const cancelStreamMutation = useMutation(api.streams.mutations.cancel);
+  const { mutate: cancelStreamMutation } = useMutation({
+    mutationFn: useConvexMutation(api.streams.mutations.cancel),
+  });
   const setNewChat = useSetAtom(newChatAtom);
   const chat = useAtomValue(chatAtom)!;
   const selectedModel = chat.model;
   const reasoningEffort = chat.reasoningEffort;
   const selectedModelConfig = models.find(
-    (m) => m.model_name === selectedModel,
+    (m) => m.model_name === selectedModel
   );
   const showReasoningEffort = selectedModelConfig?.isThinking ?? false;
   const router = useRouter();
@@ -109,10 +114,12 @@ export const ToolBar = () => {
   const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
 
   // Get project details if chat has a project
-  const project = useQuery(
-    api.projects.queries.get,
-    chat.projectId ? { projectId: chat.projectId } : "skip",
-  );
+  const { data: project } = useQuery({
+    ...convexQuery(
+      api.projects.queries.get,
+      chat.projectId ? { projectId: chat.projectId } : "skip"
+    ),
+  });
 
   const handleFileUpload = useUploadDocuments({ type: "file", chat });
   const handleSubmit = useHandleSubmit();
@@ -155,7 +162,7 @@ export const ToolBar = () => {
 
   // Render selected toggles as buttons
   const selectedToggles = TOGGLES.filter(
-    (t) => chat[t.key as keyof typeof chat],
+    (t) => chat[t.key as keyof typeof chat]
   );
 
   return (
@@ -206,7 +213,12 @@ export const ToolBar = () => {
         {/* Separate toggles dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" title="Toggles">
+            <Button
+              variant="outline"
+              size="icon"
+              title="Toggles"
+              className="cursor-pointer"
+            >
               <Hammer className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -220,11 +232,11 @@ export const ToolBar = () => {
                 onClick={() =>
                   handleToggle(
                     toggle.key,
-                    !chat[toggle.key as keyof typeof chat],
+                    !chat[toggle.key as keyof typeof chat]
                   )
                 }
                 className={[
-                  "flex items-center justify-between pr-2",
+                  "flex items-center justify-between pr-2 cursor-pointer",
                   toggle.key === "orchestratorMode"
                     ? "bg-gradient-to-r from-input to-card"
                     : "",

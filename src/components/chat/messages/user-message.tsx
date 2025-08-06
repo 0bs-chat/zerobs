@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { documentDialogOpenAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { api } from "../../../../convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -26,8 +27,10 @@ const DocumentButton = ({
   fileId: string;
   setDocumentDialogOpen: (id: Id<"documents"> | undefined) => void;
 }) => {
-  const documentData = useQuery(api.documents.queries.get, {
-    documentId: fileId as Id<"documents">,
+  const { data: documentData } = useQuery({
+    ...convexQuery(api.documents.queries.get, {
+      documentId: fileId as Id<"documents">,
+    }),
   });
 
   return (
@@ -48,8 +51,8 @@ const EditingDocumentList = ({
   documentIds: Id<"documents">[];
   onRemove: (documentId: Id<"documents">) => void;
 }) => {
-  const documents = useQuery(api.documents.queries.getMultiple, {
-    documentIds,
+  const { data: documents } = useQuery({
+    ...convexQuery(api.documents.queries.getMultiple, { documentIds }),
   });
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
 
@@ -57,7 +60,7 @@ const EditingDocumentList = ({
     (documentId: Id<"documents">) => {
       setDocumentDialogOpen(documentId);
     },
-    [setDocumentDialogOpen],
+    [setDocumentDialogOpen]
   );
 
   if (!documents?.length) return null;
@@ -71,7 +74,7 @@ const EditingDocumentList = ({
         {documents.map((doc) => {
           const { icon: Icon, className: IconClassName } = getDocTagInfo(
             doc,
-            modalities,
+            modalities
           );
 
           return (
@@ -112,11 +115,11 @@ export const UserMessage = memo(
   }) => {
     // State management moved from UserMessageGroup
     const [editingMessageId, setEditingMessageId] = useState<string | null>(
-      null,
+      null
     );
     const [editedText, setEditedText] = useState("");
     const [editedDocuments, setEditedDocuments] = useState<Id<"documents">[]>(
-      [],
+      []
     );
 
     const isEditing = editingMessageId === item.message._id;
@@ -124,7 +127,7 @@ export const UserMessage = memo(
     useEffect(() => {
       if (editingMessageId) {
         const messageToEdit = groupedMessages?.find(
-          (g) => g.input.message._id === editingMessageId,
+          (g) => g.input.message._id === editingMessageId
         );
         if (messageToEdit) {
           const content = messageToEdit.input.message.message.content;
@@ -162,7 +165,7 @@ export const UserMessage = memo(
       (documents: Id<"documents">[]) => {
         setEditedDocuments(documents);
       },
-      [],
+      []
     );
 
     // Memoize the content rendering to avoid unnecessary calculations
@@ -214,9 +217,9 @@ export const UserMessage = memo(
             </div>
           </div>
         ) : (
-          <div className="bg-card flex flex-col  max-w-full self-end px-4 py-3 rounded-md shadow-sm">
+          <ScrollArea className="bg-card flex flex-col max-h-96 max-w-full self-end px-4 py-3 rounded-md shadow-sm">
             {renderedContent}
-          </div>
+          </ScrollArea>
         )}
         <div className="opacity-0 flex gap-2 group-hover:opacity-100 transition-opacity">
           <UserUtilsBar
@@ -231,7 +234,7 @@ export const UserMessage = memo(
         </div>
       </div>
     );
-  },
+  }
 );
 
 UserMessage.displayName = "UserMessage";

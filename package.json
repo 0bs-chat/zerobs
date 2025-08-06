@@ -17,6 +17,7 @@
     "@codesandbox/sandpack-react": "^2.20.0",
     "@codesandbox/sandpack-themes": "^2.0.21",
     "@convex-dev/auth": "^0.0.87",
+    "@convex-dev/react-query": "^0.0.0-alpha.11",
     "@isomorphic-git/lightning-fs": "^4.6.2",
     "@langchain/community": "^0.3.47",
     "@langchain/core": "^0.3.61",
@@ -113,6 +114,7 @@
   },
   "devDependencies": {
     "@convex-dev/migrations": "^0.2.9",
+    "@tanstack/react-query-devtools": "^5.84.1",
     "@tanstack/eslint-plugin-query": "^5.78.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",

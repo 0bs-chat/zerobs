@@ -6,7 +6,8 @@ import {
 } from "@/components/ui/dialog";
 import { documentDialogOpenAtom } from "@/store/chatStore";
 import { api } from "../../convex/_generated/api";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { Button } from "@/components/ui/button";
 import { getDocTagInfo } from "@/lib/helper";
 import { formatBytes } from "@/lib/utils";
@@ -18,14 +19,17 @@ export const DocumentDialog = () => {
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const document = useQuery(
-    api.documents.queries.get,
-    documentDialogOpen ? { documentId: documentDialogOpen } : "skip",
-  );
+  const { data: document } = useQuery({
+    ...convexQuery(
+      api.documents.queries.get,
+      documentDialogOpen ? { documentId: documentDialogOpen } : "skip"
+    ),
+    enabled: !!documentDialogOpen,
+  });
 
-  const generateDownloadUrl = useMutation(
-    api.documents.mutations.generateDownloadUrl,
-  );
+  const { mutateAsync: generateDownloadUrl } = useMutation({
+    mutationFn: useConvexMutation(api.documents.mutations.generateDownloadUrl),
+  });
 
   const documentName = document?.name ?? "";
   const {
@@ -37,6 +41,7 @@ export const DocumentDialog = () => {
     : { icon: () => null, className: "", tag: "" };
 
   useEffect(() => {
+    setPreviewUrl(null);
     const loadPreviewUrl = async () => {
       if (!document) return;
       switch (tag) {

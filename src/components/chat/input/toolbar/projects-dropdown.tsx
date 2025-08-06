@@ -5,7 +5,8 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import { FoldersIcon, PlusIcon } from "lucide-react";
 import {
@@ -26,10 +27,14 @@ export const ProjectsDropdown = ({
   onCloseDropdown,
 }: ProjectsDropdownProps) => {
   const chatId = useAtomValue(chatIdAtom);
-  const projects = useQuery(api.projects.queries.getAll, {
-    paginationOpts: { numItems: 3, cursor: null },
+  const { data: projects, isFetching: isFetchingProjects } = useQuery({
+    ...convexQuery(api.projects.queries.getAll, {
+      paginationOpts: { numItems: 3, cursor: null },
+    }),
   });
-  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const { mutate: updateChatMutation } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
   const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
   const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
@@ -63,7 +68,7 @@ export const ProjectsDropdown = ({
               setSelectedPanelTab("projects");
             }}
           >
-            {project.name}
+            {isFetchingProjects ? <div>Fetching...</div> : project.name}
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />

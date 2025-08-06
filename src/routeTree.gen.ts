@@ -12,6 +12,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
 import { Route as SettingsBillingRouteImport } from './routes/settings/billing'
@@ -37,6 +38,11 @@ const SettingsRouteLazyRoute = SettingsRouteLazyRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectProjectIdLazyRoute = ProjectProjectIdLazyRouteImport.update({
@@ -73,6 +79,7 @@ const SettingsApiKeysRoute = SettingsApiKeysRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects': typeof ProjectsLazyRoute
@@ -84,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/project/$projectId': typeof ProjectProjectIdLazyRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects': typeof ProjectsLazyRoute
@@ -96,6 +104,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/settings': typeof SettingsRouteLazyRouteWithChildren
   '/projects': typeof ProjectsLazyRoute
@@ -109,6 +118,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/auth'
     | '/settings'
     | '/projects'
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/project/$projectId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/auth'
     | '/settings'
     | '/projects'
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/project/$projectId'
   id:
     | '__root__'
+    | '/'
     | '/auth'
     | '/settings'
     | '/projects'
@@ -143,6 +155,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren
   ProjectsLazyRoute: typeof ProjectsLazyRoute
@@ -171,6 +184,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/project/$projectId': {
@@ -236,6 +256,7 @@ const SettingsRouteLazyRouteWithChildren =
   SettingsRouteLazyRoute._addFileChildren(SettingsRouteLazyRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   SettingsRouteLazyRoute: SettingsRouteLazyRouteWithChildren,
   ProjectsLazyRoute: ProjectsLazyRoute,

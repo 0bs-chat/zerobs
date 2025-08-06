@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type {
@@ -15,14 +16,16 @@ import {
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 
 export function useStream(chatId: Id<"chats"> | "new") {
-  const stream = useQuery(
-    api.streams.queries.get,
-    chatId !== "new" ? { chatId } : "skip",
-  );
+  const { data: stream } = useQuery({
+    ...convexQuery(
+      api.streams.queries.get,
+      chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip"
+    ),
+  });
 
   const [groupedChunks, setGroupedChunks] = useState<ChunkGroup[]>([]);
   const [lastSeenTime, setLastSeenTime] = useState<number | undefined>(
-    undefined,
+    undefined
   );
 
   // Reset state when chat or stream changes
@@ -33,16 +36,18 @@ export function useStream(chatId: Id<"chats"> | "new") {
 
   // Reactive query for chunks - uses stream._creationTime as dependency for reactivity
   // but still filters by lastSeenTime for bandwidth optimization
-  const chunksResult = useQuery(
-    api.streams.queries.getChunks,
-    stream && stream.status === "streaming"
-      ? {
-          chatId: stream.chatId,
-          lastChunkTime: lastSeenTime,
-          paginationOpts: { numItems: 200, cursor: null },
-        }
-      : "skip",
-  );
+  const { data: chunksResult } = useQuery({
+    ...convexQuery(
+      api.streams.queries.getChunks,
+      stream && stream.status === "streaming"
+        ? {
+            chatId: stream.chatId,
+            lastChunkTime: lastSeenTime,
+            paginationOpts: { numItems: 200, cursor: null },
+          }
+        : "skip"
+    ),
+  });
 
   // Process new chunks when they arrive
   useEffect(() => {
@@ -51,8 +56,8 @@ export function useStream(chatId: Id<"chats"> | "new") {
     const newEvents: ChunkGroup[] = chunksResult.chunks.page.flatMap(
       (chunkDoc: any) =>
         chunkDoc.chunks.map(
-          (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup,
-        ),
+          (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup
+        )
     );
 
     if (newEvents.length > 0) {
@@ -102,7 +107,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
     const completedIds = new Set(
       groupedChunks
         .filter((c) => c.type === "tool" && c.isComplete)
-        .map((c) => (c as ToolChunkGroup).toolCallId),
+        .map((c) => (c as ToolChunkGroup).toolCallId)
     );
     return groupedChunks
       .map((chunk) => {
@@ -156,7 +161,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
             stream.completedSteps[0],
             mapChatMessagesToStoredMessages(langchainMessages),
           ],
-          ...stream.completedSteps.slice(1).map((step) => [step, []]),
+          ...stream.completedSteps.slice(1).map((step: string) => [step, []]),
         ],
       },
     });

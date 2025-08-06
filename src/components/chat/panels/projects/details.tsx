@@ -1,5 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import { XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,12 +19,18 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const chatId = useAtomValue(chatIdAtom);
   const navigate = useNavigate();
   const router = useRouter();
-  const project = useQuery(
-    api.projects.queries.get,
-    projectId ? { projectId } : "skip",
-  );
-  const updateProject = useMutation(api.projects.mutations.update);
-  const updateChatInput = useMutation(api.chats.mutations.update);
+  const { data: project } = useQuery({
+    ...convexQuery(
+      api.projects.queries.get,
+      projectId ? { projectId } : "skip"
+    ),
+  });
+  const { mutate: updateProject } = useMutation({
+    mutationFn: useConvexMutation(api.projects.mutations.update),
+  });
+  const { mutate: updateChatInput } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
   const setNewChat = useSetAtom(newChatAtom);
 
   const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
