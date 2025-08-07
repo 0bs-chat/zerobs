@@ -13,11 +13,15 @@ import {
   ToolMessage as LangChainToolMessage,
   mapChatMessagesToStoredMessages,
 } from "@langchain/core/messages";
+import { useMessageQueue } from "./use-message-queue";
+import { useSendMessageNow } from "./use-chats";
 
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 
 export function useStream(chatId: Id<"chats"> | "new") {
   const convex = useConvex();
+  const { dequeueMessage } = useMessageQueue();
+  const sendNow = useSendMessageNow();
   const { data: stream } = useQuery({
     ...convexQuery(
       api.streams.queries.get,
@@ -96,6 +100,25 @@ export function useStream(chatId: Id<"chats"> | "new") {
       clearInterval(interval);
     };
   }, [stream?.status, stream?.chatId, lastSeenTime]);
+
+  // Auto-send next queued message when stream finishes
+  useEffect(() => {
+    if (!stream || stream.status !== "done") return;
+
+    const chatKey = String(stream.chatId);
+    const nextMessage = dequeueMessage(chatKey);
+    
+    if (nextMessage) {
+      // Auto-send the next queued message
+      sendNow(
+        { _id: stream.chatId } as any, // Type assertion for simplicity
+        nextMessage.text,
+        nextMessage.documents
+      );
+    }
+
+    setGroupedChunks([]);
+  }, [stream?.status, stream?.chatId, dequeueMessage, sendNow]);
 
   // Clear chunks when stream is not active
   useEffect(() => {

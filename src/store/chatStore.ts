@@ -28,6 +28,7 @@ export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   updatedAt: 0,
   public: false,
 });
+
 export const chatAtom = atom<Doc<"chats">>();
 export const chatIdAtom = selectAtom(chatAtom, (chat) => chat?._id!);
 
@@ -77,6 +78,28 @@ export const streamStatusAtom = selectAtom(
   (stream) => stream?.status
 );
 
+// Message Queue Types and Atoms
+export interface QueuedMessage {
+  id: string;
+  text: string;
+  documents: Array<Id<"documents">>;
+  createdAt: number;
+}
+
+// Per-chat message queues stored in localStorage
+export const messageQueuesAtom = atomWithStorage<Record<string, QueuedMessage[]>>(
+  "messageQueues",
+  {}
+);
+
+// Convenience selector for current chat's queue
+export const currentChatQueueAtom = atom((get) => {
+  const chatId = get(chatIdAtom);
+  const queues = get(messageQueuesAtom);
+  if (!chatId) return [] as QueuedMessage[];
+  return queues[String(chatId)] ?? ([] as QueuedMessage[]);
+});
+
 export const allArtifactsAtom = atom((get) => {
   const artifacts: Artifact[] = [];
 
@@ -120,8 +143,7 @@ export const allArtifactsAtom = atom((get) => {
   return artifacts;
 });
 
-// mcp atoms
-
+// MCP Atoms
 export type McpType = "http" | "stdio" | "docker";
 export const initialMCPState = {
   name: "",

@@ -3,14 +3,16 @@ import { api } from "../../../convex/_generated/api";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { useAtomValue, useSetAtom } from "jotai";
-import { lastChatMessageAtom, newChatAtom } from "@/store/chatStore";
+import { lastChatMessageAtom, newChatAtom, streamStatusAtom } from "@/store/chatStore";
 import { useTextAreaRef } from "./use-textarea";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
+import { useMessageQueue } from "./use-message-queue";
+import type { Doc } from "../../../convex/_generated/dataModel";
 
-export const useHandleSubmit = () => {
+const useSendMessageCore = () => {
   const { mutateAsync: createMessageMutation } = useMutation({
     mutationFn: useConvexMutation(api.chatMessages.mutations.create),
   });
@@ -26,14 +28,14 @@ export const useHandleSubmit = () => {
   const sendAction = useAction(api.langchain.index.chat);
   const navigate = useNavigate();
   const lastChatMessage = useAtomValue(lastChatMessageAtom);
-  const { setValue, getValue } = useTextAreaRef();
   const params = useParams({ strict: false });
 
-  const handleSubmit = async (chat: Doc<"chats">) => {
+  const sendNow = async (
+    chat: Doc<"chats">,
+    messageText: string,
+    documents: Doc<"documents">["_id"][],
+  ) => {
     try {
-      const messageText = getValue();
-      setValue("");
-
       if (chat._id === "new") {
         // If we're on a project page, use that project ID
         const projectIdFromRoute = params.projectId as
@@ -63,7 +65,7 @@ export const useHandleSubmit = () => {
         });
         await createMessageMutation({
           chatId: chat._id,
-          documents: chat.documents,
+          documents: documents,
           text: messageText,
           parentId: null,
         });
@@ -79,7 +81,7 @@ export const useHandleSubmit = () => {
         });
         await createMessageMutation({
           chatId: chat._id,
-          documents: chat.documents,
+          documents: documents,
           text: messageText,
           parentId: lastChatMessage ?? null,
         });
@@ -100,8 +102,36 @@ export const useHandleSubmit = () => {
     }
   };
 
+  return { sendNow, setNewChat, streamStatus: useAtomValue(streamStatusAtom) };
+};
+
+export const useHandleSubmit = () => {
+  const { sendNow, streamStatus } = useSendMessageCore();
+  const { getValue, setValue } = useTextAreaRef();
+  const { enqueueMessage } = useMessageQueue();
+
+  const handleSubmit = async (chat: Doc<"chats">) => {
+    const messageText = getValue();
+    setValue("");
+
+    // If streaming, enqueue the message
+    if (streamStatus === "streaming") {
+      enqueueMessage(String(chat._id), messageText, chat.documents);
+      return;
+    }
+
+    // Otherwise send immediately
+    await sendNow(chat, messageText, chat.documents);
+  };
+
   return handleSubmit;
 };
+
+export const useSendMessageNow = () => {
+  const { sendNow } = useSendMessageCore();
+  return sendNow;
+};
+
 export const useInfiniteChats = () => {
   const { results, status, loadMore } = usePaginatedQuery(
     api.chats.queries.getAll,

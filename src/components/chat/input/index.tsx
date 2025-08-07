@@ -23,6 +23,8 @@ import { smoothTransition } from "@/lib/motion";
 import { useTextAreaRef } from "@/hooks/chats/use-textarea";
 import { useUploadDocuments } from "@/hooks/chats/use-documents";
 import { useState, useCallback } from "react";
+import { MessageQueue } from "./message-queue";
+import { useSendMessageNow } from "@/hooks/chats/use-chats";
 
 export const ChatInput = () => {
   const chatId = useAtomValue(chatIdAtom);
@@ -37,6 +39,7 @@ export const ChatInput = () => {
   const { ref: textareaRef, setRef, focus } = useTextAreaRef();
   const [isDragActive, setIsDragActive] = useState(false);
   const handleFileUpload = useUploadDocuments({ type: "file", chat });
+  const sendNow = useSendMessageNow();
 
   useEffect(() => {
     if (chat) {
@@ -165,6 +168,15 @@ export const ChatInput = () => {
 
       {/* Document List */}
       {chat && <DocumentList documentIds={chat.documents} model={chat.model} />}
+
+      {/* Message Queue */}
+      {chat && (
+        <MessageQueue
+          chatId={String(chatId)}
+          chat={chat}
+          onSendMessage={sendNow}
+        />
+      )}
 
       {/* Input */}
       <AutosizeTextarea
