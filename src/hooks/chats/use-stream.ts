@@ -51,8 +51,14 @@ export function useStream(chatId: Id<"chats"> | "new") {
     const newEvents: ChunkGroup[] = chunksResult.chunks.page.flatMap(
       (chunkDoc: any) =>
         chunkDoc.chunks.map(
-          (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup
-        )
+          (chunkStr: string) => {
+            try {
+              return JSON.parse(chunkStr) as ChunkGroup;
+            } catch {
+              return null;
+            }
+          }
+        ).filter(Boolean) as ChunkGroup[]
     );
 
     if (newEvents.length > 0) {
@@ -84,6 +90,23 @@ export function useStream(chatId: Id<"chats"> | "new") {
               if (!lastGroup.toolName && chunk.toolName) {
                 lastGroup.toolName = chunk.toolName;
               }
+              
+              // Handle tool call chunks for streaming tool calls
+              if (chunk.toolCallChunks && chunk.toolCallChunks.length > 0) {
+                if (!lastGroup.toolCallChunks) {
+                  lastGroup.toolCallChunks = [];
+                }
+                lastGroup.toolCallChunks.push(...chunk.toolCallChunks);
+              }
+              
+              // Handle partial arguments for streaming tool calls
+              if (chunk.partialArgs) {
+                if (!lastGroup.partialArgs) {
+                  lastGroup.partialArgs = "";
+                }
+                lastGroup.partialArgs += chunk.partialArgs;
+              }
+              
               // Same ongoing tool call → append partial output if present
               if (chunk.output !== undefined) {
                 if (
@@ -147,26 +170,37 @@ export function useStream(chatId: Id<"chats"> | "new") {
           if (chunk.isComplete) {
             return new LangChainToolMessage({
               content: chunk.output as string,
-              name: chunk.toolName,
+              name: chunk.toolName || "unknown_tool",
               tool_call_id: chunk.toolCallId,
               additional_kwargs: {
-                input: JSON.parse(JSON.stringify(chunk.input)),
+                input: chunk.input ? JSON.parse(JSON.stringify(chunk.input)) : undefined,
                 is_complete: true,
               },
             });
           }
           if (!completedIds.has(chunk.toolCallId)) {
+            // For streaming tool calls, include partial arguments and tool call chunks
+            const additionalKwargs: any = {
+              input: chunk.input ? JSON.parse(JSON.stringify(chunk.input)) : undefined,
+              is_complete: false,
+            };
+            
+            if (chunk.partialArgs) {
+              additionalKwargs.partial_args = chunk.partialArgs;
+            }
+            
+            if (chunk.toolCallChunks && chunk.toolCallChunks.length > 0) {
+              additionalKwargs.tool_call_chunks = chunk.toolCallChunks;
+            }
+            
             return new LangChainToolMessage({
-              name: chunk.toolName,
+              name: chunk.toolName || "unknown_tool",
               tool_call_id: chunk.toolCallId,
               content:
                 typeof chunk.output === "string"
                   ? chunk.output
                   : JSON.stringify(chunk.output ?? ""),
-              additional_kwargs: {
-                input: JSON.parse(JSON.stringify(chunk.input)),
-                is_complete: false,
-              },
+              additional_kwargs: additionalKwargs,
             });
           }
         }

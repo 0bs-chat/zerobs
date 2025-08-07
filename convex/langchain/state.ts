@@ -69,10 +69,18 @@ export interface AIChunkGroup {
 
 export interface ToolChunkGroup {
   type: "tool";
-  toolName: string;
+  toolName?: string;
   input?: unknown;
   output?: unknown;
   isComplete: boolean;
   toolCallId: string;
+  // Enhanced fields for streaming tool calls
+  toolCallChunks?: Array<{
+    tool_name?: string;
+    args?: string | object;
+    id?: string;
+    index?: number;
+  }>;
+  partialArgs?: string;
 }
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;

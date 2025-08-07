@@ -149,6 +149,7 @@ export const chat = action({
               )
             ) {
               if (evt.event === "on_chat_model_stream") {
+                // Handle AI content streaming
                 buffer.push(
                   JSON.stringify({
                     type: "ai",
@@ -157,6 +158,26 @@ export const chat = action({
                       evt.data?.chunk?.additional_kwargs?.reasoning_content,
                   } as AIChunkGroup)
                 );
+
+                // Handle tool call chunks streaming
+                if (evt.data?.chunk?.tool_call_chunks?.length > 0) {
+                  for (const toolCallChunk of evt.data.chunk.tool_call_chunks) {
+                    const partialArgs = typeof toolCallChunk.args === 'string' 
+                      ? toolCallChunk.args 
+                      : (toolCallChunk.args ? JSON.stringify(toolCallChunk.args) : undefined);
+                    
+                    buffer.push(
+                      JSON.stringify({
+                        type: "tool",
+                        toolCallId: toolCallChunk.id || `tool_${Date.now()}_${Math.random()}`,
+                        toolName: toolCallChunk.tool_name,
+                        partialArgs,
+                        toolCallChunks: [toolCallChunk],
+                        isComplete: false,
+                      } as ToolChunkGroup)
+                    );
+                  }
+                }
               } else if (evt.event === "on_tool_start") {
                 buffer.push(
                   JSON.stringify({
