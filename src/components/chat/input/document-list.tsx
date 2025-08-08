@@ -4,6 +4,8 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../../../convex/_generated/api";
 import type { Id, Doc } from "../../../../convex/_generated/dataModel";
 import { XIcon } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { documentDialogOpenAtom } from "@/store/chatStore";
@@ -74,10 +76,16 @@ export const DocumentList = ({
   documentIds?: Id<"documents">[];
   model: string;
 }) => {
-  const { data: documents } = useQuery({
+  const {
+    data: documents,
+    isLoading: isLoadingDocuments,
+    isError: isDocumentsError,
+    error: documentsError,
+  } = useQuery({
     ...convexQuery(api.documents.queries.getMultiple, { documentIds }),
   });
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
+
   const removeDocument = useRemoveDocument();
 
   const handlePreview = useCallback(
@@ -98,6 +106,32 @@ export const DocumentList = ({
 
   const selectedModel = models.find((m) => m.model_name === model);
   const modalities = selectedModel?.modalities;
+
+  if (!documents?.length) return null;
+
+  if (isLoadingDocuments) {
+    return (
+      <div className="flex items-center justify-start p-2">
+        <div className="text-sm text-muted-foreground flex items-center gap-2">
+          <LoadingSpinner sizeClassName="h-4 w-4" />
+          Loading attached documents...
+        </div>
+      </div>
+    );
+  }
+
+  if (isDocumentsError || documentsError) {
+    return (
+      <div className="flex items-center justify-start p-2">
+        <ErrorState
+          title="Error loading documents"
+          showDescription={false}
+          className="p-2"
+          density="compact"
+        />
+      </div>
+    );
+  }
 
   return (
     <ScrollArea className="max-h-24 w-full px-1 pt-1 whitespace-nowrap">

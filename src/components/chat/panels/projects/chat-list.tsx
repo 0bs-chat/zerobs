@@ -5,6 +5,8 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useNavigate } from "@tanstack/react-router";
 import { MessageSquareIcon, ClockIcon } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 import { formatDistanceToNow } from "date-fns";
 
 interface ProjectChatListProps {
@@ -13,9 +15,33 @@ interface ProjectChatListProps {
 
 export const ProjectChatList = ({ projectId }: ProjectChatListProps) => {
   const navigate = useNavigate();
-  const { data: chats } = useQuery({
+  const {
+    data: chats,
+    isLoading: isLoadingChats,
+    isError: isChatsError,
+    error: chatsError,
+  } = useQuery({
     ...convexQuery(api.chats.queries.getByProjectId, { projectId }),
   });
+
+  if (isLoadingChats) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <LoadingSpinner className="h-6 w-6" label="Loading project chats..." />
+      </div>
+    );
+  }
+
+  if (isChatsError || chatsError) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-4 ">
+        <ErrorState
+          className="h-12 w-full p-2 gap-2 flex items-center justify-center"
+          title="Error loading project chats"
+        />
+      </div>
+    );
+  }
 
   if (!chats || chats.length === 0) {
     return (

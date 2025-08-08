@@ -22,7 +22,12 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const setUseStreamAtom = useSetAtom(useStreamAtom);
   const branchPath = useAtomValue(branchPathAtom);
 
-  const { data: messages, isLoading } = useQuery({
+  const {
+    data: messages,
+    isLoading,
+    isError: isMessagesError,
+    error: messagesError,
+  } = useQuery({
     ...convexQuery(
       api.chatMessages.queries.get,
       chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip"
@@ -53,6 +58,10 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   return {
     isLoading: isLoading,
     isEmpty: currentThread.length === 0,
+    isError: isMessagesError,
+    error: messagesError,
+    isStreamError: Boolean((streamData as any)?.isError),
+    streamError: (streamData as any)?.error,
   };
 };
 

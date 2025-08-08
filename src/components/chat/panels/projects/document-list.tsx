@@ -5,13 +5,20 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { ProjectDocumentListItem } from "./document-list-item";
 import { Toggle } from "@/components/ui/toggle";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 
 export function ProjectDocumentList({
   projectId,
 }: {
   projectId: Id<"projects">;
 }) {
-  const { data: projectDocuments } = useQuery({
+  const {
+    data: projectDocuments,
+    isLoading: isLoadingProjectDocs,
+    isError: isProjectDocumentsError,
+    error: projectDocumentsError,
+  } = useQuery({
     ...convexQuery(
       api.projectDocuments.queries.getAll,
       projectId
@@ -22,6 +29,7 @@ export function ProjectDocumentList({
         : "skip"
     ),
   });
+
   const { mutate: toggleSelectAll, isPending: isTogglingSelectAll } =
     useMutation({
       mutationFn: useConvexMutation(
@@ -30,7 +38,7 @@ export function ProjectDocumentList({
     });
 
   const handleSelectAll = async (checked: boolean) => {
-    await toggleSelectAll({
+    toggleSelectAll({
       projectId,
       selected: checked,
     });
@@ -57,7 +65,7 @@ export function ProjectDocumentList({
           <Toggle
             pressed={allSelected}
             onPressedChange={(pressed) => handleSelectAll(pressed)}
-            disabled={isTogglingSelectAll}
+            disabled={isTogglingSelectAll || isLoadingProjectDocs}
             className="w-36 gap-2 cursor-pointer rounded-lg flex items-center justify-center"
             variant={allSelected ? "default" : "outline"}
           >
@@ -84,12 +92,30 @@ export function ProjectDocumentList({
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        {projectDocuments.projectDocuments.map((projectDocument) => (
-          <ProjectDocumentListItem
-            key={projectDocument._id}
-            projectDocument={projectDocument}
-          />
-        ))}
+        {isLoadingProjectDocs ? (
+          <div className="flex items-center justify-center gap-2 py-4 ">
+            <LoadingSpinner className="h-6 w-6" />
+            <p className="text-sm text-muted-foreground">
+              Loading project documents...
+            </p>
+          </div>
+        ) : isProjectDocumentsError || projectDocumentsError ? (
+          <div className="flex items-center justify-center gap-2  ">
+            <ErrorState
+              className="h-12 w-full p-2 gap-2 flex items-center justify-center"
+              title="Error loading project documents"
+              error={projectDocumentsError}
+              showDescription={false}
+            />
+          </div>
+        ) : (
+          projectDocuments.projectDocuments.map((projectDocument) => (
+            <ProjectDocumentListItem
+              key={projectDocument._id}
+              projectDocument={projectDocument}
+            />
+          ))
+        )}
       </div>
     </div>
   );

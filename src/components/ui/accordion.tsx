@@ -109,9 +109,11 @@ interface AccordionTriggerProps {
   className?: string;
   children?: React.ReactNode;
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  showIcon?: boolean;
 }
 
 function AccordionTrigger({
+  showIcon = true,
   className,
   children,
   onClick,
@@ -148,7 +150,9 @@ function AccordionTrigger({
           transition={{ duration: 0.25 }}
           className="items-center flex justify-center "
         >
-          <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />
+          {showIcon && (
+            <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />
+          )}
         </motion.div>
         {children}
       </motion.button>

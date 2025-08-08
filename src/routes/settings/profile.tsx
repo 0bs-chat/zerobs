@@ -9,6 +9,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { convexQuery } from "@convex-dev/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 
 export const Route = createFileRoute("/settings/profile")({
   component: RouteComponent,
@@ -17,10 +19,33 @@ export const Route = createFileRoute("/settings/profile")({
 });
 
 function RouteComponent() {
-  const { data: user } = useQuery(convexQuery(api.auth.getUser, {}));
+  const {
+    data: user,
+    isError: isErrorUser,
+    isLoading: isLoadingUser,
+    error: userError,
+  } = useQuery(convexQuery(api.auth.getUser, {}));
 
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
+
+  if (isLoadingUser) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (isErrorUser || userError) {
+    return (
+      <ErrorState
+        title="Failed to load user data"
+        className="max-w-4xl"
+        error={userError}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

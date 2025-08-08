@@ -3,6 +3,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import { XIcon } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { useDebouncedCallback } from "use-debounce";
@@ -19,7 +21,12 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const chatId = useAtomValue(chatIdAtom);
   const navigate = useNavigate();
   const router = useRouter();
-  const { data: project } = useQuery({
+  const {
+    data: project,
+    isLoading: isLoadingProject,
+    isError: isProjectError,
+    error: projectError,
+  } = useQuery({
     ...convexQuery(
       api.projects.queries.get,
       projectId ? { projectId } : "skip"
@@ -41,6 +48,29 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
       },
     });
   }, 1000);
+
+  if (isLoadingProject) {
+    return (
+      <div className="flex flex-1 items-center justify-center py-8">
+        <LoadingSpinner
+          className="h-6 w-6"
+          label="Loading project details..."
+        />
+      </div>
+    );
+  }
+
+  if (isProjectError || projectError) {
+    return (
+      <div className=" ">
+        <ErrorState
+          className="h-full py-2.5"
+          title="Error loading project details"
+          error={projectError}
+        />
+      </div>
+    );
+  }
 
   if (!project) return null;
 

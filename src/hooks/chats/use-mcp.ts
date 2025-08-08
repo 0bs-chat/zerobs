@@ -40,7 +40,12 @@ function validateMCP(mcp: MCPFormState): boolean {
 }
 
 export function useMCPs() {
-  const { data: mcps } = useQuery({
+  const {
+    data: mcps,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     ...convexQuery(api.mcps.queries.getAll, {
       paginationOpts: { numItems: 10, cursor: null },
     }),
@@ -131,5 +136,8 @@ export function useMCPs() {
     handleDelete,
     restartMCP,
     validateMCP,
+    isLoading,
+    isError,
+    error,
   };
 }

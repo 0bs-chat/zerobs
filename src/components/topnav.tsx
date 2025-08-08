@@ -10,11 +10,17 @@ import { PanelRightCloseIcon, PlusIcon, Settings2Icon } from "lucide-react";
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
@@ -25,9 +31,17 @@ export function TopNav() {
   const setUser = useSetAtom(userAtom);
   const location = useLocation();
 
-  const { data: user } = useQuery({
+  const {
+    data: user,
+    isError: isErrorUser,
+    isLoading: isLoadingUser,
+  } = useQuery({
     ...convexQuery(api.auth.getUser, {}),
   });
+
+  if (isErrorUser) {
+    return <Navigate to="/auth" />;
+  }
 
   useEffect(() => {
     if (user) {
@@ -40,14 +54,17 @@ export function TopNav() {
   const isOnChatRoute = !!params.chatId;
   const isSettingsRoute = location.pathname.startsWith("/settings");
 
-  // Global shortcut for toggling resizable panel (Ctrl/Cmd+I)
+  // Minimal global shortcut for toggling resizable panel (Ctrl/Cmd+I)
   useEffect(() => {
     if (!isOnChatRoute) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key === "i" &&
-        (event.metaKey || event.ctrlKey)
-      ) {
+      const tag = (event.target as HTMLElement)?.tagName;
+      const isEditable =
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        (event.target as HTMLElement)?.isContentEditable;
+      if (isEditable) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i") {
         event.preventDefault();
         setResizePanelOpen((open) => {
           if (!open) setSelectedArtifact(undefined);
@@ -55,7 +72,6 @@ export function TopNav() {
         });
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOnChatRoute, setResizePanelOpen, setSelectedArtifact]);
@@ -82,6 +98,11 @@ export function TopNav() {
       <div
         className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "border-border/80 dark:border-border/40 border bg-accent/25 dark:bg-accent/35"} `}
       >
+        {isLoadingUser && (
+          <div className="px-2">
+            <LoadingSpinner sizeClassName="h-3 w-3" />
+          </div>
+        )}
         {!resizePanelOpen ? (
           <Button
             variant="ghost"

@@ -8,6 +8,7 @@ import { useSetAtom, useAtomValue } from "jotai";
 
 export const useRemoveDocument = () => {
   const chatId = useAtomValue(chatIdAtom);
+
   const { data: chatInputQuery } = useQuery({
     ...convexQuery(
       api.chats.queries.get,
@@ -15,9 +16,11 @@ export const useRemoveDocument = () => {
     ),
     enabled: chatId !== "new",
   });
+
   const { mutate: updateChatInputMutation } = useMutation({
     mutationFn: useConvexMutation(api.chats.mutations.update),
   });
+
   const setNewChat = useSetAtom(newChatAtom);
 
   return (documentId: Id<"documents">) => {

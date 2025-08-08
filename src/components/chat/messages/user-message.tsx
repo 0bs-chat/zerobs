@@ -6,6 +6,8 @@ import type {
   MessageGroup,
 } from "../../../../convex/chatMessages/helpers";
 import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 import { documentDialogOpenAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { api } from "../../../../convex/_generated/api";
@@ -27,15 +29,44 @@ const DocumentButton = ({
   fileId: string;
   setDocumentDialogOpen: (id: Id<"documents"> | undefined) => void;
 }) => {
-  const { data: documentData } = useQuery({
+  const {
+    data: documentData,
+    isLoading: isLoadingDocument,
+    isError: isDocumentError,
+    error: documentError,
+  } = useQuery({
     ...convexQuery(api.documents.queries.get, {
       documentId: fileId as Id<"documents">,
     }),
   });
 
+  if (isLoadingDocument) {
+    return (
+      <div className="py-2 text-xs text-muted-foreground flex items-center gap-2">
+        <LoadingSpinner
+          sizeClassName="h-4 w-4"
+          label="Fetching attached documents"
+        />
+      </div>
+    );
+  }
+
+  if (isDocumentError || documentError) {
+    return (
+      <div className="py-2 max-w-xs">
+        <ErrorState
+          density="compact"
+          title="error loading attached documents"
+          error={documentError}
+          showDescription={false}
+        />
+      </div>
+    );
+  }
+
   return (
     <Button
-      className="py-7 cursor-pointer"
+      className="py-6 cursor-pointer"
       onClick={() => setDocumentDialogOpen(fileId as Id<"documents">)}
     >
       {documentData?.name}
@@ -51,7 +82,12 @@ const EditingDocumentList = ({
   documentIds: Id<"documents">[];
   onRemove: (documentId: Id<"documents">) => void;
 }) => {
-  const { data: documents } = useQuery({
+  const {
+    data: documents,
+    isLoading: isLoadingDocuments,
+    isError: isDocumentsError,
+    error: documentsError,
+  } = useQuery({
     ...convexQuery(api.documents.queries.getMultiple, { documentIds }),
   });
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
@@ -62,6 +98,22 @@ const EditingDocumentList = ({
     },
     [setDocumentDialogOpen]
   );
+
+  if (isLoadingDocuments) {
+    return (
+      <div className="px-2 py-1 text-xs text-muted-foreground flex items-center gap-2">
+        <LoadingSpinner sizeClassName="h-3 w-3" /> Loading…
+      </div>
+    );
+  }
+
+  if (isDocumentsError) {
+    return (
+      <div className="px-2 py-1">
+        <ErrorState title="Failed to load documents" error={documentsError} />
+      </div>
+    );
+  }
 
   if (!documents?.length) return null;
 
@@ -80,23 +132,29 @@ const EditingDocumentList = ({
           return (
             <Badge
               key={doc._id}
-              variant="secondary"
-              className="flex items-center gap-1.5 pr-1 cursor-pointer"
+              variant="default"
+              className="group/document flex gap-1.5 py-1 cursor-pointer bg-accent/65 hover:bg-accent/100 hover:text-accent-foreground text-accent-foreground/90 rounded-md transition duration-300 items-center justify-center"
               onClick={() => handlePreview(doc._id)}
             >
-              <Icon className={`${IconClassName} h-3 w-3`} />
-              <span className="max-w-32 truncate">{doc.name}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0.5 hover:bg-muted-foreground/20"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(doc._id);
-                }}
-              >
-                <XIcon className="w-3 h-3" />
-              </Button>
+              <div className="relative h-4 w-4">
+                <Icon
+                  className={`${IconClassName} h-4 w-4 group-hover/document:opacity-0 transition duration-300`}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-0 h-4 w-4 opacity-0 group-hover/document:opacity-100 hover:bg-muted-foreground/20 cursor-pointer transition duration-300"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove(doc._id);
+                  }}
+                >
+                  <XIcon className="w-3 h-3" />
+                </Button>
+              </div>
+              <span className="max-w-32 truncate text-xs cursor-pointer">
+                {doc.name}
+              </span>
             </Badge>
           );
         })}
@@ -193,7 +251,7 @@ export const UserMessage = memo(
     }, [content, item.message._id, setDocumentDialogOpen]);
 
     return (
-      <div className="group flex flex-col gap-1 max-w-[80%] self-end">
+      <div className="group/message    flex flex-col gap-1 max-w-[80%] self-end">
         {isEditing ? (
           <div className="bg-card max-w-full self-end rounded-md shadow-sm w-full p-2 border-2 border-transparent">
             <AutosizeTextarea
@@ -201,7 +259,7 @@ export const UserMessage = memo(
               onChange={(e) => setEditedText(e.target.value)}
               minHeight={32}
               maxHeight={120}
-              className="bg-transparent resize-none border-none min-w-96 max-w-full ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none focus-visible:outline-none text-base"
+              className="bg-transparent resize-none border-none min-w-[100vw] max-w-full ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none focus-visible:outline-none text-base"
               autoFocus
               placeholder="Edit your message..."
             />
@@ -221,7 +279,7 @@ export const UserMessage = memo(
             {renderedContent}
           </ScrollArea>
         )}
-        <div className="opacity-0 flex gap-2 group-hover:opacity-100 transition-opacity">
+        <div className="opacity-0 flex gap-2 group-hover/message:opacity-100 transition-opacity">
           <UserUtilsBar
             input={item}
             isEditing={isEditing}

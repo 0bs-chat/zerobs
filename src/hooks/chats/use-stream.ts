@@ -16,7 +16,11 @@ import {
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 
 export function useStream(chatId: Id<"chats"> | "new") {
-  const { data: stream } = useQuery({
+  const {
+    data: stream,
+    isError: isStreamError,
+    error: streamError,
+  } = useQuery({
     ...convexQuery(
       api.streams.queries.get,
       chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip"
@@ -36,7 +40,11 @@ export function useStream(chatId: Id<"chats"> | "new") {
 
   // Reactive query for chunks - uses stream._creationTime as dependency for reactivity
   // but still filters by lastSeenTime for bandwidth optimization
-  const { data: chunksResult } = useQuery({
+  const {
+    data: chunksResult,
+    isError: isChunksError,
+    error: chunksError,
+  } = useQuery({
     ...convexQuery(
       api.streams.queries.getChunks,
       stream && stream.status === "streaming"
@@ -171,5 +179,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
     status: stream?.status,
     langchainMessages,
     planningStepsMessage,
+    isError: isStreamError || isChunksError,
+    error: isStreamError ? streamError : chunksError,
   };
 }

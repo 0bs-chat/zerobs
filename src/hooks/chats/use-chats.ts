@@ -126,7 +126,12 @@ export const useSearchChats = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  const { data: searchResults } = useQuery({
+  const {
+    data: searchResults,
+    isLoading: isLoadingSearch,
+    isError: isSearchError,
+    error: searchError,
+  } = useQuery({
     ...convexQuery(api.chats.queries.search, {
       query: debouncedQuery.trim() ? debouncedQuery.trim() : "skip",
     }),
@@ -141,11 +146,16 @@ export const useSearchChats = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const isSearching = debouncedQuery.trim().length > 0;
+
   return {
     searchQuery,
     setSearchQuery,
     searchResults: searchResults || [],
-    isSearching: debouncedQuery !== searchQuery,
+    isSearching,
+    isLoadingSearch,
+    isSearchError,
+    searchError,
   };
 };
 

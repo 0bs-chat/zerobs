@@ -9,6 +9,8 @@ import { api } from "../../convex/_generated/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 import { getDocTagInfo } from "@/lib/helper";
 import { formatBytes } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -19,7 +21,12 @@ export const DocumentDialog = () => {
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const { data: document } = useQuery({
+  const {
+    data: document,
+    isLoading: isLoadingDocument,
+    isError: isDocumentError,
+    error: documentError,
+  } = useQuery({
     ...convexQuery(
       api.documents.queries.get,
       documentDialogOpen ? { documentId: documentDialogOpen } : "skip"
@@ -44,37 +51,40 @@ export const DocumentDialog = () => {
     setPreviewUrl(null);
     const loadPreviewUrl = async () => {
       if (!document) return;
-      switch (tag) {
-        case "image":
-        case "pdf":
-        case "file": {
-          // Only files need download URL
-          const url = await generateDownloadUrl({
-            documentId: document._id!,
-          });
-          setPreviewUrl(url);
-          break;
-        }
-        case "url":
-        case "site": {
-          setPreviewUrl(document.key as string);
-          break;
-        }
-        case "youtube": {
-          setPreviewUrl(`https://www.youtube.com/embed/${document.key}`);
-          break;
-        }
-        default:
-          if (["file", "text", "github"].includes(document.type)) {
+      try {
+        switch (tag) {
+          case "image":
+          case "pdf":
+          case "file": {
             const url = await generateDownloadUrl({
               documentId: document._id!,
             });
             setPreviewUrl(url);
             break;
-          } else {
-            setPreviewUrl(document.key as string);
           }
-          break;
+          case "url":
+          case "site": {
+            setPreviewUrl(document.key as string);
+            break;
+          }
+          case "youtube": {
+            setPreviewUrl(`https://www.youtube.com/embed/${document.key}`);
+            break;
+          }
+          default:
+            if (["file", "text", "github"].includes(document.type)) {
+              const url = await generateDownloadUrl({
+                documentId: document._id!,
+              });
+              setPreviewUrl(url);
+              break;
+            } else {
+              setPreviewUrl(document.key as string);
+            }
+            break;
+        }
+      } catch (e) {
+        setPreviewUrl(null);
       }
     };
     loadPreviewUrl();
@@ -83,6 +93,42 @@ export const DocumentDialog = () => {
   // Early return if dialog is not open
   if (!documentDialogOpen) {
     return null;
+  }
+
+  if (isLoadingDocument) {
+    return (
+      <Dialog
+        open={!!documentDialogOpen}
+        onOpenChange={() => setDocumentDialogOpen(undefined)}
+      >
+        <DialogContent className="sm:max-w-[800px] h-[80vh] flex items-center justify-center gap-4">
+          <LoadingSpinner className="h-8 w-8" />
+          <div className="text-muted-foreground text-lg">
+            Loading document...
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (isDocumentError || documentError) {
+    return (
+      <Dialog
+        open={!!documentDialogOpen}
+        onOpenChange={() => setDocumentDialogOpen(undefined)}
+      >
+        <DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col items-center justify-center gap-4">
+          <div className="flex flex-col items-center justify-center gap-4 w-full">
+            <ErrorState
+              title="Failed to load document"
+              error={documentError}
+              description="Please try again later."
+              density="comfy"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   const handleDownload = async () => {
@@ -131,6 +177,16 @@ export const DocumentDialog = () => {
             )}
           </div>
 
+          {isDocumentError ||
+            (documentError && (
+              <div className="flex items-center justify-center text-muted-foreground h-full">
+                <ErrorState
+                  density="comfy"
+                  title="Unable to preview document"
+                  error={documentError}
+                />
+              </div>
+            ))}
           {previewUrl && (
             <div className="flex-grow relative min-h-0 bg-muted rounded-md border overflow-hidden">
               {(() => {

@@ -15,6 +15,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { SaveIcon, TrashIcon } from "lucide-react";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
@@ -206,6 +208,7 @@ function RouteComponent() {
     data: existingKeys,
     error,
     isError,
+    isLoading,
   } = useQuery(convexQuery(api.apiKeys.queries.getAll, {}));
   const { mutateAsync: createApiKey } = useMutation({
     mutationFn: useConvexMutation(api.apiKeys.mutations.create),
@@ -304,22 +307,25 @@ function RouteComponent() {
     );
   };
 
-  // Show error state if API keys failed to load
-  if (error && isError) {
+  if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 h-full">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-destructive font-medium">
-                Failed to load API keys
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                {error?.message || "An unexpected error occurred"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center h-full">
+        <LoadingSpinner label="Loading API keys..." />
+      </div>
+    );
+  }
+
+  // Show error state if API keys failed to load
+  if (isError || error) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <ErrorState
+          title="Failed to load API keys"
+          error={error}
+          showIcon={false}
+          density="comfy"
+          description="Unable to load API keys, please try again later."
+        />
       </div>
     );
   }
