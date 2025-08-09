@@ -34,18 +34,10 @@ export const SearchResultDisplay = ({
   results,
   input,
 }: SearchResultDisplayProps) => {
-  if (!results || results.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground">
-        No search results found
-      </div>
-    );
-  }
-
   return (
     <Accordion
       type="multiple"
-      className="w-full"
+      className="w-full bg-accent/20 px-2 py-2 rounded-lg cursor-pointer"
       // defaultValue={["web-search-results"]} // Remove this line to keep it closed by default
     >
       <AccordionItem value="web-search-results" className="px-0 border-none">
@@ -53,9 +45,9 @@ export const SearchResultDisplay = ({
           className={`flex items-center gap-2 text-sm text-muted-foreground py-0 justify-start`}
         >
           <div className="flex flex-row items-center justify-between w-full">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer">
               <GlobeIcon className="h-4 w-4" />
-              <span className="text-muted-foreground translate-y-[.1rem]">
+              <span className="text-muted-foreground ">
                 Web Search Results ({results.length})
               </span>
             </div>
@@ -73,7 +65,7 @@ export const SearchResultDisplay = ({
                   window.open(
                     result.metadata.source,
                     "_blank",
-                    "noopener,noreferrer",
+                    "noopener,noreferrer"
                   )
                 }
                 onKeyDown={(e) => {
@@ -82,7 +74,7 @@ export const SearchResultDisplay = ({
                     window.open(
                       result.metadata.source,
                       "_blank",
-                      "noopener,noreferrer",
+                      "noopener,noreferrer"
                     );
                   }
                 }}
@@ -99,7 +91,7 @@ export const SearchResultDisplay = ({
                     alt=""
                     className="w-full h-full object-cover"
                     src={`https://api.microlink.io/?url=${encodeURIComponent(
-                      result.metadata.image || result.metadata.source,
+                      result.metadata.image || result.metadata.source
                     )}&screenshot=true&meta=false&embed=screenshot.url`}
                   />
                 </div>

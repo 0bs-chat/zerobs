@@ -53,11 +53,15 @@ export function useStream(chatId: Id<"chats"> | "new") {
         if (!isMounted || !result?.chunks?.page?.length) return;
         // Only process chunks newer than lastSeenTime
         const newEvents: ChunkGroup[] = result.chunks.page
-          .filter((chunkDoc: any) =>
-            lastSeenTime === undefined || chunkDoc._creationTime > lastSeenTime
+          .filter(
+            (chunkDoc: any) =>
+              lastSeenTime === undefined ||
+              chunkDoc._creationTime > lastSeenTime
           )
           .flatMap((chunkDoc: any) =>
-            chunkDoc.chunks.map((chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup)
+            chunkDoc.chunks.map(
+              (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup
+            )
           );
         if (newEvents.length > 0) {
           setGroupedChunks((prev) => {
@@ -138,7 +142,10 @@ export function useStream(chatId: Id<"chats"> | "new") {
             return new LangChainToolMessage({
               name: chunk.toolName,
               tool_call_id: chunk.toolCallId,
-              content: "",
+              content:
+                typeof chunk.output === "string"
+                  ? chunk.output
+                  : JSON.stringify(chunk.output ?? ""),
               additional_kwargs: {
                 input: JSON.parse(JSON.stringify(chunk.input)),
                 is_complete: false,
