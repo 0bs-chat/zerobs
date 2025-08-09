@@ -1,20 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mail, LogOutIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { convexQuery } from "@convex-dev/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/settings/profile")({
   component: RouteComponent,
+  preloadStaleTime: 30 * 60 * 1000, // 30 minutes
+  staleTime: 30 * 60 * 1000, // 30 minutes
 });
 
 function RouteComponent() {
-  const user = useQuery(api.auth.getUser);
+  const { data: user } = useQuery(convexQuery(api.auth.getUser, {}));
 
   const { signOut } = useAuthActions();
   const navigate = useNavigate();

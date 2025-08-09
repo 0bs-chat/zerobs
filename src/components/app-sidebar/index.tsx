@@ -2,7 +2,6 @@ import * as React from "react";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -15,12 +14,23 @@ import { Input } from "@/components/ui/input";
 import { ChatItem } from "@/components/app-sidebar/chat-item";
 import { useInfiniteChats, useSearchChats } from "@/hooks/chats/use-chats";
 import type { Doc } from "../../../convex/_generated/dataModel";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { pinnedChatsAccordionOpenAtom } from "@/store/chatStore";
+import { useAtom } from "jotai";
 
 export function AppSidebar() {
   const navigate = useNavigate();
   const { pinnedChats, historyChats, status, loadMore } = useInfiniteChats();
   const { searchQuery, setSearchQuery, searchResults } = useSearchChats();
   const loadMoreRef = React.useRef<HTMLButtonElement>(null);
+  const [pinnedChatsAccordionOpen, setPinnedChatsAccordionOpen] = useAtom(
+    pinnedChatsAccordionOpenAtom
+  );
 
   const handleNewChat = () => {
     navigate({
@@ -61,7 +71,7 @@ export function AppSidebar() {
         root: null,
         rootMargin: "0px",
         threshold: 0.1,
-      },
+      }
     );
 
     observer.observe(loadMoreElement);
@@ -88,7 +98,7 @@ export function AppSidebar() {
       <SidebarHeader className="flex items-center w-full font-bold font-mono text-xl py-3.5 px-2">
         0bs
       </SidebarHeader>
-      <SidebarContent className="overflow-hidden gap-0 px-1">
+      <SidebarContent className="overflow-hidden px-1">
         <SidebarGroup className="gap-2">
           <Button className="w-full cursor-pointer" onClick={handleNewChat}>
             <div className="flex items-center gap-2">
@@ -142,12 +152,30 @@ export function AppSidebar() {
 
         {displayPinnedChats.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarGroupLabel>Pinned</SidebarGroupLabel>
-              <div className="flex flex-col">
-                {displayPinnedChats.map((chat) => renderChatItem(chat))}
-              </div>
-            </SidebarGroupContent>
+            <Accordion
+              type="single"
+              collapsible
+              defaultValue="pinned"
+              className="w-full"
+              value={pinnedChatsAccordionOpen ? "pinned" : ""}
+              onValueChange={(value) => {
+                setPinnedChatsAccordionOpen(value === "pinned");
+              }}
+            >
+              <AccordionItem value="pinned">
+                <div className="flex justify-between items-center w-full">
+                  <SidebarGroupLabel>Pinned</SidebarGroupLabel>
+                  <AccordionTrigger className=" cursor-pointer" />
+                </div>
+                <AccordionContent>
+                  <SidebarGroupContent>
+                    <div className="flex flex-col">
+                      {displayPinnedChats.map((chat) => renderChatItem(chat))}
+                    </div>
+                  </SidebarGroupContent>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </SidebarGroup>
         )}
 
@@ -181,8 +209,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      <SidebarFooter />
     </Sidebar>
   );
 }

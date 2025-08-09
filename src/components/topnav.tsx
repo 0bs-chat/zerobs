@@ -11,7 +11,8 @@ import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
 
@@ -23,7 +24,10 @@ export function TopNav() {
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
   const setUser = useSetAtom(userAtom);
   const location = useLocation();
-  const user = useQuery(api.auth.getUser);
+
+  const { data: user } = useQuery({
+    ...convexQuery(api.auth.getUser, {}),
+  });
 
   useEffect(() => {
     if (user) {
@@ -36,17 +40,14 @@ export function TopNav() {
   const isOnChatRoute = !!params.chatId;
   const isSettingsRoute = location.pathname.startsWith("/settings");
 
-  // Minimal global shortcut for toggling resizable panel (Ctrl/Cmd+I)
+  // Global shortcut for toggling resizable panel (Ctrl/Cmd+I)
   useEffect(() => {
     if (!isOnChatRoute) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      const tag = (event.target as HTMLElement)?.tagName;
-      const isEditable =
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        (event.target as HTMLElement)?.isContentEditable;
-      if (isEditable) return;
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i") {
+      if (
+        event.key === "i" &&
+        (event.metaKey || event.ctrlKey)
+      ) {
         event.preventDefault();
         setResizePanelOpen((open) => {
           if (!open) setSelectedArtifact(undefined);
@@ -54,6 +55,7 @@ export function TopNav() {
         });
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOnChatRoute, setResizePanelOpen, setSelectedArtifact]);

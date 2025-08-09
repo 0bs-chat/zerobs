@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { useNavigate } from "@tanstack/react-router";
@@ -12,7 +13,9 @@ interface ProjectChatListProps {
 
 export const ProjectChatList = ({ projectId }: ProjectChatListProps) => {
   const navigate = useNavigate();
-  const chats = useQuery(api.chats.queries.getByProjectId, { projectId });
+  const { data: chats } = useQuery({
+    ...convexQuery(api.chats.queries.getByProjectId, { projectId }),
+  });
 
   if (!chats || chats.length === 0) {
     return (

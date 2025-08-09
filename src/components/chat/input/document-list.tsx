@@ -1,5 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../../../convex/_generated/api";
 import type { Id, Doc } from "../../../../convex/_generated/dataModel";
 import { XIcon } from "lucide-react";
@@ -23,7 +24,7 @@ const DocumentBadge = React.memo(
   ({ doc, onPreview, onRemove, modalities }: DocumentBadgeProps) => {
     const { icon: Icon, className: IconClassName } = getDocTagInfo(
       doc,
-      modalities,
+      modalities
     );
 
     const handlePreview = useCallback(() => {
@@ -35,28 +36,34 @@ const DocumentBadge = React.memo(
         e.stopPropagation();
         onRemove();
       },
-      [onRemove],
+      [onRemove]
     );
 
     return (
       <Badge
-        variant="secondary"
-        className="flex items-center gap-1.5 pr-1"
+        variant="default"
+        className="group flex gap-1.5 py-1 cursor-pointer bg-accent/65 hover:bg-accent/100 hover:text-accent-foreground text-accent-foreground/90 rounded-md transition duration-300 items-center justify-center"
         onClick={handlePreview}
       >
-        <Icon className={`${IconClassName} h-3 w-3`} />
-        <span className="max-w-32 truncate">{doc.name}</span>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-4 w-4 p-0.5 hover:bg-muted-foreground/20"
-          onClick={handleRemove}
-        >
-          <XIcon className="w-3 h-3" />
-        </Button>
+        <div className="relative h-4 w-4">
+          <Icon
+            className={`${IconClassName} h-4 w-4 group-hover:opacity-0 transition duration-300`}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute inset-0 h-4 w-4 opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 cursor-pointer transition duration-300"
+            onClick={handleRemove}
+          >
+            <XIcon className="w-3 h-3" />
+          </Button>
+        </div>
+        <span className="max-w-32 truncate text-xs cursor-pointer">
+          {doc.name}
+        </span>
       </Badge>
     );
-  },
+  }
 );
 DocumentBadge.displayName = "DocumentBadge";
 
@@ -67,8 +74,8 @@ export const DocumentList = ({
   documentIds?: Id<"documents">[];
   model: string;
 }) => {
-  const documents = useQuery(api.documents.queries.getMultiple, {
-    documentIds,
+  const { data: documents } = useQuery({
+    ...convexQuery(api.documents.queries.getMultiple, { documentIds }),
   });
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
   const removeDocument = useRemoveDocument();
@@ -77,14 +84,14 @@ export const DocumentList = ({
     (documentId: Id<"documents">) => {
       setDocumentDialogOpen(documentId);
     },
-    [setDocumentDialogOpen],
+    [setDocumentDialogOpen]
   );
 
   const handleRemove = useCallback(
     (documentId: Id<"documents">) => {
       removeDocument(documentId);
     },
-    [removeDocument],
+    [removeDocument]
   );
 
   if (!documents?.length) return null;

@@ -10,7 +10,8 @@ import {
   chatIdAtom,
 } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
-import { useMutation } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { useEffect } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
@@ -25,7 +26,9 @@ import { useState, useCallback } from "react";
 
 export const ChatInput = () => {
   const chatId = useAtomValue(chatIdAtom);
-  const updateChatMutation = useMutation(api.chats.mutations.update);
+  const { mutate: updateChatMutation } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
   const setNewChat = useSetAtom(newChatAtom);
   const chat = useAtomValue(chatAtom);
   const handleSubmit = useHandleSubmit();
@@ -61,7 +64,7 @@ export const ChatInput = () => {
         }));
       }
     },
-    300,
+    300
   );
 
   // Handle paste events for images
@@ -90,11 +93,11 @@ export const ChatInput = () => {
 
         await handleFileUpload(fileList);
         toast.success(
-          `${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""} pasted and uploaded`,
+          `${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""} pasted and uploaded`
         );
       }
     },
-    [handleFileUpload],
+    [handleFileUpload]
   );
 
   // Handle drag and drop
@@ -106,7 +109,7 @@ export const ChatInput = () => {
         await handleFileUpload(e.dataTransfer.files);
       }
     },
-    [handleFileUpload],
+    [handleFileUpload]
   );
 
   const handleDragOver = useCallback(
@@ -114,7 +117,7 @@ export const ChatInput = () => {
       e.preventDefault();
       if (!isDragActive) setIsDragActive(true);
     },
-    [isDragActive],
+    [isDragActive]
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {

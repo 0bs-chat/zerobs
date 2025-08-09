@@ -6,16 +6,17 @@ import type { MessageGroup } from "../../../../../convex/chatMessages/helpers";
 import { AiUtilsBar } from "../utils-bar/ai-utils-bar";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { springTransition } from "@/lib/motion";
-import { useMutation } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 
 export const AiMessage = memo(({ group }: { group: MessageGroup }) => {
   const firstResponse = group.response[0];
   const minimized = firstResponse?.message.minimized ?? false;
 
-  const toggleMinimized = useMutation(
-    api.chatMessages.mutations.toggleMinimized,
-  ).withOptimisticUpdate((_localStore, _args) => {});
+  const { mutate: toggleMinimized } = useMutation({
+    mutationFn: useConvexMutation(api.chatMessages.mutations.toggleMinimized),
+  });
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -60,7 +61,6 @@ export const AiMessage = memo(({ group }: { group: MessageGroup }) => {
           absolute top-0 left-0 transform -translate-x-[2rem] ${!minimized ? "opacity-0" : "opacity-100"}
           group-hover:opacity-100
           group-hover:bg-background/80
-          group-hover:hover:bg-accent
           group-hover:hover:bg-accent
           `}
         aria-label={!minimized ? "Collapse" : "Expand"}

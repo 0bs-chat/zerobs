@@ -21,8 +21,9 @@ import { useParams } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { slideInFromRight, layoutTransition } from "@/lib/motion";
 import { api } from "../../convex/_generated/api";
-import { useQuery } from "convex/react";
 import { newChatAtom } from "@/store/chatStore";
+import { convexQuery } from "@convex-dev/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createLazyFileRoute("/chat/$chatId")({
   component: RouteComponent,
@@ -32,6 +33,7 @@ function RouteComponent() {
   const params = useParams({
     from: "/chat/$chatId",
   });
+
   const chatId = params.chatId as Id<"chats">;
   const resizePanelOpen = useAtomValue(resizePanelOpenAtom);
   const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
@@ -41,12 +43,16 @@ function RouteComponent() {
     setSelectedArtifact(undefined);
   }, [chatId, setSelectedArtifact]);
 
-  const queryChat =
-    useQuery(api.chats.queries.get, chatId !== "new" ? { chatId } : "skip") ??
-    newChat;
+  const { data: queryChat } = useQuery({
+    ...convexQuery(
+      api.chats.queries.get,
+      chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip"
+    ),
+  });
+
   useEffect(() => {
-    setChat(queryChat);
-  }, [queryChat, setChat]);
+    setChat(chatId !== "new" ? queryChat : newChat);
+  }, [queryChat, setChat, newChat]);
 
   return (
     <>

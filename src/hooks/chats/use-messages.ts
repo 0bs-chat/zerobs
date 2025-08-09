@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useCallback } from "react";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
@@ -21,17 +22,21 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const setUseStreamAtom = useSetAtom(useStreamAtom);
   const branchPath = useAtomValue(branchPathAtom);
 
-  const messages = useQuery(
-    api.chatMessages.queries.get,
-    chatId !== "new" ? { chatId } : "skip",
-  );
+  const { data: messages, isLoading } = useQuery({
+    ...convexQuery(
+      api.chatMessages.queries.get,
+      chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip"
+    ),
+    enabled: chatId !== "new",
+  });
+
   const messageTree = useMemo(
     () => (messages ? buildMessageTree(messages) : []),
-    [messages],
+    [messages]
   );
   const currentThread = useMemo(
     () => buildThread(messageTree, branchPath),
-    [messageTree, branchPath],
+    [messageTree, branchPath]
   );
   const streamData = useStream(chatId);
 
@@ -46,7 +51,7 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   ]);
 
   return {
-    isLoading: messages === undefined,
+    isLoading: isLoading,
     isEmpty: currentThread.length === 0,
   };
 };
@@ -62,7 +67,7 @@ export const useChangeBranch = () => {
         return newPath;
       });
     },
-    [setBranchPath],
+    [setBranchPath]
   );
 };
 
@@ -93,6 +98,6 @@ export const useNavigateBranch = () => {
 
       changeBranch(depth, newIndex);
     },
-    [currentThread, branchPath, changeBranch],
+    [currentThread, branchPath, changeBranch]
   );
 };

@@ -44,6 +44,37 @@ export const models: {
   temperature?: number;
   parser?: "base" | "functionCalling";
 }[] = [
+
+  {
+    label: "GPT-5 Mini",
+    model_name: "gpt-5-mini",
+    model: "openai/gpt-5-mini",
+    isThinking: true,
+    toolSupport: false,
+    provider: "openai",
+    modalities: ["text", "image"],
+    image: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    description:
+      "GPT-5 Mini is a compact version of GPT-5, designed to handle lighter-weight reasoning tasks. It provides the same instruction-following and safety-tuning benefits as GPT-5, but with reduced latency and cost. GPT-5 Mini is the successor to OpenAI's o4-mini model.",
+    owner: "openai",
+    usageRateMultiplier: 1.0,
+    temperature: 0.3,
+  },
+  {
+    label: "GPT-5 Chat",
+    model_name: "gpt-5-chat",
+    model: "openai/gpt-5-chat",
+    isThinking: false,
+    toolSupport: false,
+    provider: "openai",
+    modalities: ["text", "image"],
+    image: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    description:
+      "GPT-5 Chat is designed for advanced, natural, multimodal, and context-aware conversations for enterprise applications.",
+    owner: "openai",
+    usageRateMultiplier: 1.0,
+    temperature: 0.3,
+  },
   {
     label: "Gemini 2.5 Flash",
     model_name: "gemini-2.5-flash",
@@ -95,6 +126,7 @@ export const models: {
     temperature: 1.0,
     parser: "functionCalling",
   },
+
   {
     label: "GPT-4.1",
     model_name: "gpt-4.1",
@@ -139,6 +171,21 @@ export const models: {
       "o3 is a state-of-the-art language model capable of understanding and generating human-like text.",
     owner: "openai",
     usageRateMultiplier: 1.5,
+  },
+  {
+    label: "GPT OSS 120B",
+    model_name: "gpt-oss-120b",
+    model: "openai/gpt-oss-120b",
+    isThinking: true,
+    toolSupport: true,
+    provider: "openai",
+    modalities: ["text"],
+    image: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    description:
+      "GPT OSS 120B is an open-weight, 117B-parameter Mixture-of-Experts (MoE) language model from OpenAI designed for high-reasoning, agentic, and general-purpose production use cases. It activates 5.1B parameters per forward pass and supports configurable reasoning depth, full chain-of-thought access, and native tool use.",
+    owner: "openai",
+    usageRateMultiplier: 1.0,
+    temperature: 0.3,
   },
   {
     label: "Claude 4",
@@ -282,22 +329,6 @@ export const models: {
     usageRateMultiplier: 1.0,
     parser: "functionCalling",
   },
-  {
-    label: "Horizon Beta",
-    model_name: "horizon-beta",
-    model: "openrouter/horizon-beta",
-    isThinking: false,
-    toolSupport: true,
-    provider: "openai",
-    modalities: ["text"],
-    image: "https://www.google.com/s2/favicons?domain=openrouter.ai&sz=256",
-    description:
-      "Horizon Beta is an improved version of Horizon Alpha, provided to the community to gather feedback. It's free to use during testing and supports text generation with tool calling capabilities.",
-    owner: "openrouter",
-    usageRateMultiplier: 1.0,
-    temperature: 0.7,
-    parser: "functionCalling",
-  },
 ];
 
 export async function getModel(
@@ -419,7 +450,6 @@ export async function formatMessages(
               if (typeof contentItem === "object") {
                 if (contentItem.type === "file" && "file" in contentItem) {
                   const documentId = contentItem.file?.file_id;
-                  // Use internal query to avoid authentication issues in internal actions
                   const document = await ctx.runQuery(
                     internal.documents.crud.read,
                     {
@@ -491,9 +521,10 @@ export async function formatMessages(
                     const blob = await ctx.storage.get(
                       document.key as Id<"_storage">,
                     );
+                    const text = await blob?.text();
                     return {
                       type: "text",
-                      text: `# ${document.name}\n${blob?.text()}\n`,
+                      text: `# ${document.name}\n${text}\n`,
                     };
                   } else {
                     return await getVectorText(ctx, document);

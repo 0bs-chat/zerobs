@@ -1,9 +1,4 @@
-import {
-  useAction,
-  useMutation,
-  usePaginatedQuery,
-  useQuery,
-} from "convex/react";
+import { useAction, usePaginatedQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
@@ -12,11 +7,21 @@ import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useAtomValue, useSetAtom } from "jotai";
 import { lastChatMessageAtom, newChatAtom } from "@/store/chatStore";
 import { useTextAreaRef } from "./use-textarea";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 
 export const useHandleSubmit = () => {
-  const createMessageMutation = useMutation(api.chatMessages.mutations.create);
-  const updateChatMutation = useMutation(api.chats.mutations.update);
-  const createChatMutation = useMutation(api.chats.mutations.create);
+  const { mutateAsync: createMessageMutation } = useMutation({
+    mutationFn: useConvexMutation(api.chatMessages.mutations.create),
+  });
+
+  const { mutateAsync: updateChatMutation } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
+  const { mutateAsync: createChatMutation } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.create),
+  });
+
   const setNewChat = useSetAtom(newChatAtom);
   const sendAction = useAction(api.langchain.index.chat);
   const navigate = useNavigate();
@@ -90,21 +95,20 @@ export const useHandleSubmit = () => {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to send message. Please try again.",
+          : "Failed to send message. Please try again."
       );
     }
   };
 
   return handleSubmit;
 };
-
 export const useInfiniteChats = () => {
   const { results, status, loadMore } = usePaginatedQuery(
     api.chats.queries.getAll,
     {},
     {
-      initialNumItems: 15,
-    },
+      initialNumItems: 25,
+    }
   );
 
   const pinnedChats = results?.filter((chat) => chat.pinned) ?? [];
@@ -122,10 +126,11 @@ export const useSearchChats = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  const searchResults = useQuery(
-    api.chats.queries.search,
-    debouncedQuery.trim() ? { query: debouncedQuery } : "skip",
-  );
+  const { data: searchResults } = useQuery({
+    ...convexQuery(api.chats.queries.search, {
+      query: debouncedQuery.trim() ? debouncedQuery.trim() : "skip",
+    }),
+  });
 
   // Debounce search query
   useEffect(() => {
@@ -146,8 +151,14 @@ export const useSearchChats = () => {
 
 export const chatHandlers = () => {
   const navigate = useNavigate();
-  const updateChat = useMutation(api.chats.mutations.update);
-  const removeChat = useMutation(api.chats.mutations.remove);
+
+  const { mutate: updateChat, error: updateChatError } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
+  const { mutate: removeChat, error: removeChatError } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.remove),
+  });
+
   const params = useParams({ strict: false });
 
   const handleNavigate = (chatId: string) => {
@@ -162,6 +173,9 @@ export const chatHandlers = () => {
       chatId: chatId as Id<"chats">,
       updates: { pinned: true },
     });
+    if (updateChatError) {
+      toast.error("Failed to pin chat");
+    }
     toast.success("Chat pinned");
   };
 
@@ -170,6 +184,9 @@ export const chatHandlers = () => {
       chatId: chatId as Id<"chats">,
       updates: { pinned: false },
     });
+    if (updateChatError) {
+      toast.error("Failed to unpin chat");
+    }
     toast.success("Chat unpinned");
   };
 
@@ -188,7 +205,10 @@ export const chatHandlers = () => {
         replace: true,
       });
     }
-    await removeChat({ chatId: chatId as Id<"chats"> });
+    removeChat({ chatId: chatId as Id<"chats"> });
+    if (removeChatError) {
+      toast.error("Failed to delete chat");
+    }
     toast.success("Chat deleted");
   };
 

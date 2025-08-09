@@ -1,7 +1,8 @@
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 
 export type MCPFormState = Omit<
   Doc<"mcps">,
@@ -39,24 +40,25 @@ function validateMCP(mcp: MCPFormState): boolean {
 }
 
 export function useMCPs() {
-  const getAllMCPs = () => {
-    const mcps = useQuery(api.mcps.queries.getAll, {
+  const { data: mcps } = useQuery({
+    ...convexQuery(api.mcps.queries.getAll, {
       paginationOpts: { numItems: 10, cursor: null },
-    });
+    }),
+  });
 
+  const getAllMCPs = () => {
     if (!mcps) return null;
-
     return mcps;
   };
 
-  const createMCP = useMutation(api.mcps.mutations.create);
-  const updateMCP = useMutation(api.mcps.mutations.update);
-  const removeMCP = useMutation(api.mcps.mutations.remove);
-  const restartMutation = useMutation(api.mcps.mutations.restart);
+  const createMCP = useConvexMutation(api.mcps.mutations.create);
+  const updateMCP = useConvexMutation(api.mcps.mutations.update);
+  const removeMCP = useConvexMutation(api.mcps.mutations.remove);
+  const restartMutation = useConvexMutation(api.mcps.mutations.restart);
 
   const handleCreate = async (
     newMCPData: MCPFormState,
-    setMcpEditDialogOpen: (open: boolean) => void,
+    setMcpEditDialogOpen: (open: boolean) => void
   ) => {
     if (!validateMCP(newMCPData)) return;
     try {

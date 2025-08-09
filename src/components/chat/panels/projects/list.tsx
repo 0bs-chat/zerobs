@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlusIcon, TrashIcon } from "lucide-react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import { useAtomValue } from "jotai";
 import { chatIdAtom } from "@/store/chatStore";
@@ -15,12 +16,18 @@ export const ProjectsList = () => {
   const chatId = useAtomValue(chatIdAtom);
   const navigate = useNavigate();
   const router = useRouter();
-  const allProjects = useQuery(api.projects.queries.getAll, {
-    paginationOpts: { numItems: 20, cursor: null },
+  const { data: allProjects } = useQuery({
+    ...convexQuery(api.projects.queries.getAll, {
+      paginationOpts: { numItems: 20, cursor: null },
+    }),
   });
 
-  const updateChatMutation = useMutation(api.chats.mutations.update);
-  const removeProjectMutation = useMutation(api.projects.mutations.remove);
+  const { mutate: updateChatMutation } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
+  const { mutate: removeProjectMutation } = useMutation({
+    mutationFn: useConvexMutation(api.projects.mutations.remove),
+  });
   const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
 
   const setNewChat = useSetAtom(newChatAtom);

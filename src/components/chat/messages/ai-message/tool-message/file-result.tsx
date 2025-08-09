@@ -1,4 +1,5 @@
-import { useMutation } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../../convex/_generated/api";
 import type { Id } from "../../../../../../convex/_generated/dataModel";
 import { useEffect, useState } from "react";
@@ -9,9 +10,9 @@ interface FileDisplayProps {
 }
 
 export const FileDisplay = ({ fileId }: FileDisplayProps) => {
-  const generateDownloadUrl = useMutation(
-    api.documents.mutations.generateDownloadUrl,
-  );
+  const { mutateAsync: generateDownloadUrl } = useMutation({
+    mutationFn: useConvexMutation(api.documents.mutations.generateDownloadUrl),
+  });
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
