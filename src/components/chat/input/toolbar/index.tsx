@@ -53,6 +53,8 @@ import {
 } from "@/lib/motion";
 import { ModelPopover } from "./model-popover";
 import { useRouter } from "@tanstack/react-router";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 
 // Toggle registry for DRY logic
 const TOGGLES = [
@@ -114,7 +116,11 @@ export const ToolBar = () => {
   const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
 
   // Get project details if chat has a project
-  const { data: project } = useQuery({
+  const {
+    data: project,
+    isLoading: isLoadingProject,
+    isError: isProjectError,
+  } = useQuery({
     ...convexQuery(
       api.projects.queries.get,
       chat.projectId ? { projectId: chat.projectId } : "skip"
@@ -300,13 +306,28 @@ export const ToolBar = () => {
               {toggle.icon}
             </motion.span>
             {/* X icon: visible only on hover, fully replaces toggle icon */}
-            <span className="absolute inset-0 flex items-center justify-center hidden group-hover:flex">
+            <span className="absolute inset-0 items-center justify-center hidden group-hover:flex">
               <XIcon className="w-4 h-4 text-destructive" />
             </span>
           </Button>
         ))}
         {/* Render project name with X button on hover */}
-        {project && (
+        {isLoadingProject && (
+          <Button variant="outline" className="justify-between px-2" disabled>
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <LoadingSpinner sizeClassName="h-3 w-3" />
+              Loading project...
+            </span>
+          </Button>
+        )}
+        {isProjectError && (
+          <ErrorState
+            density="compact"
+            title="Failed to load project"
+            className="h-9"
+          />
+        )}
+        {project && !isLoadingProject && !isProjectError && (
           <Button
             variant="outline"
             className="group justify-between px-2"

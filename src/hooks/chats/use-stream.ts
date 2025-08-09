@@ -17,8 +17,11 @@ import {
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 
 export function useStream(chatId: Id<"chats"> | "new") {
-  const convex = useConvex();
-  const { data: stream } = useQuery({
+  const {
+    data: stream,
+    isError: isStreamError,
+    error: streamError,
+  } = useQuery({
     ...convexQuery(
       api.streams.queries.get,
       chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip"
@@ -29,6 +32,8 @@ export function useStream(chatId: Id<"chats"> | "new") {
   const [lastSeenTime, setLastSeenTime] = useState<number | undefined>(
     undefined
   );
+
+  const convex = useConvex();
 
   // Reset state when chat or stream changes
   useEffect(() => {
@@ -53,11 +58,15 @@ export function useStream(chatId: Id<"chats"> | "new") {
         if (!isMounted || !result?.chunks?.page?.length) return;
         // Only process chunks newer than lastSeenTime
         const newEvents: ChunkGroup[] = result.chunks.page
-          .filter((chunkDoc: any) =>
-            lastSeenTime === undefined || chunkDoc._creationTime > lastSeenTime
+          .filter(
+            (chunkDoc: any) =>
+              lastSeenTime === undefined ||
+              chunkDoc._creationTime > lastSeenTime
           )
           .flatMap((chunkDoc: any) =>
-            chunkDoc.chunks.map((chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup)
+            chunkDoc.chunks.map(
+              (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup
+            )
           );
         if (newEvents.length > 0) {
           setGroupedChunks((prev) => {
@@ -174,5 +183,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
     status: stream?.status,
     langchainMessages,
     planningStepsMessage,
+    isError: isStreamError,
+    error: streamError,
   };
 }

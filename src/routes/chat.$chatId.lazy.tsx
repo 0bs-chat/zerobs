@@ -24,6 +24,7 @@ import { api } from "../../convex/_generated/api";
 import { newChatAtom } from "@/store/chatStore";
 import { convexQuery } from "@convex-dev/react-query";
 import { useQuery } from "@tanstack/react-query";
+import { ErrorState } from "@/components/ui/error-state";
 
 export const Route = createLazyFileRoute("/chat/$chatId")({
   component: RouteComponent,
@@ -43,7 +44,11 @@ function RouteComponent() {
     setSelectedArtifact(undefined);
   }, [chatId, setSelectedArtifact]);
 
-  const { data: queryChat } = useQuery({
+  const {
+    data: queryChat,
+    isError: isChatError,
+    error: chatError,
+  } = useQuery({
     ...convexQuery(
       api.chats.queries.get,
       chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip"
@@ -53,6 +58,24 @@ function RouteComponent() {
   useEffect(() => {
     setChat(chatId !== "new" ? queryChat : newChat);
   }, [queryChat, setChat, newChat]);
+
+  if (isChatError) {
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center bg-muted/40 ">
+        <ErrorState
+          variant="subtle"
+          className="py-4 px-6 max-w-lg shadow-md rounded-lg"
+          density="comfy"
+          align="center"
+          title="Couldn't load chat."
+          description="It may have been deleted or you may not have access. Please select another chat or start a new one."
+          error={chatError}
+          multiLineDescription
+          showIcon={false}
+        />
+      </div>
+    );
+  }
 
   return (
     <>
