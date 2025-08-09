@@ -14,6 +14,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useConvexAuth } from "convex/react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopNav } from "@/components/topnav";
+import { useEffect } from "react";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -72,12 +73,11 @@ export const Route = createRootRoute({
 
     // Ensure sidebar and right resizable panel are closed on settings pages
     // and keep them hidden there.
-    if (isSettingsRoute && sidebarOpen) {
-      setSidebarOpen(false);
-    }
-    if (isSettingsRoute) {
+    useEffect(() => {
+      if (!isSettingsRoute) return;
+      sidebarOpen && setSidebarOpen(false);
       setResizePanelOpen(false);
-    }
+    }, [isSettingsRoute, sidebarOpen, setSidebarOpen, setResizePanelOpen]);
 
     if (isLoading) {
       return (

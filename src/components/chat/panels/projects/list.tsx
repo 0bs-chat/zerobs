@@ -52,7 +52,7 @@ export const ProjectsList = () => {
     );
   }
 
-  if (isProjectsError || projectsError) {
+  if (isProjectsError) {
     return (
       <div className="flex items-center justify-center">
         <ErrorState

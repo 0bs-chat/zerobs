@@ -183,7 +183,7 @@ export function AppSidebar() {
                     <PinIcon className="w-4 h-4 mr-2" />
                     Pinned
                   </SidebarGroupLabel>
-                  <AccordionTrigger className="cursor-pointer p-0" />
+                  <AccordionTrigger className="cursor-pointer p-0 mr-2" />
                 </div>
                 <AccordionContent className="px-2">
                   <SidebarGroupContent>

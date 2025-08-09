@@ -66,9 +66,6 @@ export const ProjectsDropdown = ({
                   className="h-4 w-4"
                   label="Loading projects..."
                 />
-                <span className="text-muted-foreground">
-                  Loading projects...
-                </span>
               </DropdownMenuItem>
             ) : (
               projects?.page?.slice(0, 3).map((project: any) => (

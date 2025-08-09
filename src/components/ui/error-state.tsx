@@ -68,7 +68,14 @@ const ErrorState = React.forwardRef<HTMLDivElement, ErrorStateProps>(
       return "";
     }, [error, description]);
 
-    if (!error && !title && !description) return null;
+    // Only return null if nothing at all would render
+    if (
+      !showIcon &&
+      (!showTitle || !title) &&
+      (!showDescription || !errorMessage)
+    ) {
+      return null;
+    }
 
     return (
       <div

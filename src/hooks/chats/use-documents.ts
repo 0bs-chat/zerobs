@@ -14,7 +14,6 @@ export const useRemoveDocument = () => {
       api.chats.queries.get,
       chatId !== "new" ? { chatId } : "skip"
     ),
-    enabled: chatId !== "new",
   });
 
   const { mutate: updateChatInputMutation } = useMutation({

@@ -145,15 +145,15 @@ function AccordionTrigger({
         onClick={handleClick}
         {...props}
       >
-        <motion.div
-          animate={{ rotate: isOpen ? 0 : 180 }}
-          transition={{ duration: 0.25 }}
-          className="items-center flex justify-center "
-        >
-          {showIcon && (
+        {showIcon && (
+          <motion.div
+            animate={{ rotate: isOpen ? 0 : 180 }}
+            transition={{ duration: 0.25 }}
+            className="items-center flex justify-center "
+          >
             <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />
-          )}
-        </motion.div>
+          </motion.div>
+        )}
         {children}
       </motion.button>
     </div>

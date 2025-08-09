@@ -31,7 +31,6 @@ export const DocumentDialog = () => {
       api.documents.queries.get,
       documentDialogOpen ? { documentId: documentDialogOpen } : "skip"
     ),
-    enabled: !!documentDialogOpen,
   });
 
   const { mutateAsync: generateDownloadUrl } = useMutation({
@@ -95,6 +94,25 @@ export const DocumentDialog = () => {
     return null;
   }
 
+  const handleDownload = async () => {
+    if (!document || tag !== "file") return;
+    const url = await generateDownloadUrl({
+      documentId: document._id!,
+    });
+    if (url) {
+      window.open(url, "_blank");
+    }
+  };
+
+  const handleOpen = () => {
+    if (!document) return;
+    if (tag === "url" || tag === "site") {
+      window.open(document.key as string, "_blank");
+    } else if (tag === "youtube") {
+      window.open(`https://youtube.com/watch?v=${document.key}`, "_blank");
+    }
+  };
+
   if (isLoadingDocument) {
     return (
       <Dialog
@@ -130,25 +148,6 @@ export const DocumentDialog = () => {
       </Dialog>
     );
   }
-
-  const handleDownload = async () => {
-    if (!document || tag !== "file") return;
-    const url = await generateDownloadUrl({
-      documentId: document._id!,
-    });
-    if (url) {
-      window.open(url, "_blank");
-    }
-  };
-
-  const handleOpen = () => {
-    if (!document) return;
-    if (tag === "url" || tag === "site") {
-      window.open(document.key as string, "_blank");
-    } else if (tag === "youtube") {
-      window.open(`https://youtube.com/watch?v=${document.key}`, "_blank");
-    }
-  };
 
   return (
     <Dialog

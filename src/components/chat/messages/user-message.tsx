@@ -45,13 +45,13 @@ const DocumentButton = ({
       <div className="py-2 text-xs text-muted-foreground flex items-center gap-2">
         <LoadingSpinner
           sizeClassName="h-4 w-4"
-          label="Fetching attached documents"
+          label="Loading attached documents"
         />
       </div>
     );
   }
 
-  if (isDocumentError || documentError) {
+  if (isDocumentError) {
     return (
       <div className="py-2 max-w-xs">
         <ErrorState
@@ -69,7 +69,7 @@ const DocumentButton = ({
       className="py-6 cursor-pointer"
       onClick={() => setDocumentDialogOpen(fileId as Id<"documents">)}
     >
-      {documentData?.name}
+      {documentData?.name ?? "View Document"}
     </Button>
   );
 };
@@ -102,7 +102,7 @@ const EditingDocumentList = ({
   if (isLoadingDocuments) {
     return (
       <div className="px-2 py-1 text-xs text-muted-foreground flex items-center gap-2">
-        <LoadingSpinner sizeClassName="h-3 w-3" /> Loading…
+        <LoadingSpinner sizeClassName="h-3 w-3" label="Loading documents" />
       </div>
     );
   }
@@ -110,7 +110,10 @@ const EditingDocumentList = ({
   if (isDocumentsError) {
     return (
       <div className="px-2 py-1">
-        <ErrorState title="Failed to load documents" error={documentsError} />
+        <ErrorState
+          title="Error loading attached  documents"
+          error={documentsError}
+        />
       </div>
     );
   }
@@ -251,7 +254,7 @@ export const UserMessage = memo(
     }, [content, item.message._id, setDocumentDialogOpen]);
 
     return (
-      <div className="group/message    flex flex-col gap-1 max-w-[80%] self-end">
+      <div className="group/message flex flex-col gap-1 max-w-[80%] self-end">
         {isEditing ? (
           <div className="bg-card max-w-full self-end rounded-md shadow-sm w-full p-2 border-2 border-transparent">
             <AutosizeTextarea

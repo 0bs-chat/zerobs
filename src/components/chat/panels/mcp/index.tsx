@@ -32,16 +32,15 @@ export const MCPPanel = () => {
             <LoadingSpinner sizeClassName="h-4 w-4" label="Loading MCPs..." />
           </div>
         )}
-        {isError ||
-          (error && (
-            <div className="py-2">
-              <ErrorState
-                density="comfy"
-                title="Failed to load MCPs"
-                error={error}
-              />
-            </div>
-          ))}
+        {(isError || error) && (
+          <div className="py-2">
+            <ErrorState
+              density="comfy"
+              title="Failed to load MCPs"
+              error={error}
+            />
+          </div>
+        )}
         {mcps?.page?.length === 0 && mcps && !isLoading && !isError && (
           <div className=" items-center justify-center flex py-2 w-full text-muted-foreground">
             <div> Currently no MCPs are running. </div>

@@ -60,11 +60,12 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
     );
   }
 
-  if (isProjectError || projectError) {
+  if (isProjectError) {
     return (
-      <div className=" ">
+      <div className="flex flex-1 items-center justify-center">
         <ErrorState
           className="h-full py-2.5"
+          density="comfy"
           title="Error loading project details"
           error={projectError}
         />

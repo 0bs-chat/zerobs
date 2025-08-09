@@ -60,8 +60,8 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
     isEmpty: currentThread.length === 0,
     isError: isMessagesError,
     error: messagesError,
-    isStreamError: Boolean((streamData as any)?.isError),
-    streamError: (streamData as any)?.error,
+    isStreamError: Boolean(streamData?.isError),
+    streamError: streamData?.error,
   };
 };
 

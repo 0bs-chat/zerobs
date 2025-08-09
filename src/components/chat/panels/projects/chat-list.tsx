@@ -19,20 +19,23 @@ export const ProjectChatList = ({ projectId }: ProjectChatListProps) => {
     data: chats,
     isLoading: isLoadingChats,
     isError: isChatsError,
-    error: chatsError,
   } = useQuery({
     ...convexQuery(api.chats.queries.getByProjectId, { projectId }),
   });
 
   if (isLoadingChats) {
     return (
-      <div className="flex items-center justify-center py-10">
+      <div
+        className="flex items-center justify-center py-10"
+        aria-busy="true"
+        aria-live="polite"
+      >
         <LoadingSpinner className="h-6 w-6" label="Loading project chats..." />
       </div>
     );
   }
 
-  if (isChatsError || chatsError) {
+  if (isChatsError) {
     return (
       <div className="flex items-center justify-center gap-2 py-4 ">
         <ErrorState
