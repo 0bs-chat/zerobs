@@ -15,7 +15,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import mime from "mime";
 import { Base64 } from "convex/values";
-import { getUrl } from "../utils/helpers";
+import { getDocumentUrl } from "../utils/helpers";
 
 export const models: {
   label: string;
@@ -559,7 +559,7 @@ export async function getVectorText(
       ? vectors.map((vector) => vector.text).join("\n")
       : "No text found";
 
-  const url = await getUrl(ctx, doc.key);
+  const url = await getDocumentUrl(ctx, doc.key);
   return {
     type: "text",
     text: `# [${doc.name}](${url})\n${text}\n`,

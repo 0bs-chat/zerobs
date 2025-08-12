@@ -4,9 +4,9 @@ const JWT_PRIVATE_KEY_PEM = process.env.JWT_PRIVATE_KEY;
 const JWKS_URI = process.env.JWKS;
 
 export async function createJwt(
-  userId: string | null,
   key: string,
   value: string,
+  userId?: string,
 ): Promise<string> {
   if (!JWT_PRIVATE_KEY_PEM) {
     throw new Error("JWT_PRIVATE_KEY environment variable is not set.");
@@ -17,7 +17,6 @@ export async function createJwt(
   const jwt = await new jose.SignJWT({
     key: key,
     value: value,
-    iat: Date.now(),
   })
     .setProtectedHeader({ alg: "RS256" })
     .setSubject(userId ?? "public")

@@ -9,7 +9,7 @@ import { api, internal } from "../../_generated/api";
 import type { ActionCtx } from "../../_generated/server";
 import type { Id } from "../../_generated/dataModel";
 import { fly } from "../../utils/flyio";
-import { getUrl } from "../../utils/helpers";
+import { getDocumentUrl } from "../../utils/helpers";
 import { extractFileIdsFromMessage } from "../helpers";
 import type { GraphState } from "../state";
 
@@ -132,7 +132,7 @@ export const getMCPTools = async (
             );
             if (!documentDoc) return null;
             // Include various document types for upload (file, image, github, text)
-            const url = await getUrl(ctx, documentDoc.key);
+            const url = await getDocumentUrl(ctx, documentDoc.key);
             return {
               name: `${index}_${documentDoc.name}`,
               url,
