@@ -12,12 +12,12 @@ import {
   GithubIcon,
   BrainIcon,
   Hammer,
-  FileIcon,
   Globe2Icon,
   Network,
   Binoculars,
   XIcon, // <-- Add this
   FoldersIcon,
+  FileCode2,
 } from "lucide-react";
 import { ProjectsDropdown } from "./projects-dropdown";
 import { useUploadDocuments } from "@/hooks/chats/use-documents";
@@ -59,7 +59,7 @@ const TOGGLES = [
   {
     key: "artifacts" as const,
     label: "Artifacts",
-    icon: <FileIcon className="h-4 w-4" />,
+    icon: <FileCode2 className="h-4 w-4" />,
     tooltip: undefined,
     animation: "scale",
   },

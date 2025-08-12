@@ -190,8 +190,7 @@ export function createPlannerPrompt(availableToolsDescription: string) {
 
   // --- NEW PROMPT ---------------------------------------------------------
   return ChatPromptTemplate.fromMessages([
-    [
-      "system",
+    new SystemMessage(
       String.raw`
 You are a task-planner. Your ONLY job is to output a valid JSON object that
 matches **exactly** the TypeScript schema shown below. Do NOT execute the plan.
@@ -222,8 +221,8 @@ Important constraints:
 
 ${toolsSection}
 
-Respond with the JSON ONLY.`,
-    ],
+Respond with the JSON ONLY.`
+    ),
     new MessagesPlaceholder("messages"),
   ]);
 }
@@ -233,17 +232,18 @@ export function createReplannerPrompt(availableToolsDescription: string) {
   const toolsSection = `\n**Available Tools:**\n${availableToolsDescription}\n\nWhen planning remaining steps, consider which tools are available and how they can be used to accomplish the remaining objectives efficiently.`;
 
   return ChatPromptTemplate.fromMessages([
-    [
-      "system",
-      `## Your Task: Reflect and Re-plan\n\n` +
-        `For the given objective, update the step-by-step plan using the planStep and planArray schema conventions.\n` +
-        `- Only include the remaining steps needed to fill the gaps identified in your analysis.\n` +
-        `- Use the discriminated union format with nested arrays for parallel execution.\n` +
-        `- Ensure steps are non-overlapping, unambiguous, and context-rich.\n` +
-        `- The result of the final step should be the final answer.\n` +
-        `${toolsSection}\n\n` +
-        `**Message History:**\n`,
-    ],
+    new SystemMessage(
+      String.raw`## Your Task: Reflect and Re-plan
+
+For the given objective, update the step-by-step plan using the planStep and planArray schema conventions.
+- Only include the remaining steps needed to fill the gaps identified in your analysis.
+- Use the discriminated union format with nested arrays for parallel execution.
+- Ensure steps are non-overlapping, unambiguous, and context-rich.
+- The result of the final step should be the final answer.
+${toolsSection}
+
+**Message History:**`
+    ),
     new MessagesPlaceholder("messages"),
     [
       "system",
@@ -251,18 +251,23 @@ export function createReplannerPrompt(availableToolsDescription: string) {
         `**Completed steps so far:**\n`,
     ],
     new MessagesPlaceholder("pastSteps"),
-    [
-      "system",
-      `\n\n**MANDATORY ANALYSIS & REPLANNING:**\n\n` +
-        `1. **Re-evaluate the Original Objective:** Look at the user's first message. What were the core components of their request?\n\n` +
-        `2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.\n\n` +
-        `3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.\n\n` +
-        `4. **Update Your Plan:**\n` +
-        ` - **If ready to respond:** Set type to "respond_to_user" and data as the response. Formulate the complete, synthesized response. This is not a draft; it is the complete, polished answer.\n` +
-        ` - **If not ready:** Set type to "continue_planning" and provide a new plan containing **only the remaining steps needed** to fill ` +
-        `the gaps you identified.\n\n` +
-        `**ALWAYS** output valid JSON, do not include any extraneous text or explanations, make sure you understand unions in the output format and respond correctly`,
-    ],
+    new SystemMessage(
+      String.raw`
+
+**MANDATORY ANALYSIS & REPLANNING:**
+
+1. **Re-evaluate the Original Objective:** Look at the user's first message. What were the core components of their request?
+
+2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.
+
+3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.
+
+4. **Update Your Plan:**
+ - **If ready to respond:** Set type to "respond_to_user" and data as the response. Formulate the complete, synthesized response. This is not a draft; it is the complete, polished answer.
+ - **If not ready:** Set type to "continue_planning" and provide a new plan containing **only the remaining steps needed** to fill the gaps you identified.
+
+**ALWAYS** output valid JSON, do not include any extraneous text or explanations, make sure you understand unions in the output format and respond correctly`
+    ),
   ]);
 }
 

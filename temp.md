@@ -1,37 +1,29 @@
 ### todo
 
+--- keep in mind : move logic to hooks. ---------
+
+- update these
+  tool-streaming, because of vibz mcp as it one shots the generation. so we need to live stream to the user all the changes.
+  https://github.com/0bs-chat/zerobs/tree/feat/message-queue : the message queue function.
+
+- vibe coding (better auth -> convex cloud migration -> streaming tool calls -> convex oauth integration -> revamp mcp templates to pass along the env vars)
+  custom ui for vibz mcp. (like artifacts, we will replace the panel content with the ui for vibz)(preview, dashboard (convex dashboard), code (vs code))
+
+- migrate to better auth (when i get the green light from mantra after better-auth integrates.)
+- infinite scroll area everywhere.
+- look into action caching.
+- add more integrations on the go allowing to auto fill auth tokens in sse mcp servers like github, nextjs etc.
+
+---
+
 - pricing [imp]
 - usage
-- improve ux overall with loading states and whatnot.
+- improve ux overall with loading states and whatnot. [done]
 - google integration (the code is already there just need to setup oauth)
 - business related mcp with ability to autofill connection info (like auto fetching api key/oauth key for the headers in mcp using oauth, etc to reduce friction)
 
 - need message queue system
 - immediate send, wait for file to be processed check on the frontend instead of backend
-
-<br/>
-
-caching implementation : (tanstack query)
-
-1. normal queries.
-2. normal mutations. (not needed because these are not reactive, so doesn't make any big difference.)
-3. paginated and infinite queries. (gotta figure something about it.)
-
----
-
---- keep in mind : move logic to hooks. ---------
-
-- infinite scroll area everywhere.
-- convex subscription caching. : will make the ui snappy, can caus too much bandwidth usage.
-- preloading.
-- look into action caching.
-
-<br/>
-
-current : we refetch on every visit to a chat. because usequery fetches all the content again and again and again. which results in database bandwidth increase.
-magic cache.: using useQuery from convex-helper/react/cache . we get the data from cache for a certain time. we can see the time as much time as we want. no fetching of data again and again. which even if got from cache. it still has to send it over the network which can cause database bandwidth increase.
-
-- how about fetching top 20 chats.
 
 </br>
 
