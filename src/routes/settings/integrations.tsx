@@ -43,7 +43,7 @@ function IntegrationCard({ icon, title, description, buttonText }: IntegrationCa
 function RouteComponent() {
   const integrations = [
     {
-      icon: "/google.svg",
+      icon: "https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fgoogle.com%2F",
       title: "Connect with Google",
       description: "Connect with google to get access to your calendar, email in the chat.",
       buttonText: "Connect with Google"
