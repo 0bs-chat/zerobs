@@ -45,6 +45,7 @@ import { ModelPopover } from "./model-popover";
 import { useRouter } from "@tanstack/react-router";
 import { AgentToggles } from "./agent-toggles";
 import { ToolkitToggles } from "./toolkit-toggles.tsx";
+import { useApiKeys } from "@/hooks/use-apikeys";
 
 export const ToolBar = () => {
   const chatId = useAtomValue(chatIdAtom);
@@ -70,6 +71,7 @@ export const ToolBar = () => {
   const isProjectRoute = router.state.location.pathname.startsWith("/project/");
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
   const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
+  useApiKeys();
 
   // Get project details if chat has a project
   const { data: project } = useQuery({
@@ -117,35 +119,33 @@ export const ToolBar = () => {
       />
 
       <div className="flex flex-row items-center gap-1">
-        <div className="flex flex-row items-center gap-1">
-          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <PlusIcon className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                <PaperclipIcon className="w-4 h-4" />
-                Attach Documents
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  setIsDropdownOpen(false); // unmounting dropdown
-                  setIsDialogOpen(true); // dialog mount
-                }}
-              >
-                <GithubIcon className="w-4 h-4" />
-                Add GitHub Repo
-              </DropdownMenuItem>
-              {!isProjectRoute && (
-                <ProjectsDropdown
-                  onCloseDropdown={() => setIsDropdownOpen(false)}
-                />
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon">
+              <PlusIcon className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+              <PaperclipIcon className="w-4 h-4" />
+              Attach Documents
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setIsDropdownOpen(false); // unmounting dropdown
+                setIsDialogOpen(true); // dialog mount
+              }}
+            >
+              <GithubIcon className="w-4 h-4" />
+              Add GitHub Repo
+            </DropdownMenuItem>
+            {!isProjectRoute && (
+              <ProjectsDropdown
+                onCloseDropdown={() => setIsDropdownOpen(false)}
+              />
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <AgentToggles />
         <div className="h-8 w-px bg-border" />
         <ToolkitToggles />

@@ -23,7 +23,6 @@ import { smoothTransition } from "@/lib/motion";
 import { useTextAreaRef } from "@/hooks/chats/use-textarea";
 import { useUploadDocuments } from "@/hooks/chats/use-documents";
 import { useState, useCallback } from "react";
-import { useApiKeys } from "@/hooks/use-apikeys";
 
 export const ChatInput = () => {
   const chatId = useAtomValue(chatIdAtom);
@@ -38,7 +37,6 @@ export const ChatInput = () => {
   const { ref: textareaRef, setRef, focus } = useTextAreaRef();
   const [isDragActive, setIsDragActive] = useState(false);
   const handleFileUpload = useUploadDocuments({ type: "file", chat });
-  useApiKeys();
 
   useEffect(() => {
     if (chat) {

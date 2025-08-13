@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Hammer } from "lucide-react";
+import { Hammer, PlusIcon } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { chatAtom, chatIdAtom, newChatAtom } from "@/store/chatStore";
 import { useMemo } from "react";
@@ -14,6 +14,7 @@ import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import { providers } from "../../../../../convex/utils/oauth/providers";
 import { apiKeysAtom } from "@/hooks/use-apikeys";
+import { useNavigate } from "@tanstack/react-router";
 
 type ProviderKey = keyof typeof providers;
 
@@ -23,6 +24,7 @@ export function ToolkitToggles() {
   const setNewChat = useSetAtom(newChatAtom);
   const existingKeys = useAtomValue(apiKeysAtom);
   const existingKeySet = useMemo(() => new Set((existingKeys ?? []).map((k) => k.key)), [existingKeys]);
+  const navigate = useNavigate();
 
   const connectedProviders = useMemo<ProviderKey[]>(() => {
     const result: ProviderKey[] = [];
@@ -52,8 +54,6 @@ export function ToolkitToggles() {
       updateChatMutation({ chatId, updates: { enabledToolkits: Array.from(next) } });
     }
   };
-
-  if (connectedProviders.length === 0) return null;
 
   return (
     <>
@@ -88,6 +88,10 @@ export function ToolkitToggles() {
               </span>
             </DropdownMenuItem>
           ))}
+          <DropdownMenuItem onClick={() => navigate({ to: "/settings/integrations" })} className="bg-accent/50">
+            <PlusIcon className="w-4 h-4" />
+            Add Integrations
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       {(chat.enabledToolkits || [])
