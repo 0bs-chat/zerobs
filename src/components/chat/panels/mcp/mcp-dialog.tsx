@@ -15,8 +15,7 @@ import {
   initialMCPState,
   type McpType,
 } from "@/store/chatStore";
-import { MCP_TEMPLATES } from "@/constants/mcp-templates";
-import type { McpTemplate } from "@/constants/mcp-templates";
+import { MCP_TEMPLATES, type McpTemplate } from "./templates";
 import { MCPBrowseView } from "./mcp-browse-view";
 import { MCPFormView } from "./mcp-form-view";
 

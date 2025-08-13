@@ -115,14 +115,13 @@ export const Mcps = Table("mcps", {
   dockerCommand: v.optional(v.string()),
   command: v.optional(v.string()),
   url: v.optional(v.string()),
-  env: v.optional(v.record(v.string(), v.string())),
+  env: v.record(v.string(), v.string()),
   enabled: v.boolean(),
   status: v.union(
     v.literal("creating"),
     v.literal("created"),
     v.literal("error"),
   ),
-  restartOnNewChat: v.boolean(),
   userId: v.optional(v.string()),
   updatedAt: v.number(),
 });

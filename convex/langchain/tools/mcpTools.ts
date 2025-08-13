@@ -38,17 +38,6 @@ export const getMCPTools = async (
     return [];
   }
 
-  // Reset all MCPs that have `restartOnNewChat` set to true
-  await Promise.all(
-    mcps.page.map((mcp) => {
-      if (mcp.restartOnNewChat) {
-        return ctx.runAction(internal.mcps.actions.restart, {
-          mcpId: mcp._id,
-        });
-      }
-    })
-  );
-
   // Wait for all MCPs to transition from 'creating' status to 'running'
   let currentMcps = mcps.page;
   let maxAttempts = 10;

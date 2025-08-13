@@ -56,7 +56,6 @@ export const create = mutation({
       url: args.url,
       enabled: args.enabled ?? false,
       status: args.type === "http" ? "created" : "creating",
-      restartOnNewChat: args.restartOnNewChat ?? false,
       userId: userId,
       updatedAt: Date.now(),
     });

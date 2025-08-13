@@ -8,7 +8,14 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, KeyIcon, Plug, User, Wallet2 } from "lucide-react";
+import {
+  ArrowLeft,
+  KeyIcon,
+  Plug,
+  User,
+  Wallet2,
+  MessageSquare,
+} from "lucide-react";
 import { useEffect } from "react";
 import { useApiKeys } from "@/hooks/use-apikeys";
 
@@ -32,6 +39,11 @@ const settingsNavItems = [
     title: "Billing",
     href: "/settings/billing",
     icon: Wallet2,
+  },
+  {
+    title: "Feedback",
+    href: "/settings/feedback",
+    icon: MessageSquare,
   },
 ];
 
@@ -93,10 +105,10 @@ function SettingsPage() {
                     key={item.href}
                     to={item.href}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-lg px-3 py-2 font-medium text-sm transition-colors",
+                      "flex w-full items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors",
                       isActive
                         ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                   >
                     <Icon className="h-5 w-5" />
