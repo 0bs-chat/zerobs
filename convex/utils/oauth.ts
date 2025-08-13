@@ -42,9 +42,11 @@ export const handleOAuthRedirect = httpAction(async (_ctx, request) => {
   );
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", scope);
-  url.searchParams.set("access_type", "offline");
-  url.searchParams.set("include_granted_scopes", "true");
-  url.searchParams.set("prompt", "consent");
+  if (providerConfig.extraAuthParams) {
+    for (const [key, value] of Object.entries(providerConfig.extraAuthParams)) {
+      url.searchParams.set(key, value);
+    }
+  }
   url.searchParams.set("state", stateString);
 
   return new Response(
@@ -68,18 +70,33 @@ export const handleOAuthCallback = httpAction(async (_ctx, request) => {
     throw new Error(`Missing environment variables for ${state.provider}`);
   }
 
-  // Exchange code for tokens
+  // Exchange code for tokens using provider configuration
+  const wantsForm = providerConfig.tokenRequestFormat === "form";
+  const includeGrantType = providerConfig.includeGrantTypeOnAuthCode !== false;
+  const basePayload: Record<string, string> = {
+    client_id: clientId!,
+    client_secret: clientSecret!,
+    code: code ?? "",
+    redirect_uri: `${process.env.CONVEX_SITE_URL}/integrations/callback`,
+  };
+  if (includeGrantType) basePayload["grant_type"] = "authorization_code";
+
   const response = await fetch(providerConfig.tokenUrl, {
     method: "POST",
-    body: JSON.stringify({
-      client_id: clientId,
-      client_secret: clientSecret,
-      code,
-      redirect_uri: `${process.env.CONVEX_SITE_URL}/integrations/callback`,
-      grant_type: "authorization_code",
-    }),
+    headers: wantsForm
+      ? { "content-type": "application/x-www-form-urlencoded", accept: providerConfig.tokenAcceptJson ? "application/json" : "*/*" }
+      : { "content-type": "application/json", accept: providerConfig.tokenAcceptJson ? "application/json" : "*/*" },
+    body: wantsForm ? new URLSearchParams(basePayload) : JSON.stringify(basePayload),
   });
-  const data = await response.json();
+
+  const raw = await response.text();
+  let data: any;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    const params = new URLSearchParams(raw);
+    data = Object.fromEntries(params.entries());
+  }
 
   const accessToken = data.access_token;
   const refreshToken = data.refresh_token;
@@ -104,19 +121,27 @@ export const handleOAuthCallback = httpAction(async (_ctx, request) => {
 export const handleApiKeysCreate = httpAction(async (ctx, request) => {
   const requestBody = await request.json();
   const { provider, accessToken, refreshToken } = requestBody;
+  const cfg = providers[provider];
 
-  await Promise.all([
+  const ops: Array<Promise<any>> = [];
+  ops.push(
     ctx.runMutation(api.apiKeys.mutations.create, {
       key: `${provider.toUpperCase()}_ACCESS_TOKEN`,
       value: accessToken,
       enabled: true,
     }),
-    ctx.runMutation(api.apiKeys.mutations.create, {
-      key: `${provider.toUpperCase()}_REFRESH_TOKEN`,
-      value: refreshToken,
-      enabled: true,
-    }),
-  ]);
+  );
+  if (cfg?.returnsRefreshToken && refreshToken) {
+    ops.push(
+      ctx.runMutation(api.apiKeys.mutations.create, {
+        key: `${provider.toUpperCase()}_REFRESH_TOKEN`,
+        value: refreshToken,
+        enabled: true,
+      }),
+    );
+  }
+
+  await Promise.all(ops);
 
   return new Response(JSON.stringify({ success: true }), { status: 200, headers: { "content-type": "application/json", ...buildCorsHeaders(request) } });
 });
@@ -149,25 +174,18 @@ export const getRefreshedAccessToken = internalAction({
       throw new Error(`No refresh token found for ${args.provider}`);
     }
 
-    
-
-    const useForm = args.provider === "google";
+    const useForm = providerConfig.tokenRequestFormat === "form";
     const headers: Record<string, string> = useForm
       ? { "content-type": "application/x-www-form-urlencoded", accept: "application/json" }
       : { "content-type": "application/json", accept: "application/json" };
-    const body = useForm
-      ? new URLSearchParams({
-          client_id: clientId!,
-          client_secret: clientSecret!,
-          grant_type: "refresh_token",
-          refresh_token: refreshToken,
-        })
-      : JSON.stringify({
-          client_id: clientId,
-          client_secret: clientSecret,
-          grant_type: "refresh_token",
-          refresh_token: refreshToken,
-        });
+    const includeGrantTypeOnRefresh = providerConfig.includeGrantTypeOnRefresh !== false;
+    const refreshPayload: Record<string, string> = {
+      client_id: clientId!,
+      client_secret: clientSecret!,
+      refresh_token: refreshToken,
+    };
+    if (includeGrantTypeOnRefresh) refreshPayload["grant_type"] = "refresh_token";
+    const body = useForm ? new URLSearchParams(refreshPayload) : JSON.stringify(refreshPayload);
     const tokenResponse = await fetch(providerConfig.tokenUrl, {
       method: "POST",
       headers,
@@ -181,7 +199,14 @@ export const getRefreshedAccessToken = internalAction({
       );
     }
 
-    const tokenData = await tokenResponse.json();
+    const tokenRaw = await tokenResponse.text();
+    let tokenData: any;
+    try {
+      tokenData = JSON.parse(tokenRaw);
+    } catch {
+      const p = new URLSearchParams(tokenRaw);
+      tokenData = Object.fromEntries(p.entries());
+    }
     const newAccessToken = tokenData.access_token as string | undefined;
     const maybeNewRefreshToken = (tokenData.refresh_token as string | undefined) ?? refreshToken;
 

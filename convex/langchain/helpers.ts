@@ -18,6 +18,7 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { getMCPTools, getRetrievalTools } from "./tools";
 import { getGoogleTools } from "./tools/googleTools";
+import { getGithubTools } from "./tools/github";
 import { getModel } from "./models";
 import { createAgentSystemMessage } from "./prompts";
 import { GraphState } from "./state";
@@ -53,16 +54,7 @@ export async function createAgentWithTools(
   plannerMode: boolean = false,
 ) {
   const chat = config.chat;
-  const tools = await getMCPTools(config.ctx, state);
-  const retrievalTools = await getRetrievalTools(state, config, true);
-  const googleTools = await getGoogleTools(config, true);
-
-  const allTools = [
-    ...(tools.tools.length > 0 ? tools.tools : []),
-    ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
-    ...(chat.webSearch ? [retrievalTools.webSearch] : []),
-    ...(googleTools.length > 0 ? googleTools : []),
-  ];
+  const allTools = await getAvailableTools(state, config);
 
   if (!chat.conductorMode) {
     const model = await getModel(config.ctx, chat.model, chat.reasoningEffort);
@@ -83,7 +75,8 @@ export async function createAgentWithTools(
       prompt: promptTemplate,
     });
   } else {
-    if (Object.keys(tools.groupedTools).length === 0) {
+    const mcpTools = await getMCPTools(config.ctx, state);
+    if (Object.keys(mcpTools.groupedTools).length === 0) {
       throw new Error("Need atleast 1 mcp enabled to use conductor mode");
     }
     const llm = await getModel(config.ctx, "worker", undefined);
@@ -92,7 +85,7 @@ export async function createAgentWithTools(
       chat.model!,
       chat.reasoningEffort,
     );
-    const agents = Object.entries(tools.groupedTools).map(
+    const agents = Object.entries(mcpTools.groupedTools).map(
       ([groupName, tools]) =>
         createReactAgent({
           llm: llm,
@@ -101,6 +94,7 @@ export async function createAgentWithTools(
           prompt: `You are a ${groupName} assistant`,
         }),
     );
+    const retrievalTools = await getRetrievalTools(state, config, true);
     return createSupervisor({
       agents: [
         ...agents,
@@ -177,46 +171,28 @@ export function getLastMessage(
 export async function getAvailableTools(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
-): Promise<Array<{ name: string; description: string }>> {
+) {
   const chat = config.chat;
-  const tools = await getMCPTools(config.ctx, state);
-  const retrievalTools = await getRetrievalTools(state, config, true);
-  const googleTools = await getGoogleTools(config, true);
 
-  const toolsInfo: Array<{ name: string; description: string }> = [];
+  const [
+    tools,
+    retrievalTools,
+    googleTools,
+    githubTools,
+  ] = await Promise.all([
+    getMCPTools(config.ctx, state),
+    getRetrievalTools(state, config, true),
+    chat.enabledToolkits.includes("google") ? getGoogleTools(config) : Promise.resolve([]),
+    chat.enabledToolkits.includes("github") ? getGithubTools(config) : Promise.resolve([]),
+  ]);
 
-  // Add MCP tools
-  tools.tools.forEach((tool) => {
-    toolsInfo.push({
-      name: tool.name,
-      description: tool.description || "No description available",
-    });
-  });
-
-  // Add retrieval tools
-  if (chat.projectId) {
-    toolsInfo.push({
-      name: retrievalTools.vectorSearch.name,
-      description: retrievalTools.vectorSearch.description,
-    });
-  }
-
-  if (chat.webSearch) {
-    toolsInfo.push({
-      name: retrievalTools.webSearch.name,
-      description: retrievalTools.webSearch.description,
-    });
-  }
-
-  // Add Google tools
-  googleTools.forEach((tool) => {
-    toolsInfo.push({
-      name: tool.name,
-      description: tool.description || "No description available",
-    });
-  });
-
-  return toolsInfo;
+  return [
+    ...(tools.tools.length > 0 ? tools.tools : []),
+    ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
+    ...(chat.webSearch ? [retrievalTools.webSearch] : []),
+    ...(googleTools.length > 0 ? googleTools : []),
+    ...(githubTools.length > 0 ? githubTools : []),
+  ];
 }
 
 export async function getAvailableToolsDescription(

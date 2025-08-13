@@ -53,7 +53,7 @@ export const Chats = Table("chats", {
   orchestratorMode: v.boolean(),
   webSearch: v.boolean(),
   artifacts: v.boolean(),
-  enabledToolkits: v.optional(v.array(v.string())),
+  enabledToolkits: v.array(v.string()),
   updatedAt: v.number(),
   public: v.boolean(),
 });

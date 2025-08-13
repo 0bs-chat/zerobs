@@ -68,7 +68,7 @@ function RouteComponent() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       {Object.entries(providers).map(([key, provider]) => {
         const accessKey = provider.accessKeyKey;
         const refreshKey = provider.refreshKeyKey;

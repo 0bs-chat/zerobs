@@ -10,6 +10,14 @@ export const providers: {
     tokenUrl: URL;
     accessKeyKey: string;
     refreshKeyKey: string;
+    // OAuth token exchange behavior
+    tokenRequestFormat?: "json" | "form";
+    tokenAcceptJson?: boolean;
+    includeGrantTypeOnAuthCode?: boolean;
+    includeGrantTypeOnRefresh?: boolean;
+    returnsRefreshToken?: boolean;
+    // Extra params to append to auth URL
+    extraAuthParams?: Record<string, string>;
   };
 } = {
   convex: {
@@ -23,6 +31,11 @@ export const providers: {
     tokenUrl: new URL("https://api.convex.dev/oauth/token"),
     accessKeyKey: "CONVEX_ACCESS_TOKEN",
     refreshKeyKey: "CONVEX_REFRESH_TOKEN",
+    tokenRequestFormat: "json",
+    tokenAcceptJson: true,
+    includeGrantTypeOnAuthCode: true,
+    includeGrantTypeOnRefresh: true,
+    returnsRefreshToken: true,
   },
   google: {
     title: "Google",
@@ -38,6 +51,16 @@ export const providers: {
     tokenUrl: new URL("https://oauth2.googleapis.com/token"),
     accessKeyKey: "GOOGLE_ACCESS_TOKEN",
     refreshKeyKey: "GOOGLE_REFRESH_TOKEN",
+    tokenRequestFormat: "form",
+    tokenAcceptJson: true,
+    includeGrantTypeOnAuthCode: true,
+    includeGrantTypeOnRefresh: true,
+    returnsRefreshToken: true,
+    extraAuthParams: {
+      access_type: "offline",
+      include_granted_scopes: "true",
+      prompt: "consent",
+    },
   },
   github: {
     title: "GitHub",
@@ -53,6 +76,11 @@ export const providers: {
     tokenUrl: new URL("https://github.com/login/oauth/access_token"),
     accessKeyKey: "GITHUB_ACCESS_TOKEN",
     refreshKeyKey: "GITHUB_REFRESH_TOKEN",
+    tokenRequestFormat: "form",
+    tokenAcceptJson: true,
+    includeGrantTypeOnAuthCode: false,
+    includeGrantTypeOnRefresh: true,
+    returnsRefreshToken: false,
   },
   notion: {
     title: "Notion",
@@ -68,6 +96,11 @@ export const providers: {
     tokenUrl: new URL("https://api.notion.com/v1/oauth/token"),
     accessKeyKey: "NOTION_ACCESS_TOKEN",
     refreshKeyKey: "NOTION_REFRESH_TOKEN",
+    tokenRequestFormat: "json",
+    tokenAcceptJson: true,
+    includeGrantTypeOnAuthCode: true,
+    includeGrantTypeOnRefresh: true,
+    returnsRefreshToken: true,
   },
   twitter: {
     title: "Twitter",
@@ -83,5 +116,10 @@ export const providers: {
     tokenUrl: new URL("https://api.x.com/2/oauth2/token"),
     accessKeyKey: "TWITTER_ACCESS_TOKEN",
     refreshKeyKey: "TWITTER_REFRESH_TOKEN",
+    tokenRequestFormat: "form",
+    tokenAcceptJson: true,
+    includeGrantTypeOnAuthCode: true,
+    includeGrantTypeOnRefresh: true,
+    returnsRefreshToken: true,
   },
 };

@@ -272,7 +272,7 @@ function RouteComponent() {
             />
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 h-full">
+        <CardContent className="flex flex-col gap-2 h-full">
           {existingKey?.value ? (
             <ExistingKeyDisplay
               config={config}

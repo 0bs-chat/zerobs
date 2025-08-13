@@ -23,7 +23,7 @@ export const create = mutation({
       await ctx.db.delete(existingApiKeyDoc._id);
     }
 
-    const jwt = await createJwt(userId, args.key, args.value);
+    const jwt = await createJwt(args.key, args.value, userId);
 
     await ctx.db.insert("apiKeys", {
       userId: userId,
