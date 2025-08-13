@@ -4,13 +4,20 @@ import { tool } from "@langchain/core/tools";
 import { dispatchCustomEvent } from "@langchain/core/callbacks/dispatch";
 import { z } from "zod";
 import type { ExtendedRunnableConfig } from "../helpers";
+import { internal } from "../../_generated/api";
 
-// Helper function to get Google OAuth token from user's external account
-async function getGoogleAccessToken(_config: ExtendedRunnableConfig) {
-  return undefined;
+async function getGoogleAccessToken(config: ExtendedRunnableConfig) {
+  try {
+    const token = await config.ctx.runAction(
+      internal.utils.oauth.index.getRefreshedAccessToken,
+      { provider: "google" }
+    );
+    return token;
+  } catch (_err) {
+    return undefined;
+  }
 }
 
-// Helper function to make authenticated Google API requests
 async function makeGoogleAPIRequest(
   endpoint: string,
   accessToken: string,
@@ -38,7 +45,6 @@ async function makeGoogleAPIRequest(
   return response.json();
 }
 
-// Helper function to make Gmail API requests
 async function makeGmailAPIRequest(
   endpoint: string,
   accessToken: string,
@@ -66,10 +72,7 @@ async function makeGmailAPIRequest(
   return response.json();
 }
 
-export const getGoogleTools = async (
-  config: ExtendedRunnableConfig,
-  returnString: boolean = false
-) => {
+export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
   const accessToken = await getGoogleAccessToken(config);
   if (!accessToken) {
     return [];
@@ -109,10 +112,7 @@ export const getGoogleTools = async (
           toolConfig
         );
 
-        if (returnString) {
-          return JSON.stringify(calendars, null, 2);
-        }
-        return calendars;
+        return JSON.stringify(calendars, null, 2);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";
@@ -188,17 +188,13 @@ export const getGoogleTools = async (
             creator: event.creator,
             organizer: event.organizer,
           })) || [];
-
         await dispatchCustomEvent(
           "tool_stream",
           { chunk: `Found ${events.length} events. Formatting results…` },
           toolConfig
         );
 
-        if (returnString) {
-          return JSON.stringify(events, null, 2);
-        }
-        return events;
+        return JSON.stringify(events, null, 2);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";
@@ -313,10 +309,7 @@ export const getGoogleTools = async (
           toolConfig
         );
 
-        if (returnString) {
-          return JSON.stringify(createdEvent, null, 2);
-        }
-        return createdEvent;
+        return JSON.stringify(createdEvent, null, 2);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";
@@ -435,10 +428,7 @@ export const getGoogleTools = async (
           toolConfig
         );
 
-        if (returnString) {
-          return JSON.stringify(event, null, 2);
-        }
-        return event;
+        return JSON.stringify(event, null, 2);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";
@@ -511,17 +501,13 @@ export const getGoogleTools = async (
           success: true,
           message: `Event ${eventId} deleted successfully`,
         };
-
         await dispatchCustomEvent(
           "tool_stream",
           { chunk: "Event deleted successfully." },
           toolConfig
         );
 
-        if (returnString) {
-          return JSON.stringify(result, null, 2);
-        }
-        return result;
+        return JSON.stringify(result, null, 2);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";
@@ -612,10 +598,7 @@ export const getGoogleTools = async (
           toolConfig
         );
 
-        if (returnString) {
-          return JSON.stringify(messages, null, 2);
-        }
-        return messages;
+        return JSON.stringify(messages, null, 2);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";
@@ -709,10 +692,7 @@ export const getGoogleTools = async (
           toolConfig
         );
 
-        if (returnString) {
-          return JSON.stringify(message, null, 2);
-        }
-        return message;
+        return JSON.stringify(message, null, 2);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";
@@ -798,10 +778,7 @@ export const getGoogleTools = async (
           toolConfig
         );
 
-        if (returnString) {
-          return JSON.stringify(sentMessage, null, 2);
-        }
-        return sentMessage;
+        return JSON.stringify(sentMessage, null, 2);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";
@@ -881,10 +858,7 @@ export const getGoogleTools = async (
           toolConfig
         );
 
-        if (returnString) {
-          return JSON.stringify(messages, null, 2);
-        }
-        return messages;
+        return JSON.stringify(messages, null, 2);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";

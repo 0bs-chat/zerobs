@@ -1,5 +1,5 @@
-import { useAtom, useSetAtom } from "jotai";
-import { useCallback } from "react";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useCallback, useMemo } from "react";
 import git from "isomorphic-git";
 import http from "isomorphic-git/http/web";
 import FS from "@isomorphic-git/lightning-fs";
@@ -19,6 +19,7 @@ import {
   githubAvailableBranchesAtom,
   clearAllSelectionsAtom,
 } from "@/store/github";
+import { apiKeysAtom } from "@/hooks/use-apikeys";
 
 // Initialize the file system
 const fs = new FS("github-repos");
@@ -34,6 +35,14 @@ const useGithub = () => {
   );
   const setErrorMessage = useSetAtom(githubErrorMessageAtom);
   const clearSelections = useSetAtom(clearAllSelectionsAtom);
+  const apiKeys = useAtomValue(apiKeysAtom);
+  const githubAccessToken = useMemo(
+    () =>
+      (apiKeys || []).find(
+        (k) => k.key === "GITHUB_ACCESS_TOKEN" && k.enabled,
+      )?.value as string | undefined,
+    [apiKeys],
+  );
 
   // Parse GitHub URL to extract owner, repo, and branch
   const parseGitHubUrl = useCallback((url: string): ParsedRepoUrl | null => {
@@ -143,6 +152,9 @@ const useGithub = () => {
           ref: branch,
           singleBranch: true,
           depth: 1,
+          onAuth: githubAccessToken
+            ? () => ({ username: "git", password: githubAccessToken })
+            : undefined,
         });
       } catch (error) {
         console.error(`Error cloning repository ${owner}/${repo}:`, error);
@@ -167,7 +179,7 @@ const useGithub = () => {
         throw error;
       }
     },
-    [getRepoPath],
+    [getRepoPath, githubAccessToken],
   );
 
   // Get file/directory stats
@@ -416,44 +428,39 @@ const useGithub = () => {
     [getRepoPath],
   );
 
-  // Fetch remote branches for a repository using isomorphic-git
+  // Fetch remote branches via GitHub REST (avoids CORS proxy auth issues)
   const getRepoBranches = useCallback(
     async (url?: string): Promise<string[]> => {
       const repoUrl = url || currentRepo;
-      if (!repoUrl) {
-        return availableBranches;
-      }
+      if (!repoUrl) return availableBranches;
 
       const parsed = parseGitHubUrl(repoUrl);
-      if (!parsed) {
-        return availableBranches;
-      }
+      if (!parsed) return availableBranches;
 
       const { owner, repo } = parsed;
 
       try {
-        // Use isomorphic-git to fetch remote branches
-        const remoteRefs = await git.listServerRefs({
-          http,
-          corsProxy: "https://cors.isomorphic-git.org",
-          url: `https://github.com/${owner}/${repo}.git`,
-        });
+        const headers: Record<string, string> = {
+          Accept: "application/vnd.github+json",
+        };
+        if (githubAccessToken) headers["Authorization"] = `Bearer ${githubAccessToken}`;
 
-        // Filter to get only branch refs and extract branch names
-        const branches = remoteRefs
-          .filter((ref) => ref.ref.startsWith("refs/heads/"))
-          .map((ref) => ref.ref.replace("refs/heads/", ""))
-          .sort(); // Sort alphabetically
-
+        const resp = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`,
+          { headers },
+        );
+        if (!resp.ok) throw new Error(`GitHub API error ${resp.status}`);
+        const data: Array<{ name: string }> = await resp.json();
+        const branches = data.map((b) => b.name).sort();
         const finalBranches = branches.length > 0 ? branches : ["main"];
         setAvailableBranches(finalBranches);
         return finalBranches;
       } catch (error) {
-        console.error("Error fetching branches with isomorphic-git:", error);
-        return availableBranches;
+        console.error("Error fetching branches via GitHub API:", error);
+        return availableBranches.length ? availableBranches : ["main"];
       }
     },
-    [parseGitHubUrl, currentRepo, availableBranches, setAvailableBranches],
+    [parseGitHubUrl, currentRepo, availableBranches, setAvailableBranches, githubAccessToken],
   );
 
   // Clear repository data

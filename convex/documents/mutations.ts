@@ -5,7 +5,7 @@ import {
 } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { v } from "convex/values";
-import { getUrl, requireAuth } from "../utils/helpers";
+import { getDocumentUrl, requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
 import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
@@ -29,7 +29,7 @@ export const generateDownloadUrl = mutation({
     const document = await ctx.runQuery(api.documents.queries.get, {
       documentId: args.documentId,
     });
-    const url = await getUrl(ctx, document.key);
+    const url = await getDocumentUrl(ctx, document.key);
     if (!url) {
       throw new Error("Failed to generate download url");
     }

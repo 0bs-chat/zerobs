@@ -11,7 +11,7 @@ import type { Doc, Id } from "../../_generated/dataModel";
 import { getEmbeddingModel } from "../models";
 import type { GraphState } from "../state";
 import type { ExtendedRunnableConfig } from "../helpers";
-import { getUrl } from "../../utils/helpers";
+import { getDocumentUrl } from "../../utils/helpers";
 
 export const getRetrievalTools = async (
   _state: typeof GraphState.State,
@@ -89,7 +89,7 @@ export const getRetrievalTools = async (
           if (!projectDocument) {
             return null;
           }
-          const url = await getUrl(config.ctx, projectDocument.key);
+          const url = await getDocumentUrl(config.ctx, projectDocument.key);
 
           return new Document({
             pageContent: doc.pageContent,

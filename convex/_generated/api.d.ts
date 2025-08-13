@@ -31,6 +31,7 @@ import type * as langchain_index from "../langchain/index.js";
 import type * as langchain_models from "../langchain/models.js";
 import type * as langchain_prompts from "../langchain/prompts.js";
 import type * as langchain_state from "../langchain/state.js";
+import type * as langchain_tools_github from "../langchain/tools/github.js";
 import type * as langchain_tools_googleTools from "../langchain/tools/googleTools.js";
 import type * as langchain_tools_index from "../langchain/tools/index.js";
 import type * as langchain_tools_mcpTools from "../langchain/tools/mcpTools.js";
@@ -56,6 +57,8 @@ import type * as utils_encryption from "../utils/encryption.js";
 import type * as utils_flyio_index from "../utils/flyio/index.js";
 import type * as utils_flyio_types from "../utils/flyio/types.js";
 import type * as utils_helpers from "../utils/helpers.js";
+import type * as utils_oauth_index from "../utils/oauth/index.js";
+import type * as utils_oauth_providers from "../utils/oauth/providers.js";
 import type * as utils_services_index from "../utils/services/index.js";
 
 import type {
@@ -96,6 +99,7 @@ declare const fullApi: ApiFromModules<{
   "langchain/models": typeof langchain_models;
   "langchain/prompts": typeof langchain_prompts;
   "langchain/state": typeof langchain_state;
+  "langchain/tools/github": typeof langchain_tools_github;
   "langchain/tools/googleTools": typeof langchain_tools_googleTools;
   "langchain/tools/index": typeof langchain_tools_index;
   "langchain/tools/mcpTools": typeof langchain_tools_mcpTools;
@@ -121,6 +125,8 @@ declare const fullApi: ApiFromModules<{
   "utils/flyio/index": typeof utils_flyio_index;
   "utils/flyio/types": typeof utils_flyio_types;
   "utils/helpers": typeof utils_helpers;
+  "utils/oauth/index": typeof utils_oauth_index;
+  "utils/oauth/providers": typeof utils_oauth_providers;
   "utils/services/index": typeof utils_services_index;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

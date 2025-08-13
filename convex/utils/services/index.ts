@@ -4,7 +4,7 @@ import { v } from "convex/values";
 import { internalAction } from "../../_generated/server";
 import mime from "mime";
 import { Documents } from "../../schema";
-import { getUrl } from "../helpers";
+import { getDocumentUrl } from "../helpers";
 import runpodSdk from "runpod-sdk";
 
 const CRAWLER_URL = process.env.CRAWLER_URL ?? "http://127.0.0.1:7860";
@@ -33,7 +33,7 @@ export const processFile = internalAction({
         result = "";
       }
     } else {
-      const fileUrl = await getUrl(ctx, document.key);
+      const fileUrl = await getDocumentUrl(ctx, document.key);
 
       if (!fileUrl) {
         throw new Error("Unable to get file URL");

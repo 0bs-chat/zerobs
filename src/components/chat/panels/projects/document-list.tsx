@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
@@ -51,7 +52,7 @@ export function ProjectDocumentList({
   );
 
   return (
-    <div className="flex flex-col gap-2 bg-card rounded-xl shadow-sm border p-4">
+    <div className="flex flex-col gap-2 bg-card rounded-xl shadow-sm border p-4 h-full min-h-0">
       <div className="flex items-center justify-start">
         <div className="flex items-center gap-2">
           <Toggle
@@ -83,14 +84,16 @@ export function ProjectDocumentList({
           </Toggle>
         </div>
       </div>
-      <div className="flex flex-col gap-2">
-        {projectDocuments.projectDocuments.map((projectDocument) => (
-          <ProjectDocumentListItem
-            key={projectDocument._id}
-            projectDocument={projectDocument}
-          />
-        ))}
-      </div>
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="flex flex-col gap-2">
+          {projectDocuments.projectDocuments.map((projectDocument) => (
+            <ProjectDocumentListItem
+              key={projectDocument._id}
+              projectDocument={projectDocument}
+            />
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

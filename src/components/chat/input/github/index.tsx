@@ -3,6 +3,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import React, { Suspense, useState } from "react";
@@ -222,12 +223,14 @@ const GitHubDialog = ({
         <DialogTrigger asChild>{children}</DialogTrigger>
         <DialogContent
           className={`sm:max-w-[800px]`}
-          aria-description="let's you add github repository to your chat"
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <p>Add from GitHub</p>
             </DialogTitle>
+            <DialogDescription>
+              Add files from a GitHub repository (public or private if connected).
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4 w-full flex flex-col gap-4">
             <RepoLoader />

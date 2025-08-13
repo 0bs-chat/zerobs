@@ -7,8 +7,6 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { Panel } from "@/components/chat/panels";
-import { DocumentDialog } from "@/components/document-dialog";
-import { CreateProjectDialog } from "@/components/create-project-dialog";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
   chatAtom,
@@ -56,7 +54,7 @@ function RouteComponent() {
 
   return (
     <>
-      <ResizablePanelGroup direction="horizontal">
+      <ResizablePanelGroup direction="horizontal" className="h-full min-h-0">
         <ResizablePanel className="flex flex-col gap-1 p-2 pt-4">
           <motion.div
             className="flex-1 min-h-0"
@@ -86,7 +84,7 @@ function RouteComponent() {
                   animate="animate"
                   exit="exit"
                   transition={layoutTransition}
-                  className="h-full"
+                  className="h-full min-h-0 flex flex-col overflow-hidden"
                 >
                   <Panel />
                 </motion.div>
@@ -95,9 +93,6 @@ function RouteComponent() {
           )}
         </AnimatePresence>
       </ResizablePanelGroup>
-      {/* Dialogs */}
-      <DocumentDialog />
-      <CreateProjectDialog />
     </>
   );
 }

@@ -11,13 +11,18 @@ import { api, internal } from "../../_generated/api";
 import type { ActionCtx } from "../../_generated/server";
 import type { Id } from "../../_generated/dataModel";
 import { fly } from "../../utils/flyio";
-import { getUrl } from "../../utils/helpers";
-import { extractFileIdsFromMessage } from "../helpers";
+import { getDocumentUrl } from "../../utils/helpers";
+import {
+  extractFileIdsFromMessage,
+  type ExtendedRunnableConfig,
+} from "../helpers";
 import type { GraphState } from "../state";
+import { models } from "../models";
 
 export const getMCPTools = async (
   ctx: ActionCtx,
-  state: typeof GraphState.State
+  state: typeof GraphState.State,
+  config: ExtendedRunnableConfig
 ) => {
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
     paginationOpts: {
@@ -30,10 +35,7 @@ export const getMCPTools = async (
   });
 
   if (mcps.page.length === 0) {
-    return {
-      tools: [],
-      groupedTools: {},
-    };
+    return [];
   }
 
   // Reset all MCPs that have `restartOnNewChat` set to true
@@ -79,22 +81,38 @@ export const getMCPTools = async (
       mcp.name,
       {
         transport: "http",
-        url: mcp.url!, // url is guaranteed to be present for readyMcps
+        url: mcp.url!,
         headers: mcp.env!,
         useNodeEventSource: true,
         reconnect: {
           enabled: true,
-          maxAttempts: 30,
+          maxAttempts: 5,
           delayMs: 200,
         },
       },
     ])
   );
 
-  // Initialize the MultiServerMCPClient
+  // Determine output handling based on model modality support
+  const modelName = config.chat.model;
+  const modelConfig = modelName
+    ? models.find((m) => m.model_name === modelName)
+    : undefined;
+  const supportsImages = !!modelConfig?.modalities.includes("image");
+  const supportsAudio = !!(modelConfig as any)?.modalities?.includes?.("audio");
+
+  // Initialize the MultiServerMCPClient with output mapping tuned to model capabilities
   const client = new MultiServerMCPClient({
     prefixToolNameWithServerName: true,
     additionalToolNamePrefix: "mcp",
+    throwOnLoadError: false,
+    useStandardContentBlocks: supportsImages || supportsAudio,
+    outputHandling: {
+      text: "content",
+      image: supportsImages ? "content" : "artifact",
+      audio: supportsAudio ? "content" : "artifact",
+      resource: "artifact",
+    },
     mcpServers,
   });
 
@@ -189,7 +207,7 @@ export const getMCPTools = async (
             );
             if (!documentDoc) return null;
             // Include various document types for upload (file, image, github, text)
-            const url = await getUrl(ctx, documentDoc.key);
+            const url = await getDocumentUrl(ctx, documentDoc.key);
             return {
               name: `${index}_${documentDoc.name}`,
               url,
