@@ -17,7 +17,7 @@ export const Panel = () => {
     <Tabs
       value={activeTab}
       onValueChange={(value) => setActiveTab(value)}
-      className="h-full bg-background w-full"
+      className="h-full min-h-0 bg-background w-full overflow-hidden"
     >
       {!hideTabHeader && ( // Hide the tab list when previewing an artifact
         <div className="flex items-center justify-between gap-2 m-2.5 pr-12">
@@ -37,7 +37,7 @@ export const Panel = () => {
           <ArtifactsPanel />
         </TabsContent>
 
-        <TabsContent value="projects" className="h-full w-full px-3">
+        <TabsContent value="projects" className="h-full w-full px-3 min-h-0 overflow-hidden">
           <ProjectsPanel />
         </TabsContent>
 
