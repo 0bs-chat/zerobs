@@ -36,5 +36,14 @@ export const addEnabledToolkitsToChats = migrations.define({
   },
 });
 
+// export const removePerChatFieldFromMcps = migrations.define({
+//   table: "mcps",
+//   migrateOne: async (ctx, doc) => {
+//     // if (doc.perChat !== undefined) {
+//     //   await ctx.db.patch(doc._id, { perChat: undefined });
+//     // }
+//   },
+// });
+
 export const runIt = migrations.runner(internal.migrations.addEnabledToolkitsToChats);
 // bunx convex run convex/migrations.ts:runIt

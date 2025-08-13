@@ -1,5 +1,5 @@
-import { MCP_TEMPLATES } from "@/constants/mcp-templates";
-import type { McpTemplate } from "@/constants/mcp-templates";
+import { MCP_TEMPLATES } from "@/constants/templates";
+import type { McpTemplate } from "@/constants/templates";
 import { Badge } from "@/components/ui/badge";
 import { ServerIcon, Globe, Activity, BadgeCheck } from "lucide-react";
 
