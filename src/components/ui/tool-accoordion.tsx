@@ -1,4 +1,4 @@
-import { Check, HammerIcon, Loader2 } from "lucide-react";
+import { Check, Hammer, Loader2 } from "lucide-react";
 import {
   Accordion,
   AccordionItem,
@@ -34,7 +34,7 @@ function ToolAccordion({
           className="px-3 py-2 text-sm items-center justify-start hover:bg-muted transition-colors rounded-md gap-2"
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <HammerIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+            <Hammer className="w-4 h-4 text-muted-foreground shrink-0" />
             <span className="text-foreground truncate">{cleanedName}</span>
             {statusText && (
               <span className="text-xs px-1.5 py-0.5 bg-muted text-muted-foreground border border-border rounded font-mono shrink-0">

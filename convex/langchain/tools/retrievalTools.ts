@@ -36,7 +36,7 @@ export const getRetrievalTools = async (
 
       await dispatchCustomEvent(
         "tool_stream",
-        { chunk: "Loading selected project documents…" },
+        { chunk: "Loading selected project documents..." },
         toolConfig
       );
       const includedProjectDocuments = await config.ctx.runQuery(
@@ -59,7 +59,7 @@ export const getRetrievalTools = async (
 
       await dispatchCustomEvent(
         "tool_stream",
-        { chunk: "Searching vector index…" },
+        { chunk: "Searching vector index..." },
         toolConfig
       );
       const results = await vectorStore.similaritySearch(query, limit, {
@@ -75,13 +75,18 @@ export const getRetrievalTools = async (
 
       await dispatchCustomEvent(
         "tool_stream",
-        { chunk: `Found ${results.length} results. Building response…` },
+        { chunk: `Found ${results.length} results. Building response...` },
         toolConfig
       );
       const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
-      includedProjectDocuments.forEach((projectDocument) =>
-        documentsMap.set(projectDocument.documentId, projectDocument.document!)
-      );
+      includedProjectDocuments.forEach((projectDocument) => {
+        if (projectDocument.document) {
+          documentsMap.set(
+            projectDocument.documentId,
+            projectDocument.document
+          );
+        }
+      });
 
       const documents = await Promise.all(
         results.map(async (doc) => {
@@ -104,7 +109,7 @@ export const getRetrievalTools = async (
 
       await dispatchCustomEvent(
         "tool_stream",
-        { chunk: "Formatting final output…" },
+        { chunk: "Formatting final output...", complete: true },
         toolConfig
       );
       return returnString ? JSON.stringify(documents, null, 0) : documents;
@@ -135,7 +140,7 @@ export const getRetrievalTools = async (
     ) => {
       await dispatchCustomEvent(
         "tool_stream",
-        { chunk: "Preparing web search…" },
+        { chunk: "Preparing web search..." },
         toolConfig
       );
       const EXA_API_KEY =
@@ -150,7 +155,7 @@ export const getRetrievalTools = async (
       try {
         await dispatchCustomEvent(
           "tool_stream",
-          { chunk: "Querying Exa…" },
+          { chunk: "Querying Exa..." },
           toolConfig
         );
         const exa = new Exa(EXA_API_KEY, undefined);
@@ -159,7 +164,7 @@ export const getRetrievalTools = async (
             numResults: 5,
             type: "auto",
             useAutoprompt: false,
-            topic,
+            topic: topic ?? undefined,
             text: true,
           })
         ).results;
@@ -176,7 +181,10 @@ export const getRetrievalTools = async (
 
         await dispatchCustomEvent(
           "tool_stream",
-          { chunk: `Found ${searchResponse.length} results. Formatting…` },
+          {
+            chunk: `Found ${searchResponse.length} results. Formatting...`,
+            complete: true,
+          },
           toolConfig
         );
         const documents = searchResponse.map((result) => {

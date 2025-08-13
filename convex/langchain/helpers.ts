@@ -114,7 +114,7 @@ export async function createAgentWithTools(
 export function getPlannerAgentResponse(messages: BaseMessage[]): BaseMessage {
   // filter and concat all ai messages
   const aiResponses = messages.filter(
-    (message) => typeof message === typeof AIMessage
+    (message) => message instanceof AIMessage
   );
   const storedAIResponses = mapChatMessagesToStoredMessages(aiResponses);
   return mapStoredMessagesToChatMessages([

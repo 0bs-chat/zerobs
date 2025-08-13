@@ -19,6 +19,63 @@ import { getThreadFromMessage } from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
 
+// Helper: Append a ToolChunkGroup JSON string to the provided buffer
+function appendToolChunk(
+  buffer: string[],
+  options: {
+    toolName: string;
+    isComplete: boolean;
+    toolCallId: string;
+    input?: unknown;
+    output?: unknown;
+  }
+): void {
+  buffer.push(
+    JSON.stringify({
+      type: "tool",
+      toolName: options.toolName,
+      input: options.input,
+      output: options.output,
+      isComplete: options.isComplete,
+      toolCallId: options.toolCallId,
+    } as ToolChunkGroup)
+  );
+}
+
+// Helper: Extract completed step names from a LangGraph checkpoint
+function extractCompletedStepsFromCheckpoint(
+  checkpoint: typeof GraphState.State | null | undefined
+): string[] {
+  const completedSteps: string[] = [];
+
+  const pastSteps = (checkpoint as any)?.pastSteps as
+    | Array<[string, unknown[]]>
+    | undefined;
+  if (pastSteps && pastSteps.length > 0) {
+    completedSteps.push(...pastSteps.map((ps) => ps[0]));
+  }
+
+  const plan = (checkpoint as any)?.plan as
+    | Array<
+        | {
+            type: "parallel";
+            data: Array<{ step: string; context: string }>;
+          }
+        | { type: "single"; data: { step: string; context: string } }
+      >
+    | undefined;
+  if (plan && plan.length > 0) {
+    const first = plan[0];
+    if (first.type === "parallel") {
+      completedSteps.push(...first.data.map((s) => s.step));
+    } else {
+      completedSteps.push(first.data.step);
+    }
+  }
+
+  return completedSteps;
+}
+
 export const generateTitle = internalAction({
   args: v.object({
     chat: Chats.doc,
@@ -105,20 +162,8 @@ export const chat = action({
               {
                 chatId,
                 chunks,
-                completedSteps: [
-                  ...(localCheckpoint?.pastSteps?.map(
-                    (pastStep) => pastStep[0]
-                  ) ?? []),
-                  ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
-                    ? [
-                        ...(localCheckpoint.plan[0].type === "parallel"
-                          ? localCheckpoint.plan[0].data.map(
-                              (step) => step.step
-                            )
-                          : [localCheckpoint.plan[0].data.step]),
-                      ]
-                    : []),
-                ],
+                completedSteps:
+                  extractCompletedStepsFromCheckpoint(localCheckpoint),
               }
             );
           }
@@ -158,25 +203,19 @@ export const chat = action({
                   } as AIChunkGroup)
                 );
               } else if (evt.event === "on_tool_start") {
-                buffer.push(
-                  JSON.stringify({
-                    type: "tool",
-                    toolName: evt.name,
-                    input: evt.data?.input,
-                    isComplete: false,
-                    toolCallId: evt.run_id,
-                  } as ToolChunkGroup)
-                );
+                appendToolChunk(buffer, {
+                  toolName: evt.name,
+                  input: evt.data?.input,
+                  isComplete: false,
+                  toolCallId: evt.run_id,
+                });
               } else if (evt.event === "on_tool_stream") {
-                buffer.push(
-                  JSON.stringify({
-                    type: "tool",
-                    toolName: evt.name,
-                    output: evt.data?.chunk,
-                    isComplete: false,
-                    toolCallId: evt.run_id,
-                  } as ToolChunkGroup)
-                );
+                appendToolChunk(buffer, {
+                  toolName: evt.name,
+                  output: evt.data?.chunk,
+                  isComplete: false,
+                  toolCallId: evt.run_id,
+                });
               } else if (evt.event === "on_tool_end") {
                 let output = evt.data?.output?.content ?? evt.data?.output;
 
@@ -200,16 +239,13 @@ export const chat = action({
                   );
                 }
 
-                buffer.push(
-                  JSON.stringify({
-                    type: "tool",
-                    toolName: evt.name,
-                    input: evt.data?.input,
-                    output,
-                    isComplete: true,
-                    toolCallId: evt.run_id,
-                  } as ToolChunkGroup)
-                );
+                appendToolChunk(buffer, {
+                  toolName: evt.name,
+                  input: evt.data?.input,
+                  output,
+                  isComplete: true,
+                  toolCallId: evt.run_id,
+                });
               } else if (evt.event === "on_custom_event") {
                 try {
                   const eventName =
@@ -226,15 +262,12 @@ export const chat = action({
                       : undefined;
                   const isComplete = payload?.complete === true;
                   if (eventName === "tool_stream" && chunk) {
-                    buffer.push(
-                      JSON.stringify({
-                        type: "tool",
-                        toolName: evt.name,
-                        output: chunk,
-                        isComplete,
-                        toolCallId: evt.run_id,
-                      } as ToolChunkGroup)
-                    );
+                    appendToolChunk(buffer, {
+                      toolName: evt.name,
+                      output: chunk,
+                      isComplete,
+                      toolCallId: evt.run_id,
+                    });
                   }
                 } catch {
                   // ignore malformed custom events
@@ -252,30 +285,8 @@ export const chat = action({
       if (buffer.length > 0) {
         const chunks = buffer;
         buffer = [];
-        const completedSteps: string[] = [];
-        const pastSteps = (localCheckpoint as any)?.pastSteps as
-          | Array<[string, unknown[]]>
-          | undefined;
-        if (pastSteps && pastSteps.length > 0) {
-          completedSteps.push(...pastSteps.map((ps) => ps[0]));
-        }
-        const plan = (localCheckpoint as any)?.plan as
-          | Array<
-              | {
-                  type: "parallel";
-                  data: Array<{ step: string; context: string }>;
-                }
-              | { type: "single"; data: { step: string; context: string } }
-            >
-          | undefined;
-        if (plan && plan.length > 0) {
-          const first = plan[0];
-          if (first.type === "parallel") {
-            completedSteps.push(...first.data.map((s) => s.step));
-          } else {
-            completedSteps.push(first.data.step);
-          }
-        }
+        const completedSteps =
+          extractCompletedStepsFromCheckpoint(localCheckpoint);
         await ctx.runMutation(internal.streams.mutations.flush, {
           chatId,
           chunks,
