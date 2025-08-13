@@ -67,6 +67,9 @@ export const create = internalAction({
       await fly.allocateIpAddress(app?.name!, "shared_v4");
       await fly.createMachine(appName, machineConfig);
 
+      // Wait for the machine spin up
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+
       await ctx.runMutation(internal.mcps.crud.update, {
         id: args.mcpId,
         patch: { url: sseUrl, status: "created" },

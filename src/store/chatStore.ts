@@ -25,6 +25,7 @@ export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   orchestratorMode: false,
   webSearch: false,
   artifacts: false,
+  enabledToolkits: [],
   updatedAt: 0,
   public: false,
 });

@@ -7,84 +7,99 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useMemo } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
+import { api } from "../../../convex/_generated/api";
+import { toast } from "sonner";
+import { useAuthToken } from "@convex-dev/auth/react";
+import { providers } from "../../../convex/utils/oauth/providers";
+import { useAtomValue } from "jotai";
+import { apiKeysAtom } from "@/hooks/use-apikeys";
 
 export const Route = createFileRoute("/settings/integrations")({
   component: RouteComponent,
 });
 
-interface IntegrationCardProps {
-  icon: string;
-  title: string;
-  description: string;
-  buttonText: string;
-}
-
-function IntegrationCard({ icon, title, description, buttonText }: IntegrationCardProps) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg gap-4 flex items-center">
-          <div className="flex items-center gap-2">
-            <img src={icon} alt={title} className="w-4 h-4" />
-            {title}
-          </div>
-        </CardTitle>
-        <CardDescription>
-          {description}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button disabled>{buttonText}</Button>
-      </CardContent>
-    </Card>
-  );
-}
-
 function RouteComponent() {
-  const integrations = [
-    {
-      icon: "https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fgoogle.com%2F",
-      title: "Connect with Google",
-      description: "Connect with google to get access to your calendar, email in the chat.",
-      buttonText: "Connect with Google"
-    },
-    {
-      icon: "https://www.convex.dev/favicon.ico",
-      title: "Connect to Convex",
-      description: "Connect to Convex for real-time database and backend services.",
-      buttonText: "Connect to Convex"
-    },
-    {
-      icon: "https://github.com/favicon.ico",
-      title: "Connect with GitHub",
-      description: "Connect with GitHub to access your repositories and manage code.",
-      buttonText: "Connect with GitHub"
-    },
-    {
-      icon: "https://twitter.com/favicon.ico",
-      title: "Connect with Twitter",
-      description: "Connect with Twitter to access your tweets and social media content.",
-      buttonText: "Connect with Twitter"
-    },
-    {
-      icon: "https://www.google.com/s2/favicons?sz=32&domain_url=https%3A%2F%2Fwww.notion.so%2F",
-      title: "Connect with Notion",
-      description: "Connect with Notion to access your notes, documents, and workspace.",
-      buttonText: "Connect with Notion"
+  const existingKeys = useAtomValue(apiKeysAtom);
+  const { mutateAsync: removeApiKey } = useMutation({
+    mutationFn: useConvexMutation(api.apiKeys.mutations.remove),
+  });
+  const token = useAuthToken();
+
+  const hasKey = useMemo(() => {
+    const set = new Set((existingKeys ?? []).map((k) => k.key));
+    return (key: string) => set.has(key);
+  }, [existingKeys]);
+
+  const handleConnect = async (providerKey: string) => {
+    const url = import.meta.env.VITE_CONVEX_SITE_URL;
+    const res = await fetch(`${url}/integrations/redirect`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        state: JSON.stringify({
+          provider: providerKey,
+          token,
+        }),
+      }),
+    });
+    
+    if (!res.ok) {
+      toast.error(`Failed to start ${providerKey} OAuth`);
+      return;
     }
-  ];
+    
+    const { redirect } = (await res.json()) as { redirect?: string };
+    if (redirect) window.location.href = redirect;
+  };
+
+  const handleDisconnect = async (accessKey: string, refreshKey: string, providerName: string) => {
+    try {
+      await Promise.all([
+        removeApiKey({ key: accessKey }).catch(() => {}),
+        removeApiKey({ key: refreshKey }).catch(() => {}),
+      ]);
+      toast.success(`Disconnected ${providerName}`);
+    } catch {
+      toast.error(`Failed to disconnect ${providerName}`);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-2">
-      {integrations.map((integration, index) => (
-        <IntegrationCard
-          key={index}
-          icon={integration.icon}
-          title={integration.title}
-          description={integration.description}
-          buttonText={integration.buttonText}
-        />
-      ))}
+      {Object.entries(providers).map(([key, provider]) => {
+        const accessKey = provider.accessKeyKey;
+        const refreshKey = provider.refreshKeyKey;
+        const isConnected = hasKey(accessKey);
+
+        return (
+          <Card key={key}>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <img src={provider.icon} alt={provider.title} className="w-4 h-4" />
+                {provider.title}
+              </CardTitle>
+              <CardDescription>{provider.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isConnected ? (
+                <Button 
+                  variant="destructive" 
+                  onClick={() => handleDisconnect(accessKey, refreshKey, provider.title)}
+                >
+                  Disconnect {provider.title}
+                </Button>
+              ) : (
+                <Button onClick={() => handleConnect(key)}>
+                  Connect with {provider.title}
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

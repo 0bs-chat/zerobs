@@ -47,7 +47,7 @@ export const Route = createRootRoute({
       },
       {
         rel: 'manifest',
-        href: 'manifest.json',
+        href: '/manifest.json',
       },
     ],
     scripts: [

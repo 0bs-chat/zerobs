@@ -42,7 +42,7 @@ export const create = mutation({
     const envJwts: Record<string, string> = {};
     await Promise.all(
       Object.entries(envWithApiKeys).map(async ([key, value]) => {
-        envJwts[key] = await createJwt(userId, key, value);
+        envJwts[key] = await createJwt(key, value, userId);
       }),
     );
 
@@ -86,7 +86,7 @@ export const update = mutation({
     const envJwts: Record<string, string> = {};
     await Promise.all(
       Object.entries(args.updates.env ?? {}).map(async ([key, value]) => {
-        envJwts[key] = await createJwt(userId, key, value);
+        envJwts[key] = await createJwt(key, value, userId);
       }),
     );
 
