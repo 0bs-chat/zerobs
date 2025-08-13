@@ -6,7 +6,7 @@ import { internal } from "../../_generated/api";
 async function getGoogleAccessToken(config: ExtendedRunnableConfig) {
   try {
     const token = await config.ctx.runAction(
-      internal.utils.oauth.getRefreshedAccessToken,
+      internal.utils.oauth.index.getRefreshedAccessToken,
       { provider: "google" },
     );
     return token;

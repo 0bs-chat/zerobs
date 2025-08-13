@@ -1,5 +1,5 @@
-import { httpAction, internalAction } from "../_generated/server";
-import { api, internal } from "../_generated/api";
+import { httpAction, internalAction } from "../../_generated/server";
+import { api, internal } from "../../_generated/api";
 import { v } from "convex/values";
 import { providers } from "./providers";
 

@@ -13,7 +13,7 @@ import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { useAuthToken } from "@convex-dev/auth/react";
-import { providers } from "../../../convex/utils/providers";
+import { providers } from "../../../convex/utils/oauth/providers";
 
 export const Route = createFileRoute("/settings/integrations")({
   component: RouteComponent,

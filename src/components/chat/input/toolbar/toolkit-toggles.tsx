@@ -12,7 +12,7 @@ import { useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
-import { providers } from "../../../../../convex/utils/providers";
+import { providers } from "../../../../../convex/utils/oauth/providers";
 
 type ProviderKey = keyof typeof providers;
 
