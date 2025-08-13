@@ -66,9 +66,7 @@ function SettingsPage() {
                 Back to chat
               </Button>
             </Link>
-            <Button variant="outline" size="icon" className="cursor-pointer">
-              <ModeToggle />
-            </Button>
+            <ModeToggle />
           </div>
 
           <div className="space-y-1">

@@ -1,13 +1,20 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import type { ExtendedRunnableConfig } from "../helpers";
+import { internal } from "../../_generated/api";
 
-// Helper function to get Google OAuth token from user's external account
-async function getGoogleAccessToken(_config: ExtendedRunnableConfig) {
-  return undefined;
+async function getGoogleAccessToken(config: ExtendedRunnableConfig) {
+  try {
+    const token = await config.ctx.runAction(
+      internal.utils.oauth.getRefreshedAccessToken,
+      { provider: "google" },
+    );
+    return token;
+  } catch (_err) {
+    return undefined;
+  }
 }
 
-// Helper function to make authenticated Google API requests
 async function makeGoogleAPIRequest(
   endpoint: string,
   accessToken: string,
@@ -35,7 +42,6 @@ async function makeGoogleAPIRequest(
   return response.json();
 }
 
-// Helper function to make Gmail API requests
 async function makeGmailAPIRequest(
   endpoint: string,
   accessToken: string,

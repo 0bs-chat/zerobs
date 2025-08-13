@@ -10,8 +10,8 @@ import {
   Globe2Icon,
   Network,
   Binoculars,
-  Hammer,
   XIcon,
+  BotIcon,
 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { chatAtom, chatIdAtom, newChatAtom } from "@/store/chatStore";
@@ -87,7 +87,7 @@ export function AgentToggles() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="icon" title="Toggles" className="cursor-pointer">
-            <Hammer className="h-4 w-4" />
+            <BotIcon className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
