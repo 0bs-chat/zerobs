@@ -46,7 +46,7 @@ function ToolAccordion({
             {isComplete === true ? (
               <Check className="w-4 h-4 text-primary" />
             ) : isComplete === false ? (
-              <Loader2 className="w-4 h-4 bg-red-300 text-muted-foreground animate-spin" />
+              <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
             ) : (
               <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
             )}

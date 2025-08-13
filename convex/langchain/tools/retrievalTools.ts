@@ -159,7 +159,7 @@ export const getRetrievalTools = async (
             numResults: 5,
             type: "auto",
             useAutoprompt: false,
-            topic: topic ?? undefined,
+            topic,
             text: true,
           })
         ).results;

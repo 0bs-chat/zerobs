@@ -29,8 +29,8 @@ export function StreamingOutput({
   }, [content]);
 
   const toggleCollapsed = useCallback(() => {
-    setIsCollapsed(!isCollapsed);
-  }, [isCollapsed]);
+    setIsCollapsed((prev) => !prev);
+  }, []);
 
   if (!content) {
     if (isComplete === false) {

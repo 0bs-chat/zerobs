@@ -23,7 +23,10 @@ export const getMCPTools = async (
   ctx: ActionCtx,
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig
-) => {
+): Promise<{
+  tools: StructuredToolInterface<ToolSchemaBase>[];
+  groupedTools: Record<string, StructuredToolInterface<ToolSchemaBase>[]>;
+}> => {
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
     paginationOpts: {
       numItems: 100,
@@ -35,7 +38,7 @@ export const getMCPTools = async (
   });
 
   if (mcps.page.length === 0) {
-    return [];
+    return { tools: [], groupedTools: {} };
   }
 
   // Wait for all MCPs to transition from 'creating' status to 'running'
