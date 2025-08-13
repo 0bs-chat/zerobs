@@ -70,8 +70,6 @@ export const handleOAuthCallback = httpAction(async (_ctx, request) => {
     throw new Error(`Missing environment variables for ${state.provider}`);
   }
 
-  // Exchange code for tokens using provider configuration
-  const wantsForm = providerConfig.tokenRequestFormat === "form";
   const includeGrantType = providerConfig.includeGrantTypeOnAuthCode !== false;
   const basePayload: Record<string, string> = {
     client_id: clientId!,
@@ -81,23 +79,15 @@ export const handleOAuthCallback = httpAction(async (_ctx, request) => {
   };
   if (includeGrantType) basePayload["grant_type"] = "authorization_code";
 
+  console.log(basePayload);
   const response = await fetch(providerConfig.tokenUrl, {
     method: "POST",
-    headers: wantsForm
-      ? { "content-type": "application/x-www-form-urlencoded", accept: providerConfig.tokenAcceptJson ? "application/json" : "*/*" }
-      : { "content-type": "application/json", accept: providerConfig.tokenAcceptJson ? "application/json" : "*/*" },
-    body: wantsForm ? new URLSearchParams(basePayload) : JSON.stringify(basePayload),
+    headers: { "content-type": "application/x-www-form-urlencoded", accept: providerConfig.tokenAcceptJson ? "application/json" : "*/*" },
+    body: new URLSearchParams(basePayload),
   });
+  const data = await response.json();
 
-  const raw = await response.text();
-  let data: any;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    const params = new URLSearchParams(raw);
-    data = Object.fromEntries(params.entries());
-  }
-
+  console.log(data);
   const accessToken = data.access_token;
   const refreshToken = data.refresh_token;
 
@@ -174,10 +164,7 @@ export const getRefreshedAccessToken = internalAction({
       throw new Error(`No refresh token found for ${args.provider}`);
     }
 
-    const useForm = providerConfig.tokenRequestFormat === "form";
-    const headers: Record<string, string> = useForm
-      ? { "content-type": "application/x-www-form-urlencoded", accept: "application/json" }
-      : { "content-type": "application/json", accept: "application/json" };
+    const headers: Record<string, string> = { "content-type": "application/x-www-form-urlencoded", accept: "application/json" };
     const includeGrantTypeOnRefresh = providerConfig.includeGrantTypeOnRefresh !== false;
     const refreshPayload: Record<string, string> = {
       client_id: clientId!,
@@ -185,7 +172,7 @@ export const getRefreshedAccessToken = internalAction({
       refresh_token: refreshToken,
     };
     if (includeGrantTypeOnRefresh) refreshPayload["grant_type"] = "refresh_token";
-    const body = useForm ? new URLSearchParams(refreshPayload) : JSON.stringify(refreshPayload);
+    const body = new URLSearchParams(refreshPayload)
     const tokenResponse = await fetch(providerConfig.tokenUrl, {
       method: "POST",
       headers,

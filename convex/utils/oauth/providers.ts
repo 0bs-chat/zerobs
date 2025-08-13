@@ -10,13 +10,10 @@ export const providers: {
     tokenUrl: URL;
     accessKeyKey: string;
     refreshKeyKey: string;
-    // OAuth token exchange behavior
-    tokenRequestFormat?: "json" | "form";
     tokenAcceptJson?: boolean;
     includeGrantTypeOnAuthCode?: boolean;
     includeGrantTypeOnRefresh?: boolean;
     returnsRefreshToken?: boolean;
-    // Extra params to append to auth URL
     extraAuthParams?: Record<string, string>;
   };
 } = {
@@ -31,11 +28,10 @@ export const providers: {
     tokenUrl: new URL("https://api.convex.dev/oauth/token"),
     accessKeyKey: "CONVEX_ACCESS_TOKEN",
     refreshKeyKey: "CONVEX_REFRESH_TOKEN",
-    tokenRequestFormat: "json",
     tokenAcceptJson: true,
     includeGrantTypeOnAuthCode: true,
     includeGrantTypeOnRefresh: true,
-    returnsRefreshToken: true,
+    returnsRefreshToken: false,
   },
   google: {
     title: "Google",
@@ -51,7 +47,6 @@ export const providers: {
     tokenUrl: new URL("https://oauth2.googleapis.com/token"),
     accessKeyKey: "GOOGLE_ACCESS_TOKEN",
     refreshKeyKey: "GOOGLE_REFRESH_TOKEN",
-    tokenRequestFormat: "form",
     tokenAcceptJson: true,
     includeGrantTypeOnAuthCode: true,
     includeGrantTypeOnRefresh: true,
@@ -76,50 +71,9 @@ export const providers: {
     tokenUrl: new URL("https://github.com/login/oauth/access_token"),
     accessKeyKey: "GITHUB_ACCESS_TOKEN",
     refreshKeyKey: "GITHUB_REFRESH_TOKEN",
-    tokenRequestFormat: "form",
     tokenAcceptJson: true,
     includeGrantTypeOnAuthCode: false,
     includeGrantTypeOnRefresh: true,
     returnsRefreshToken: false,
-  },
-  notion: {
-    title: "Notion",
-    description: "Connect to Notion to access your notes and documents.",
-    icon: "https://www.google.com/s2/favicons?sz=32&domain_url=https%3A%2F%2Fwww.notion.so",
-    clientIdKey: "AUTH_NOTION_ID",
-    clientSecretKey: "AUTH_NOTION_SECRET",
-    scope: [
-      "user:read",
-      "user:write",
-    ].join(" "),
-    authUrl: new URL("https://api.notion.com/v1/oauth/authorize"),
-    tokenUrl: new URL("https://api.notion.com/v1/oauth/token"),
-    accessKeyKey: "NOTION_ACCESS_TOKEN",
-    refreshKeyKey: "NOTION_REFRESH_TOKEN",
-    tokenRequestFormat: "json",
-    tokenAcceptJson: true,
-    includeGrantTypeOnAuthCode: true,
-    includeGrantTypeOnRefresh: true,
-    returnsRefreshToken: true,
-  },
-  twitter: {
-    title: "Twitter",
-    description: "Connect to Twitter to access your tweets and manage your account.",
-    icon: "https://twitter.com/favicon.ico",
-    clientIdKey: "AUTH_TWITTER_ID",
-    clientSecretKey: "AUTH_TWITTER_SECRET",
-    scope: [
-      "tweet.read",
-      "tweet.write",
-    ].join(" "),
-    authUrl: new URL("https://twitter.com/i/oauth2/authorize"),
-    tokenUrl: new URL("https://api.x.com/2/oauth2/token"),
-    accessKeyKey: "TWITTER_ACCESS_TOKEN",
-    refreshKeyKey: "TWITTER_REFRESH_TOKEN",
-    tokenRequestFormat: "form",
-    tokenAcceptJson: true,
-    includeGrantTypeOnAuthCode: true,
-    includeGrantTypeOnRefresh: true,
-    returnsRefreshToken: true,
-  },
+  }
 };
