@@ -9,10 +9,11 @@ import { Hammer } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { chatAtom, chatIdAtom, newChatAtom } from "@/store/chatStore";
 import { useMemo } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import { providers } from "../../../../../convex/utils/oauth/providers";
+import { apiKeysAtom } from "@/hooks/use-apikeys";
 
 type ProviderKey = keyof typeof providers;
 
@@ -20,8 +21,7 @@ export function ToolkitToggles() {
   const chatId = useAtomValue(chatIdAtom);
   const chat = useAtomValue(chatAtom)!;
   const setNewChat = useSetAtom(newChatAtom);
-
-  const { data: existingKeys } = useQuery(convexQuery(api.apiKeys.queries.getAll, {}));
+  const existingKeys = useAtomValue(apiKeysAtom);
   const existingKeySet = useMemo(() => new Set((existingKeys ?? []).map((k) => k.key)), [existingKeys]);
 
   const connectedProviders = useMemo<ProviderKey[]>(() => {

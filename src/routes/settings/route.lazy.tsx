@@ -10,6 +10,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, KeyIcon, Plug, User, Wallet2 } from "lucide-react";
 import { useEffect } from "react";
+import { useApiKeys } from "@/hooks/use-apikeys";
 
 const settingsNavItems = [
   {
@@ -53,6 +54,8 @@ function SettingsPage() {
       });
     }
   }, [location.pathname, navigate]);
+
+  useApiKeys();
 
   return (
     <div className="flex h-screen flex-col overflow-y-auto bg-background w-full">

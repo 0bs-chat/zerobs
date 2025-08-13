@@ -79,7 +79,7 @@ export async function createAgentWithTools(
       prompt: promptTemplate,
     });
   } else {
-    const toolkits = await getAvailableTools(state, config, true);
+    const toolkits: Toolkit[] = await getAvailableTools(state, config, true);
     if (!toolkits || toolkits.length === 0) {
       throw new Error("Need atleast 1 mcp enabled to use conductor mode");
     }
@@ -89,7 +89,7 @@ export async function createAgentWithTools(
       chat.model!,
       chat.reasoningEffort,
     );
-    const agents = toolkits.map((toolkit) =>
+    const agents = toolkits.map((toolkit: Toolkit) =>
       createReactAgent({
         llm: llm,
         tools: toolkit.tools,
@@ -153,16 +153,21 @@ export type Toolkit = {
   tools: StructuredToolInterface<ToolSchemaBase>[];
 };
 
+// Overloads to provide precise return types based on `groupTools`
+export async function getAvailableTools(
+  state: typeof GraphState.State,
+  config: ExtendedRunnableConfig,
+): Promise<StructuredToolInterface<ToolSchemaBase>[]>;
+export async function getAvailableTools(
+  state: typeof GraphState.State,
+  config: ExtendedRunnableConfig,
+  groupTools: false,
+): Promise<StructuredToolInterface<ToolSchemaBase>[]>;
 export async function getAvailableTools(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
   groupTools: true,
 ): Promise<Toolkit[]>;
-export async function getAvailableTools(
-  state: typeof GraphState.State,
-  config: ExtendedRunnableConfig,
-  groupTools?: false,
-): Promise<StructuredToolInterface<ToolSchemaBase>[]>;
 export async function getAvailableTools(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
@@ -216,7 +221,7 @@ export async function getAvailableToolsDescription(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
 ): Promise<string> {
-  const toolsInfo = await getAvailableTools(state, config);
+  const toolsInfo: StructuredToolInterface<ToolSchemaBase>[] = await getAvailableTools(state, config);
 
   if (toolsInfo.length === 0) {
     return "No tools are currently available.";

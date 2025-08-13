@@ -8,21 +8,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useMemo } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { useAuthToken } from "@convex-dev/auth/react";
 import { providers } from "../../../convex/utils/oauth/providers";
+import { useAtomValue } from "jotai";
+import { apiKeysAtom } from "@/hooks/use-apikeys";
 
 export const Route = createFileRoute("/settings/integrations")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { data: existingKeys } = useQuery(
-    convexQuery(api.apiKeys.queries.getAll, {}),
-  );
+  const existingKeys = useAtomValue(apiKeysAtom);
   const { mutateAsync: removeApiKey } = useMutation({
     mutationFn: useConvexMutation(api.apiKeys.mutations.remove),
   });

@@ -14,10 +14,12 @@ import {
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { SaveIcon, TrashIcon } from "lucide-react";
-import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
+import { useAtomValue } from "jotai";
+import { apiKeysAtom } from "@/hooks/use-apikeys";
 
 const Icons = {
   OpenAI: () => (
@@ -188,13 +190,7 @@ export const Route = createFileRoute("/settings/apiKeys")({
 
 function RouteComponent() {
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
-
-  // Get existing API keys
-  const {
-    data: existingKeys,
-    error,
-    isError,
-  } = useQuery(convexQuery(api.apiKeys.queries.getAll, {}));
+  const existingKeys = useAtomValue(apiKeysAtom);
   const { mutateAsync: createApiKey } = useMutation({
     mutationFn: useConvexMutation(api.apiKeys.mutations.create),
   });
@@ -291,26 +287,6 @@ function RouteComponent() {
       </Card>
     );
   };
-
-  // Show error state if API keys failed to load
-  if (error && isError) {
-    return (
-      <div className="flex flex-col gap-4 h-full">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-destructive font-medium">
-                Failed to load API keys
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                {error?.message || "An unexpected error occurred"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-4 h-full">
