@@ -112,7 +112,7 @@ export const providers: {
       "tweet.read",
       "tweet.write",
     ].join(" "),
-    authUrl: new URL("https://x.com/i/oauth2/authorize"),
+    authUrl: new URL("https://twitter.com/i/oauth2/authorize"),
     tokenUrl: new URL("https://api.x.com/2/oauth2/token"),
     accessKeyKey: "TWITTER_ACCESS_TOKEN",
     refreshKeyKey: "TWITTER_REFRESH_TOKEN",
