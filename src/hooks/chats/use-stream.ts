@@ -59,10 +59,16 @@ export function useStream(chatId: Id<"chats"> | "new") {
               chunkDoc._creationTime > lastSeenTime
           )
           .flatMap((chunkDoc: any) =>
-            chunkDoc.chunks.map(
-              (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup
-            )
-          );
+            chunkDoc.chunks.map((chunkStr: string) => {
+              try {
+                return JSON.parse(chunkStr) as ChunkGroup;
+              } catch (e) {
+                console.error("Failed to parse stream chunk", { chunkStr, e });
+                return undefined as unknown as ChunkGroup;
+              }
+            })
+          )
+          .filter(Boolean) as ChunkGroup[];
         if (newEvents.length > 0) {
           setGroupedChunks((prev) => {
             const newGroups = [...prev];
@@ -81,8 +87,58 @@ export function useStream(chatId: Id<"chats"> | "new") {
                   newGroups.push(lastGroup);
                 }
               } else {
-                lastGroup = chunk;
-                newGroups.push(chunk);
+                const toolChunk = chunk as ToolChunkGroup;
+                // Try to merge with the latest in-flight chunk for the same toolCallId
+                let mergedIndex = -1;
+                if (
+                  lastGroup?.type === "tool" &&
+                  (lastGroup as ToolChunkGroup).toolCallId ===
+                    toolChunk.toolCallId &&
+                  !(lastGroup as ToolChunkGroup).isComplete
+                ) {
+                  mergedIndex = newGroups.length - 1;
+                } else {
+                  for (let i = newGroups.length - 1; i >= 0; i--) {
+                    const g = newGroups[i];
+                    if (
+                      g.type === "tool" &&
+                      (g as ToolChunkGroup).toolCallId ===
+                        toolChunk.toolCallId &&
+                      !(g as ToolChunkGroup).isComplete
+                    ) {
+                      mergedIndex = i;
+                      break;
+                    }
+                  }
+                }
+
+                if (mergedIndex >= 0) {
+                  const existing = newGroups[mergedIndex] as ToolChunkGroup;
+                  // Append incremental output if provided
+                  if (typeof toolChunk.output === "string") {
+                    const existingOutput =
+                      typeof existing.output === "string"
+                        ? existing.output
+                        : "";
+                    existing.output = existingOutput
+                      ? `${existingOutput}\n${toolChunk.output}`
+                      : toolChunk.output;
+                  } else if (toolChunk.output !== undefined) {
+                    existing.output = toolChunk.output as any;
+                  }
+                  // Update input if present
+                  if (toolChunk.input !== undefined) {
+                    existing.input = toolChunk.input as any;
+                  }
+                  // Mark complete if end event
+                  if (toolChunk.isComplete) {
+                    existing.isComplete = true;
+                  }
+                  lastGroup = existing;
+                } else {
+                  lastGroup = toolChunk;
+                  newGroups.push(toolChunk);
+                }
               }
             }
             return newGroups;
@@ -133,7 +189,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
               name: chunk.toolName,
               tool_call_id: chunk.toolCallId,
               additional_kwargs: {
-                input: JSON.parse(JSON.stringify(chunk.input)),
+                input: chunk.input ?? null,
                 is_complete: true,
               },
             });
@@ -147,7 +203,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
                   ? chunk.output
                   : JSON.stringify(chunk.output ?? ""),
               additional_kwargs: {
-                input: JSON.parse(JSON.stringify(chunk.input)),
+                input: chunk.input ?? null,
                 is_complete: false,
               },
             });

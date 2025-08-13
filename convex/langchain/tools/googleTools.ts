@@ -1,4 +1,7 @@
-import { DynamicStructuredTool } from "@langchain/core/tools";
+"use node";
+
+import { tool } from "@langchain/core/tools";
+import { dispatchCustomEvent } from "@langchain/core/callbacks/dispatch";
 import { z } from "zod";
 import type { ExtendedRunnableConfig } from "../helpers";
 
@@ -12,7 +15,7 @@ async function makeGoogleAPIRequest(
   endpoint: string,
   accessToken: string,
   method: string = "GET",
-  body?: any,
+  body?: any
 ): Promise<any> {
   const response = await fetch(
     `https://www.googleapis.com/calendar/v3${endpoint}`,
@@ -23,12 +26,12 @@ async function makeGoogleAPIRequest(
         "Content-Type": "application/json",
       },
       body: body ? JSON.stringify(body) : undefined,
-    },
+    }
   );
 
   if (!response.ok) {
     throw new Error(
-      `Google API request failed: ${response.status} ${response.statusText}`,
+      `Google API request failed: ${response.status} ${response.statusText}`
     );
   }
 
@@ -40,7 +43,7 @@ async function makeGmailAPIRequest(
   endpoint: string,
   accessToken: string,
   method: string = "GET",
-  body?: any,
+  body?: any
 ): Promise<any> {
   const response = await fetch(
     `https://www.googleapis.com/gmail/v1${endpoint}`,
@@ -51,12 +54,12 @@ async function makeGmailAPIRequest(
         "Content-Type": "application/json",
       },
       body: body ? JSON.stringify(body) : undefined,
-    },
+    }
   );
 
   if (!response.ok) {
     throw new Error(
-      `Gmail API request failed: ${response.status} ${response.statusText}`,
+      `Gmail API request failed: ${response.status} ${response.statusText}`
     );
   }
 
@@ -65,7 +68,7 @@ async function makeGmailAPIRequest(
 
 export const getGoogleTools = async (
   config: ExtendedRunnableConfig,
-  returnString: boolean = false,
+  returnString: boolean = false
 ) => {
   const accessToken = await getGoogleAccessToken(config);
   if (!accessToken) {
@@ -73,16 +76,22 @@ export const getGoogleTools = async (
   }
 
   // Google Calendar Tools
-  const listCalendarseTool = new DynamicStructuredTool({
-    name: "listGoogleCalendars",
-    description:
-      "List all Google Calendars accessible to the user. Use this to see available calendars before working with events.",
-    schema: z.object({}),
-    func: async () => {
+  const listCalendarseTool = tool(
+    async (_args: {}, toolConfig: any) => {
       try {
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: "Checking Google authentication…" },
+          toolConfig
+        );
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: "Fetching your Google calendars…" },
+          toolConfig
+        );
         const result = await makeGoogleAPIRequest(
           "/users/me/calendarList",
-          accessToken,
+          accessToken
         );
 
         const calendars =
@@ -94,56 +103,64 @@ export const getGoogleTools = async (
             accessRole: calendar.accessRole,
           })) || [];
 
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Found ${calendars.length} calendars. Formatting results…` },
+          toolConfig
+        );
+
         if (returnString) {
           return JSON.stringify(calendars, null, 2);
         }
         return calendars;
       } catch (error) {
-        return `Failed to list calendars: ${error instanceof Error ? error.message : "Unknown error"}`;
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Failed to list calendars: ${message}`, complete: true },
+          toolConfig
+        );
+        return `Failed to list calendars: ${message}`;
       }
     },
-  });
+    {
+      name: "listGoogleCalendars",
+      description:
+        "List all Google Calendars accessible to the user. Use this to see available calendars before working with events.",
+      schema: z.object({}),
+    }
+  );
 
-  const listCalendarEventsTool = new DynamicStructuredTool({
-    name: "listGoogleCalendarEvents",
-    description:
-      "List events from a specific Google Calendar. Use this to see upcoming or past events.",
-    schema: z.object({
-      calendarId: z
-        .string()
-        .describe("The calendar ID (use 'primary' for default calendar)")
-        .default("primary"),
-      timeMin: z
-        .string()
-        .optional()
-        .describe(
-          "Lower bound (inclusive) for an event's end time (RFC3339 timestamp)",
-        ),
-      timeMax: z
-        .string()
-        .optional()
-        .describe(
-          "Upper bound (exclusive) for an event's start time (RFC3339 timestamp)",
-        ),
-      maxResults: z
-        .number()
-        .min(1)
-        .max(2500)
-        .default(10)
-        .describe("Maximum number of events to return"),
-      q: z
-        .string()
-        .optional()
-        .describe("Free text search terms to find events"),
-    }),
-    func: async ({
-      calendarId = "primary",
-      timeMin,
-      timeMax,
-      maxResults = 10,
-      q,
-    }) => {
+  const listCalendarEventsTool = tool(
+    async (
+      {
+        calendarId = "primary",
+        timeMin,
+        timeMax,
+        maxResults = 10,
+        q,
+      }: {
+        calendarId: string;
+        timeMin?: string;
+        timeMax?: string;
+        maxResults?: number;
+        q?: string;
+      },
+      toolConfig: any
+    ) => {
       try {
+        await dispatchCustomEvent(
+          "tool_stream",
+          {
+            chunk: `Fetching events from calendar '${calendarId}'${
+              timeMin || timeMax
+                ? ` within ${timeMin ?? "-∞"} → ${timeMax ?? "+∞"}`
+                : ""
+            }…`,
+          },
+          toolConfig
+        );
         const params = new URLSearchParams({
           maxResults: maxResults.toString(),
           singleEvents: "true",
@@ -156,7 +173,7 @@ export const getGoogleTools = async (
 
         const result = await makeGoogleAPIRequest(
           `/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
-          accessToken,
+          accessToken
         );
 
         const events =
@@ -172,56 +189,94 @@ export const getGoogleTools = async (
             organizer: event.organizer,
           })) || [];
 
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Found ${events.length} events. Formatting results…` },
+          toolConfig
+        );
+
         if (returnString) {
           return JSON.stringify(events, null, 2);
         }
         return events;
       } catch (error) {
-        return `Failed to list calendar events: ${error instanceof Error ? error.message : "Unknown error"}`;
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        await dispatchCustomEvent(
+          "tool_stream",
+          {
+            chunk: `Failed to list calendar events: ${message}`,
+            complete: true,
+          },
+          toolConfig
+        );
+        return `Failed to list calendar events: ${message}`;
       }
     },
-  });
+    {
+      name: "listGoogleCalendarEvents",
+      description:
+        "List events from a specific Google Calendar. Use this to see upcoming or past events.",
+      schema: z.object({
+        calendarId: z
+          .string()
+          .describe("The calendar ID (use 'primary' for default calendar)")
+          .default("primary"),
+        timeMin: z
+          .string()
+          .optional()
+          .describe(
+            "Lower bound (inclusive) for an event's end time (RFC3339 timestamp)"
+          ),
+        timeMax: z
+          .string()
+          .optional()
+          .describe(
+            "Upper bound (exclusive) for an event's start time (RFC3339 timestamp)"
+          ),
+        maxResults: z
+          .number()
+          .min(1)
+          .max(2500)
+          .default(10)
+          .describe("Maximum number of events to return"),
+        q: z
+          .string()
+          .optional()
+          .describe("Free text search terms to find events"),
+      }),
+    }
+  );
 
-  const createCalendarEventTool = new DynamicStructuredTool({
-    name: "createGoogleCalendarEvent",
-    description:
-      "Create a new event in a Google Calendar. Use this to schedule meetings, appointments, or reminders.",
-    schema: z.object({
-      calendarId: z
-        .string()
-        .describe("The calendar ID (use 'primary' for default calendar)")
-        .default("primary"),
-      summary: z.string().describe("The title/summary of the event"),
-      description: z
-        .string()
-        .optional()
-        .describe("The description of the event"),
-      startDateTime: z
-        .string()
-        .describe(
-          "Start date and time (RFC3339 format, e.g., '2024-01-15T09:00:00-07:00')",
-        ),
-      endDateTime: z
-        .string()
-        .describe(
-          "End date and time (RFC3339 format, e.g., '2024-01-15T10:00:00-07:00')",
-        ),
-      location: z.string().optional().describe("The location of the event"),
-      attendees: z
-        .array(z.string())
-        .optional()
-        .describe("List of email addresses of attendees"),
-    }),
-    func: async ({
-      calendarId = "primary",
-      summary,
-      description,
-      startDateTime,
-      endDateTime,
-      location,
-      attendees,
-    }) => {
+  const createCalendarEventTool = tool(
+    async (
+      {
+        calendarId = "primary",
+        summary,
+        description,
+        startDateTime,
+        endDateTime,
+        location,
+        attendees,
+      }: {
+        calendarId: string;
+        summary: string;
+        description?: string;
+        startDateTime: string;
+        endDateTime: string;
+        location?: string;
+        attendees?: string[];
+      },
+      toolConfig: any
+    ) => {
       try {
+        await dispatchCustomEvent(
+          "tool_stream",
+          {
+            chunk: `Creating event '${summary}' on '${calendarId}' from ${startDateTime} to ${endDateTime}…`,
+          },
+          toolConfig
+        );
         const event = {
           summary,
           description,
@@ -239,7 +294,7 @@ export const getGoogleTools = async (
           `/calendars/${encodeURIComponent(calendarId)}/events`,
           accessToken,
           "POST",
-          event,
+          event
         );
 
         const createdEvent = {
@@ -252,61 +307,102 @@ export const getGoogleTools = async (
           htmlLink: result.htmlLink,
         };
 
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: "Event created successfully. Preparing output…" },
+          toolConfig
+        );
+
         if (returnString) {
           return JSON.stringify(createdEvent, null, 2);
         }
         return createdEvent;
       } catch (error) {
-        return `Failed to create calendar event: ${error instanceof Error ? error.message : "Unknown error"}`;
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        await dispatchCustomEvent(
+          "tool_stream",
+          {
+            chunk: `Failed to create calendar event: ${message}`,
+            complete: true,
+          },
+          toolConfig
+        );
+        return `Failed to create calendar event: ${message}`;
       }
     },
-  });
+    {
+      name: "createGoogleCalendarEvent",
+      description:
+        "Create a new event in a Google Calendar. Use this to schedule meetings, appointments, or reminders.",
+      schema: z.object({
+        calendarId: z
+          .string()
+          .describe("The calendar ID (use 'primary' for default calendar)")
+          .default("primary"),
+        summary: z.string().describe("The title/summary of the event"),
+        description: z
+          .string()
+          .optional()
+          .describe("The description of the event"),
+        startDateTime: z
+          .string()
+          .describe(
+            "Start date and time (RFC3339 format, e.g., '2024-01-15T09:00:00-07:00')"
+          ),
+        endDateTime: z
+          .string()
+          .describe(
+            "End date and time (RFC3339 format, e.g., '2024-01-15T10:00:00-07:00')"
+          ),
+        location: z.string().optional().describe("The location of the event"),
+        attendees: z
+          .array(z.string())
+          .optional()
+          .describe("List of email addresses of attendees"),
+      }),
+    }
+  );
 
-  const updateCalendarEventTool = new DynamicStructuredTool({
-    name: "updateGoogleCalendarEvent",
-    description:
-      "Update an existing event in a Google Calendar. Use this to modify event details.",
-    schema: z.object({
-      calendarId: z
-        .string()
-        .describe("The calendar ID (use 'primary' for default calendar)")
-        .default("primary"),
-      eventId: z.string().describe("The ID of the event to update"),
-      summary: z
-        .string()
-        .optional()
-        .describe("The new title/summary of the event"),
-      description: z
-        .string()
-        .optional()
-        .describe("The new description of the event"),
-      startDateTime: z
-        .string()
-        .optional()
-        .describe("New start date and time (RFC3339 format)"),
-      endDateTime: z
-        .string()
-        .optional()
-        .describe("New end date and time (RFC3339 format)"),
-      location: z.string().optional().describe("The new location of the event"),
-    }),
-    func: async ({
-      calendarId = "primary",
-      eventId,
-      summary,
-      description,
-      startDateTime,
-      endDateTime,
-      location,
-    }) => {
+  const updateCalendarEventTool = tool(
+    async (
+      {
+        calendarId = "primary",
+        eventId,
+        summary,
+        description,
+        startDateTime,
+        endDateTime,
+        location,
+      }: {
+        calendarId: string;
+        eventId: string;
+        summary?: string;
+        description?: string;
+        startDateTime?: string;
+        endDateTime?: string;
+        location?: string;
+      },
+      toolConfig: any
+    ) => {
       try {
-        // First get the existing event
+        await dispatchCustomEvent(
+          "tool_stream",
+          {
+            chunk: `Loading existing event '${eventId}' from '${calendarId}'…`,
+          },
+          toolConfig
+        );
         const existingEvent = await makeGoogleAPIRequest(
           `/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`,
-          accessToken,
+          accessToken
         );
 
-        // Update only the provided fields
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: "Applying updates to the event…" },
+          toolConfig
+        );
         const updatedEvent = {
           ...existingEvent,
           ...(summary && { summary }),
@@ -320,7 +416,7 @@ export const getGoogleTools = async (
           `/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`,
           accessToken,
           "PUT",
-          updatedEvent,
+          updatedEvent
         );
 
         const event = {
@@ -333,33 +429,82 @@ export const getGoogleTools = async (
           htmlLink: result.htmlLink,
         };
 
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: "Event updated successfully. Preparing output…" },
+          toolConfig
+        );
+
         if (returnString) {
           return JSON.stringify(event, null, 2);
         }
         return event;
       } catch (error) {
-        return `Failed to update calendar event: ${error instanceof Error ? error.message : "Unknown error"}`;
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        await dispatchCustomEvent(
+          "tool_stream",
+          {
+            chunk: `Failed to update calendar event: ${message}`,
+            complete: true,
+          },
+          toolConfig
+        );
+        return `Failed to update calendar event: ${message}`;
       }
     },
-  });
+    {
+      name: "updateGoogleCalendarEvent",
+      description:
+        "Update an existing event in a Google Calendar. Use this to modify event details.",
+      schema: z.object({
+        calendarId: z
+          .string()
+          .describe("The calendar ID (use 'primary' for default calendar)")
+          .default("primary"),
+        eventId: z.string().describe("The ID of the event to update"),
+        summary: z
+          .string()
+          .optional()
+          .describe("The new title/summary of the event"),
+        description: z
+          .string()
+          .optional()
+          .describe("The new description of the event"),
+        startDateTime: z
+          .string()
+          .optional()
+          .describe("New start date and time (RFC3339 format)"),
+        endDateTime: z
+          .string()
+          .optional()
+          .describe("New end date and time (RFC3339 format)"),
+        location: z
+          .string()
+          .optional()
+          .describe("The new location of the event"),
+      }),
+    }
+  );
 
-  const deleteCalendarEventTool = new DynamicStructuredTool({
-    name: "deleteGoogleCalendarEvent",
-    description:
-      "Delete an event from a Google Calendar. Use this to cancel or remove events.",
-    schema: z.object({
-      calendarId: z
-        .string()
-        .describe("The calendar ID (use 'primary' for default calendar)")
-        .default("primary"),
-      eventId: z.string().describe("The ID of the event to delete"),
-    }),
-    func: async ({ calendarId = "primary", eventId }) => {
+  const deleteCalendarEventTool = tool(
+    async (
+      {
+        calendarId = "primary",
+        eventId,
+      }: { calendarId: string; eventId: string },
+      toolConfig: any
+    ) => {
       try {
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Deleting event '${eventId}' from '${calendarId}'…` },
+          toolConfig
+        );
         await makeGoogleAPIRequest(
           `/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`,
           accessToken,
-          "DELETE",
+          "DELETE"
         );
 
         const result = {
@@ -367,41 +512,60 @@ export const getGoogleTools = async (
           message: `Event ${eventId} deleted successfully`,
         };
 
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: "Event deleted successfully." },
+          toolConfig
+        );
+
         if (returnString) {
           return JSON.stringify(result, null, 2);
         }
         return result;
       } catch (error) {
-        return `Failed to delete calendar event: ${error instanceof Error ? error.message : "Unknown error"}`;
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        await dispatchCustomEvent(
+          "tool_stream",
+          {
+            chunk: `Failed to delete calendar event: ${message}`,
+            complete: true,
+          },
+          toolConfig
+        );
+        return `Failed to delete calendar event: ${message}`;
       }
     },
-  });
+    {
+      name: "deleteGoogleCalendarEvent",
+      description:
+        "Delete an event from a Google Calendar. Use this to cancel or remove events.",
+      schema: z.object({
+        calendarId: z
+          .string()
+          .describe("The calendar ID (use 'primary' for default calendar)")
+          .default("primary"),
+        eventId: z.string().describe("The ID of the event to delete"),
+      }),
+    }
+  );
 
   // Gmail Tools
-  const listGmailMessagesTool = new DynamicStructuredTool({
-    name: "listGmailMessages",
-    description:
-      "List Gmail messages. Use this to search and retrieve email messages.",
-    schema: z.object({
-      q: z
-        .string()
-        .optional()
-        .describe(
-          "Gmail search query (e.g., 'from:example@gmail.com', 'subject:meeting', 'is:unread')",
-        ),
-      maxResults: z
-        .number()
-        .min(1)
-        .max(500)
-        .default(10)
-        .describe("Maximum number of messages to return"),
-      labelIds: z
-        .array(z.string())
-        .optional()
-        .describe("Only return messages with these label IDs"),
-    }),
-    func: async ({ q, maxResults = 10, labelIds }) => {
+  const listGmailMessagesTool = tool(
+    async (
+      {
+        q,
+        maxResults = 10,
+        labelIds,
+      }: { q?: string; maxResults?: number; labelIds?: string[] },
+      toolConfig: any
+    ) => {
       try {
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: "Fetching Gmail messages…" },
+          toolConfig
+        );
         const params = new URLSearchParams({
           maxResults: maxResults.toString(),
         });
@@ -413,21 +577,20 @@ export const getGoogleTools = async (
 
         const result = await makeGmailAPIRequest(
           `/users/me/messages?${params}`,
-          accessToken,
+          accessToken
         );
 
-        // Get full message details for each message
         const messages = await Promise.all(
           (result.messages || []).map(async (message: any) => {
             const fullMessage = await makeGmailAPIRequest(
               `/users/me/messages/${message.id}`,
-              accessToken,
+              accessToken
             );
 
             const headers = fullMessage.payload?.headers || [];
             const getHeader = (name: string) =>
               headers.find(
-                (h: any) => h.name.toLowerCase() === name.toLowerCase(),
+                (h: any) => h.name.toLowerCase() === name.toLowerCase()
               )?.value;
 
             return {
@@ -440,7 +603,13 @@ export const getGoogleTools = async (
               date: getHeader("date"),
               labelIds: fullMessage.labelIds,
             };
-          }),
+          })
+        );
+
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Found ${messages.length} messages. Formatting results…` },
+          toolConfig
         );
 
         if (returnString) {
@@ -448,27 +617,61 @@ export const getGoogleTools = async (
         }
         return messages;
       } catch (error) {
-        return `Failed to list Gmail messages: ${error instanceof Error ? error.message : "Unknown error"}`;
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        await dispatchCustomEvent(
+          "tool_stream",
+          {
+            chunk: `Failed to list Gmail messages: ${message}`,
+            complete: true,
+          },
+          toolConfig
+        );
+        return `Failed to list Gmail messages: ${message}`;
       }
     },
-  });
+    {
+      name: "listGmailMessages",
+      description:
+        "List Gmail messages. Use this to search and retrieve email messages.",
+      schema: z.object({
+        q: z
+          .string()
+          .optional()
+          .describe(
+            "Gmail search query (e.g., 'from:example@gmail.com', 'subject:meeting', 'is:unread')"
+          ),
+        maxResults: z
+          .number()
+          .min(1)
+          .max(500)
+          .default(10)
+          .describe("Maximum number of messages to return"),
+        labelIds: z
+          .array(z.string())
+          .optional()
+          .describe("Only return messages with these label IDs"),
+      }),
+    }
+  );
 
-  const getGmailMessageTool = new DynamicStructuredTool({
-    name: "getGmailMessage",
-    description:
-      "Get the full content of a specific Gmail message. Use this to read the complete email content.",
-    schema: z.object({
-      messageId: z.string().describe("The ID of the message to retrieve"),
-      format: z
-        .enum(["full", "metadata", "minimal"])
-        .default("full")
-        .describe("The format to return the message in"),
-    }),
-    func: async ({ messageId, format = "full" }) => {
+  const getGmailMessageTool = tool(
+    async (
+      {
+        messageId,
+        format = "full",
+      }: { messageId: string; format?: "full" | "metadata" | "minimal" },
+      toolConfig: any
+    ) => {
       try {
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Fetching Gmail message '${messageId}'…` },
+          toolConfig
+        );
         const result = await makeGmailAPIRequest(
           `/users/me/messages/${messageId}?format=${format}`,
-          accessToken,
+          accessToken
         );
 
         const headers = result.payload?.headers || [];
@@ -476,14 +679,12 @@ export const getGoogleTools = async (
           headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())
             ?.value;
 
-        // Extract body content
         let body = "";
         if (result.payload?.body?.data) {
           body = Buffer.from(result.payload.body.data, "base64").toString();
         } else if (result.payload?.parts) {
-          // Multi-part message
           const textPart = result.payload.parts.find(
-            (part: any) => part.mimeType === "text/plain",
+            (part: any) => part.mimeType === "text/plain"
           );
           if (textPart?.body?.data) {
             body = Buffer.from(textPart.body.data, "base64").toString();
@@ -502,48 +703,86 @@ export const getGoogleTools = async (
           labelIds: result.labelIds,
         };
 
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: "Message loaded. Preparing output…" },
+          toolConfig
+        );
+
         if (returnString) {
           return JSON.stringify(message, null, 2);
         }
         return message;
       } catch (error) {
-        return `Failed to get Gmail message: ${error instanceof Error ? error.message : "Unknown error"}`;
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Failed to get Gmail message: ${message}`, complete: true },
+          toolConfig
+        );
+        return `Failed to get Gmail message: ${message}`;
       }
     },
-  });
+    {
+      name: "getGmailMessage",
+      description:
+        "Get the full content of a specific Gmail message. Use this to read the complete email content.",
+      schema: z.object({
+        messageId: z.string().describe("The ID of the message to retrieve"),
+        format: z
+          .enum(["full", "metadata", "minimal"])
+          .default("full")
+          .describe("The format to return the message in"),
+      }),
+    }
+  );
 
-  const sendGmailMessageTool = new DynamicStructuredTool({
-    name: "sendGmailMessage",
-    description:
-      "Send a new Gmail message. Use this to compose and send emails.",
-    schema: z.object({
-      to: z.string().describe("Recipient email address"),
-      subject: z.string().describe("Email subject line"),
-      body: z.string().describe("Email body content"),
-      cc: z.string().optional().describe("CC email address"),
-      bcc: z.string().optional().describe("BCC email address"),
-    }),
-    func: async ({ to, subject, body, cc, bcc }) => {
+  const sendGmailMessageTool = tool(
+    async (
+      {
+        to,
+        subject,
+        body,
+        cc,
+        bcc,
+      }: {
+        to: string;
+        subject: string;
+        body: string;
+        cc?: string;
+        bcc?: string;
+      },
+      toolConfig: any
+    ) => {
       try {
-        // Create email in RFC 2822 format
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Composing email to ${to} with subject '${subject}'…` },
+          toolConfig
+        );
         let email = `To: ${to}\r\n`;
         if (cc) email += `Cc: ${cc}\r\n`;
         if (bcc) email += `Bcc: ${bcc}\r\n`;
         email += `Subject: ${subject}\r\n`;
         email += `\r\n${body}`;
 
-        // Encode email in base64url format
         const encodedEmail = Buffer.from(email)
           .toString("base64")
           .replace(/\+/g, "-")
           .replace(/\//g, "_")
           .replace(/=+$/, "");
 
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: "Sending email via Gmail API…" },
+          toolConfig
+        );
         const result = await makeGmailAPIRequest(
           `/users/me/messages/send`,
           accessToken,
           "POST",
-          { raw: encodedEmail },
+          { raw: encodedEmail }
         );
 
         const sentMessage = {
@@ -553,35 +792,52 @@ export const getGoogleTools = async (
           message: "Email sent successfully",
         };
 
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: "Email sent successfully. Preparing output…" },
+          toolConfig
+        );
+
         if (returnString) {
           return JSON.stringify(sentMessage, null, 2);
         }
         return sentMessage;
       } catch (error) {
-        return `Failed to send Gmail message: ${error instanceof Error ? error.message : "Unknown error"}`;
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Failed to send Gmail message: ${message}`, complete: true },
+          toolConfig
+        );
+        return `Failed to send Gmail message: ${message}`;
       }
     },
-  });
+    {
+      name: "sendGmailMessage",
+      description:
+        "Send a new Gmail message. Use this to compose and send emails.",
+      schema: z.object({
+        to: z.string().describe("Recipient email address"),
+        subject: z.string().describe("Email subject line"),
+        body: z.string().describe("Email body content"),
+        cc: z.string().optional().describe("CC email address"),
+        bcc: z.string().optional().describe("BCC email address"),
+      }),
+    }
+  );
 
-  const searchGmailTool = new DynamicStructuredTool({
-    name: "searchGmail",
-    description:
-      "Search Gmail messages with advanced query options. Use this for complex email searches.",
-    schema: z.object({
-      query: z
-        .string()
-        .describe(
-          "Gmail search query (supports Gmail search operators like 'from:', 'subject:', 'has:attachment', etc.)",
-        ),
-      maxResults: z
-        .number()
-        .min(1)
-        .max(100)
-        .default(10)
-        .describe("Maximum number of results to return"),
-    }),
-    func: async ({ query, maxResults = 10 }) => {
+  const searchGmailTool = tool(
+    async (
+      { query, maxResults = 10 }: { query: string; maxResults?: number },
+      toolConfig: any
+    ) => {
       try {
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Searching Gmail for: ${query}…` },
+          toolConfig
+        );
         const params = new URLSearchParams({
           q: query,
           maxResults: maxResults.toString(),
@@ -589,23 +845,22 @@ export const getGoogleTools = async (
 
         const result = await makeGmailAPIRequest(
           `/users/me/messages?${params}`,
-          accessToken,
+          accessToken
         );
 
-        // Get basic info for each message
         const messages = await Promise.all(
           (result.messages || [])
             .slice(0, maxResults)
             .map(async (message: any) => {
               const fullMessage = await makeGmailAPIRequest(
                 `/users/me/messages/${message.id}?format=metadata`,
-                accessToken,
+                accessToken
               );
 
               const headers = fullMessage.payload?.headers || [];
               const getHeader = (name: string) =>
                 headers.find(
-                  (h: any) => h.name.toLowerCase() === name.toLowerCase(),
+                  (h: any) => h.name.toLowerCase() === name.toLowerCase()
                 )?.value;
 
               return {
@@ -617,7 +872,13 @@ export const getGoogleTools = async (
                 subject: getHeader("subject"),
                 date: getHeader("date"),
               };
-            }),
+            })
+        );
+
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Found ${messages.length} matching messages. Formatting…` },
+          toolConfig
         );
 
         if (returnString) {
@@ -625,10 +886,35 @@ export const getGoogleTools = async (
         }
         return messages;
       } catch (error) {
-        return `Failed to search Gmail: ${error instanceof Error ? error.message : "Unknown error"}`;
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        await dispatchCustomEvent(
+          "tool_stream",
+          { chunk: `Failed to search Gmail: ${message}`, complete: true },
+          toolConfig
+        );
+        return `Failed to search Gmail: ${message}`;
       }
     },
-  });
+    {
+      name: "searchGmail",
+      description:
+        "Search Gmail messages with advanced query options. Use this for complex email searches.",
+      schema: z.object({
+        query: z
+          .string()
+          .describe(
+            "Gmail search query (supports Gmail search operators like 'from:', 'subject:', 'has:attachment', etc.)"
+          ),
+        maxResults: z
+          .number()
+          .min(1)
+          .max(100)
+          .default(10)
+          .describe("Maximum number of results to return"),
+      }),
+    }
+  );
 
   return [
     listCalendarseTool,

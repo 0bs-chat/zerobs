@@ -178,7 +178,7 @@ export const chat = action({
                   } as ToolChunkGroup)
                 );
               } else if (evt.event === "on_tool_end") {
-                let output = evt.data?.output.content;
+                let output = evt.data?.output?.content ?? evt.data?.output;
 
                 if (Array.isArray(output)) {
                   output = await Promise.all(
@@ -210,6 +210,35 @@ export const chat = action({
                     toolCallId: evt.run_id,
                   } as ToolChunkGroup)
                 );
+              } else if (evt.event === "on_custom_event") {
+                try {
+                  const eventName =
+                    (evt as any)?.data?.event ??
+                    (evt as any)?.data?.name ??
+                    (evt as any)?.name;
+                  const payload =
+                    (evt as any)?.data?.data ??
+                    (evt as any)?.data?.payload ??
+                    (evt as any)?.data;
+                  const chunk =
+                    typeof payload?.chunk === "string"
+                      ? payload.chunk
+                      : undefined;
+                  const isComplete = payload?.complete === true;
+                  if (eventName === "tool_stream" && chunk) {
+                    buffer.push(
+                      JSON.stringify({
+                        type: "tool",
+                        toolName: evt.name,
+                        output: chunk,
+                        isComplete,
+                        toolCallId: evt.run_id,
+                      } as ToolChunkGroup)
+                    );
+                  }
+                } catch {
+                  // ignore malformed custom events
+                }
               }
             }
           }
@@ -219,6 +248,40 @@ export const chat = action({
       };
 
       await Promise.all([flusher(), streamer()]);
+      // Final flush in case there are any buffered chunks left
+      if (buffer.length > 0) {
+        const chunks = buffer;
+        buffer = [];
+        const completedSteps: string[] = [];
+        const pastSteps = (localCheckpoint as any)?.pastSteps as
+          | Array<[string, unknown[]]>
+          | undefined;
+        if (pastSteps && pastSteps.length > 0) {
+          completedSteps.push(...pastSteps.map((ps) => ps[0]));
+        }
+        const plan = (localCheckpoint as any)?.plan as
+          | Array<
+              | {
+                  type: "parallel";
+                  data: Array<{ step: string; context: string }>;
+                }
+              | { type: "single"; data: { step: string; context: string } }
+            >
+          | undefined;
+        if (plan && plan.length > 0) {
+          const first = plan[0];
+          if (first.type === "parallel") {
+            completedSteps.push(...first.data.map((s) => s.step));
+          } else {
+            completedSteps.push(first.data.step);
+          }
+        }
+        await ctx.runMutation(internal.streams.mutations.flush, {
+          chatId,
+          chunks,
+          completedSteps,
+        });
+      }
       return localCheckpoint;
     };
 

@@ -1,42 +1,114 @@
-import { Loader2 } from "lucide-react";
+import { Loader2, Check, Terminal, ChevronDown, ChevronUp } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { cn } from "@/lib/utils";
 
 interface StreamingOutputProps {
   content: string;
   isComplete?: boolean;
   className?: string;
+  showHeader?: boolean;
+  collapsible?: boolean;
 }
 
 export function StreamingOutput({
   content,
   isComplete,
   className = "",
+  showHeader = true,
+  collapsible = false,
 }: StreamingOutputProps) {
-  if (!content && isComplete !== false) {
-    return (
-      <div className={`text-xs text-muted-foreground italic ${className}`}>
-        No output
-      </div>
-    );
-  }
-
-  if (!content && (isComplete === true || isComplete === undefined)) {
-    return (
-      <div
-        className={`text-xs text-muted-foreground italic flex items-center gap-2 ${className}`}
-      >
-        <Loader2 className="w-3 h-3 animate-spin" />
-        Waiting for output...
-      </div>
-    );
-  }
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const showCursor = isComplete === false;
+
+  const { lastLine } = useMemo(() => {
+    const allLines = (content || "").split(/\n+/).filter(Boolean);
+    return {
+      lastLine: allLines.length > 0 ? allLines[allLines.length - 1] : "",
+    };
+  }, [content]);
+
+  const toggleCollapsed = useCallback(() => {
+    setIsCollapsed(!isCollapsed);
+  }, [isCollapsed]);
+
+  if (!content) {
+    if (isComplete === false) {
+      return (
+        <div
+          className={cn(
+            "flex items-center gap-2 rounded-md border p-2 text-xs",
+            className
+          )}
+        >
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span>Waiting...</span>
+        </div>
+      );
+    }
+    return (
+      <div
+        className={cn(
+          "flex items-center gap-2 rounded-md border p-2 text-xs",
+          className
+        )}
+      >
+        <Terminal className="h-3 w-3" />
+        <span>No output</span>
+      </div>
+    );
+  }
+
   return (
-    <div className={className}>
-      <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-        {content}
-        {showCursor && <span className="animate-pulse text-yellow-500">|</span>}
-      </pre>
+    <div className={cn("relative", className)}>
+      <div className="rounded-lg border">
+        {showHeader && (
+          <div className="flex items-center justify-between gap-2 rounded-t-lg border-b px-3 py-2">
+            <div className="flex flex-1 items-center gap-2 min-w-0">
+              <Terminal className="h-3.5 w-3.5 shrink-0" />
+            </div>
+            <div className="flex items-center gap-1">
+              {collapsible && (
+                <button
+                  onClick={toggleCollapsed}
+                  className="rounded-sm p-1 hover:bg-muted"
+                >
+                  {isCollapsed ? (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              )}
+              {isComplete === true ? (
+                <Check className="h-3.5 w-3.5 text-primary" />
+              ) : isComplete === false ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              ) : (
+                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+              )}
+            </div>
+          </div>
+        )}
+        {!isCollapsed && (
+          <div className="p-3">
+            {lastLine && (
+              <div
+                className={cn(
+                  "rounded-md  py-2 font-mono text-xs leading-relaxed"
+                )}
+              >
+                <code className="break-all" title={lastLine}>
+                  {lastLine}
+                </code>
+                {showCursor && (
+                  <span className="ml-1 inline-block h-3 w-0.5 animate-pulse" />
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
