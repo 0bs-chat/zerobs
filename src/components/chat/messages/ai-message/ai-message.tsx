@@ -27,7 +27,13 @@ export const AiMessageContent = memo(
       if (type !== "ai") {
         return [];
       }
-      const parsed = parseContent(content as string);
+      if (Array.isArray(content)) {
+        return [];
+      }
+      // Ensure content is a string before parsing
+      const contentString =
+        typeof content === "string" ? content : String(content);
+      const parsed = parseContent(contentString);
       return parsed;
     }, [content, type]);
 
@@ -84,7 +90,7 @@ export const AiMessageContent = memo(
     }, [type, reasoning, messageId, renderedContent, message, className]);
 
     return <>{messageContent}</>;
-  },
+  }
 );
 
 AiMessageContent.displayName = "AiMessageContent";

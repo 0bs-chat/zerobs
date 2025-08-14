@@ -25,7 +25,7 @@ import { END, START, StateGraph } from "@langchain/langgraph/web";
 
 async function shouldPlanOrAgentOrSimple(
   _state: typeof GraphState.State,
-  config: RunnableConfig,
+  config: RunnableConfig
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
   if (!modelSupportsTools(formattedConfig.chat.model!)) {
@@ -46,14 +46,14 @@ async function simple(state: typeof GraphState.State, config: RunnableConfig) {
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
     state.messages,
-    formattedConfig.chat.model!,
+    formattedConfig.chat.model!
   );
 
   const response = await chain.invoke(
     {
       messages: formattedMessages,
     },
-    config,
+    config
   );
 
   return {
@@ -63,7 +63,7 @@ async function simple(state: typeof GraphState.State, config: RunnableConfig) {
 
 async function baseAgent(
   state: typeof GraphState.State,
-  config: RunnableConfig,
+  config: RunnableConfig
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
@@ -71,18 +71,18 @@ async function baseAgent(
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
     state.messages,
-    formattedConfig.chat.model!,
+    formattedConfig.chat.model!
   );
 
   const response = await chain.invoke(
     {
       messages: formattedMessages,
     },
-    config,
+    config
   );
 
   let newMessages = response.messages.slice(
-    formattedMessages.length,
+    formattedMessages.length
   ) as BaseMessage[];
 
   return {
@@ -94,39 +94,39 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
   const availableToolsDescription = await getAvailableToolsDescription(
     state,
-    formattedConfig,
+    formattedConfig
   );
   const promptTemplate = createPlannerPrompt(availableToolsDescription);
 
   const model = await getModel(
     formattedConfig.ctx,
     formattedConfig.chat.model!,
-    formattedConfig.chat.reasoningEffort,
+    formattedConfig.chat.reasoningEffort
   );
 
   // Get model config to check if it's anthropic
   const modelConfig = models.find(
-    (m) => m.model_name === formattedConfig.chat.model!,
+    (m) => m.model_name === formattedConfig.chat.model!
   );
   const isFunctionCallingParser = modelConfig?.parser === "functionCalling";
 
   const modelWithOutputParser = promptTemplate.pipe(
     isFunctionCallingParser
       ? model.withStructuredOutput(planSchema, { method: "functionCalling" })
-      : model.withStructuredOutput(planSchema),
+      : model.withStructuredOutput(planSchema)
   );
 
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
     state.messages,
-    formattedConfig.chat.model!,
+    formattedConfig.chat.model!
   );
 
   const response = (await modelWithOutputParser.invoke(
     {
       messages: formattedMessages,
     },
-    config,
+    config
   )) as z.infer<typeof planSchema>;
 
   return {
@@ -136,7 +136,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
 
 async function plannerAgent(
   state: typeof GraphState.State,
-  config: RunnableConfig,
+  config: RunnableConfig
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
 
@@ -151,7 +151,7 @@ async function plannerAgent(
   const plannerAgentChain = await createAgentWithTools(
     state,
     formattedConfig,
-    true,
+    true
   );
 
   const invoke = async ({ planItem }: { planItem: typeof currentPlanItem }) => {
@@ -160,11 +160,11 @@ async function plannerAgent(
         {
           messages: [
             new HumanMessage(
-              `Task: ${planItem.data.step}\nContext: ${planItem.data.context}`,
+              `Task: ${planItem.data.step}\nContext: ${planItem.data.context}`
             ),
           ],
         },
-        config,
+        config
       );
 
       const newMessages = response.messages.slice(1, response.messages.length);
@@ -189,7 +189,7 @@ async function plannerAgent(
         return await invoke({
           planItem: { type: "single" as const, data: planStep },
         });
-      }),
+      })
     );
 
     return {
@@ -201,37 +201,37 @@ async function plannerAgent(
 
 async function replanner(
   state: typeof GraphState.State,
-  config: RunnableConfig,
+  config: RunnableConfig
 ) {
   const formattedConfig = config.configurable as ExtendedRunnableConfig;
   const availableToolsDescription = await getAvailableToolsDescription(
     state,
-    formattedConfig,
+    formattedConfig
   );
   const promptTemplate = createReplannerPrompt(availableToolsDescription);
 
   const model = await getModel(
     formattedConfig.ctx,
     formattedConfig.chat.model!,
-    formattedConfig.chat.reasoningEffort,
+    formattedConfig.chat.reasoningEffort
   );
 
   // Get model config to check if it's anthropic
   const outputSchema = replannerOutputSchema(formattedConfig.chat.artifacts);
   const modelConfig = models.find(
-    (m) => m.model_name === formattedConfig.chat.model!,
+    (m) => m.model_name === formattedConfig.chat.model!
   );
   const isFunctionCallingParser = modelConfig?.parser === "functionCalling";
   const modelWithOutputParser = promptTemplate.pipe(
     isFunctionCallingParser
       ? model.withStructuredOutput(outputSchema, { method: "functionCalling" })
-      : model.withStructuredOutput(outputSchema),
+      : model.withStructuredOutput(outputSchema)
   );
 
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
     state.messages,
-    formattedConfig.chat.model!,
+    formattedConfig.chat.model!
   );
 
   const response = (await modelWithOutputParser.invoke(
@@ -246,13 +246,30 @@ async function replanner(
         })
         .flat(),
     },
-    config,
+    config
   )) as z.infer<typeof outputSchema>;
 
   if (response.type === "respond_to_user") {
+    // Normalize various shapes into a single string for the final answer.
+    const raw = response.data;
+    let finalText: string;
+    if (typeof raw === "string") {
+      finalText = raw;
+    } else if (Array.isArray(raw)) {
+      const first = raw[0] as any;
+      finalText =
+        (first?.data?.context as string | undefined) ??
+        (first?.data?.step as string | undefined) ??
+        JSON.stringify(first ?? raw);
+    } else if (raw && typeof raw === "object") {
+      finalText = raw.context ?? raw.step ?? JSON.stringify(raw);
+    } else {
+      finalText = String(raw);
+    }
+
     const responseMessages = [
       new AIMessage({
-        content: response.data as string,
+        content: finalText,
         additional_kwargs: {
           pastSteps: state.pastSteps.map((pastStep) => {
             const [step, messages] = pastStep;
