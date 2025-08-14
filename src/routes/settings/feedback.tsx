@@ -11,7 +11,7 @@ function RouteComponent() {
     <div className="flex flex-col space-y-6">
       <div className="flex-col flex gap-2 ">
         <a
-          href="https://discord.gg/"
+          href="https://discord.gg/rVFT3PqK"
           target="_blank"
           rel="noopener noreferrer"
           className="group block"
