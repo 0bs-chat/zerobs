@@ -6,12 +6,16 @@ export const Route = createFileRoute("/settings/feedback")({
   component: RouteComponent,
 });
 
+const DiscordInviteURL = "https://discord.gg/rVFT3PqK";
+const GitHubURL = "https://github.com/0bs-chat/zerobs";
+const EmailURL = "mailto:0bsaiapp@gmail.com";
+
 function RouteComponent() {
   return (
     <div className="flex flex-col space-y-6">
       <div className="flex-col flex gap-2 ">
         <a
-          href="https://discord.gg/rVFT3PqK"
+          href={DiscordInviteURL}
           target="_blank"
           rel="noopener noreferrer"
           className="group block"
@@ -30,7 +34,7 @@ function RouteComponent() {
           </div>
         </a>
 
-        <a href="mailto:0bsaiapp@gmail.com" className="group block">
+        <a href={EmailURL} className="group block">
           <div className="flex items-center justify-between rounded-lg border bg-background p-4 transition-colors hover:bg-accent">
             <div className="flex items-center gap-3">
               <Mail className="size-5" />
@@ -43,7 +47,7 @@ function RouteComponent() {
         </a>
 
         <a
-          href="https://github.com/0bs-chat/zerobs"
+          href={GitHubURL}
           target="_blank"
           rel="noopener noreferrer"
           className="group block"

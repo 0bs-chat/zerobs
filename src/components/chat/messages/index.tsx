@@ -21,7 +21,7 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
         userLoadable.state === "hasData" ? userLoadable.data?.name : "";
 
       return (
-        <div className="flex items-center justify-center h-full flex-col gap-4 -translate-y-30">
+        <div className="flex items-center justify-center h-full flex-col gap-4 -translate-y-16">
           <div
             className="flex items-center gap-2 text-5xl font-semibold text-primary/40"
             style={{

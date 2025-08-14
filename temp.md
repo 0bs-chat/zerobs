@@ -2,9 +2,7 @@
 
 --- keep in mind : move logic to hooks. ---------
 
-- update these
-  tool-streaming, because of vibz mcp as it one shots the generation. so we need to live stream to the user all the changes.
-  https://github.com/0bs-chat/zerobs/tree/feat/message-queue : the message queue function.
+https://github.com/0bs-chat/zerobs/tree/feat/message-queue : the message queue function.
 
 - vibe coding (better auth -> convex cloud migration -> streaming tool calls -> convex oauth integration -> revamp mcp templates to pass along the env vars)
   custom ui for vibz mcp. (like artifacts, we will replace the panel content with the ui for vibz)(preview, dashboard (convex dashboard), code (vs code))

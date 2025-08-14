@@ -247,30 +247,72 @@ export const chat = action({
                   toolCallId: evt.run_id,
                 });
               } else if (evt.event === "on_custom_event") {
-                try {
-                  const eventName =
-                    (evt as any)?.data?.event ??
-                    (evt as any)?.data?.name ??
-                    (evt as any)?.name;
-                  const payload =
-                    (evt as any)?.data?.data ??
-                    (evt as any)?.data?.payload ??
-                    (evt as any)?.data;
-                  const chunk =
-                    typeof payload?.chunk === "string"
-                      ? payload.chunk
+                const raw: any = evt;
+                const data = raw?.data;
+                if (!data || typeof data !== "object") {
+                  console.warn(
+                    "[stream] Ignoring custom event without object data",
+                    {
+                      event: raw?.event,
+                      name: raw?.name,
+                    }
+                  );
+                  return;
+                }
+
+                const eventName =
+                  typeof (data as any).event === "string"
+                    ? (data as any).event
+                    : typeof (data as any).name === "string"
+                      ? (data as any).name
                       : undefined;
-                  const isComplete = payload?.complete === true;
-                  if (eventName === "tool_stream" && chunk) {
-                    appendToolChunk(buffer, {
-                      toolName: evt.name,
-                      output: chunk,
-                      isComplete,
-                      toolCallId: evt.run_id,
-                    });
+
+                if (!eventName) {
+                  console.warn(
+                    "[stream] Ignoring custom event with missing name",
+                    {
+                      name: raw?.name,
+                    }
+                  );
+                  return;
+                }
+
+                const payloadCandidate =
+                  (data as any).data ?? (data as any).payload;
+                const payload =
+                  payloadCandidate && typeof payloadCandidate === "object"
+                    ? payloadCandidate
+                    : undefined;
+                if (!payload) {
+                  console.warn(
+                    "[stream] Ignoring custom event without object payload",
+                    {
+                      eventName,
+                    }
+                  );
+                  return;
+                }
+
+                const chunk =
+                  typeof (payload as any).chunk === "string"
+                    ? (payload as any).chunk
+                    : undefined;
+                const isComplete = (payload as any).complete === true;
+
+                if (eventName === "tool_stream") {
+                  if (!chunk) {
+                    console.warn(
+                      "[stream] tool_stream custom event missing chunk; skipping"
+                    );
+                    return;
                   }
-                } catch {
-                  // ignore malformed custom events
+                  appendToolChunk(buffer, {
+                    toolName:
+                      typeof raw?.name === "string" ? raw.name : "custom_event",
+                    output: chunk,
+                    isComplete,
+                    toolCallId: raw.run_id,
+                  });
                 }
               }
             }
