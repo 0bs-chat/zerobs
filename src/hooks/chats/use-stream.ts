@@ -50,6 +50,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
           lastChunkTime: lastSeenTime,
           paginationOpts: { numItems: 200, cursor: null },
         });
+        console.log("result", result);
         if (!isMounted || !result?.chunks?.page?.length) return;
         // Only process chunks newer than lastSeenTime
         const newEvents: ChunkGroup[] = result.chunks.page

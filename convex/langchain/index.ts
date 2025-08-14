@@ -146,6 +146,7 @@ export const chat = action({
     let buffer: string[] = [];
     let checkpoint: typeof GraphState.State | null = null;
     let finished = false;
+    let pendingCheckpointRefresh = true; // Track when we actually need a checkpoint refresh
 
     const flushAndStream = async (): Promise<
       typeof GraphState.State | null
@@ -155,6 +156,13 @@ export const chat = action({
       const flusher = async () => {
         while (!finished) {
           if (buffer.length > 0) {
+            if (pendingCheckpointRefresh) {
+              // Fetch checkpoint lazily only when we are about to flush
+              localCheckpoint = (
+                await agent.getState({ configurable: { thread_id: chatId } })
+              ).values as typeof GraphState.State;
+              pendingCheckpointRefresh = false;
+            }
             const chunks = buffer;
             buffer = [];
             streamDoc = await ctx.runMutation(
@@ -181,11 +189,7 @@ export const chat = action({
             if (abort.signal.aborted) {
               return;
             }
-            localCheckpoint = (
-              await agent.getState({
-                configurable: { thread_id: chatId },
-              })
-            ).values as typeof GraphState.State;
+            // defer checkpoint refresh; will be done just-in-time before flush
 
             const allowedNodes = ["baseAgent", "simple", "plannerAgent"];
             if (
@@ -246,6 +250,14 @@ export const chat = action({
                   isComplete: true,
                   toolCallId: evt.run_id,
                 });
+                // Mark that the checkpoint should be refreshed soon
+                pendingCheckpointRefresh = true;
+              } else if (
+                evt.event === "on_chat_model_end" ||
+                evt.event === "on_chain_end"
+              ) {
+                // Model or chain finished a unit of work; refresh on next flush
+                pendingCheckpointRefresh = true;
               } else if (evt.event === "on_custom_event") {
                 const raw: any = evt;
                 const data = raw?.data;
@@ -313,6 +325,10 @@ export const chat = action({
                     isComplete,
                     toolCallId: raw.run_id,
                   });
+                  if (isComplete) {
+                    // Custom tool stream finished; refresh on next flush
+                    pendingCheckpointRefresh = true;
+                  }
                 }
               }
             }
@@ -325,6 +341,11 @@ export const chat = action({
       await Promise.all([flusher(), streamer()]);
       // Final flush in case there are any buffered chunks left
       if (buffer.length > 0) {
+        // Always refresh checkpoint before final flush to ensure accuracy
+        localCheckpoint = (
+          await agent.getState({ configurable: { thread_id: chatId } })
+        ).values as typeof GraphState.State;
+        pendingCheckpointRefresh = false;
         const chunks = buffer;
         buffer = [];
         const completedSteps =
