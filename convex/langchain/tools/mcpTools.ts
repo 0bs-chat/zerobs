@@ -1,20 +1,32 @@
 "use node";
 
 import { MultiServerMCPClient, type Connection } from "@langchain/mcp-adapters";
+import type {
+  StructuredToolInterface,
+  ToolSchemaBase,
+} from "@langchain/core/tools";
+import { tool } from "@langchain/core/tools";
+import { dispatchCustomEvent } from "@langchain/core/callbacks/dispatch";
 import { api, internal } from "../../_generated/api";
 import type { ActionCtx } from "../../_generated/server";
 import type { Id } from "../../_generated/dataModel";
 import { fly } from "../../utils/flyio";
 import { getDocumentUrl } from "../../utils/helpers";
-import { extractFileIdsFromMessage, type ExtendedRunnableConfig } from "../helpers";
+import {
+  extractFileIdsFromMessage,
+  type ExtendedRunnableConfig,
+} from "../helpers";
 import type { GraphState } from "../state";
 import { models } from "../models";
 
 export const getMCPTools = async (
   ctx: ActionCtx,
   state: typeof GraphState.State,
-  config: ExtendedRunnableConfig,
-) => {
+  config: ExtendedRunnableConfig
+): Promise<{
+  tools: StructuredToolInterface<ToolSchemaBase>[];
+  groupedTools: Record<string, StructuredToolInterface<ToolSchemaBase>[]>;
+}> => {
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
     paginationOpts: {
       numItems: 100,
@@ -26,7 +38,7 @@ export const getMCPTools = async (
   });
 
   if (mcps.page.length === 0) {
-    return [];
+    return { tools: [], groupedTools: {} };
   }
 
   // Wait for all MCPs to transition from 'creating' status to 'running'
@@ -52,7 +64,7 @@ export const getMCPTools = async (
 
   // Filter for MCPs that are successfully running and have a URL
   const readyMcps = currentMcps.filter(
-    (mcp) => mcp.status === "created" && mcp.url,
+    (mcp) => mcp.status === "created" && mcp.url
   );
 
   // Construct connection objects for MultiServerMCPClient
@@ -70,7 +82,7 @@ export const getMCPTools = async (
           delayMs: 200,
         },
       },
-    ]),
+    ])
   );
 
   // Determine output handling based on model modality support
@@ -98,6 +110,75 @@ export const getMCPTools = async (
 
   const tools = await client.getTools();
 
+  const groupedTools: Map<string, StructuredToolInterface<ToolSchemaBase>[]> =
+    new Map();
+
+  // Wrap MCP tools to emit descriptive streaming events
+  const wrappedTools: StructuredToolInterface<ToolSchemaBase>[] = tools.map(
+    (baseTool) => {
+      const parts = baseTool.name.split("__");
+      const serverName = parts.length >= 2 ? parts[1] : "MCP";
+      const prettyName =
+        parts.length >= 3 ? parts.slice(2).join(": ") : baseTool.name;
+
+      // Preserve original schema/description/name
+      const wrapped = tool(
+        async (args: any, toolConfig: any) => {
+          await dispatchCustomEvent(
+            "tool_stream",
+            {
+              chunk: `Connecting to ${serverName} and invoking ${prettyName}…`,
+            },
+            toolConfig
+          );
+          try {
+            await dispatchCustomEvent(
+              "tool_stream",
+              { chunk: `Executing ${prettyName} with provided parameters…` },
+              toolConfig
+            );
+            const result = await (baseTool as any).invoke(args, toolConfig);
+            await dispatchCustomEvent(
+              "tool_stream",
+              {
+                chunk: `${prettyName} finished. Preparing results for display…`,
+              },
+              toolConfig
+            );
+            return result as any;
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : "Unknown error";
+            await dispatchCustomEvent(
+              "tool_stream",
+              { chunk: `${prettyName} failed: ${message}`, complete: true },
+              toolConfig
+            );
+            throw error;
+          }
+        },
+        {
+          name: baseTool.name,
+          description:
+            (baseTool as any).description ?? `MCP tool from ${serverName}`,
+          schema: (baseTool as any).schema as any,
+        }
+      );
+      return wrapped as unknown as StructuredToolInterface<ToolSchemaBase>;
+    }
+  );
+
+  for (const tool of wrappedTools) {
+    const parts = tool.name.split("__");
+    if (parts.length >= 2) {
+      const serverName = parts[1];
+      if (!groupedTools.has(serverName)) {
+        groupedTools.set(serverName, []);
+      }
+      groupedTools.get(serverName)?.push(tool);
+    }
+  }
+
   // Extract file IDs from the last message content instead of chat document
   if (state) {
     if (state.messages && state.messages.length > 0) {
@@ -114,7 +195,7 @@ export const getMCPTools = async (
               internal.documents.crud.read,
               {
                 id: documentId as Id<"documents">,
-              },
+              }
             );
             if (!documentDoc) return null;
             // Include various document types for upload (file, image, github, text)
@@ -123,7 +204,7 @@ export const getMCPTools = async (
               name: `${index}_${documentDoc.name}`,
               url,
             };
-          }),
+          })
         )
       )
         // Filter out any null results from documents without URLs
@@ -134,10 +215,13 @@ export const getMCPTools = async (
           if (["stdio", "docker"].includes(mcp.type) && files.length > 0) {
             await fly.uploadFileToAllMachines(mcp._id, files);
           }
-        }),
+        })
       );
     }
   }
 
-  return tools;
+  return {
+    tools: wrappedTools,
+    groupedTools: Object.fromEntries(groupedTools),
+  };
 };

@@ -147,7 +147,6 @@ export const ToolBar = () => {
           </DropdownMenuContent>
         </DropdownMenu>
         <AgentToggles />
-        <div className="h-8 w-px bg-border" />
         <ToolkitToggles />
         {/* Render project name with X button on hover */}
         {project && (

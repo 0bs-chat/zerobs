@@ -23,18 +23,24 @@ export function ToolkitToggles() {
   const chat = useAtomValue(chatAtom)!;
   const setNewChat = useSetAtom(newChatAtom);
   const existingKeys = useAtomValue(apiKeysAtom);
-  const existingKeySet = useMemo(() => new Set((existingKeys ?? []).map((k) => k.key)), [existingKeys]);
+  const existingKeySet = useMemo(
+    () => new Set((existingKeys ?? []).map((k) => k.key)),
+    [existingKeys]
+  );
   const navigate = useNavigate();
 
   const connectedProviders = useMemo<ProviderKey[]>(() => {
     const result: ProviderKey[] = [];
-    (Object.entries(providers) as Array<[ProviderKey, (typeof providers)[ProviderKey]]>).forEach(
-      ([p, cfg]) => {
-        const access = cfg.accessKeyKey;
-        const refresh = cfg.refreshKeyKey;
-        if (existingKeySet.has(access) || existingKeySet.has(refresh)) result.push(p);
-      },
-    );
+    (
+      Object.entries(providers) as Array<
+        [ProviderKey, (typeof providers)[ProviderKey]]
+      >
+    ).forEach(([p, cfg]) => {
+      const access = cfg.accessKeyKey;
+      const refresh = cfg.refreshKeyKey;
+      if (existingKeySet.has(access) || existingKeySet.has(refresh))
+        result.push(p);
+    });
     return result;
   }, [existingKeySet]);
 
@@ -42,16 +48,24 @@ export function ToolkitToggles() {
     mutationFn: useConvexMutation(api.chats.mutations.update),
   });
 
-  const isEnabled = (p: ProviderKey) => (chat.enabledToolkits || []).includes(p as string);
+  const isEnabled = (p: ProviderKey) =>
+    (chat.enabledToolkits || []).includes(p as string);
 
   const toggleProvider = (p: ProviderKey, enable: boolean) => {
     const next = new Set<string>(chat.enabledToolkits || []);
-    if (enable) next.add(p as string); else next.delete(p as string);
+    if (enable) next.add(p as string);
+    else next.delete(p as string);
 
     if (chatId === "new") {
-      setNewChat((prev) => ({ ...prev, enabledToolkits: Array.from(next) as string[] }));
+      setNewChat((prev) => ({
+        ...prev,
+        enabledToolkits: Array.from(next) as string[],
+      }));
     } else {
-      updateChatMutation({ chatId, updates: { enabledToolkits: Array.from(next) } });
+      updateChatMutation({
+        chatId,
+        updates: { enabledToolkits: Array.from(next) },
+      });
     }
   };
 
@@ -59,12 +73,19 @@ export function ToolkitToggles() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" title="Toolkits" className="cursor-pointer">
+          <Button
+            variant="outline"
+            size="icon"
+            title="Toolkits"
+            className="cursor-pointer"
+          >
             <Hammer className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">Toolkits</div>
+          <div className="px-2 py-1 text-sm text-muted-foreground">
+            Toolkits
+          </div>
           {connectedProviders.map((p) => (
             <DropdownMenuItem
               key={p}
@@ -72,12 +93,20 @@ export function ToolkitToggles() {
               className="flex items-center justify-between pr-2 cursor-pointer"
             >
               <span className="flex items-center gap-2">
-                <img src={providers[p].icon} alt={providers[p].title} className="h-4 w-4" />
+                <img
+                  src={providers[p].icon}
+                  alt={providers[p].title}
+                  className="h-4 w-4"
+                />
                 {providers[p].title}
               </span>
               <span className="ml-auto flex items-center">
                 {isEnabled(p) && (
-                  <svg className="size-4 text-primary" viewBox="0 0 20 20" fill="currentColor">
+                  <svg
+                    className="size-4 text-primary"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
@@ -88,7 +117,10 @@ export function ToolkitToggles() {
               </span>
             </DropdownMenuItem>
           ))}
-          <DropdownMenuItem onClick={() => navigate({ to: "/settings/integrations" })} className="bg-accent/50">
+          <DropdownMenuItem
+            onClick={() => navigate({ to: "/settings/integrations" })}
+            className="bg-accent/50"
+          >
             <PlusIcon className="w-4 h-4" />
             Add Integrations
           </DropdownMenuItem>
@@ -97,16 +129,20 @@ export function ToolkitToggles() {
       {(chat.enabledToolkits || [])
         .filter((p) => connectedProviders.includes(p as ProviderKey))
         .map((p) => (
-        <Button
-          key={p}
-          variant="outline"
-          size="icon"
-          title={providers[p as ProviderKey].title}
-          onClick={() => toggleProvider(p as ProviderKey, false)}
-        >
-          <img src={providers[p as ProviderKey].icon} alt={providers[p as ProviderKey].title} className="h-4 w-4" />
-        </Button>
-      ))}
+          <Button
+            key={p}
+            variant="outline"
+            size="icon"
+            title={providers[p as ProviderKey].title}
+            onClick={() => toggleProvider(p as ProviderKey, false)}
+          >
+            <img
+              src={providers[p as ProviderKey].icon}
+              alt={providers[p as ProviderKey].title}
+              className="h-4 w-4"
+            />
+          </Button>
+        ))}
     </>
   );
 }

@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
+import { Route as SettingsFeedbackRouteImport } from './routes/settings/feedback'
 import { Route as SettingsBillingRouteImport } from './routes/settings/billing'
 import { Route as SettingsApiKeysRouteImport } from './routes/settings/apiKeys'
 
@@ -67,6 +68,11 @@ const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
   path: '/integrations',
   getParentRoute: () => SettingsRouteLazyRoute,
 } as any)
+const SettingsFeedbackRoute = SettingsFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
+  getParentRoute: () => SettingsRouteLazyRoute,
+} as any)
 const SettingsBillingRoute = SettingsBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsLazyRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
+  '/settings/feedback': typeof SettingsFeedbackRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/chat/$chatId': typeof ChatChatIdLazyRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsLazyRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
+  '/settings/feedback': typeof SettingsFeedbackRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/chat/$chatId': typeof ChatChatIdLazyRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/projects': typeof ProjectsLazyRoute
   '/settings/apiKeys': typeof SettingsApiKeysRoute
   '/settings/billing': typeof SettingsBillingRoute
+  '/settings/feedback': typeof SettingsFeedbackRoute
   '/settings/integrations': typeof SettingsIntegrationsRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/chat/$chatId': typeof ChatChatIdLazyRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/settings/apiKeys'
     | '/settings/billing'
+    | '/settings/feedback'
     | '/settings/integrations'
     | '/settings/profile'
     | '/chat/$chatId'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/settings/apiKeys'
     | '/settings/billing'
+    | '/settings/feedback'
     | '/settings/integrations'
     | '/settings/profile'
     | '/chat/$chatId'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/settings/apiKeys'
     | '/settings/billing'
+    | '/settings/feedback'
     | '/settings/integrations'
     | '/settings/profile'
     | '/chat/$chatId'
@@ -221,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIntegrationsRouteImport
       parentRoute: typeof SettingsRouteLazyRoute
     }
+    '/settings/feedback': {
+      id: '/settings/feedback'
+      path: '/feedback'
+      fullPath: '/settings/feedback'
+      preLoaderRoute: typeof SettingsFeedbackRouteImport
+      parentRoute: typeof SettingsRouteLazyRoute
+    }
     '/settings/billing': {
       id: '/settings/billing'
       path: '/billing'
@@ -241,6 +260,7 @@ declare module '@tanstack/react-router' {
 interface SettingsRouteLazyRouteChildren {
   SettingsApiKeysRoute: typeof SettingsApiKeysRoute
   SettingsBillingRoute: typeof SettingsBillingRoute
+  SettingsFeedbackRoute: typeof SettingsFeedbackRoute
   SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
 }
@@ -248,6 +268,7 @@ interface SettingsRouteLazyRouteChildren {
 const SettingsRouteLazyRouteChildren: SettingsRouteLazyRouteChildren = {
   SettingsApiKeysRoute: SettingsApiKeysRoute,
   SettingsBillingRoute: SettingsBillingRoute,
+  SettingsFeedbackRoute: SettingsFeedbackRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsProfileRoute: SettingsProfileRoute,
 }
