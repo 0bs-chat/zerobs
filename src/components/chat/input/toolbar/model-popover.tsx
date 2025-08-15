@@ -71,7 +71,7 @@ export function ModelPopover({
     <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           className="justify-between gap-2 cursor-pointer"
           onClick={() => setPopoverOpen(!popoverOpen)}
         >

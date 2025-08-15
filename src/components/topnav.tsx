@@ -52,10 +52,7 @@ export function TopNav() {
   useEffect(() => {
     if (!isOnChatRoute) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key === "i" &&
-        (event.metaKey || event.ctrlKey)
-      ) {
+      if (event.key === "i" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         setResizePanelOpen((open) => {
           if (!open) setSelectedArtifact(undefined);
@@ -73,12 +70,12 @@ export function TopNav() {
       className={`fixed right-0 py-2 flex items-center w-full bg-transparent justify-between pointer-events-none z-50 px-1.5 ${isSettingsRoute ? "hidden" : ""}`}
     >
       <div
-        className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/80 dark:border-border/40 border bg-accent/25 dark:bg-accent/35"}`}
+        className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/40 border bg-accent dark:bg-accent/20 backdrop-blur-sm"}`}
       >
         <SidebarTrigger />
         <Button
           variant="ghost"
-          className={`${sidebarOpen ? "hidden" : ""} size-8`}
+          className={`${sidebarOpen ? "hidden" : ""} size-8 cursor-pointer`}
           size="icon"
           onClick={() => {
             navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
@@ -88,7 +85,7 @@ export function TopNav() {
         </Button>
       </div>
       <div
-        className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "border-border/80 dark:border-border/40 border bg-accent/25 dark:bg-accent/35"} `}
+        className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "bg-accent dark:bg-accent/20 backdrop-blur-sm border-border/40 border"} `}
       >
         {!resizePanelOpen && (
           <>
@@ -105,7 +102,7 @@ export function TopNav() {
                     window.open(
                       "https://github.com/0bs-chat/zerobs",
                       "_blank",
-                      "noopener,noreferrer",
+                      "noopener,noreferrer"
                     );
                   }}
                 >
@@ -118,7 +115,7 @@ export function TopNav() {
                     window.open(
                       "https://discord.gg/7bhP6cybvx",
                       "_blank",
-                      "noopener,noreferrer",
+                      "noopener,noreferrer"
                     );
                   }}
                 >
@@ -135,7 +132,9 @@ export function TopNav() {
                     e.preventDefault();
                     const currentHref = window.location.href;
                     const subject = encodeURIComponent("Feedback / Issue");
-                    const body = encodeURIComponent(`URL: ${currentHref}\n\nDescription:\n`);
+                    const body = encodeURIComponent(
+                      `URL: ${currentHref}\n\nDescription:\n`
+                    );
                     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=barrel@0bs.chat&su=${subject}&body=${body}`;
                     window.open(gmailUrl, "_blank", "noopener,noreferrer");
                   }}
@@ -162,7 +161,7 @@ export function TopNav() {
           <Button
             variant="ghost"
             size="icon"
-            className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent" : "bg-transparent"} ${selectedArtifact ? "hidden" : ""}`}
+            className={`${resizePanelOpen ? "bg-secondary/40" : "bg-transparent"} ${selectedArtifact ? "hidden" : ""}`}
             onClick={() => {
               setResizePanelOpen(!resizePanelOpen);
               setSelectedArtifact(undefined);

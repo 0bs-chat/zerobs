@@ -4,10 +4,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Favicon } from "@/components/ui/favicon";
 import { Markdown } from "@/components/ui/markdown";
-import { extractDomain } from "@/lib/utils";
-import { ExternalLinkIcon, GlobeIcon } from "lucide-react";
+import { extractDomain, formatDate } from "@/lib/utils";
+import { ExternalLinkIcon, GlobeIcon, ClockIcon } from "lucide-react";
 
 // Type definition for search results output
 export type SearchResultMetadata = {
@@ -45,93 +46,77 @@ export const SearchResultDisplay = ({
   return (
     <Accordion
       type="multiple"
-      className="w-full"
+      className="w-full border p-1.5 border-border/50 bg-card rounded-lg"
       // defaultValue={["web-search-results"]} // Remove this line to keep it closed by default
     >
       <AccordionItem value="web-search-results" className="px-0 border-none">
-        <AccordionTrigger
-          className={`flex items-center gap-2 text-sm text-muted-foreground py-0 justify-start`}
-        >
-          <div className="flex flex-row items-center justify-between w-full">
+        <AccordionTrigger className="py-1 gap-2 text-xs font-semibold items-center justify-start">
+          <div className="flex items-center justify-between w-full gap-2">
             <div className="flex items-center gap-2">
-              <GlobeIcon className="h-4 w-4" />
-              <span className="text-muted-foreground translate-y-[.1rem]">
-                Web Search Results ({results.length})
+              <GlobeIcon className="w-4 h-4" />
+              <span className="text-muted-foreground">
+                Web Search ({results.length})
               </span>
             </div>
-            <div className="text-xs text-muted-foreground">
-              {input?.query as string}
-            </div>
+            {input?.query ? (
+              <div className="text-[11px] text-muted-foreground truncate max-w-[50%]">
+                {String(input.query)}
+              </div>
+            ) : null}
           </div>
         </AccordionTrigger>
-        <AccordionContent>
-          <div className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border flex gap-4 overflow-x-auto p-2">
+        <AccordionContent className="bg-card rounded-md p-2  mt-2 max-h-[36rem] overflow-x-auto">
+          <div className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border flex gap-2 overflow-x-auto">
             {results.map((result, index) => (
-              <div
+              <Card
                 key={index}
-                onClick={() =>
-                  window.open(
-                    result.metadata.source,
-                    "_blank",
-                    "noopener,noreferrer",
-                  )
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    window.open(
-                      result.metadata.source,
-                      "_blank",
-                      "noopener,noreferrer",
-                    );
-                  }
-                }}
-                tabIndex={0}
-                role="button"
-                className="group relative flex flex-col flex-shrink-0 rounded-lg border bg-card text-left transition-all
-                  duration-200 hover:shadow-lg hover:border-primary/20 hover:bg-accent/50 w-64 min-w-64 overflow-hidden
-                  [&:hover]:shadow-lg [&:hover]:border-primary/20 [&:hover]:bg-accent/50 h-96 cursor-pointer
-                  focus:outline-none focus:ring-2 focus:ring-primary/50"
-                aria-label={`Open ${result.metadata.title} in new tab`}
+                className="hover:shadow-md transition-shadow flex-shrink-0 w-64 min-w-64"
               >
-                <div className="w-full h-36 overflow-hidden flex-shrink-0">
-                  <img
-                    alt=""
-                    className="w-full h-full object-cover"
-                    src={`https://api.microlink.io/?url=${encodeURIComponent(
-                      result.metadata.image || result.metadata.source,
-                    )}&screenshot=true&meta=false&embed=screenshot.url`}
+                <CardHeader className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1 items-start w-full">
+                    <div className="flex flex-row items-center gap-2 w-full">
+                      {result.metadata.favicon ? (
+                        <Favicon
+                          url={result.metadata.source}
+                          size={28}
+                          className="h-6 w-6 rounded object-contain"
+                        />
+                      ) : (
+                        <GlobeIcon className="h-6 w-6 text-muted-foreground" />
+                      )}
+                      <a
+                        href={result.metadata.source}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-sm leading-snug text-foreground line-clamp-2 overflow-hidden break-words whitespace-normal flex-1 text-left hover:underline"
+                        aria-label={`Open ${result.metadata.title} in new tab`}
+                      >
+                        {result.metadata.title}
+                      </a>
+                      <ExternalLinkIcon className="h-4 w-4 text-muted-foreground/70" />
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <GlobeIcon className="h-3 w-3" />
+                        {extractDomain(result.metadata.source)}
+                      </span>
+                      {result.metadata.publishedDate ? (
+                        <span className="flex items-center gap-1">
+                          <ClockIcon className="h-3 w-3" />
+                          {formatDate(result.metadata.publishedDate) ?? ""}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Markdown
+                    content={`${result.pageContent.slice(0, 300)}...`}
+                    id={result.metadata.source}
+                    className="text-xs text-muted-foreground"
                   />
-                </div>
-                <div className="flex flex-1 flex-col p-2 min-h-0">
-                  <div className="flex items-center justify-start gap-2">
-                    {result.metadata.favicon && (
-                      <Favicon
-                        url={result.metadata.source}
-                        className="w-6 h-6 rounded-full object-contain"
-                      />
-                    )}
-                    <h1 className="leading m-0 mb-0 truncate font-semibold text-base text-foreground">
-                      {result.metadata.title}
-                    </h1>
-                  </div>
-                  <div className="flex-1 min-h-0 overflow-hidden">
-                    <Markdown
-                      content={`${result.pageContent.slice(0, 500)}...`}
-                      id={result.metadata.source}
-                      className="prose prose-h1:text-xs prose-h2:text-xs prose-h3:text-xs prose-h4:text-xs prose-h5:text-xs prose-h6:text-xs
-                        prose-p:text-xs prose-li:text-xs prose-ul:text-xs prose-ol:text-xs prose-blockquote:text-xs prose-img:text-xs
-                        prose-strong:text-xs prose-em:text-xs prose-a:text-xs prose-a:underline prose-a:text-primary text-muted-foreground overflow-hidden"
-                    />
-                  </div>
-                  <div className="mt-auto flex items-center gap-1.5 border-t border-border/50 pt-2">
-                    <span className="flex-1 truncate text-xs text-muted-foreground/70">
-                      {extractDomain(result.metadata.source)}
-                    </span>
-                    <ExternalLinkIcon className="lucide lucide-external-link size-3 flex-shrink-0 text-muted-foreground/50" />
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </AccordionContent>

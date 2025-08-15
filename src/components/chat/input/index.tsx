@@ -127,7 +127,7 @@ export const ChatInput = () => {
 
   return (
     <div
-      className={`relative flex flex-col max-w-4xl w-full mx-auto bg-background shadow-sm outline-1 outline-border rounded-lg ${isDragActive ? "ring-2 ring-primary/60" : ""}`}
+      className={`relative flex flex-col gap-1.5 max-w-4xl w-full mx-auto rounded-xl bg-card/80 backdrop-blur-sm border border-border dark:border-border/50 shadow-sm p-1 transition-all ${isDragActive ? "ring-2 ring-primary/30" : "ring-0"}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragEnter={handleDragOver}
@@ -135,8 +135,8 @@ export const ChatInput = () => {
     >
       {/* Drag overlay */}
       {isDragActive && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 pointer-events-none rounded-lg">
-          <span className="text-lg font-semibold text-white">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-primary/10 dark:bg-primary/20 pointer-events-none rounded-xl">
+          <span className="text-sm md:text-base font-medium text-foreground">
             Drop files to upload
           </span>
         </div>
@@ -173,7 +173,7 @@ export const ChatInput = () => {
         minHeight={56}
         ref={setRef}
         defaultValue={chat?.text}
-        className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none p-2"
+        className="resize-none bg-transparent ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none rounded-md placeholder:text-muted-foreground/70"
         onChange={(e) => {
           handleChange(e);
         }}

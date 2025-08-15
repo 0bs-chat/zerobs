@@ -211,7 +211,7 @@ export const ToolBar = () => {
           transition={smoothTransition}
         >
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={async () => {
               if (!["pending", "streaming"].includes(streamStatus ?? "")) {
@@ -222,9 +222,9 @@ export const ToolBar = () => {
             }}
           >
             {["pending", "streaming"].includes(streamStatus ?? "") ? (
-              <StopButtonIcon className="h-6 w-6 -translate-y-0.5 -translate-x-0.5" />
+              <StopButtonIcon className="h-6 w-6 " />
             ) : (
-              <ArrowUp className="h-4 w-4" />
+              <ArrowUp className="h-6 w-6" />
             )}
           </Button>
         </motion.div>
