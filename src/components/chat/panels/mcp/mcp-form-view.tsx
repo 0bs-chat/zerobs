@@ -1,6 +1,5 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { EnvVarInput } from "./env-var-input";
 import { TypeSelector } from "./type-selector";
 import type { McpType, initialMCPState } from "@/store/chatStore";
@@ -108,16 +107,7 @@ export const MCPFormView = ({ mcp, setMcp, handleTypeChange }: MCPFormViewProps)
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <Switch
-          id="restart-on-new-chat"
-          checked={mcp.restartOnNewChat}
-          onCheckedChange={(checked) =>
-            setMcp({ ...mcp, restartOnNewChat: checked })
-          }
-        />
-        <Label htmlFor="restart-on-new-chat">Restart on new chat</Label>
-      </div>
+
     </div>
   );
 };

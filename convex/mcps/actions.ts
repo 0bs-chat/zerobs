@@ -6,6 +6,7 @@ import { v } from "convex/values";
 import { fly } from "../utils/flyio";
 import type { FlyApp, CreateMachineRequest } from "../utils/flyio";
 import { verifyEnv } from "./utils";
+import { createJwt } from "../utils/encryption";
 
 export const create = internalAction({
   args: {
@@ -39,11 +40,12 @@ export const create = internalAction({
         name: `${appName}-machine`,
         region: "sea",
         config: {
-          image: mcp.dockerImage || "mantrakp04/mcprunner:latest",
+          image: mcp.dockerImage || "mantrakp04/mcprunner:v1",
           env: {
             ...(await verifyEnv(mcp.env!)),
             MCP_COMMAND: mcp.command || "",
             HOST: "https://" + appName + ".fly.dev",
+            OAUTH_TOKEN: await createJwt("OAUTH_TOKEN", mcp._id, mcp.userId),
           },
           guest: { cpus: 2, memory_mb: 2048, cpu_kind: "shared" },
           services: [
@@ -66,8 +68,6 @@ export const create = internalAction({
 
       await fly.allocateIpAddress(app?.name!, "shared_v4");
       await fly.createMachine(appName, machineConfig);
-
-      // Wait for the machine spin up
       await new Promise((resolve) => setTimeout(resolve, 10000));
 
       await ctx.runMutation(internal.mcps.crud.update, {

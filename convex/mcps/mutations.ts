@@ -51,6 +51,7 @@ export const create = mutation({
       type: args.type,
       dockerImage: args.dockerImage,
       dockerPort: args.dockerPort,
+      dockerCommand: args.dockerCommand,
       command: args.command,
       env: envJwts,
       url: args.url,

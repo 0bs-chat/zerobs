@@ -132,7 +132,6 @@ export const initialMCPState = {
   dockerImage: "",
   dockerPort: 8000,
   dockerCommand: "",
-  restartOnNewChat: false,
   env: {},
   status: "creating" as const,
 };

@@ -6,14 +6,13 @@ import type { ActionCtx } from "../../_generated/server";
 import type { Id } from "../../_generated/dataModel";
 import { fly } from "../../utils/flyio";
 import { getDocumentUrl } from "../../utils/helpers";
-import { extractFileIdsFromMessage, type ExtendedRunnableConfig } from "../helpers";
+import { extractFileIdsFromMessage } from "../helpers";
 import type { GraphState } from "../state";
-import { models } from "../models";
+import { createJwt } from "../../utils/encryption";
 
 export const getMCPTools = async (
   ctx: ActionCtx,
   state: typeof GraphState.State,
-  config: ExtendedRunnableConfig,
 ) => {
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
     paginationOpts: {
@@ -57,42 +56,32 @@ export const getMCPTools = async (
 
   // Construct connection objects for MultiServerMCPClient
   const mcpServers: Record<string, Connection> = Object.fromEntries(
-    readyMcps.map((mcp) => [
-      mcp.name,
-      {
-        transport: "http",
-        url: mcp.url!,
-        headers: mcp.env!,
-        useNodeEventSource: true,
-        reconnect: {
-          enabled: true,
-          maxAttempts: 5,
-          delayMs: 200,
+    await Promise.all(
+      readyMcps.map(async (mcp) => [
+        mcp.name,
+        {
+          transport: "http",
+          url: mcp.url!,
+          headers: {
+            ...mcp.env,
+            Authorization: `Bearer ${await createJwt("OAUTH_TOKEN", mcp._id, mcp.userId)}`,
+          },
+          useNodeEventSource: true,
+          reconnect: {
+            enabled: true,
+            maxAttempts: 5,
+            delayMs: 200,
+          },
         },
-      },
-    ]),
+      ]),
+    ),
   );
-
-  // Determine output handling based on model modality support
-  const modelName = config.chat.model;
-  const modelConfig = modelName
-    ? models.find((m) => m.model_name === modelName)
-    : undefined;
-  const supportsImages = !!modelConfig?.modalities.includes("image");
-  const supportsAudio = !!(modelConfig as any)?.modalities?.includes?.("audio");
 
   // Initialize the MultiServerMCPClient with output mapping tuned to model capabilities
   const client = new MultiServerMCPClient({
     prefixToolNameWithServerName: true,
     additionalToolNamePrefix: "mcp",
     throwOnLoadError: false,
-    useStandardContentBlocks: supportsImages || supportsAudio,
-    outputHandling: {
-      text: "content",
-      image: supportsImages ? "content" : "artifact",
-      audio: supportsAudio ? "content" : "artifact",
-      resource: "artifact",
-    },
     mcpServers,
   });
 
