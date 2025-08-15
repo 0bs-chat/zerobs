@@ -56,6 +56,11 @@ export const create = internalAction({
               autostart: true,
               autostop: "suspend",
               min_machines_running: 0,
+              checks: [
+                {
+                  type: "tcp"
+                }
+              ]
             },
           ],
         },
@@ -68,7 +73,10 @@ export const create = internalAction({
 
       await fly.allocateIpAddress(app?.name!, "shared_v4");
       await fly.createMachine(appName, machineConfig);
-      await new Promise((resolve) => setTimeout(resolve, 10000));
+      await fly.waitTillHealthy(appName, {
+        timeout: 120000,
+        interval: 500,
+      });
 
       await ctx.runMutation(internal.mcps.crud.update, {
         id: args.mcpId,

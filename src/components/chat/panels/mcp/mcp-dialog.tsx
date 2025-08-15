@@ -59,6 +59,7 @@ export const MCPDialog = () => {
       dockerImage: type === "docker" ? prev.dockerImage || "" : "",
       dockerPort: type === "docker" ? prev.dockerPort || 0 : 0,
       dockerCommand: type === "docker" ? prev.dockerCommand || "" : "",
+      perChat: type === "http" ? false : prev.perChat,
     }));
   };
 

@@ -44,7 +44,6 @@ import { buttonHover, smoothTransition } from "@/lib/motion";
 import { ModelPopover } from "./model-popover";
 import { useRouter } from "@tanstack/react-router";
 import { AgentToggles } from "./agent-toggles";
-import { ToolkitToggles } from "./toolkit-toggles.tsx";
 import { useApiKeys } from "@/hooks/use-apikeys";
 
 export const ToolBar = () => {
@@ -147,8 +146,6 @@ export const ToolBar = () => {
           </DropdownMenuContent>
         </DropdownMenu>
         <AgentToggles />
-        <div className="h-8 w-px bg-border" />
-        <ToolkitToggles />
         {/* Render project name with X button on hover */}
         {project && (
           <Button

@@ -17,8 +17,6 @@ import {
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { getMCPTools, getRetrievalTools } from "./tools";
-import { getGoogleTools } from "./tools/googleTools";
-import { getGithubTools } from "./tools/github";
 import { getModel } from "./models";
 import { createAgentSystemMessage } from "./prompts";
 import { GraphState } from "./state";
@@ -177,14 +175,10 @@ export async function getAvailableTools(
 
   const [
     mcpTools,
-    retrievalTools,
-    googleTools,
-    githubTools,
+    retrievalTools
   ] = await Promise.all([
-    getMCPTools(config.ctx, state),
+    getMCPTools(config.ctx, state, config),
     getRetrievalTools(state, config, true),
-    chat.enabledToolkits.includes("google") ? getGoogleTools(config) : Promise.resolve([]),
-    chat.enabledToolkits.includes("github") ? getGithubTools(config) : Promise.resolve([]),
   ]);
 
   if (!groupTools) {
@@ -192,8 +186,6 @@ export async function getAvailableTools(
       ...mcpTools,
       ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
       ...(chat.webSearch ? [retrievalTools.webSearch] : []),
-      ...(googleTools.length > 0 ? googleTools : []),
-      ...(githubTools.length > 0 ? githubTools : []),
     ];
   }
 
@@ -210,8 +202,6 @@ export async function getAvailableTools(
     ...Array.from(mcpGrouped.entries()).map(([name, tools]) => ({ name, tools })),
     ...(chat.webSearch ? [{ name: "WebSearch", tools: [retrievalTools.webSearch] }] : []),
     ...(chat.projectId ? [{ name: "VectorSearch", tools: [retrievalTools.vectorSearch] }] : []),
-    ...(googleTools.length > 0 ? [{ name: "Google", tools: googleTools }] : []),
-    ...(githubTools.length > 0 ? [{ name: "GitHub", tools: githubTools }] : []),
   ];
 
   return toolkits;
@@ -269,7 +259,7 @@ export function extractFileIdsFromMessage(
       });
     }
   } catch (error) {
-    console.log("Failed to parse message content for file IDs:", error);
+    console.error("Failed to parse message content for file IDs:", error);
   }
 
   return fileIds;

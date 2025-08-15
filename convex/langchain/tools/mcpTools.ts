@@ -6,13 +6,14 @@ import type { ActionCtx } from "../../_generated/server";
 import type { Id } from "../../_generated/dataModel";
 import { fly } from "../../utils/flyio";
 import { getDocumentUrl } from "../../utils/helpers";
-import { extractFileIdsFromMessage } from "../helpers";
+import { extractFileIdsFromMessage, type ExtendedRunnableConfig } from "../helpers";
 import type { GraphState } from "../state";
 import { createJwt } from "../../utils/encryption";
 
 export const getMCPTools = async (
   ctx: ActionCtx,
   state: typeof GraphState.State,
+  config?: ExtendedRunnableConfig,
 ) => {
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
     paginationOpts: {
@@ -28,8 +29,92 @@ export const getMCPTools = async (
     return [];
   }
 
+  // Handle per-chat MCPs - create infrastructure on demand
+  const updatedMcps = await Promise.all(
+    mcps.page.map(async (mcp) => {
+      if (mcp.perChat && !mcp.url && ["stdio", "docker"].includes(mcp.type) && config) {
+        const mcpName = `${mcp._id}-${config.chat._id}`.slice(0, 62);
+        
+        try {
+          // Get or create fly.io app and machine similar to vibz logic
+          let app = await fly.getApp(mcpName);
+          let machine = null;
+          
+          if (app) {
+            const machines = await fly.listMachines(mcpName);
+            if (machines && machines.length > 0) {
+              machine = machines[0];
+            }
+          }
+          
+          // If no app, create it
+          if (!app) {
+            app = await fly.createApp({
+              app_name: mcpName,
+              org_slug: "personal",
+            });
+            
+            if (app) {
+              await fly.allocateIpAddress(app.name!, "shared_v4");
+            }
+          }
+          
+          // If no machine, create it
+          if (!machine && app) {
+            const machineConfig = {
+              name: `${mcpName}-machine`,
+              region: "sea",
+              config: {
+                image: mcp.dockerImage || "mantrakp04/mcprunner:v1",
+                env: {
+                  ...mcp.env,
+                  MCP_COMMAND: mcp.command || "",
+                  HOST: `https://${mcpName}.fly.dev`,
+                  OAUTH_TOKEN: await createJwt("OAUTH_TOKEN", mcp._id, mcp.userId),
+                },
+                guest: { cpus: 2, memory_mb: 2048, cpu_kind: "shared" },
+                services: [
+                  {
+                    ports: [{ port: 443, handlers: ["tls", "http"] }],
+                    protocol: "tcp",
+                    internal_port: mcp.dockerPort || 8000,
+                    autostart: true,
+                    autostop: "suspend" as const,
+                    min_machines_running: 0,
+                    checks: [
+                      {
+                        type: "tcp"
+                      },
+                    ],
+                  },
+                ],
+              },
+            };
+            
+            machine = await fly.createMachine(mcpName, machineConfig);
+            await fly.startMachine(mcpName, machine?.id!);
+          }
+          
+          const sseUrl = `https://${mcpName}.fly.dev/sse`;
+          
+          // Update MCP with the URL
+          await ctx.runMutation(internal.mcps.crud.update, {
+            id: mcp._id,
+            patch: { url: sseUrl, status: "created" },
+          });
+          
+          return { ...mcp, url: sseUrl, status: "created" as const };
+        } catch (error) {
+          console.error(`Failed to create per-chat MCP ${mcpName}:`, error);
+          return mcp;
+        }
+      }
+      return mcp;
+    }),
+  );
+
   // Wait for all MCPs to transition from 'creating' status to 'running'
-  let currentMcps = mcps.page;
+  let currentMcps = updatedMcps;
   let maxAttempts = 10;
   while (
     currentMcps.some((mcp) => mcp.status === "creating") &&

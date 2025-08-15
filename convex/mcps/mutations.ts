@@ -55,13 +55,14 @@ export const create = mutation({
       command: args.command,
       env: envJwts,
       url: args.url,
-      enabled: args.enabled ?? false,
-      status: args.type === "http" ? "created" : "creating",
+      enabled: args.enabled ?? true,
+      status: args.type === "http" || args.perChat ? "created" : "creating",
       userId: userId,
       updatedAt: Date.now(),
+      perChat: args.perChat ?? false,
     });
 
-    if (args.type !== "http") {
+    if (args.type !== "http" && !args.perChat) {
       await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
         mcpId: newMCPId,
       });

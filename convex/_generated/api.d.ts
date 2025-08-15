@@ -36,6 +36,7 @@ import type * as langchain_tools_googleTools from "../langchain/tools/googleTool
 import type * as langchain_tools_index from "../langchain/tools/index.js";
 import type * as langchain_tools_mcpTools from "../langchain/tools/mcpTools.js";
 import type * as langchain_tools_retrievalTools from "../langchain/tools/retrievalTools.js";
+import type * as langchain_tools_vibz from "../langchain/tools/vibz.js";
 import type * as langchain_utils from "../langchain/utils.js";
 import type * as mcps_actions from "../mcps/actions.js";
 import type * as mcps_crud from "../mcps/crud.js";
@@ -104,6 +105,7 @@ declare const fullApi: ApiFromModules<{
   "langchain/tools/index": typeof langchain_tools_index;
   "langchain/tools/mcpTools": typeof langchain_tools_mcpTools;
   "langchain/tools/retrievalTools": typeof langchain_tools_retrievalTools;
+  "langchain/tools/vibz": typeof langchain_tools_vibz;
   "langchain/utils": typeof langchain_utils;
   "mcps/actions": typeof mcps_actions;
   "mcps/crud": typeof mcps_crud;

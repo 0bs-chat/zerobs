@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { EnvVarInput } from "./env-var-input";
 import { TypeSelector } from "./type-selector";
 import type { McpType, initialMCPState } from "@/store/chatStore";
@@ -107,6 +108,24 @@ export const MCPFormView = ({ mcp, setMcp, handleTypeChange }: MCPFormViewProps)
         />
       </div>
 
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label htmlFor="per-chat-toggle">Per-Chat MCP</Label>
+            <p className="text-sm text-muted-foreground">
+              {mcp.type === "http" 
+                ? "Not applicable for HTTP MCPs"
+                : "Create a separate instance for each chat,\nthis will take longer to start up.\nOnly toggle this if you are sure you need it."}
+            </p>
+          </div>
+          <Switch
+            id="per-chat-toggle"
+            checked={mcp.perChat}
+            onCheckedChange={(checked) => setMcp({ ...mcp, perChat: checked })}
+            disabled={mcp.type === "http"}
+          />
+        </div>
+      </div>
 
     </div>
   );

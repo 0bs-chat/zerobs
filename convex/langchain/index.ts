@@ -340,7 +340,6 @@ export const branchChat = action({
       orchestratorMode: chatDoc.orchestratorMode,
       webSearch: chatDoc.webSearch,
       artifacts: chatDoc.artifacts,
-      enabledToolkits: chatDoc.enabledToolkits,
     });
 
     const allMessages = await ctx.runQuery(api.chatMessages.queries.get, {
