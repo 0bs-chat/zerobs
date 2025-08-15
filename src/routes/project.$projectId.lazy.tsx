@@ -21,14 +21,16 @@ function RouteComponent() {
   }, [newChat, setChat]);
 
   return (
-    <div className="flex flex-row min-w-7xl h-[calc(100vh-8rem)] m-auto overflow-hidden gap-4">
-      <div className="flex flex-col gap-4 w-[50%] min-h-0">
-        <ChatInput />
-        <ProjectChatList projectId={projectId as Id<"projects">} />
-      </div>
-      <div className="w-px bg-border" />
-      <div className="flex-1 min-h-0">
-        <ProjectDetails projectId={projectId as Id<"projects">} />
+    <div className="container mx-auto max-w-7xl mt-16 h-[calc(100vh-8rem)] overflow-hidden px-4">
+      <div className="flex flex-row h-full gap-4">
+        <div className="flex flex-col gap-4 w-1/2 min-h-0">
+          <ChatInput />
+          <ProjectChatList projectId={projectId as Id<"projects">} />
+        </div>
+        <div className="w-px bg-border" />
+        <div className="flex-1 min-h-0">
+          <ProjectDetails projectId={projectId as Id<"projects">} />
+        </div>
       </div>
     </div>
   );

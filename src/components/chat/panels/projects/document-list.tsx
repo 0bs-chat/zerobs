@@ -84,7 +84,7 @@ export function ProjectDocumentList({
           </Toggle>
         </div>
       </div>
-      <ScrollArea className="flex-1 min-h-0">
+      <ScrollArea className="flex-1 min-h-0 ">
         <div className="flex flex-col gap-2">
           {projectDocuments.projectDocuments.map((projectDocument) => (
             <ProjectDocumentListItem

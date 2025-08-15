@@ -17,7 +17,7 @@ import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
 import { useScroll } from "@/hooks/chats/use-scroll";
 import { Button } from "@/components/ui/button";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Upload } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { smoothTransition } from "@/lib/motion";
 import { useTextAreaRef } from "@/hooks/chats/use-textarea";
@@ -127,7 +127,7 @@ export const ChatInput = () => {
 
   return (
     <div
-      className={`relative flex flex-col gap-1.5 max-w-4xl w-full mx-auto rounded-xl bg-card backdrop-blur-sm border border-border dark:border-border/50 shadow-sm p-1 transition-all ${isDragActive ? "ring-2 ring-primary/30" : "ring-0"}`}
+      className={`relative flex flex-col gap-1.5 max-w-4xl w-full mx-auto rounded-xl bg-background backdrop-blur-sm border dark:border-border/60 shadow-sm p-1 transition-all ${isDragActive ? "ring-2 ring-primary/30" : "ring-0"}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragEnter={handleDragOver}
@@ -135,10 +135,15 @@ export const ChatInput = () => {
     >
       {/* Drag overlay */}
       {isDragActive && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-primary/10 dark:bg-primary/20 pointer-events-none rounded-xl">
-          <span className="text-sm md:text-base font-medium text-foreground">
-            Drop files to upload
-          </span>
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/80 backdrop-blur-md pointer-events-none rounded-xl border border-border/60">
+          <div className="flex flex-col items-center gap-2 px-4 py-6">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Upload className="w-6 h-6 text-primary" />
+            </div>
+            <span className="text-sm font-medium text-foreground/90">
+              Drop files to upload
+            </span>
+          </div>
         </div>
       )}
       <AnimatePresence>

@@ -70,7 +70,7 @@ export function TopNav() {
       className={`fixed right-0 py-2 flex items-center w-full bg-transparent justify-between pointer-events-none z-50 px-1.5 ${isSettingsRoute ? "hidden" : ""}`}
     >
       <div
-        className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/40 border bg-accent dark:bg-accent/20 backdrop-blur-sm"}`}
+        className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/40 border bg-accent dark:bg-primary/10 backdrop-blur-sm"}`}
       >
         <SidebarTrigger />
         <Button
@@ -85,7 +85,7 @@ export function TopNav() {
         </Button>
       </div>
       <div
-        className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "bg-accent dark:bg-accent/20 backdrop-blur-sm border-border/40 border"} `}
+        className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "bg-accent dark:bg-primary/10 backdrop-blur-sm border-border/40 border"} `}
       >
         {!resizePanelOpen && (
           <>
@@ -161,7 +161,7 @@ export function TopNav() {
           <Button
             variant="ghost"
             size="icon"
-            className={`${resizePanelOpen ? "bg-secondary/40" : "bg-transparent"} ${selectedArtifact ? "hidden" : ""}`}
+            className={`${selectedArtifact ? "hidden" : ""}`}
             onClick={() => {
               setResizePanelOpen(!resizePanelOpen);
               setSelectedArtifact(undefined);
