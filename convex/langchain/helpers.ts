@@ -181,7 +181,7 @@ export async function getAvailableTools(
     googleTools,
     githubTools,
   ] = await Promise.all([
-    getMCPTools(config.ctx, state, config),
+    getMCPTools(config.ctx, state),
     getRetrievalTools(state, config, true),
     chat.enabledToolkits.includes("google") ? getGoogleTools(config) : Promise.resolve([]),
     chat.enabledToolkits.includes("github") ? getGithubTools(config) : Promise.resolve([]),
