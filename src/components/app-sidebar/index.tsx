@@ -109,10 +109,10 @@ export function AppSidebar() {
 
           <Button
             variant="outline"
-            className="w-full cursor-pointer"
+            className="w-full cursor-pointer text-foreground/75 hover:text-foreground"
             onClick={handleNavigateToProjects}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ">
               <FolderIcon className="w-4 h-4" />
               Projects
             </div>

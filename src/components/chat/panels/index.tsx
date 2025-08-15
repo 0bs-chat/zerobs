@@ -17,11 +17,11 @@ export const Panel = () => {
     <Tabs
       value={activeTab}
       onValueChange={(value) => setActiveTab(value)}
-      className="h-full min-h-0 bg-background w-full overflow-hidden"
+      className="h-full min-h-0 bg-sidebar w-full overflow-hidden"
     >
       {!hideTabHeader && ( // Hide the tab list when previewing an artifact
         <div className="flex items-center justify-between gap-2 m-2.5 pr-12">
-          <TabsList className="w-full flex justify-center h-10">
+          <TabsList className="w-full flex justify-center h-10  bg-sidebar-primary/5">
             <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="mcp">MCP</TabsTrigger>
@@ -37,7 +37,10 @@ export const Panel = () => {
           <ArtifactsPanel />
         </TabsContent>
 
-        <TabsContent value="projects" className="h-full w-full px-3 min-h-0 overflow-hidden">
+        <TabsContent
+          value="projects"
+          className="h-full w-full px-3 min-h-0 overflow-hidden"
+        >
           <ProjectsPanel />
         </TabsContent>
 

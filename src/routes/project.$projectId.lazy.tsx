@@ -15,12 +15,13 @@ function RouteComponent() {
   const { projectId } = Route.useParams();
   const setChat = useSetAtom(chatAtom);
   const newChat = useAtomValue(newChatAtom);
+
   useEffect(() => {
     setChat(newChat);
   }, [newChat, setChat]);
 
   return (
-    <div className="flex flex-row min-w-7xl h-[calc(100vh-24rem)] m-auto overflow-hidden gap-4">
+    <div className="flex flex-row min-w-7xl h-[calc(100vh-8rem)] m-auto overflow-hidden gap-4">
       <div className="flex flex-col gap-4 w-[50%] min-h-0">
         <ChatInput />
         <ProjectChatList projectId={projectId as Id<"projects">} />

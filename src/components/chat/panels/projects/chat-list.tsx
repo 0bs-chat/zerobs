@@ -1,5 +1,5 @@
-import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
+import { Card } from "@/components/ui/card";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
@@ -19,22 +19,25 @@ export const ProjectChatList = ({ projectId }: ProjectChatListProps) => {
 
   if (!chats || chats.length === 0) {
     return (
-      <Card className="p-4">
-        <div className="flex flex-col items-center justify-center text-center py-8">
-          <MessageSquareIcon className="w-8 h-8 text-muted-foreground mb-2" />
+      <div className="rounded-lg bg-secondary/5 p-6 text-center shadow-sm">
+        <div className="flex flex-col items-center justify-center py-8">
+          <MessageSquareIcon className="mb-2 h-8 w-8 text-muted-foreground" />
           <p className="text-muted-foreground">
             No chats found for this project
           </p>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-sm text-muted-foreground">
             Start a new chat to see it here
           </p>
         </div>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-3rem)] overflow-y-auto pr-2">
+    <div className="h-[calc(100vh-3rem)] overflow-y-auto ">
+      <div className="text-sm text-muted-foreground py-2 font-medium">
+        Project related chats
+      </div>
       <div className="flex flex-col gap-2">
         {chats.map((chat) => (
           <Card

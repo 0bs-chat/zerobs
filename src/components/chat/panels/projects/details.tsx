@@ -13,6 +13,7 @@ import { chatIdAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { newChatAtom } from "@/store/chatStore";
 import { useNavigate, useRouter } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const chatId = useAtomValue(chatIdAtom);
@@ -41,24 +42,38 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
     });
   }, 1000);
 
+  const [systemPrompt, setSystemPrompt] = useState<string>("");
+
+  useEffect(() => {
+    if (project) {
+      setSystemPrompt(project.systemPrompt ?? "");
+    }
+  }, [project]);
+
   if (!project) return null;
 
   return (
-    <div className="flex flex-col gap-4 h-full ">
-      <div className="flex flex-col gap-0 ">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">{project.name}</h2>
+    <div className="flex h-full flex-col gap-3">
+      <div className="relative overflow-hidden rounded-lg border bg-card p-4 shadow-sm">
+        <div className="flex items-start justify-between">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold tracking-tight">{project.name}</h2>
+            {project.description && (
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                {project.description}
+              </p>
+            )}
+          </div>
           <Button
+            aria-label="Clear project selection"
             variant="outline"
             size="icon"
-            className="cursor-pointer"
+            className="cursor-pointer hover:bg-destructive/10 hover:text-destructive"
             onClick={() => {
-              // Only navigate to /projects if we're on the /project/{id} route
               if (router.state.location.pathname.startsWith("/project/")) {
                 navigate({ to: "/projects" });
               }
 
-              // Always clear the project selection
               if (chatId !== "new") {
                 updateChatInput({
                   chatId,
@@ -77,32 +92,43 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
             <XIcon className="size-5" />
           </Button>
         </div>
-        {project.description && (
-          <p className="text-muted-foreground">{project.description}</p>
-        )}
+
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute right-[-40%] top-[-40%] h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
+          <div className="absolute bottom-[-30%] left-[-30%] h-48 w-48 rounded-full bg-secondary/20 blur-2xl" />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <h3 className="text-lg font-semibold">System Prompt</h3>
+      <div className="rounded-lg border bg-card p-4 shadow-sm">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="text-lg font-semibold">System Prompt</h3>
+          <span className="text-xs text-secondary-foreground">
+            {systemPrompt.length} chars
+          </span>
+        </div>
         <AutosizeTextarea
-          defaultValue={project.systemPrompt}
-          onChange={(e) => debouncedUpdateSystemPrompt(e.target.value)}
-          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-2 rounded-xl"
+          value={systemPrompt}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSystemPrompt(value);
+            debouncedUpdateSystemPrompt(value);
+          }}
+          placeholder={
+            project.systemPrompt ??
+            "Guide the assistant with context, tone, and constraints..."
+          }
+          className="min-h-[80px] max-h-[200px] border w-full resize-none rounded-md bg-background/70 p-3 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-secondary/40 focus-visible:ring-offset-0"
           minHeight={80}
-          maxHeight={200}
+          maxHeight={160}
         />
       </div>
 
-      <div className="flex flex-col gap-2 flex-1 min-h-0">
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold">Documents</h3>
-          </div>
+          <h3 className="text-lg font-semibold text-foreground">Documents</h3>
           <AddDocumentControls projectId={project._id} />
         </div>
-        <div className="flex-1 min-h-0">
-          <ProjectDocumentList projectId={project._id} />
-        </div>
+        <ProjectDocumentList projectId={project._id} />
       </div>
     </div>
   );
