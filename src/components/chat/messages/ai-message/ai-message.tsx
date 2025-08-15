@@ -39,8 +39,6 @@ export const AiMessageContent = memo(
 
     // Memoize the content rendering to avoid unnecessary re-renders
     const renderedContent = useMemo(() => {
-      if (type !== "ai") return content as string;
-
       return parsedContent.map((part: ContentPart, index: number) => {
         if (part.type === "text") {
           // Only render non-empty text content

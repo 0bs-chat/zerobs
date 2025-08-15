@@ -234,20 +234,167 @@ async function replanner(
     formattedConfig.chat.model!
   );
 
-  const response = (await modelWithOutputParser.invoke(
-    {
-      messages: formattedMessages,
-      plan: state.plan,
-      pastSteps: state.pastSteps
-        .map((pastStep) => {
-          const [step, messages] = pastStep;
-          const stepMessage = new HumanMessage(step as string);
-          return [stepMessage, ...messages];
-        })
-        .flat(),
-    },
-    config
-  )) as z.infer<typeof outputSchema>;
+  let response: z.infer<typeof outputSchema>;
+  try {
+    response = (await modelWithOutputParser.invoke(
+      {
+        messages: formattedMessages,
+        plan: state.plan,
+        pastSteps: state.pastSteps
+          .map((pastStep) => {
+            const [step, messages] = pastStep;
+            const stepMessage = new HumanMessage(step as string);
+            return [stepMessage, ...messages];
+          })
+          .flat(),
+      },
+      config
+    )) as z.infer<typeof outputSchema>;
+  } catch (error) {
+    // Structured output parsing failed — attempt raw generation and coerce
+    console.error("Replanner structured output parsing failed:", error);
+
+    try {
+      const rawChain = promptTemplate.pipe(model);
+      const rawResponse = await rawChain.invoke(
+        {
+          messages: formattedMessages,
+          plan: state.plan,
+          pastSteps: state.pastSteps
+            .map((pastStep) => {
+              const [step, messages] = pastStep;
+              const stepMessage = new HumanMessage(step as string);
+              return [stepMessage, ...messages];
+            })
+            .flat(),
+        },
+        config
+      );
+
+      const rawText =
+        typeof rawResponse.content === "string"
+          ? rawResponse.content
+          : JSON.stringify(rawResponse.content);
+
+      let parsedResponse: any;
+      try {
+        parsedResponse = JSON.parse(rawText);
+      } catch {
+        // Ultimate fallback: return a graceful error message
+        return {
+          messages: [
+            new AIMessage({
+              content:
+                "I encountered an error while processing your request. Please try again.",
+              additional_kwargs: {
+                pastSteps: state.pastSteps.map((pastStep) => {
+                  const [step, messages] = pastStep;
+                  const storedMessages =
+                    mapChatMessagesToStoredMessages(messages);
+                  return [step, storedMessages];
+                }),
+              },
+            }),
+          ],
+          plan: [],
+          pastSteps: [],
+        };
+      }
+
+      // Coerce malformed continue_planning items
+      if (
+        parsedResponse?.type === "continue_planning" &&
+        Array.isArray(parsedResponse.data)
+      ) {
+        const fixedData = parsedResponse.data.map((item: any) => {
+          if (item.type === "single" && Array.isArray(item.data)) {
+            const stepText = item.data[0] || "Complete task";
+            return {
+              type: "single",
+              data: {
+                step:
+                  stepText.length > 50 ? stepText.substring(0, 50) : stepText,
+                context: stepText,
+              },
+            };
+          } else if (item.type === "parallel" && Array.isArray(item.data)) {
+            const fixedParallelData = item.data.map((parallelItem: any) => {
+              if (typeof parallelItem === "string") {
+                return {
+                  step:
+                    parallelItem.length > 50
+                      ? parallelItem.substring(0, 50)
+                      : parallelItem,
+                  context: parallelItem,
+                };
+              } else if (parallelItem && typeof parallelItem === "object") {
+                return {
+                  step:
+                    parallelItem.step ||
+                    parallelItem.context ||
+                    "Complete task",
+                  context:
+                    parallelItem.context ||
+                    parallelItem.step ||
+                    "Complete the assigned task",
+                };
+              }
+              return {
+                step: "Complete task",
+                context: "Complete the assigned task",
+              };
+            });
+            return { type: "parallel", data: fixedParallelData };
+          }
+          return item;
+        });
+        parsedResponse.data = fixedData;
+      }
+
+      // Coerce malformed respond_to_user arrays (e.g. [{type:'tool_code', data:{step, context}}, ...])
+      if (
+        parsedResponse?.type === "respond_to_user" &&
+        Array.isArray(parsedResponse.data)
+      ) {
+        const pieces = parsedResponse.data
+          .map(
+            (d: any) =>
+              d?.data?.context ??
+              d?.data?.step ??
+              (typeof d === "string" ? d : null)
+          )
+          .filter(Boolean);
+        parsedResponse = {
+          type: "respond_to_user",
+          data: pieces.length
+            ? pieces.join("\n\n")
+            : JSON.stringify(parsedResponse.data),
+        };
+      }
+
+      response = parsedResponse as z.infer<typeof outputSchema>;
+    } catch (fallbackError) {
+      console.error("Fallback response coercion failed:", fallbackError);
+      return {
+        messages: [
+          new AIMessage({
+            content:
+              "I encountered an error while processing your request. Please try again.",
+            additional_kwargs: {
+              pastSteps: state.pastSteps.map((pastStep) => {
+                const [step, messages] = pastStep;
+                const storedMessages =
+                  mapChatMessagesToStoredMessages(messages);
+                return [step, storedMessages];
+              }),
+            },
+          }),
+        ],
+        plan: [],
+        pastSteps: [],
+      };
+    }
+  }
 
   if (response.type === "respond_to_user") {
     // Normalize various shapes into a single string for the final answer.
@@ -279,15 +426,9 @@ async function replanner(
         },
       }),
     ];
-    return {
-      messages: responseMessages,
-      plan: [],
-      pastSteps: [],
-    };
+    return { messages: responseMessages, plan: [], pastSteps: [] };
   } else if (response.type === "continue_planning") {
-    return {
-      plan: response.data as z.infer<typeof planArray>,
-    };
+    return { plan: response.data as z.infer<typeof planArray> };
   } else {
     throw new Error("Invalid response from replanner");
   }

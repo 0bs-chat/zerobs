@@ -205,6 +205,14 @@ type PlanItem =
 
 export type Plan = { plan: PlanItem[] };
 
+CRITICAL: For "single" items, data must be an OBJECT with step and context fields:
+✅ CORRECT: { "type": "single", "data": { "step": "Search docs", "context": "Search for relevant information" } }
+❌ WRONG: { "type": "single", "data": ["Search for relevant information"] }
+
+For "parallel" items, data must be an ARRAY of planStep objects:
+✅ CORRECT: { "type": "parallel", "data": [{ "step": "Task A", "context": "Do A" }, { "step": "Task B", "context": "Do B" }] }
+❌ WRONG: { "type": "parallel", "data": ["Task A", "Task B"] }
+
 ---------------------------------------------------
 
 Important constraints:
@@ -243,6 +251,11 @@ type PlanItem =
 type ReplanResponse =
   | { type: "continue_planning"; data: PlanItem[] }
   | { type: "respond_to_user";   data: string };
+
+CRITICAL:
+- For "single", data MUST be an OBJECT: { step, context } (not an array).
+- For "parallel", data MUST be an ARRAY of planStep objects (not strings).
+- For "respond_to_user", data MUST be a STRING. Do NOT return arrays or objects.
 +---------------------------------------------------`;
 
   const toolsSection = `\n**Available Tools:**\n${availableToolsDescription}\n\nWhen planning remaining steps, consider which tools are available and how they can be used to accomplish the remaining objectives efficiently.`;
