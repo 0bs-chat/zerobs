@@ -80,30 +80,48 @@ export function AgentToggles() {
     }
   };
 
-  const selectedToggles = TOGGLES.filter((t) => chat[t.key as keyof typeof chat]);
+  const selectedToggles = TOGGLES.filter(
+    (t) => chat[t.key as keyof typeof chat]
+  );
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" title="Toggles" className="cursor-pointer">
+          <Button
+            variant="outline"
+            size="icon"
+            title="Toggles"
+            className="cursor-pointer text-foreground/70 dark:border-none"
+          >
             <BotIcon className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">Agent Settings</div>
+        <DropdownMenuContent
+          align="start"
+          className="border-border/60 bg-background/70 backdrop-blur-sm"
+        >
+          <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">
+            Agent Settings
+          </div>
           {TOGGLES.map((toggle) => (
             <DropdownMenuItem
               key={toggle.key}
-              onClick={() => handleToggle(toggle.key, !chat[toggle.key as keyof typeof chat])}
+              onClick={() =>
+                handleToggle(toggle.key, !chat[toggle.key as keyof typeof chat])
+              }
               className={[
                 "flex items-center justify-between pr-2 cursor-pointer",
-                toggle.key === "orchestratorMode" ? "bg-gradient-to-r from-input to-card hover:bg-gradient-to-r hover:from-input/80 hover:to-card/80" : "",
+                toggle.key === "orchestratorMode"
+                  ? "bg-gradient-to-r from-input to-card hover:bg-gradient-to-r hover:from-input/80 hover:to-card/80"
+                  : "",
               ].join(" ")}
             >
               <span className="flex items-center gap-2">
                 <motion.span
-                  variants={toggle.animation === "scale" ? scaleIn : iconSpinVariants}
+                  variants={
+                    toggle.animation === "scale" ? scaleIn : iconSpinVariants
+                  }
                   initial="initial"
                   animate="animate"
                   transition={smoothTransition}
@@ -114,7 +132,11 @@ export function AgentToggles() {
               </span>
               <span className="ml-auto flex items-center">
                 {chat[toggle.key as keyof typeof chat] && (
-                  <svg className="size-4 text-primary" viewBox="0 0 20 20" fill="currentColor">
+                  <svg
+                    className="size-4 text-primary"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"

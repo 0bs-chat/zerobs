@@ -121,7 +121,11 @@ export const ToolBar = () => {
       <div className="flex flex-row items-center gap-1">
         <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-foreground/70 border border-border/60"
+            >
               <PlusIcon className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -152,15 +156,17 @@ export const ToolBar = () => {
         {project && (
           <Button
             variant="outline"
-            className="group justify-between px-2"
+            className="group justify-between px-2 text-foreground/70 dark:border-none"
             onClick={() => {
               setResizePanelOpen(true);
               setSelectedPanelTab("projects");
             }}
           >
             <span className="flex items-center gap-1">
-              <FoldersIcon className="w-4 h-4" />
-              <span className="max-w-32 truncate">{project.name}</span>
+              <FoldersIcon className="w-4 h-4 opacity-70" />
+              <span className="max-w-32 truncate text-foreground/70">
+                {project.name}
+              </span>
             </span>
             <div
               onClick={(e) => {
@@ -174,7 +180,7 @@ export const ToolBar = () => {
           </Button>
         )}
       </div>
-      <div className="flex flex-row items-center gap-1">
+      <div className="flex flex-row items-center gap-1 text-foreground/70">
         {showReasoningEffort && (
           <Select
             value={reasoningEffort}
@@ -189,14 +195,20 @@ export const ToolBar = () => {
               }
             }}
           >
-            <SelectTrigger className="bg-background border border-border">
-              <BrainIcon className="h-4 w-4" />
+            <SelectTrigger className=" text-foreground/70 dark:border-none">
+              <BrainIcon className="h-4 w-4 dark:opacity-70" />
               {reasoningEffort}
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
+            <SelectContent className="dark:border-border/60 bg-background/50 backdrop-blur-sm">
+              <SelectItem value="low" className="text-foreground/70">
+                Low
+              </SelectItem>
+              <SelectItem value="medium" className="text-foreground/70">
+                Medium
+              </SelectItem>
+              <SelectItem value="high" className="text-foreground/70">
+                High
+              </SelectItem>
             </SelectContent>
           </Select>
         )}
@@ -212,6 +224,7 @@ export const ToolBar = () => {
           <Button
             variant="outline"
             size="icon"
+            className="cursor-pointer border dark:border-border/60"
             onClick={async () => {
               if (!["pending", "streaming"].includes(streamStatus ?? "")) {
                 await handleSubmit(chat);

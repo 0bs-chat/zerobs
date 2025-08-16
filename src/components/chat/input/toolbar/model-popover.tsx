@@ -23,7 +23,7 @@ const SearchInput = ({
   searchModel: string;
   setSearchModel: (v: string) => void;
 }) => (
-  <div className="py-2 px-4 flex flex-row items-center gap-0 sticky top-0 z-10 bg-background/70 backdrop-blur-lg border-b border-border">
+  <div className="py-2 px-4 flex flex-row items-center gap-0 sticky top-0 z-10 bg-background/70 backdrop-blur-lg border-b border-border/60">
     <Search className="h-4 w-4 text-muted-foreground" />
     <input
       className="w-full px-2 py-1 outline-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none "
@@ -72,7 +72,7 @@ export function ModelPopover({
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
-          className="justify-between gap-2 cursor-pointer"
+          className="justify-between gap-2 cursor-pointer text-foreground/70"
           onClick={() => setPopoverOpen(!popoverOpen)}
         >
           {selectedModelConfig?.label || selectedModel}
@@ -80,7 +80,7 @@ export function ModelPopover({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-96 h-96 overflow-y-auto p-0 scrollbar-none relative bg-background"
+        className="w-96 h-96 border-border/60 overflow-y-auto p-0 scrollbar-none relative bg-background"
         align="end"
       >
         <SearchInput
@@ -100,12 +100,12 @@ export function ModelPopover({
                 className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60`}
                 onClick={() => handleModelSelect(model.model_name)}
               >
-                <div className="text-foreground flex gap-2 items-center justify-center ">
+                <div className="text-foreground/70 flex gap-2 items-center justify-center ">
                   <img
                     src={model.image}
                     aria-label={`${model.label} model icon`}
                     alt={model.label}
-                    className={`h-4 w-4 ${
+                    className={`h-4 w-4 opacity-70 ${
                       ["openai", "x-ai", "openrouter", "anthropic"].includes(
                         model.owner
                       )

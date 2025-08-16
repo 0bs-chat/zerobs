@@ -6,12 +6,17 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { ProjectDocumentListItem } from "./document-list-item";
 import { Toggle } from "@/components/ui/toggle";
+import { useRouter } from "@tanstack/react-router";
 
 export function ProjectDocumentList({
   projectId,
 }: {
   projectId: Id<"projects">;
 }) {
+  const router = useRouter();
+  const pathname = router.state.location.pathname;
+  const isProjectRoute = pathname.startsWith("/project/");
+
   const { data: projectDocuments } = useQuery({
     ...convexQuery(
       api.projectDocuments.queries.getAll,
@@ -52,7 +57,9 @@ export function ProjectDocumentList({
   );
 
   return (
-    <div className="flex flex-col gap-2 bg-card rounded-xl shadow-sm border p-4 h-full min-h-0">
+    <div
+      className={`flex flex-col gap-2 rounded-xl shadow-sm  h-full min-h-0 ${isProjectRoute ? "border dark:border-border/60 p-4" : ""}`}
+    >
       <div className="flex items-center justify-start">
         <div className="flex items-center gap-2">
           <Toggle

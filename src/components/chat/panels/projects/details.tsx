@@ -22,6 +22,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const router = useRouter();
   const pathname = router.state.location.pathname;
   const isProjectRoute = pathname.startsWith("/project/");
+
   const { data: project } = useQuery({
     ...convexQuery(
       api.projects.queries.get,
@@ -61,16 +62,18 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
         className={`${isProjectRoute ? "relative overflow-hidden rounded-lg border dark:border-border/60  bg-card p-4 shadow-sm " : "bg-transparent relative overflow-hidden rounded-lg"}`}
       >
         <div className="flex items-start justify-between">
-          <div className="min-w-0 gap-1 flex flex-col">
+          <div className="min-w-0 w-full gap-1 flex flex-col">
             <div
-              className={`${isProjectRoute ? "text-xl md:text-3xl font-bold tracking-tight flex items-center justify-between" : "text-lg font-semibold tracking-tight flex items-center justify-between"}`}
+              className={`${isProjectRoute ? "text-xl md:text-3xl font-bold tracking-tight flex items-center min-w-0 w-full justify-between" : "text-lg font-semibold tracking-tight flex items-center min-w-0 w-full justify-between"}`}
             >
-              {project.name}
+              <span className="truncate pr-2 text-foreground/80">
+                {project.name}
+              </span>
               <Button
                 aria-label="Clear project selection"
                 variant="ghost"
                 size="icon"
-                className="cursor-pointer border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/10 bg-primary/10"
+                className="cursor-pointer border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/10 bg-primary/10 ml-2 flex-shrink-0"
                 onClick={() => {
                   if (router.state.location.pathname.startsWith("/project/")) {
                     navigate({ to: "/projects" });
@@ -112,13 +115,13 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
         )}
       </div>
 
-      <Separator />
+      {!isProjectRoute && <Separator />}
 
       <div
-        className={`rounded-lg ${isProjectRoute ? "bg-card border dark:border-border/60 p-4" : "bg-muted/50"} shadow-sm gap-2 flex flex-col border dark:border-border/60 p-3`}
+        className={`rounded-lg ${isProjectRoute ? "bg-card border dark:border-border/60 p-4" : "bg-muted/50"} shadow-sm gap-2 flex flex-col `}
       >
         <div
-          className={`${isProjectRoute ? "text-xl font-semibold" : "text-lg font-semibold "} flex items-center justify-between`}
+          className={`${isProjectRoute ? "text-xl font-semibold" : "text-lg font-semibold "} flex items-center justify-between text-foreground/80`}
         >
           System Prompt
           <span className="text-xs text-secondary-foreground/50">
@@ -136,16 +139,18 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
             project.systemPrompt ??
             "Guide the assistant with context, tone, and constraints..."
           }
-          className={`${isProjectRoute ? "min-h-[120px] max-h-[240px]" : "min-h-[80px] max-h-[160px]"} border w-full resize-none rounded-md bg-background/70 p-2 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-secondary/40 focus-visible:ring-offset-0`}
+          className={`${isProjectRoute ? "min-h-[120px] max-h-[240px]" : "min-h-[80px] max-h-[160px]"} border dark:border-border/60 w-full resize-none rounded-md bg-background/70 p-2 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-secondary/40 focus-visible:ring-offset-0 text-foreground/70 ring-0`}
           minHeight={isProjectRoute ? 120 : 80}
           maxHeight={isProjectRoute ? 240 : 160}
         />
       </div>
 
-      <div className="flex flex-1 flex-col gap-3">
+      <div
+        className={`flex flex-1 flex-col gap-3 rounded-lg ${isProjectRoute ? "bg-card border dark:border-border/60 p-4" : ""}`}
+      >
         <div className="flex items-center justify-between">
           <h3
-            className={`${isProjectRoute ? "text-xl font-semibold" : "text-lg font-semibold"} text-foreground`}
+            className={`${isProjectRoute ? "text-xl font-semibold" : "text-lg font-semibold"} text-foreground/80  `}
           >
             Documents
           </h3>
