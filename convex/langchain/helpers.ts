@@ -17,8 +17,6 @@ import {
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { getMCPTools, getRetrievalTools } from "./tools";
-import { getGoogleTools } from "./tools/googleTools";
-import { getGithubTools } from "./tools/github";
 import { getModel } from "./models";
 import { createAgentSystemMessage } from "./prompts";
 import { GraphState } from "./state";
@@ -173,46 +171,21 @@ export async function getAvailableTools(
 ): Promise<Toolkit[] | StructuredToolInterface<ToolSchemaBase>[]> {
   const chat = config.chat;
 
-  const mcpPromise = getMCPTools(config.ctx, state, config);
-  const retrievalPromise = getRetrievalTools(state, config, true);
-  const googlePromise: Promise<StructuredToolInterface<ToolSchemaBase>[]> =
-    chat.enabledToolkits.includes("google")
-      ? (getGoogleTools(config) as Promise<
-          StructuredToolInterface<ToolSchemaBase>[]
-        >)
-      : Promise.resolve([] as StructuredToolInterface<ToolSchemaBase>[]);
-  const githubPromise: Promise<StructuredToolInterface<ToolSchemaBase>[]> =
-    chat.enabledToolkits.includes("github")
-      ? (getGithubTools(config) as Promise<
-          StructuredToolInterface<ToolSchemaBase>[]
-        >)
-      : Promise.resolve([] as StructuredToolInterface<ToolSchemaBase>[]);
-
-  const [mcp, retrievalTools, googleTools, githubTools] = await Promise.all([
-    mcpPromise,
-    retrievalPromise,
-    googlePromise,
-    githubPromise,
-  ] as const);
+  const [mcpTools, retrievalTools] = await Promise.all([
+    getMCPTools(config.ctx, state, config),
+    getRetrievalTools(state, config, true),
+  ]);
 
   if (!groupTools) {
     const pickedRetrievalTools: StructuredToolInterface<ToolSchemaBase>[] = [
       ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
       ...(chat.webSearch ? [retrievalTools.webSearch] : []),
     ];
-
-    return [
-      ...mcp.tools,
-      ...pickedRetrievalTools,
-      ...googleTools,
-      ...githubTools,
-    ];
   }
-
   const toolkits: Toolkit[] = [
-    ...Object.entries(mcp.groupedTools).map(([name, tools]) => ({
+    ...Object.entries(mcpTools.groupedTools).map(([name, tools]) => ({
       name,
-      tools: tools as StructuredToolInterface<ToolSchemaBase>[],
+      tools,
     })),
     ...(chat.webSearch
       ? [{ name: "WebSearch", tools: [retrievalTools.webSearch] }]
@@ -220,8 +193,6 @@ export async function getAvailableTools(
     ...(chat.projectId
       ? [{ name: "VectorSearch", tools: [retrievalTools.vectorSearch] }]
       : []),
-    ...(googleTools.length > 0 ? [{ name: "Google", tools: googleTools }] : []),
-    ...(githubTools.length > 0 ? [{ name: "GitHub", tools: githubTools }] : []),
   ];
 
   return toolkits;
@@ -280,7 +251,7 @@ export function extractFileIdsFromMessage(
       });
     }
   } catch (error) {
-    console.log("Failed to parse message content for file IDs:", error);
+    console.error("Failed to parse message content for file IDs:", error);
   }
 
   return fileIds;

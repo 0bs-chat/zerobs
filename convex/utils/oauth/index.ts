@@ -79,7 +79,6 @@ export const handleOAuthCallback = httpAction(async (_ctx, request) => {
   };
   if (includeGrantType) basePayload["grant_type"] = "authorization_code";
 
-  console.log(basePayload);
   const response = await fetch(providerConfig.tokenUrl, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded", accept: providerConfig.tokenAcceptJson ? "application/json" : "*/*" },
@@ -87,7 +86,6 @@ export const handleOAuthCallback = httpAction(async (_ctx, request) => {
   });
   const data = await response.json();
 
-  console.log(data);
   const accessToken = data.access_token;
   const refreshToken = data.refresh_token;
 

@@ -108,16 +108,25 @@ export const MCPFormView = ({ mcp, setMcp, handleTypeChange }: MCPFormViewProps)
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <Switch
-          id="restart-on-new-chat"
-          checked={mcp.restartOnNewChat}
-          onCheckedChange={(checked) =>
-            setMcp({ ...mcp, restartOnNewChat: checked })
-          }
-        />
-        <Label htmlFor="restart-on-new-chat">Restart on new chat</Label>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label htmlFor="per-chat-toggle">Per-Chat MCP</Label>
+            <p className="text-sm text-muted-foreground">
+              {mcp.type === "http" 
+                ? "Not applicable for HTTP MCPs"
+                : "Create a separate instance for each chat,\nthis will take longer to start up.\nOnly toggle this if you are sure you need it."}
+            </p>
+          </div>
+          <Switch
+            id="per-chat-toggle"
+            checked={mcp.perChat}
+            onCheckedChange={(checked) => setMcp({ ...mcp, perChat: checked })}
+            disabled={mcp.type === "http"}
+          />
+        </div>
       </div>
+
     </div>
   );
 };

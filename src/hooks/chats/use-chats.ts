@@ -60,7 +60,6 @@ export const useHandleSubmit = () => {
           orchestratorMode: chat.orchestratorMode,
           webSearch: chat.webSearch,
           artifacts: chat.artifacts,
-          enabledToolkits: chat.enabledToolkits,
         });
         await createMessageMutation({
           chatId: chat._id,
