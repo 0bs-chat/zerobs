@@ -9,6 +9,8 @@ import { getDocumentUrl } from "../../utils/helpers";
 import { extractFileIdsFromMessage, type ExtendedRunnableConfig } from "../helpers";
 import type { GraphState } from "../state";
 import { createJwt } from "../../utils/encryption";
+import { MCP_TEMPLATES } from "../../../src/components/chat/panels/mcp/templates";
+import { makeFunctionReference } from "convex/server";
 
 export const getMCPTools = async (
   ctx: ActionCtx,
@@ -29,11 +31,48 @@ export const getMCPTools = async (
     return [];
   }
 
+  let configurableEnvValues: Record<string, string> = {};
+  await Promise.all(mcps.page.map(async (mcp) => {
+    if (mcp.template) {
+      const matchingTemplate = MCP_TEMPLATES.find(t => t.template === mcp.template);
+      if (matchingTemplate && matchingTemplate.configurableEnv) {
+        for (const [key, value] of Object.entries(matchingTemplate.configurableEnv)) {
+          try {
+            const functionParts = value.func.split('.');
+            if (functionParts.length >= 4 && functionParts[0] === 'internal') {
+              const moduleName = functionParts[1];
+              const actionName = functionParts[2];  
+              const functionName = functionParts[3];
+              
+              const functionRefString = `${moduleName}/${actionName}:${functionName}`;
+              if (value.type === "action") {
+                const functionRef = makeFunctionReference<"action">(functionRefString);
+                const resolvedValue = await ctx.runAction(functionRef, value.args);
+                configurableEnvValues[key] = resolvedValue;
+              } else if (value.type === "mutation") {
+                const functionRef = makeFunctionReference<"mutation">(functionRefString);
+                const resolvedValue = await ctx.runMutation(functionRef, value.args);
+                configurableEnvValues[key] = resolvedValue;
+              } else if (value.type === "query") {
+                const functionRef = makeFunctionReference<"query">(functionRefString);
+                const resolvedValue = await ctx.runQuery(functionRef, value.args);
+                configurableEnvValues[key] = resolvedValue;
+              }
+            }
+          } catch (error) {
+            console.error(`Failed to resolve configurable env ${key}:`, error);
+          }
+        }
+      }
+
+    }
+  }));
+
   // Handle per-chat MCPs - create infrastructure on demand
   const updatedMcps = await Promise.all(
     mcps.page.map(async (mcp) => {
-      if (mcp.perChat && !mcp.url && ["stdio", "docker"].includes(mcp.type) && config) {
-        const mcpName = `${mcp._id}-${config.chat._id}`.slice(0, 62);
+      if (mcp.perChat && ["stdio", "docker"].includes(mcp.type) && config) {
+        const mcpName = `${config.chat._id}-${mcp._id}`.slice(0, 62);
         
         try {
           // Get or create fly.io app and machine similar to vibz logic
@@ -58,9 +97,8 @@ export const getMCPTools = async (
               await fly.allocateIpAddress(app.name!, "shared_v4");
             }
           }
-          
-          // If no machine, create it
-          if (!machine && app) {
+   
+          if (!machine) {
             const machineConfig = {
               name: `${mcpName}-machine`,
               region: "sea",
@@ -68,6 +106,7 @@ export const getMCPTools = async (
                 image: mcp.dockerImage || "mantrakp04/mcprunner:v1",
                 env: {
                   ...mcp.env,
+                  ...configurableEnvValues,
                   MCP_COMMAND: mcp.command || "",
                   HOST: `https://${mcpName}.fly.dev`,
                   OAUTH_TOKEN: await createJwt("OAUTH_TOKEN", mcp._id, mcp.userId),
@@ -90,11 +129,13 @@ export const getMCPTools = async (
                 ],
               },
             };
-            
             machine = await fly.createMachine(mcpName, machineConfig);
-            await fly.startMachine(mcpName, machine?.id!);
+            await fly.waitTillHealthy(mcpName, {
+              timeout: 120000,
+              interval: 1000,
+            });
+            await new Promise((resolve) => setTimeout(resolve, 10000));
           }
-          
           const sseUrl = `https://${mcpName}.fly.dev/sse`;
           
           // Update MCP with the URL
@@ -142,23 +183,33 @@ export const getMCPTools = async (
   // Construct connection objects for MultiServerMCPClient
   const mcpServers: Record<string, Connection> = Object.fromEntries(
     await Promise.all(
-      readyMcps.map(async (mcp) => [
-        mcp.name,
-        {
-          transport: "http",
-          url: mcp.url!,
-          headers: {
-            ...mcp.env,
-            Authorization: `Bearer ${await createJwt("OAUTH_TOKEN", mcp._id, mcp.userId)}`,
+      readyMcps.map(async (mcp) => {
+        let authToken = null;
+        if (mcp.template) {
+          const matchingTemplate = MCP_TEMPLATES.find(t => t.template === mcp.template);
+          if (matchingTemplate && matchingTemplate.customAuthTokenFromEnv) {
+            authToken = mcp.env[matchingTemplate.customAuthTokenFromEnv];
+          }
+        }
+        return [
+          mcp.name,
+          {
+            transport: "http",
+            url: mcp.url!,
+            headers: {
+              ...mcp.env,
+              ...configurableEnvValues,
+              Authorization: `Bearer ${authToken || (await createJwt("OAUTH_TOKEN", mcp._id, mcp.userId))}`,
+            },
+            useNodeEventSource: true,
+            reconnect: {
+              enabled: true,
+              maxAttempts: 5,
+              delayMs: 200,
+            },
           },
-          useNodeEventSource: true,
-          reconnect: {
-            enabled: true,
-            maxAttempts: 5,
-            delayMs: 200,
-          },
-        },
-      ]),
+        ]
+      }),
     ),
   );
 
@@ -171,6 +222,29 @@ export const getMCPTools = async (
   });
 
   const tools = await client.getTools();
+
+  // if promptTool, fetch the client from the client.getClient(mcpName) and update the first tool's description with the promptTool + description
+  await Promise.all(
+    readyMcps.map(async (mcp) => {
+      if (mcp.template) {
+        const matchingTemplate = MCP_TEMPLATES.find(t => t.template === mcp.template);
+        if (matchingTemplate && matchingTemplate.promptTool) {
+          const mcpClient = await client.getClient(mcp.name);
+          if (mcpClient) {
+            const prompt = await mcpClient.getPrompt({
+              name: matchingTemplate.promptTool,
+            });
+            if (prompt) {
+              const mcpTools = tools.filter(t => t.name.includes(mcp.name));
+              if (mcpTools.length > 0) {
+                mcpTools[0].description = `${prompt.messages[0].content.text}\n\n${mcpTools[0].description}`;
+              }
+            }
+          }
+        }
+      }
+    }),
+  );
 
   // Extract file IDs from the last message content instead of chat document
   if (state) {

@@ -124,6 +124,7 @@ export const Mcps = Table("mcps", {
   userId: v.optional(v.string()),
   updatedAt: v.number(),
   perChat: v.boolean(),
+  template: v.optional(v.string()),
 });
 
 export const Usage = Table("usage", {

@@ -60,6 +60,7 @@ export const create = mutation({
       userId: userId,
       updatedAt: Date.now(),
       perChat: args.perChat ?? false,
+      template: args.template,
     });
 
     if (args.type !== "http" && !args.perChat) {

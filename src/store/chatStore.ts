@@ -134,6 +134,7 @@ export const initialMCPState = {
   env: {},
   status: "creating" as const,
   perChat: false,
+  template: undefined as string | undefined,
 };
 
 export const mcpBrowsePanelOpenAtom = atom(false);
