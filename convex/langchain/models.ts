@@ -15,7 +15,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import mime from "mime";
 import { Base64 } from "convex/values";
-import { getUrl } from "../utils/helpers";
+import { getDocumentUrl } from "../utils/helpers";
 
 export const models: {
   label: string;
@@ -350,14 +350,7 @@ export async function getModel(
         userId,
       })
     )?.value ?? process.env.OPENAI_API_KEY;
-  const OPENAI_BASE_URL =
-    (
-      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
-        key: "OPENAI_BASE_URL",
-        userId,
-      })
-    )?.value ?? "https://openrouter.ai/api/v1";
-
+    
   return new ChatOpenAI({
     model: modelConfig.model,
     apiKey: OPENAI_API_KEY,
@@ -366,7 +359,7 @@ export async function getModel(
       effort: reasoningEffort,
     },
     configuration: {
-      baseURL: OPENAI_BASE_URL,
+      baseURL: "https://openrouter.ai/api/v1",
     },
   });
 }
@@ -402,18 +395,9 @@ export async function getEmbeddingModel(
       apiKey: API_KEY,
     });
   } else {
-    const OPENAI_BASE_URL = (
-      await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
-        key: "OPENAI_EMBEDDING_BASE_URL",
-      })
-    )?.value;
-
     return new OpenAIEmbeddings({
       model: modelConfig.model,
-      apiKey: API_KEY,
-      configuration: {
-        baseURL: OPENAI_BASE_URL,
-      },
+      apiKey: API_KEY
     });
   }
 }
@@ -575,7 +559,7 @@ export async function getVectorText(
       ? vectors.map((vector) => vector.text).join("\n")
       : "No text found";
 
-  const url = await getUrl(ctx, doc.key);
+  const url = await getDocumentUrl(ctx, doc.key);
   return {
     type: "text",
     text: `# [${doc.name}](${url})\n${text}\n`,

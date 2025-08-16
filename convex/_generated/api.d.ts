@@ -56,6 +56,8 @@ import type * as utils_encryption from "../utils/encryption.js";
 import type * as utils_flyio_index from "../utils/flyio/index.js";
 import type * as utils_flyio_types from "../utils/flyio/types.js";
 import type * as utils_helpers from "../utils/helpers.js";
+import type * as utils_oauth_index from "../utils/oauth/index.js";
+import type * as utils_oauth_providers from "../utils/oauth/providers.js";
 import type * as utils_services_index from "../utils/services/index.js";
 
 import type {
@@ -121,6 +123,8 @@ declare const fullApi: ApiFromModules<{
   "utils/flyio/index": typeof utils_flyio_index;
   "utils/flyio/types": typeof utils_flyio_types;
   "utils/helpers": typeof utils_helpers;
+  "utils/oauth/index": typeof utils_oauth_index;
+  "utils/oauth/providers": typeof utils_oauth_providers;
   "utils/services/index": typeof utils_services_index;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

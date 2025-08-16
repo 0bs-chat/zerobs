@@ -6,6 +6,7 @@ import { v } from "convex/values";
 import { fly } from "../utils/flyio";
 import type { FlyApp, CreateMachineRequest } from "../utils/flyio";
 import { verifyEnv } from "./utils";
+import { createJwt } from "../utils/encryption";
 
 export const create = internalAction({
   args: {
@@ -39,11 +40,12 @@ export const create = internalAction({
         name: `${appName}-machine`,
         region: "sea",
         config: {
-          image: mcp.dockerImage || "mantrakp04/mcprunner:latest",
+          image: mcp.dockerImage || "mantrakp04/mcprunner:v1",
           env: {
             ...(await verifyEnv(mcp.env!)),
             MCP_COMMAND: mcp.command || "",
             HOST: "https://" + appName + ".fly.dev",
+            OAUTH_TOKEN: await createJwt("OAUTH_TOKEN", mcp._id, mcp.userId),
           },
           guest: { cpus: 2, memory_mb: 2048, cpu_kind: "shared" },
           services: [
@@ -54,6 +56,11 @@ export const create = internalAction({
               autostart: true,
               autostop: "suspend",
               min_machines_running: 0,
+              checks: [
+                {
+                  type: "tcp"
+                }
+              ]
             },
           ],
         },
@@ -66,6 +73,10 @@ export const create = internalAction({
 
       await fly.allocateIpAddress(app?.name!, "shared_v4");
       await fly.createMachine(appName, machineConfig);
+      await fly.waitTillHealthy(appName, {
+        timeout: 120000,
+        interval: 500,
+      });
 
       await ctx.runMutation(internal.mcps.crud.update, {
         id: args.mcpId,
@@ -173,5 +184,56 @@ export const remove = internalAction({
     if (app && app.name) {
       await fly.deleteApp(app.name);
     }
+  },
+});
+
+export const getConvexDeployKey = internalAction({
+  args: {},
+  handler: async (ctx, _args): Promise<string> => {
+    const CONVEX_ACCESS_TOKEN = (await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
+      key: "CONVEX_ACCESS_TOKEN",
+    }))?.value ?? process.env.CONVEX_ACCESS_TOKEN;
+    const tokenDetails = await (await fetch(
+      "https://api.convex.dev/v1/token_details",
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${CONVEX_ACCESS_TOKEN}`
+        },
+      }
+    )).json();
+    const teamId = tokenDetails.teamId;
+
+    const projectRes = await (await fetch(
+      `https://api.convex.dev/v1/teams/${teamId}/create_project`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${CONVEX_ACCESS_TOKEN}`
+        },
+        body: JSON.stringify({
+          "deploymentType": "dev",
+          "projectName": "vibz-mcp-server"
+        })
+      }
+    )).json();
+    const devDeploymentName = projectRes.deploymentName;
+
+    const deployKeyRes = await (await fetch(
+      `https://api.convex.dev/v1/deployments/${devDeploymentName}/create_deploy_key`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${CONVEX_ACCESS_TOKEN}`
+        },
+        body: JSON.stringify({
+          "name": "vibz-mcp-server"
+        })
+      }
+    )).json();
+    return deployKeyRes.deployKey;
   },
 });

@@ -15,6 +15,8 @@ import { useConvexAuth } from "convex/react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopNav } from "@/components/topnav";
 import { useEffect } from "react";
+import { DocumentDialog } from "@/components/document-dialog";
+import { CreateProjectDialog } from "@/components/create-project-dialog";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -46,7 +48,7 @@ export const Route = createRootRoute({
       },
       {
         rel: "manifest",
-        href: "manifest.json",
+        href: "/manifest.json",
       },
     ],
     scripts: [
@@ -126,6 +128,8 @@ export const Route = createRootRoute({
             )}
             {/* Render the appropriate outlet */}
             <Outlet />
+            <DocumentDialog />
+            <CreateProjectDialog />
           </SidebarProvider>
         </motion.div>
         <Toaster />

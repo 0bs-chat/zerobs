@@ -15,8 +15,7 @@ import {
   initialMCPState,
   type McpType,
 } from "@/store/chatStore";
-import { MCP_TEMPLATES } from "@/constants/mcp-templates";
-import type { McpTemplate } from "@/constants/mcp-templates";
+import { MCP_TEMPLATES, type McpTemplate } from "./templates";
 import { MCPBrowseView } from "./mcp-browse-view";
 import { MCPFormView } from "./mcp-form-view";
 
@@ -60,12 +59,24 @@ export const MCPDialog = () => {
       dockerImage: type === "docker" ? prev.dockerImage || "" : "",
       dockerPort: type === "docker" ? prev.dockerPort || 0 : 0,
       dockerCommand: type === "docker" ? prev.dockerCommand || "" : "",
+      perChat: type === "http" ? false : prev.perChat,
     }));
   };
 
   const handleTemplateSelect = (template: McpTemplate) => {
-    const { description, image, official, status, ...rest } = template;
-    setMcp({ ...initialMCPState, ...rest });
+    setMcp({
+      ...initialMCPState,
+      name: template.name,
+      type: template.type,
+      command: template.command || "",
+      url: template.url || "",
+      dockerImage: template.dockerImage || "",
+      dockerPort: template.dockerPort || 8000,
+      dockerCommand: template.dockerCommand || "",
+      env: template.env || {},
+      perChat: template.perChat || false,
+      template: template.template,
+    });
     setView("form");
   };
 

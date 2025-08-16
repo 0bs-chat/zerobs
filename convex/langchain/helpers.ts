@@ -17,10 +17,13 @@ import {
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { createSupervisor } from "@langchain/langgraph-supervisor";
 import { getMCPTools, getRetrievalTools } from "./tools";
-import { getGoogleTools } from "./tools/googleTools";
 import { getModel } from "./models";
 import { createAgentSystemMessage } from "./prompts";
 import { GraphState } from "./state";
+import type {
+  StructuredToolInterface,
+  ToolSchemaBase,
+} from "@langchain/core/tools";
 
 export type ExtendedRunnableConfig = RunnableConfig & {
   ctx: ActionCtx;
@@ -53,16 +56,7 @@ export async function createAgentWithTools(
   plannerMode: boolean = false,
 ) {
   const chat = config.chat;
-  const tools = await getMCPTools(config.ctx, state);
-  const retrievalTools = await getRetrievalTools(state, config, true);
-  const googleTools = await getGoogleTools(config, true);
-
-  const allTools = [
-    ...(tools.tools.length > 0 ? tools.tools : []),
-    ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
-    ...(chat.webSearch ? [retrievalTools.webSearch] : []),
-    ...(googleTools.length > 0 ? googleTools : []),
-  ];
+  const allTools = await getAvailableTools(state, config);
 
   if (!chat.conductorMode) {
     const model = await getModel(config.ctx, chat.model, chat.reasoningEffort);
@@ -83,7 +77,8 @@ export async function createAgentWithTools(
       prompt: promptTemplate,
     });
   } else {
-    if (Object.keys(tools.groupedTools).length === 0) {
+    const toolkits: Toolkit[] = await getAvailableTools(state, config, true);
+    if (!toolkits || toolkits.length === 0) {
       throw new Error("Need atleast 1 mcp enabled to use conductor mode");
     }
     const llm = await getModel(config.ctx, "worker", undefined);
@@ -92,40 +87,17 @@ export async function createAgentWithTools(
       chat.model!,
       chat.reasoningEffort,
     );
-    const agents = Object.entries(tools.groupedTools).map(
-      ([groupName, tools]) =>
-        createReactAgent({
-          llm: llm,
-          tools: tools,
-          name: groupName,
-          prompt: `You are a ${groupName} assistant`,
-        }),
+    const agents = toolkits.map((toolkit: Toolkit) =>
+      createReactAgent({
+        llm: llm,
+        tools: toolkit.tools,
+        name: toolkit.name,
+        prompt: `You are a ${toolkit.name} assistant`,
+      }),
     );
     return createSupervisor({
       agents: [
         ...agents,
-        ...(chat.webSearch
-          ? [
-              createReactAgent({
-                llm: llm,
-                tools: [retrievalTools.webSearch],
-                name: "WebSearch",
-                prompt:
-                  "You are a WebSearch assistant specialized in searching the internet for current information. Use web search to find up-to-date information from various online sources.",
-              }),
-            ]
-          : []),
-        ...(chat.projectId
-          ? [
-              createReactAgent({
-                llm: llm,
-                tools: [retrievalTools.vectorSearch],
-                name: "VectorSearch",
-                prompt:
-                  "You are a VectorSearch assistant specialized in searching through project documents and uploaded files. Use vector similarity search to find relevant information from the user's project documents.",
-              }),
-            ]
-          : []),
       ],
       llm: supervisorLlm,
       prompt: createAgentSystemMessage(
@@ -174,56 +146,72 @@ export function getLastMessage(
   return null;
 }
 
+export type Toolkit = {
+  name: string;
+  tools: StructuredToolInterface<ToolSchemaBase>[];
+};
+
+// Overloads to provide precise return types based on `groupTools`
 export async function getAvailableTools(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
-): Promise<Array<{ name: string; description: string }>> {
+): Promise<StructuredToolInterface<ToolSchemaBase>[]>;
+export async function getAvailableTools(
+  state: typeof GraphState.State,
+  config: ExtendedRunnableConfig,
+  groupTools: false,
+): Promise<StructuredToolInterface<ToolSchemaBase>[]>;
+export async function getAvailableTools(
+  state: typeof GraphState.State,
+  config: ExtendedRunnableConfig,
+  groupTools: true,
+): Promise<Toolkit[]>;
+export async function getAvailableTools(
+  state: typeof GraphState.State,
+  config: ExtendedRunnableConfig,
+  groupTools: boolean = false,
+): Promise<Toolkit[] | StructuredToolInterface<ToolSchemaBase>[]> {
   const chat = config.chat;
-  const tools = await getMCPTools(config.ctx, state);
-  const retrievalTools = await getRetrievalTools(state, config, true);
-  const googleTools = await getGoogleTools(config, true);
 
-  const toolsInfo: Array<{ name: string; description: string }> = [];
+  const [
+    mcpTools,
+    retrievalTools
+  ] = await Promise.all([
+    getMCPTools(config.ctx, state, config),
+    getRetrievalTools(state, config, true),
+  ]);
 
-  // Add MCP tools
-  tools.tools.forEach((tool) => {
-    toolsInfo.push({
-      name: tool.name,
-      description: tool.description || "No description available",
-    });
-  });
-
-  // Add retrieval tools
-  if (chat.projectId) {
-    toolsInfo.push({
-      name: retrievalTools.vectorSearch.name,
-      description: retrievalTools.vectorSearch.description,
-    });
+  if (!groupTools) {
+    return [
+      ...mcpTools,
+      ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
+      ...(chat.webSearch ? [retrievalTools.webSearch] : []),
+    ];
   }
 
-  if (chat.webSearch) {
-    toolsInfo.push({
-      name: retrievalTools.webSearch.name,
-      description: retrievalTools.webSearch.description,
-    });
+  // Group MCP tools by server name (tool name format: "mcp__<server>__<tool>")
+  const mcpGrouped = new Map<string, StructuredToolInterface<ToolSchemaBase>[]>();
+  for (const tool of mcpTools) {
+    const parts = tool.name.split("__");
+    const groupName = parts.length >= 2 ? parts[1] : "MCP";
+    if (!mcpGrouped.has(groupName)) mcpGrouped.set(groupName, []);
+    mcpGrouped.get(groupName)!.push(tool);
   }
 
-  // Add Google tools
-  googleTools.forEach((tool) => {
-    toolsInfo.push({
-      name: tool.name,
-      description: tool.description || "No description available",
-    });
-  });
+  const toolkits: Toolkit[] = [
+    ...Array.from(mcpGrouped.entries()).map(([name, tools]) => ({ name, tools })),
+    ...(chat.webSearch ? [{ name: "WebSearch", tools: [retrievalTools.webSearch] }] : []),
+    ...(chat.projectId ? [{ name: "VectorSearch", tools: [retrievalTools.vectorSearch] }] : []),
+  ];
 
-  return toolsInfo;
+  return toolkits;
 }
 
 export async function getAvailableToolsDescription(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
 ): Promise<string> {
-  const toolsInfo = await getAvailableTools(state, config);
+  const toolsInfo: StructuredToolInterface<ToolSchemaBase>[] = await getAvailableTools(state, config);
 
   if (toolsInfo.length === 0) {
     return "No tools are currently available.";
@@ -271,7 +259,7 @@ export function extractFileIdsFromMessage(
       });
     }
   } catch (error) {
-    console.log("Failed to parse message content for file IDs:", error);
+    console.error("Failed to parse message content for file IDs:", error);
   }
 
   return fileIds;

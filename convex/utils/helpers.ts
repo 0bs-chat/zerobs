@@ -7,7 +7,7 @@ import {
 } from "../_generated/server.js";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
-export async function getUrl(
+export async function getDocumentUrl(
   ctx: ActionCtx | MutationCtx,
   key: Doc<"documents">["key"],
 ) {

@@ -1,13 +1,20 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import type { ExtendedRunnableConfig } from "../helpers";
+import { internal } from "../../_generated/api";
 
-// Helper function to get Google OAuth token from user's external account
-async function getGoogleAccessToken(_config: ExtendedRunnableConfig) {
-  return undefined;
+async function getGoogleAccessToken(config: ExtendedRunnableConfig) {
+  try {
+    const token = await config.ctx.runAction(
+      internal.utils.oauth.index.getRefreshedAccessToken,
+      { provider: "google" },
+    );
+    return token;
+  } catch (_err) {
+    return undefined;
+  }
 }
 
-// Helper function to make authenticated Google API requests
 async function makeGoogleAPIRequest(
   endpoint: string,
   accessToken: string,
@@ -35,7 +42,6 @@ async function makeGoogleAPIRequest(
   return response.json();
 }
 
-// Helper function to make Gmail API requests
 async function makeGmailAPIRequest(
   endpoint: string,
   accessToken: string,
@@ -65,7 +71,6 @@ async function makeGmailAPIRequest(
 
 export const getGoogleTools = async (
   config: ExtendedRunnableConfig,
-  returnString: boolean = false,
 ) => {
   const accessToken = await getGoogleAccessToken(config);
   if (!accessToken) {
@@ -94,10 +99,7 @@ export const getGoogleTools = async (
             accessRole: calendar.accessRole,
           })) || [];
 
-        if (returnString) {
-          return JSON.stringify(calendars, null, 2);
-        }
-        return calendars;
+        return JSON.stringify(calendars, null, 2);
       } catch (error) {
         return `Failed to list calendars: ${error instanceof Error ? error.message : "Unknown error"}`;
       }
@@ -172,10 +174,7 @@ export const getGoogleTools = async (
             organizer: event.organizer,
           })) || [];
 
-        if (returnString) {
-          return JSON.stringify(events, null, 2);
-        }
-        return events;
+        return JSON.stringify(events, null, 2);
       } catch (error) {
         return `Failed to list calendar events: ${error instanceof Error ? error.message : "Unknown error"}`;
       }
@@ -252,10 +251,7 @@ export const getGoogleTools = async (
           htmlLink: result.htmlLink,
         };
 
-        if (returnString) {
-          return JSON.stringify(createdEvent, null, 2);
-        }
-        return createdEvent;
+        return JSON.stringify(createdEvent, null, 2);
       } catch (error) {
         return `Failed to create calendar event: ${error instanceof Error ? error.message : "Unknown error"}`;
       }
@@ -333,10 +329,7 @@ export const getGoogleTools = async (
           htmlLink: result.htmlLink,
         };
 
-        if (returnString) {
-          return JSON.stringify(event, null, 2);
-        }
-        return event;
+        return JSON.stringify(event, null, 2);
       } catch (error) {
         return `Failed to update calendar event: ${error instanceof Error ? error.message : "Unknown error"}`;
       }
@@ -367,10 +360,7 @@ export const getGoogleTools = async (
           message: `Event ${eventId} deleted successfully`,
         };
 
-        if (returnString) {
-          return JSON.stringify(result, null, 2);
-        }
-        return result;
+        return JSON.stringify(result, null, 2);
       } catch (error) {
         return `Failed to delete calendar event: ${error instanceof Error ? error.message : "Unknown error"}`;
       }
@@ -443,10 +433,7 @@ export const getGoogleTools = async (
           }),
         );
 
-        if (returnString) {
-          return JSON.stringify(messages, null, 2);
-        }
-        return messages;
+        return JSON.stringify(messages, null, 2);
       } catch (error) {
         return `Failed to list Gmail messages: ${error instanceof Error ? error.message : "Unknown error"}`;
       }
@@ -502,10 +489,7 @@ export const getGoogleTools = async (
           labelIds: result.labelIds,
         };
 
-        if (returnString) {
-          return JSON.stringify(message, null, 2);
-        }
-        return message;
+        return JSON.stringify(message, null, 2);
       } catch (error) {
         return `Failed to get Gmail message: ${error instanceof Error ? error.message : "Unknown error"}`;
       }
@@ -553,10 +537,7 @@ export const getGoogleTools = async (
           message: "Email sent successfully",
         };
 
-        if (returnString) {
-          return JSON.stringify(sentMessage, null, 2);
-        }
-        return sentMessage;
+        return JSON.stringify(sentMessage, null, 2);
       } catch (error) {
         return `Failed to send Gmail message: ${error instanceof Error ? error.message : "Unknown error"}`;
       }
@@ -620,10 +601,7 @@ export const getGoogleTools = async (
             }),
         );
 
-        if (returnString) {
-          return JSON.stringify(messages, null, 2);
-        }
-        return messages;
+        return JSON.stringify(messages, null, 2);
       } catch (error) {
         return `Failed to search Gmail: ${error instanceof Error ? error.message : "Unknown error"}`;
       }

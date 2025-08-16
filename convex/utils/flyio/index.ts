@@ -219,6 +219,127 @@ export const fly = {
     return await flyGraphqlRequest(mutation, { input });
   },
 
+  waitTillHealthy: async (
+    appName: string,
+    options: {
+      timeout?: number;
+      interval?: number;
+      minHealthyCount?: number;
+    } = {},
+  ) => {
+    const {
+      timeout = 300000, // 5 minutes default
+      interval = 5000, // 5 seconds default
+      minHealthyCount = 1,
+    } = options;
+
+    const startTime = Date.now();
+    const endTime = startTime + timeout;
+
+    // Helper function to determine if a machine is healthy
+    const isMachineHealthy = (machine: FlyMachine): boolean => {
+      // Machine must be in started state
+      if (machine.state !== "started") {
+        return false;
+      }
+
+      // Host status should be ok
+      if (machine.host_status !== "ok") {
+        return false;
+      }
+
+      // If there are health checks, they must all pass
+      if (machine.checks && machine.checks.length > 0) {
+        return machine.checks.every(check => 
+          check.status === "passing" || check.status === "success"
+        );
+      }
+
+      // If no health checks defined, consider machine healthy if it's started and host is ok
+      return true;
+    };
+
+    while (Date.now() < endTime) {
+      try {
+        // Get app info to verify it exists
+        const app = await fly.getApp(appName);
+        if (!app) {
+          await new Promise(resolve => setTimeout(resolve, interval));
+          continue;
+        }
+
+        // Get all machines for the app
+        const machines = await fly.listMachines(appName);
+        if (!machines) {
+          await new Promise(resolve => setTimeout(resolve, interval));
+          continue;
+        }
+
+        // Filter healthy machines
+        const healthyMachines = machines.filter(isMachineHealthy);
+
+        // Check if we have enough healthy machines
+        if (healthyMachines.length >= minHealthyCount) {
+          return {
+            healthy: true,
+            healthyCount: healthyMachines.length,
+            totalCount: machines.length,
+            app,
+            machines,
+          };
+        }
+
+        // Check if all machines are in a failed state
+        const failedMachines = machines.filter(
+          machine => machine.state === "destroyed" || machine.state === "failed"
+        );
+
+        if (failedMachines.length === machines.length && machines.length > 0) {
+          return {
+            healthy: false,
+            healthyCount: 0,
+            totalCount: machines.length,
+            app,
+            machines,
+            error: "All machines failed",
+          };
+        }
+
+        // Wait before next check
+        await new Promise(resolve => setTimeout(resolve, interval));
+      } catch (error) {
+        console.error(`Error checking health for app ${appName}:`, error);
+        await new Promise(resolve => setTimeout(resolve, interval));
+      }
+    }
+
+    // Timeout reached - get final state
+    try {
+      const app = await fly.getApp(appName);
+      const machines = await fly.listMachines(appName) || [];
+      const healthyMachines = machines.filter(isMachineHealthy);
+
+      return {
+        healthy: false,
+        healthyCount: healthyMachines.length,
+        totalCount: machines.length,
+        app,
+        machines,
+        error: "Health check timeout",
+      };
+    } catch (error) {
+      console.error(`Error getting final state for app ${appName}:`, error);
+      return {
+        healthy: false,
+        healthyCount: 0,
+        totalCount: 0,
+        app: null,
+        machines: [],
+        error: "Health check timeout and unable to get final state",
+      };
+    }
+  },
+
   uploadFileToAllMachines: async (
     appName: string,
     files: { name: string; url: string }[],

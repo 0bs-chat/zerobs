@@ -1,4 +1,3 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
@@ -125,16 +124,16 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
         />
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 flex-1 min-h-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold">Documents</h3>
           </div>
           <AddDocumentControls projectId={project._id} />
         </div>
-        <ScrollArea className="h-[calc(100vh-19rem)]">
+        <div className="flex-1 min-h-0">
           <ProjectDocumentList projectId={project._id} />
-        </ScrollArea>
+        </div>
       </div>
     </div>
   );

@@ -14,28 +14,48 @@ import {
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { SaveIcon, TrashIcon } from "lucide-react";
-import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ErrorState } from "@/components/ui/error-state";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
+import { useAtomValue } from "jotai";
+import { apiKeysAtom } from "@/hooks/use-apikeys";
 
-// Common icon components to reduce duplication
 const Icons = {
   OpenAI: () => (
     <div className="w-6 h-6 rounded-sm flex items-center justify-center">
-      <img src="/openai.svg" alt="OpenAI" className="w-4 h-4 dark:invert" />
+      <img
+        src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fopenai.com%2F"
+        alt="OpenAI"
+        className="w-4 h-4 dark:invert"
+      />
     </div>
   ),
   Google: () => (
     <div className="w-6 h-6 rounded-sm flex items-center justify-center">
-      <img src="/google.svg" alt="Google" className="w-4 h-4" />
+      <img
+        src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fgoogle.com%2F"
+        alt="Google"
+        className="w-4 h-4"
+      />
     </div>
   ),
   Exa: () => (
     <div className="w-6 h-6 bg-[#03037A] rounded-sm flex items-center justify-center">
-      <span className="text-xs text-white font-bold">E</span>
+      <img
+        src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fexa.ai%2F"
+        alt="Exa"
+        className="w-4 h-4"
+      />
+    </div>
+  ),
+  OpenRouter: () => (
+    <div className="w-6 h-6 rounded-sm flex items-center justify-center">
+      <img
+        src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fopenrouter.ai%2F"
+        alt="OpenRouter"
+        className="w-4 h-4"
+      />
     </div>
   ),
 };
@@ -52,7 +72,7 @@ const ExternalLink = ({
     href={href}
     target="_blank"
     rel="noopener noreferrer"
-    className="text-blue-500 hover:underline"
+    className="text-blue-500/80 hover:underline"
   >
     {children}
   </a>
@@ -134,34 +154,18 @@ type ApiKeyConfig = {
 const API_KEY_CONFIGS: ApiKeyConfig[] = [
   {
     key: "OPENAI_API_KEY",
-    title: "OpenAI API Key",
+    title: "OpenRouter API Key",
     description: (
       <>
         Required for GPT models and AI-powered features. Get your API key from{" "}
-        <ExternalLink href="https://platform.openai.com/api-keys">
-          OpenAI Platform
+        <ExternalLink href="https://openrouter.ai/settings/keys">
+          OpenRouter
         </ExternalLink>
       </>
     ),
-    icon: <Icons.OpenAI />,
+    icon: <Icons.OpenRouter />,
     placeholder: "sk-...",
     isPassword: true,
-  },
-  {
-    key: "OPENAI_BASE_URL",
-    title: "OpenAI Base URL",
-    description:
-      "Custom base URL for OpenAI-compatible APIs (e.g., OpenRouter, local deployments). Defaults to OpenRouter if not set.",
-    icon: <Icons.OpenAI />,
-    placeholder: "https://api.openai.com/v1",
-  },
-  {
-    key: "OPENAI_EMBEDDING_BASE_URL",
-    title: "OpenAI Embedding Base URL",
-    description:
-      "Custom base URL for OpenAI embedding models. Leave empty to use the same as OpenAI Base URL.",
-    icon: <Icons.OpenAI />,
-    placeholder: "https://api.openai.com/v1",
   },
   {
     key: "GOOGLE_EMBEDDING_API_KEY",
@@ -202,14 +206,7 @@ export const Route = createFileRoute("/settings/apiKeys")({
 
 function RouteComponent() {
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
-
-  // Get existing API keys
-  const {
-    data: existingKeys,
-    error,
-    isError,
-    isLoading,
-  } = useQuery(convexQuery(api.apiKeys.queries.getAll, {}));
+  const existingKeys = useAtomValue(apiKeysAtom);
   const { mutateAsync: createApiKey } = useMutation({
     mutationFn: useConvexMutation(api.apiKeys.mutations.create),
   });
@@ -287,7 +284,7 @@ function RouteComponent() {
             />
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 h-full">
+        <CardContent className="flex flex-col gap-2 h-full">
           {existingKey?.value ? (
             <ExistingKeyDisplay
               config={config}
@@ -306,29 +303,6 @@ function RouteComponent() {
       </Card>
     );
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <LoadingSpinner label="Loading API keys..." />
-      </div>
-    );
-  }
-
-  // Show error state if API keys failed to load
-  if (isError || error) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <ErrorState
-          title="Failed to load API keys"
-          error={error}
-          showIcon={false}
-          density="comfy"
-          description="Unable to load API keys, please try again later."
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-4 h-full">
