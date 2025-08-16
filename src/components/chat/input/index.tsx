@@ -127,7 +127,7 @@ export const ChatInput = () => {
 
   return (
     <div
-      className={`relative flex flex-col gap-1.5 max-w-4xl w-full mx-auto rounded-xl bg-background backdrop-blur-sm border dark:border-border/60 shadow-sm p-1 transition-all ${isDragActive ? "ring-2 ring-primary/30" : "ring-0"}`}
+      className={`relative flex flex-col gap-1.5 max-w-4xl w-full mx-auto rounded-xl bg-background backdrop-blur-sm border border-border/80 shadow-sm p-1 transition-all ${isDragActive ? "ring-2 ring-primary/30" : "ring-0"}`}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragEnter={handleDragOver}

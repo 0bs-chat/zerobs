@@ -156,7 +156,7 @@ export const ToolBar = () => {
         {project && (
           <Button
             variant="outline"
-            className="group justify-between px-2 text-foreground/70 dark:border-none"
+            className="group justify-between px-2 text-foreground/70 dark:border-none cursor-pointer"
             onClick={() => {
               setResizePanelOpen(true);
               setSelectedPanelTab("projects");
@@ -195,8 +195,8 @@ export const ToolBar = () => {
               }
             }}
           >
-            <SelectTrigger className=" text-foreground/70 dark:border-none">
-              <BrainIcon className="h-4 w-4 dark:opacity-70" />
+            <SelectTrigger className="bg-transparent dark:bg-transparent dark:border-border/60 border text-foreground/70 dark:text-foreground/70">
+              <BrainIcon className="h-4 w-4 opacity-70" />
               {reasoningEffort}
             </SelectTrigger>
             <SelectContent className="dark:border-border/60 bg-background/50 backdrop-blur-sm">

@@ -117,7 +117,7 @@ export function AgentToggles() {
                   : "",
               ].join(" ")}
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2 text-foreground/70 dark:text-foreground/70">
                 <motion.span
                   variants={
                     toggle.animation === "scale" ? scaleIn : iconSpinVariants
@@ -163,11 +163,11 @@ export function AgentToggles() {
             initial="initial"
             animate="animate"
             transition={smoothTransition}
-            className="group-hover:hidden"
+            className="group-hover:hidden text-foreground/70 dark:text-foreground/70"
           >
             {toggle.icon}
           </motion.span>
-          <span className="absolute inset-0 flex items-center justify-center hidden group-hover:flex">
+          <span className="absolute inset-0 flex  items-center justify-center hidden group-hover:flex">
             <XIcon className="w-4 h-4 text-destructive" />
           </span>
         </Button>

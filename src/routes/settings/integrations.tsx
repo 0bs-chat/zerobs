@@ -45,17 +45,21 @@ function RouteComponent() {
         }),
       }),
     });
-    
+
     if (!res.ok) {
       toast.error(`Failed to start ${providerKey} OAuth`);
       return;
     }
-    
+
     const { redirect } = (await res.json()) as { redirect?: string };
     if (redirect) window.location.href = redirect;
   };
 
-  const handleDisconnect = async (accessKey: string, refreshKey: string, providerName: string) => {
+  const handleDisconnect = async (
+    accessKey: string,
+    refreshKey: string,
+    providerName: string
+  ) => {
     try {
       await Promise.all([
         removeApiKey({ key: accessKey }).catch(() => {}),
@@ -78,16 +82,22 @@ function RouteComponent() {
           <Card key={key}>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <img src={provider.icon} alt={provider.title} className="w-4 h-4" />
+                <img
+                  src={provider.icon}
+                  alt={provider.title}
+                  className="w-4 h-4"
+                />
                 {provider.title}
               </CardTitle>
               <CardDescription>{provider.description}</CardDescription>
             </CardHeader>
             <CardContent>
               {isConnected ? (
-                <Button 
-                  variant="destructive" 
-                  onClick={() => handleDisconnect(accessKey, refreshKey, provider.title)}
+                <Button
+                  variant="destructive"
+                  onClick={() =>
+                    handleDisconnect(accessKey, refreshKey, provider.title)
+                  }
                 >
                   Disconnect {provider.title}
                 </Button>

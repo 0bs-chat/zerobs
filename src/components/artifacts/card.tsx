@@ -76,10 +76,10 @@ export const ArtifactCard = memo(({ artifact }: { artifact: Artifact }) => {
 
   return (
     <Card
-      className={`hover:shadow-md transition-shadow border-3 border-transparent ${
+      className={`hover:shadow-md transition-shadow border-3 ${
         selectedArtifact?.id === artifact.id
           ? "border-2  border-primary/50 "
-          : "border-2 border-transparent"
+          : "border-2 border-border/60"
       }`}
     >
       <CardHeader className="py-1.5">

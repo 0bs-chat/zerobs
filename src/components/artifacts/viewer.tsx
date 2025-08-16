@@ -106,7 +106,7 @@ const CodeRenderer = ({
 }) => {
   const theme = useAtomValue(themeAtom);
   return (
-    <div className="flex flex-col h-full text-card-foreground overflow-x-auto text-sm">
+    <div className="flex flex-col h-full text-card-foreground overflow-x-auto text-sm font-mono">
       <SyntaxHighlighter
         customStyle={{
           backgroundColor: "transparent",
@@ -116,6 +116,19 @@ const CodeRenderer = ({
         }}
         language={language || "text"}
         style={theme === "light" ? oneLight : atomDark}
+        PreTag="div"
+        codeTagProps={{
+          style: {
+            backgroundColor: "transparent",
+            display: "block",
+          },
+        }}
+        lineProps={{
+          style: {
+            backgroundColor: "transparent",
+            display: "block",
+          },
+        }}
         wrapLines={true}
       >
         {content}
@@ -157,7 +170,7 @@ const MermaidRenderer = ({ content }: { content: string }) => {
 
 const renderArtifactContent = (
   artifact: Artifact,
-  view: "preview" | "source",
+  view: "preview" | "source"
 ) => {
   if (view === "source" && artifact.type !== "application/vnd.ant.code") {
     let language = artifact.language;

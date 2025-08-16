@@ -11,10 +11,7 @@ import { useMCPs } from "@/hooks/chats/use-mcp";
 import { PlusIcon, ServerIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  initialMCPState,
-  type McpType,
-} from "@/store/chatStore";
+import { initialMCPState, type McpType } from "@/store/chatStore";
 import { MCP_TEMPLATES, type McpTemplate } from "./templates";
 import { MCPBrowseView } from "./mcp-browse-view";
 import { MCPFormView } from "./mcp-form-view";
@@ -26,7 +23,7 @@ export const MCPDialog = () => {
   const { handleCreate, validateMCP } = useMCPs();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<number | undefined>(
-    undefined,
+    undefined
   );
 
   const handleSubmit = async () => {
@@ -38,7 +35,7 @@ export const MCPDialog = () => {
         if (!open) {
           // Reset form state when dialog closes after successful creation
           setMcp(initialMCPState);
-		  setView("browse");
+          setView("browse");
         }
         setIsOpen(open);
       });
@@ -89,33 +86,50 @@ export const MCPDialog = () => {
       modal
     >
       <DialogTrigger asChild>
-	    <div className="flex items-center gap-2">
-		  <Button variant="default" size="sm" className="cursor-pointer" onClick={() => setView("form")}>
-			<PlusIcon className="size-4" />
-			<span>Create MCP</span>
-		  </Button>
-		  <Button size="icon" className="size-8" aria-label="Browse MCP templates" onClick={() => setView("browse")}>
-		    <ServerIcon />
-		  </Button>
-		</div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            className="cursor-pointer"
+            onClick={() => setView("form")}
+          >
+            <PlusIcon className="size-4" />
+            <span>Create MCP</span>
+          </Button>
+          <Button
+            size="icon"
+            className="size-8"
+            aria-label="Browse MCP templates"
+            onClick={() => setView("browse")}
+          >
+            <ServerIcon />
+          </Button>
+        </div>
       </DialogTrigger>
-      <DialogContent className={`gap-4 ${view === 'browse' ? 'max-w-[90vw] sm:max-w-[80vw]' : 'max-w-2xl'}`}>
+      <DialogContent
+        className={`gap-4 ${view === "browse" ? "max-w-[90vw] sm:max-w-[80vw]" : "max-w-2xl"}`}
+      >
         <DialogHeader>
           <DialogTitle className="text-lg">
-		    {view === "browse" ? "Browse MCP Templates" : "Create MCP"}
-		  </DialogTitle>
+            {view === "browse" ? "Browse MCP Templates" : "Create MCP"}
+          </DialogTitle>
         </DialogHeader>
-		{view === "browse" ? (
-          <MCPBrowseView 
-		    selectedTemplate={selectedTemplate} 
-			setSelectedTemplate={setSelectedTemplate} 
-			handleImport={handleImport} />
-		) : (
-		  <MCPFormView mcp={mcp} setMcp={setMcp} handleTypeChange={handleTypeChange} />
-		)}
+        {view === "browse" ? (
+          <MCPBrowseView
+            selectedTemplate={selectedTemplate}
+            setSelectedTemplate={setSelectedTemplate}
+            handleImport={handleImport}
+          />
+        ) : (
+          <MCPFormView
+            mcp={mcp}
+            setMcp={setMcp}
+            handleTypeChange={handleTypeChange}
+          />
+        )}
         <DialogFooter>
-		  {view === "browse" ? (
-		    <>
+          {view === "browse" ? (
+            <>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -131,10 +145,10 @@ export const MCPDialog = () => {
                 disabled={selectedTemplate === undefined}
                 onClick={handleImport}
               >
-                Import MCP
+                Import Selected
               </Button>
-			</>
-		  ) : (
+            </>
+          ) : (
             <>
               <Button
                 variant="outline"
@@ -154,7 +168,7 @@ export const MCPDialog = () => {
                 {isLoading ? "Creating..." : "Create MCP"}
               </Button>
             </>
-		  )}
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
