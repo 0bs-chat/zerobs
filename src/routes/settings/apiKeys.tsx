@@ -28,6 +28,9 @@ const Icons = {
         src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fopenai.com%2F"
         alt="OpenAI"
         className="w-4 h-4 dark:invert"
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
       />
     </div>
   ),
@@ -37,6 +40,9 @@ const Icons = {
         src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fgoogle.com%2F"
         alt="Google"
         className="w-4 h-4"
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
       />
     </div>
   ),
@@ -46,6 +52,9 @@ const Icons = {
         src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fexa.ai%2F"
         alt="Exa"
         className="w-4 h-4"
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
       />
     </div>
   ),
@@ -55,6 +64,9 @@ const Icons = {
         src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fopenrouter.ai%2F"
         alt="OpenRouter"
         className="w-4 h-4"
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
       />
     </div>
   ),

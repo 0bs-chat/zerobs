@@ -49,6 +49,16 @@ export const Route = createRootRoute({
         rel: "manifest",
         href: "/manifest.json",
       },
+      {
+        rel: "preload",
+        as: "image",
+        href: "/images/noise.png",
+      },
+      {
+        rel: "preconnect",
+        href: "https://cdn.databuddy.cc",
+        crossOrigin: "anonymous",
+      },
     ],
     scripts: [
       {

@@ -67,25 +67,24 @@ export const SearchResultDisplay = ({
         </AccordionTrigger>
         <AccordionContent className="bg-card rounded-md p-2  mt-2 max-h-[36rem] overflow-x-auto">
           <div className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border flex gap-2 overflow-x-auto">
-            {results.map((result, index) => (
+            {results.map((result) => (
               <Card
-                key={index}
+                key={result.metadata.source}
                 className="hover:shadow-md transition-shadow flex-shrink-0 w-64 min-w-64"
               >
                 <CardHeader className="flex flex-col gap-2">
                   <div className="flex flex-col gap-1 items-start w-full">
                     <div className="flex flex-row items-center gap-2 w-full">
-                      {result.metadata.favicon ? (
-                        <Favicon
-                          url={result.metadata.source}
-                          size={28}
-                          className="h-6 w-6 rounded object-contain"
-                        />
-                      ) : (
-                        <GlobeIcon className="h-6 w-6 text-muted-foreground" />
-                      )}
+                      <Favicon
+                        url={result.metadata.source}
+                        size={28}
+                        className="h-6 w-6 rounded object-contain"
+                        fallbackIcon={GlobeIcon}
+                      />
+
                       <a
                         href={result.metadata.source}
+                        title={result.metadata.title}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-medium text-sm leading-snug text-foreground line-clamp-2 overflow-hidden break-words whitespace-normal flex-1 text-left hover:underline"

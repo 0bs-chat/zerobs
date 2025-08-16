@@ -121,12 +121,14 @@ const CodeRenderer = ({
           style: {
             backgroundColor: "transparent",
             display: "block",
+            whiteSpace: "pre",
           },
         }}
         lineProps={{
           style: {
             backgroundColor: "transparent",
             display: "block",
+            whiteSpace: "pre",
           },
         }}
         wrapLines={true}

@@ -10,7 +10,7 @@ import { chatIdAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { createProjectDialogOpenAtom, newChatAtom } from "@/store/chatStore";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
-import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { formatDate } from "@/lib/utils";
 import {
   Popover,
@@ -21,7 +21,6 @@ import {
 export const ProjectsList = () => {
   const chatId = useAtomValue(chatIdAtom);
   const navigate = useNavigate();
-  const router = useRouter();
 
   const { data: allProjects } = useQuery({
     ...convexQuery(api.projects.queries.getAll, {
@@ -76,7 +75,7 @@ export const ProjectsList = () => {
                 className={`${isOnProjectsRoute ? "relative group/card p-5 rounded-lg border bg-card shadow-sm hover:shadow-md flex flex-col h-full" : "group flex-row relative group/card px-4 py-4 flex items-center justify-between"} cursor-pointer hover:bg-accent/30 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50`}
                 onClick={() => {
                   // Only navigate to project page if we're on the /projects route
-                  if (router.state.location.pathname === "/projects") {
+                  if (isOnProjectsRoute) {
                     navigate({
                       to: "/project/$projectId",
                       params: { projectId: project._id },

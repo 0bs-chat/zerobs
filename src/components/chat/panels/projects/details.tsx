@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
+import type { Id } from "../../../../../convex/_generated/dataModel";
 import { XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
@@ -13,8 +14,9 @@ import { chatIdAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { newChatAtom } from "@/store/chatStore";
 import { useNavigate, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
+import { useState } from "react";
 
 export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const chatId = useAtomValue(chatIdAtom);
@@ -29,22 +31,29 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
       projectId ? { projectId } : "skip"
     ),
   });
-  const { mutate: updateProject } = useMutation({
+  const { mutateAsync: updateProject } = useMutation({
     mutationFn: useConvexMutation(api.projects.mutations.update),
   });
-  const { mutate: updateChatInput } = useMutation({
+  const { mutateAsync: updateChatInput } = useMutation({
     mutationFn: useConvexMutation(api.chats.mutations.update),
   });
   const setNewChat = useSetAtom(newChatAtom);
 
-  const debouncedUpdateSystemPrompt = useDebouncedCallback((value: string) => {
-    updateProject({
-      projectId: projectId!,
-      updates: {
-        systemPrompt: value,
-      },
-    });
-  }, 1000);
+  const debouncedUpdateSystemPrompt = useDebouncedCallback(
+    (value: string, id: Id<"projects">) => {
+      updateProject({
+        projectId: id,
+        updates: { systemPrompt: value },
+      });
+    },
+    1000
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedUpdateSystemPrompt.cancel?.();
+    };
+  }, [debouncedUpdateSystemPrompt]);
 
   const [systemPrompt, setSystemPrompt] = useState<string>("");
 
@@ -129,19 +138,14 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
           </span>
         </div>
         <AutosizeTextarea
-          value={systemPrompt}
-          onChange={(e) => {
-            const value = e.target.value;
-            setSystemPrompt(value);
-            debouncedUpdateSystemPrompt(value);
-          }}
-          placeholder={
-            project.systemPrompt ??
-            "Guide the assistant with context, tone, and constraints..."
+          aria-label="System Prompt"
+          defaultValue={project.systemPrompt}
+          onChange={(e) =>
+            debouncedUpdateSystemPrompt(e.target.value, project._id)
           }
-          className={`${isProjectRoute ? "min-h-[120px] max-h-[240px]" : "min-h-[80px] max-h-[160px]"} border dark:border-border/60 w-full resize-none rounded-md bg-background/70 p-2 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-secondary/40 focus-visible:ring-offset-0 text-foreground/70 ring-0`}
-          minHeight={isProjectRoute ? 120 : 80}
-          maxHeight={isProjectRoute ? 240 : 160}
+          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-2 rounded-xl"
+          minHeight={80}
+          maxHeight={200}
         />
       </div>
 

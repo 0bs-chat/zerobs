@@ -217,7 +217,7 @@ export const UserMessage = memo(
             </div>
           </div>
         ) : (
-          <ScrollArea className="flex bg-primary/15 dark:bg-primary/10 flex-col max-h-96 max-w-full self-end rounded-md px-4 py-3 shadow-sm">
+          <ScrollArea className="flex bg-primary/15 dark:bg-primary/10 flex-col max-h-96 max-w-full self-end rounded-md px-4 py-3 shadow-sm border border-border/50">
             {renderedContent}
           </ScrollArea>
         )}

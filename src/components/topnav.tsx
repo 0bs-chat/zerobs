@@ -52,7 +52,11 @@ export function TopNav() {
   useEffect(() => {
     if (!isOnChatRoute) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "i" && (event.metaKey || event.ctrlKey)) {
+      if (
+        !event.repeat &&
+        event.key === "i" &&
+        (event.metaKey || event.ctrlKey)
+      ) {
         event.preventDefault();
         setResizePanelOpen((open) => {
           if (!open) setSelectedArtifact(undefined);

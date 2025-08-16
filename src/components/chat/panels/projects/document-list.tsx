@@ -6,15 +6,15 @@ import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { ProjectDocumentListItem } from "./document-list-item";
 import { Toggle } from "@/components/ui/toggle";
-import { useRouter } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
 
 export function ProjectDocumentList({
   projectId,
 }: {
   projectId: Id<"projects">;
 }) {
-  const router = useRouter();
-  const pathname = router.state.location.pathname;
+  const location = useLocation();
+  const pathname = location.pathname;
   const isProjectRoute = pathname.startsWith("/project/");
 
   const { data: projectDocuments } = useQuery({
