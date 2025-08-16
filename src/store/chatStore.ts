@@ -25,7 +25,6 @@ export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   orchestratorMode: false,
   webSearch: false,
   artifacts: false,
-  enabledToolkits: [],
   updatedAt: 0,
   public: false,
 });
@@ -132,9 +131,10 @@ export const initialMCPState = {
   dockerImage: "",
   dockerPort: 8000,
   dockerCommand: "",
-  restartOnNewChat: false,
   env: {},
   status: "creating" as const,
+  perChat: false,
+  template: undefined as string | undefined,
 };
 
 export const mcpBrowsePanelOpenAtom = atom(false);

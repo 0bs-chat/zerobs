@@ -31,7 +31,6 @@ import type * as langchain_index from "../langchain/index.js";
 import type * as langchain_models from "../langchain/models.js";
 import type * as langchain_prompts from "../langchain/prompts.js";
 import type * as langchain_state from "../langchain/state.js";
-import type * as langchain_tools_github from "../langchain/tools/github.js";
 import type * as langchain_tools_googleTools from "../langchain/tools/googleTools.js";
 import type * as langchain_tools_index from "../langchain/tools/index.js";
 import type * as langchain_tools_mcpTools from "../langchain/tools/mcpTools.js";
@@ -99,7 +98,6 @@ declare const fullApi: ApiFromModules<{
   "langchain/models": typeof langchain_models;
   "langchain/prompts": typeof langchain_prompts;
   "langchain/state": typeof langchain_state;
-  "langchain/tools/github": typeof langchain_tools_github;
   "langchain/tools/googleTools": typeof langchain_tools_googleTools;
   "langchain/tools/index": typeof langchain_tools_index;
   "langchain/tools/mcpTools": typeof langchain_tools_mcpTools;
