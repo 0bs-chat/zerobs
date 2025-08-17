@@ -1,24 +1,31 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { selectedPanelTabAtom, selectedArtifactAtom } from "@/store/chatStore";
+import { selectedPanelTabAtom, selectedArtifactAtom, selectedVibzMcpAtom } from "@/store/chatStore";
 import { ProjectsPanel } from "./projects";
 import { MCPPanel } from "./mcp/index";
 import { ArtifactsPanel } from "./artifacts";
+import { VibzPreview } from "./mcp/vibz-preview";
 import { useAtomValue, useSetAtom } from "jotai";
 
 export const Panel = () => {
   const activeTab = useAtomValue(selectedPanelTabAtom);
   const setActiveTab = useSetAtom(selectedPanelTabAtom);
 
-  // If an artifact is currently selected, we're in "preview" mode
+  // If an artifact or vibz MCP is currently selected, we're in "preview" mode
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
-  const hideTabHeader = Boolean(selectedArtifact);
+  const selectedVibzMcp = useAtomValue(selectedVibzMcpAtom);
+  const hideTabHeader = Boolean(selectedArtifact) || Boolean(selectedVibzMcp);
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={(value) => setActiveTab(value)}
-      className="h-full min-h-0 bg-background w-full overflow-hidden"
-    >
+    <div className="h-full min-h-0 bg-background w-full overflow-hidden relative">
+      {/* Show vibz MCP preview when selected */}
+      {selectedVibzMcp ? (
+        <VibzPreview />
+      ) : (
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value)}
+          className="h-full min-h-0 bg-background w-full overflow-hidden"
+        >
       {!hideTabHeader && ( // Hide the tab list when previewing an artifact
         <div className="flex items-center justify-between gap-2 m-2.5 pr-12">
           <TabsList className="w-full flex justify-center h-10">
@@ -45,6 +52,8 @@ export const Panel = () => {
           <MCPPanel />
         </TabsContent>
       </>
-    </Tabs>
+        </Tabs>
+      )}
+    </div>
   );
 };

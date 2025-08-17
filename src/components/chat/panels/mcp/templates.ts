@@ -8,13 +8,11 @@ export type McpTemplate = Omit<
   image: string;
   official: boolean;
   promptTool?: string;
-  configurableEnv?: {
-    [key: string]: {
-      type: "query" | "mutation" | "action";
-      func: string;
-      args: Record<string, any>;
-    };
-  };
+  configurableEnvs?: readonly {
+    type: "query" | "mutation" | "action";
+    func: string;
+    args: Record<string, any> | readonly Record<string, any>[];
+  }[];
   customAuthTokenFromEnv?: string;
 };
 
@@ -33,13 +31,6 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     official: true,
     env: {},
     perChat: false,
-    configurableEnv: {
-      GITHUB_TOKEN: {
-        type: "query",
-        func: "internal.apiKeys.queries",
-        args: {},
-      },
-    },
     customAuthTokenFromEnv: "GITHUB_ACCESS_TOKEN",
   },
   {
@@ -110,15 +101,17 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     official: false,
     env: {},
     perChat: true,
-    dockerImage: "mantrakp04/vibz@sha256:2764fde8a8e875940864e56791ed3b61a2ea1bece4aa2cdb49a85c2015671e21",
+    dockerImage: "mantrakp04/vibz@sha256:eefdacd4601c0c22be6edda4824d6ba6fec0cc71caae1a619d240dbe069b5fbc",
     dockerPort: 80,
     promptTool: "prompt",
-    configurableEnv: {
-      CONVEX_DEPLOY_KEY: {
+    configurableEnvs: [
+      {
         type: "action",
         func: "internal.mcps.actions.getConvexDeployKey",
-        args: {},
+        args: {
+          name: "vibz-mcp-server",
+        },
       },
-    },
+    ],
   }
 ] as const;

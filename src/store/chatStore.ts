@@ -51,6 +51,7 @@ export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
   undefined
 );
 export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
+export const selectedVibzMcpAtom = atom<Doc<"mcps"> | undefined>(undefined);
 
 export const pinnedChatsAccordionOpenAtom = atomWithStorage(
   "pinnedChatsAccordionOpen",

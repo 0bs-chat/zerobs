@@ -12,6 +12,7 @@ import {
   chatAtom,
   resizePanelOpenAtom,
   selectedArtifactAtom,
+  selectedVibzMcpAtom,
 } from "@/store/chatStore";
 import { useEffect } from "react";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -35,11 +36,13 @@ function RouteComponent() {
   const chatId = params.chatId as Id<"chats">;
   const resizePanelOpen = useAtomValue(resizePanelOpenAtom);
   const setSelectedArtifact = useSetAtom(selectedArtifactAtom);
+  const setSelectedVibzMcp = useSetAtom(selectedVibzMcpAtom);
   const newChat = useAtomValue(newChatAtom);
   const setChat = useSetAtom(chatAtom);
   useEffect(() => {
     setSelectedArtifact(undefined);
-  }, [chatId, setSelectedArtifact]);
+    setSelectedVibzMcp(undefined);
+  }, [chatId, setSelectedArtifact, setSelectedVibzMcp]);
 
   const { data: queryChat } = useQuery({
     ...convexQuery(
