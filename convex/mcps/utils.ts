@@ -2,7 +2,7 @@ import { verifyJwt, createJwt } from "../utils/encryption";
 import { MCP_TEMPLATES } from "../../src/components/chat/panels/mcp/templates";
 import { makeFunctionReference } from "convex/server";
 import type { ActionCtx, MutationCtx, QueryCtx } from "../_generated/server";
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import type { CreateMachineRequest } from "../utils/flyio";
 
 export async function verifyEnv(
