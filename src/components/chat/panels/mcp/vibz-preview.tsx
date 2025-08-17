@@ -1,6 +1,13 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { X, EyeIcon, CodeIcon, BarChart3Icon, RefreshCw, ExternalLink } from "lucide-react";
+import {
+  X,
+  EyeIcon,
+  CodeIcon,
+  BarChart3Icon,
+  RefreshCw,
+  ExternalLink,
+} from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { selectedVibzMcpAtom, chatIdAtom } from "@/store/chatStore";
 import { useState, useEffect, useRef } from "react";
@@ -39,7 +46,7 @@ export const VibzPreview = () => {
       });
 
       const mcpName = `${chatId}-${selectedVibzMcp._id}`.slice(0, 62);
-      
+
       setUrls({
         previewUrl: `https://${mcpName}.fly.dev/`,
         codeUrl: `https://${mcpName}.fly.dev/8080${oauthToken}/`,
@@ -61,17 +68,20 @@ export const VibzPreview = () => {
 
   const handleRefresh = () => {
     // Refresh the currently active iframe
-    const currentIframe = view === "preview" ? previewIframeRef.current :
-                         view === "code" ? codeIframeRef.current :
-                         dashboardIframeRef.current;
-    
+    const currentIframe =
+      view === "preview"
+        ? previewIframeRef.current
+        : view === "code"
+          ? codeIframeRef.current
+          : dashboardIframeRef.current;
+
     if (currentIframe) {
       currentIframe.src = currentIframe.src;
     }
   };
 
   const handleExternalLink = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -83,7 +93,9 @@ export const VibzPreview = () => {
         <div className="flex items-center gap-1">
           <Tabs
             value={view}
-            onValueChange={(v) => setView(v as "preview" | "code" | "dashboard")}
+            onValueChange={(v) =>
+              setView(v as "preview" | "code" | "dashboard")
+            }
           >
             <TabsList>
               <TabsTrigger value="preview">
@@ -99,9 +111,9 @@ export const VibzPreview = () => {
           </Tabs>
 
           {/* Refresh button */}
-          <Button 
-            variant="outline" 
-            size="icon" 
+          <Button
+            variant="outline"
+            size="icon"
             onClick={handleRefresh}
             title="Refresh current view"
           >
@@ -109,9 +121,9 @@ export const VibzPreview = () => {
           </Button>
 
           {/* External link buttons */}
-          <Button 
-            variant="outline" 
-            size="icon" 
+          <Button
+            variant="outline"
+            size="icon"
             onClick={() => handleExternalLink(urls.previewUrl)}
             title="Open preview in new tab"
           >
@@ -131,27 +143,33 @@ export const VibzPreview = () => {
           ref={previewIframeRef}
           src={urls.previewUrl}
           className={`w-full h-full absolute inset-0 transition-opacity duration-200 ${
-            view === "preview" ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            view === "preview"
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
           }`}
           title={`${selectedVibzMcp.name} Preview`}
         />
-        
+
         {/* Code iframe - always loaded */}
         <iframe
           ref={codeIframeRef}
           src={urls.codeUrl}
           className={`w-full h-full absolute inset-0 transition-opacity duration-200 ${
-            view === "code" ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            view === "code"
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
           }`}
           title={`${selectedVibzMcp.name} Code`}
         />
-        
+
         {/* Dashboard iframe - always loaded */}
         <iframe
           ref={dashboardIframeRef}
           src={urls.dashboardUrl}
           className={`w-full h-full absolute inset-0 transition-opacity duration-200 ${
-            view === "dashboard" ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+            view === "dashboard"
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
           }`}
           title={`${selectedVibzMcp.name} Dashboard`}
         />
@@ -159,4 +177,3 @@ export const VibzPreview = () => {
     </div>
   );
 };
-

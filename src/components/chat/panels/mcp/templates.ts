@@ -83,8 +83,7 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     status: "creating",
     description:
       "Enables AI models to break down complex problems into sequential steps, improving reasoning capabilities and providing structured thinking processes for better problem-solving and decision-making.",
-    image:
-      "https://avatars.githubusercontent.com/u/182288589?s=200&v=4",
+    image: "https://avatars.githubusercontent.com/u/182288589?s=200&v=4",
     official: true,
     env: {},
     perChat: false,
@@ -94,14 +93,13 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     name: "Vibz",
     type: "docker",
     status: "creating",
-    description:
-      "Vibe code full stack convex + tanstack router apps",
-    image:
-      "https://www.convex.dev/favicon.ico",
+    description: "Vibe code full stack convex + tanstack router apps",
+    image: "https://www.convex.dev/favicon.ico",
     official: false,
     env: {},
     perChat: true,
-    dockerImage: "mantrakp04/vibz@sha256:eefdacd4601c0c22be6edda4824d6ba6fec0cc71caae1a619d240dbe069b5fbc",
+    dockerImage:
+      "mantrakp04/vibz@sha256:eefdacd4601c0c22be6edda4824d6ba6fec0cc71caae1a619d240dbe069b5fbc",
     dockerPort: 80,
     promptTool: "prompt",
     configurableEnvs: [
@@ -113,5 +111,5 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
         },
       },
     ],
-  }
+  },
 ] as const;

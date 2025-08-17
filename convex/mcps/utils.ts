@@ -22,25 +22,31 @@ export async function executeFunctionByReference(
   ctx: ActionCtx | MutationCtx | QueryCtx,
   funcString: string,
   args: any,
-  type: "action" | "mutation" | "query"
+  type: "action" | "mutation" | "query",
 ): Promise<Record<string, string>> {
-  const functionParts = funcString.split('.');
-  if (functionParts.length >= 4 && functionParts[0] === 'internal') {
+  const functionParts = funcString.split(".");
+  if (functionParts.length >= 4 && functionParts[0] === "internal") {
     const moduleName = functionParts[1];
-    const actionName = functionParts[2];  
+    const actionName = functionParts[2];
     const functionName = functionParts[3];
-    
+
     const functionRefString = `${moduleName}/${actionName}:${functionName}`;
-    
+
     if (type === "action") {
       const functionRef = makeFunctionReference<"action">(functionRefString);
       return await (ctx as ActionCtx).runAction(functionRef, args);
     } else if (type === "mutation") {
       const functionRef = makeFunctionReference<"mutation">(functionRefString);
-      return await (ctx as ActionCtx | MutationCtx).runMutation(functionRef, args);
+      return await (ctx as ActionCtx | MutationCtx).runMutation(
+        functionRef,
+        args,
+      );
     } else if (type === "query") {
       const functionRef = makeFunctionReference<"query">(functionRefString);
-      return await (ctx as ActionCtx | MutationCtx | QueryCtx).runQuery(functionRef, args);
+      return await (ctx as ActionCtx | MutationCtx | QueryCtx).runQuery(
+        functionRef,
+        args,
+      );
     }
   }
   return {};
@@ -48,12 +54,14 @@ export async function executeFunctionByReference(
 
 export async function resolveConfigurableEnvs(
   ctx: ActionCtx | MutationCtx | QueryCtx,
-  mcp: Doc<"mcps">
+  mcp: Doc<"mcps">,
 ): Promise<Record<string, string>> {
   let configurableEnvValues: Record<string, string> = {};
-  
+
   if (mcp.template) {
-    const matchingTemplate = MCP_TEMPLATES.find(t => t.template === mcp.template);
+    const matchingTemplate = MCP_TEMPLATES.find(
+      (t) => t.template === mcp.template,
+    );
     if (matchingTemplate && matchingTemplate.configurableEnvs) {
       for (const envConfig of matchingTemplate.configurableEnvs) {
         try {
@@ -61,23 +69,26 @@ export async function resolveConfigurableEnvs(
             ctx,
             envConfig.func,
             envConfig.args,
-            envConfig.type
+            envConfig.type,
           );
           configurableEnvValues = { ...configurableEnvValues, ...result };
         } catch (error) {
-          console.error(`Failed to resolve configurable env ${envConfig.func}:`, error);
+          console.error(
+            `Failed to resolve configurable env ${envConfig.func}:`,
+            error,
+          );
         }
       }
     }
   }
-  
+
   return configurableEnvValues;
 }
 
 export async function createMachineConfig(
   mcp: Doc<"mcps">,
   appName: string,
-  configurableEnvValues: Record<string, string> = {}
+  configurableEnvValues: Record<string, string> = {},
 ): Promise<CreateMachineRequest> {
   return {
     name: `${appName}-machine`,
@@ -102,9 +113,9 @@ export async function createMachineConfig(
           min_machines_running: 0,
           checks: [
             {
-              type: "tcp"
-            }
-          ]
+              type: "tcp",
+            },
+          ],
         },
       ],
     },

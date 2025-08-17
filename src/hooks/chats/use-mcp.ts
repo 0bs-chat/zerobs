@@ -58,7 +58,7 @@ export function useMCPs() {
 
   const handleCreate = async (
     newMCPData: MCPFormState,
-    setMcpEditDialogOpen: (open: boolean) => void
+    setMcpEditDialogOpen: (open: boolean) => void,
   ) => {
     if (!validateMCP(newMCPData)) return;
     try {

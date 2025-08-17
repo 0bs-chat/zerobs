@@ -54,10 +54,7 @@ export function TopNav() {
   useEffect(() => {
     if (!isOnChatRoute) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key === "i" &&
-        (event.metaKey || event.ctrlKey)
-      ) {
+      if (event.key === "i" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         setResizePanelOpen((open) => {
           if (!open) setSelectedArtifact(undefined);
@@ -137,7 +134,9 @@ export function TopNav() {
                     e.preventDefault();
                     const currentHref = window.location.href;
                     const subject = encodeURIComponent("Feedback / Issue");
-                    const body = encodeURIComponent(`URL: ${currentHref}\n\nDescription:\n`);
+                    const body = encodeURIComponent(
+                      `URL: ${currentHref}\n\nDescription:\n`,
+                    );
                     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=barrel@0bs.chat&su=${subject}&body=${body}`;
                     window.open(gmailUrl, "_blank", "noopener,noreferrer");
                   }}

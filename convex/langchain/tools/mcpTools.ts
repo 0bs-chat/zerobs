@@ -6,7 +6,10 @@ import type { ActionCtx } from "../../_generated/server";
 import type { Id } from "../../_generated/dataModel";
 import { fly } from "../../utils/flyio";
 import { getDocumentUrl } from "../../utils/helpers";
-import { extractFileIdsFromMessage, type ExtendedRunnableConfig } from "../helpers";
+import {
+  extractFileIdsFromMessage,
+  type ExtendedRunnableConfig,
+} from "../helpers";
 import type { GraphState } from "../state";
 import { createJwt } from "../../utils/encryption";
 import { MCP_TEMPLATES } from "../../../src/components/chat/panels/mcp/templates";
@@ -36,37 +39,37 @@ export const getMCPTools = async (
     mcps.page.map(async (mcp) => {
       // Get configurable envs once per MCP
       const mcpConfigurableEnvs = await resolveConfigurableEnvs(ctx, mcp);
-      
+
       let updatedMcp = mcp;
-      
+
       // Handle per-chat MCPs - create infrastructure on demand
       if (mcp.perChat && ["stdio", "docker"].includes(mcp.type) && config) {
         const mcpName = `${config.chat._id}-${mcp._id}`.slice(0, 62);
-        
+
         try {
           // Get or create fly.io app and machine similar to vibz logic
           let app = await fly.getApp(mcpName);
           let machine = null;
-          
+
           if (app) {
             const machines = await fly.listMachines(mcpName);
             if (machines && machines.length > 0) {
               machine = machines[0];
             }
           }
-          
+
           // If no app, create it
           if (!app) {
             app = await fly.createApp({
               app_name: mcpName,
               org_slug: "personal",
             });
-            
+
             if (app) {
               await fly.allocateIpAddress(app.name!, "shared_v4");
             }
           }
-   
+
           if (!machine) {
             const machineConfig = {
               name: `${mcpName}-machine`,
@@ -78,7 +81,12 @@ export const getMCPTools = async (
                   ...mcpConfigurableEnvs,
                   MCP_COMMAND: mcp.command || "",
                   HOST: `https://${mcpName}.fly.dev`,
-                  OAUTH_TOKEN: await createJwt("OAUTH_TOKEN", mcp._id, mcp.userId, true),
+                  OAUTH_TOKEN: await createJwt(
+                    "OAUTH_TOKEN",
+                    mcp._id,
+                    mcp.userId,
+                    true,
+                  ),
                 },
                 guest: { cpus: 2, memory_mb: 2048, cpu_kind: "shared" },
                 services: [
@@ -91,7 +99,7 @@ export const getMCPTools = async (
                     min_machines_running: 0,
                     checks: [
                       {
-                        type: "tcp"
+                        type: "tcp",
                       },
                     ],
                   },
@@ -105,20 +113,20 @@ export const getMCPTools = async (
             });
           }
           const sseUrl = `https://${mcpName}.fly.dev/sse`;
-          
+
           // Update MCP with the URL
           await ctx.runMutation(internal.mcps.crud.update, {
             id: mcp._id,
             patch: { url: sseUrl, status: "created" },
           });
-          
+
           updatedMcp = { ...mcp, url: sseUrl, status: "created" as const };
         } catch (error) {
           console.error(`Failed to create per-chat MCP ${mcpName}:`, error);
           // Don't return null - continue to check if this MCP has existing URL
         }
       }
-      
+
       // Filter out MCPs that don't have a URL or aren't ready
       if (!updatedMcp.url || updatedMcp.status === "creating") {
         return null;
@@ -127,12 +135,14 @@ export const getMCPTools = async (
       // Build connection object
       let authToken = null;
       if (updatedMcp.template) {
-        const matchingTemplate = MCP_TEMPLATES.find(t => t.template === updatedMcp.template);
+        const matchingTemplate = MCP_TEMPLATES.find(
+          (t) => t.template === updatedMcp.template,
+        );
         if (matchingTemplate && matchingTemplate.customAuthTokenFromEnv) {
           authToken = updatedMcp.env[matchingTemplate.customAuthTokenFromEnv];
         }
       }
-      
+
       return {
         name: updatedMcp.name,
         connection: {
@@ -156,16 +166,18 @@ export const getMCPTools = async (
   );
 
   // Filter out null results and create servers object
-  const validResults = mcpResults.filter((result): result is NonNullable<typeof result> => result !== null);
-  const mcpServers: Record<string, Connection> = Object.fromEntries(
-    validResults.map(result => [result.name, result.connection])
+  const validResults = mcpResults.filter(
+    (result): result is NonNullable<typeof result> => result !== null,
   );
-  const readyMcps = validResults.map(result => result.mcp);
+  const mcpServers: Record<string, Connection> = Object.fromEntries(
+    validResults.map((result) => [result.name, result.connection]),
+  );
+  const readyMcps = validResults.map((result) => result.mcp);
 
   // Retry logic for client creation
   let client: MultiServerMCPClient;
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt <= 60; attempt++) {
     try {
       client = new MultiServerMCPClient({
@@ -174,30 +186,34 @@ export const getMCPTools = async (
         throwOnLoadError: false,
         mcpServers,
       });
-      
+
       // If we get here, client creation succeeded
       break;
     } catch (error) {
       lastError = error as Error;
       console.warn(`MCP client creation attempt ${attempt + 1} failed:`, error);
-      
+
       // If this is the last attempt, throw the error
       if (attempt === 60) {
-        throw new Error(`Failed to create MCP client after 60 attempts: ${lastError.message}`);
+        throw new Error(
+          `Failed to create MCP client after 60 attempts: ${lastError.message}`,
+        );
       }
-      
+
       // Wait 1 second before retrying
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
-  
+
   const tools = await client!.getTools();
 
   // if promptTool, fetch the client from the client.getClient(mcpName) and update the first tool's description with the promptTool + description
   await Promise.all(
     readyMcps.map(async (mcp) => {
       if (mcp.template) {
-        const matchingTemplate = MCP_TEMPLATES.find(t => t.template === mcp.template);
+        const matchingTemplate = MCP_TEMPLATES.find(
+          (t) => t.template === mcp.template,
+        );
         if (matchingTemplate && matchingTemplate.promptTool) {
           const mcpClient = await client!.getClient(mcp.name);
           if (mcpClient) {
@@ -205,7 +221,7 @@ export const getMCPTools = async (
               name: matchingTemplate.promptTool,
             });
             if (prompt) {
-              const mcpTools = tools.filter(t => t.name.includes(mcp.name));
+              const mcpTools = tools.filter((t) => t.name.includes(mcp.name));
               if (mcpTools.length > 0) {
                 mcpTools[0].description = `${prompt.messages[0].content.text}\n\n${mcpTools[0].description}`;
               }

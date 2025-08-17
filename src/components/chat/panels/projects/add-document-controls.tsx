@@ -50,8 +50,8 @@ export const AddDocumentControls = ({
             createProjectDocuments({
               projectId,
               documentId,
-            })
-          )
+            }),
+          ),
       );
     }
 

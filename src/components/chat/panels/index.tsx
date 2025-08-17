@@ -1,5 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { selectedPanelTabAtom, selectedArtifactAtom, selectedVibzMcpAtom } from "@/store/chatStore";
+import {
+  selectedPanelTabAtom,
+  selectedArtifactAtom,
+  selectedVibzMcpAtom,
+} from "@/store/chatStore";
 import { ProjectsPanel } from "./projects";
 import { MCPPanel } from "./mcp/index";
 import { ArtifactsPanel } from "./artifacts";
@@ -26,32 +30,35 @@ export const Panel = () => {
           onValueChange={(value) => setActiveTab(value)}
           className="h-full min-h-0 bg-background w-full overflow-hidden"
         >
-      {!hideTabHeader && ( // Hide the tab list when previewing an artifact
-        <div className="flex items-center justify-between gap-2 m-2.5 pr-12">
-          <TabsList className="w-full flex justify-center h-10">
-            <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
-            <TabsTrigger value="projects">Projects</TabsTrigger>
-            <TabsTrigger value="mcp">MCP</TabsTrigger>
-          </TabsList>
-        </div>
-      )}
+          {!hideTabHeader && ( // Hide the tab list when previewing an artifact
+            <div className="flex items-center justify-between gap-2 m-2.5 pr-12">
+              <TabsList className="w-full flex justify-center h-10">
+                <TabsTrigger value="artifacts">Artifacts</TabsTrigger>
+                <TabsTrigger value="projects">Projects</TabsTrigger>
+                <TabsTrigger value="mcp">MCP</TabsTrigger>
+              </TabsList>
+            </div>
+          )}
 
-      <>
-        <TabsContent
-          value="artifacts"
-          className={`h-full w-full ${hideTabHeader ? "px-0" : "px-3"}`}
-        >
-          <ArtifactsPanel />
-        </TabsContent>
+          <>
+            <TabsContent
+              value="artifacts"
+              className={`h-full w-full ${hideTabHeader ? "px-0" : "px-3"}`}
+            >
+              <ArtifactsPanel />
+            </TabsContent>
 
-        <TabsContent value="projects" className="h-full w-full px-3 min-h-0 overflow-hidden">
-          <ProjectsPanel />
-        </TabsContent>
+            <TabsContent
+              value="projects"
+              className="h-full w-full px-3 min-h-0 overflow-hidden"
+            >
+              <ProjectsPanel />
+            </TabsContent>
 
-        <TabsContent value="mcp" className="h-full w-full px-3">
-          <MCPPanel />
-        </TabsContent>
-      </>
+            <TabsContent value="mcp" className="h-full w-full px-3">
+              <MCPPanel />
+            </TabsContent>
+          </>
         </Tabs>
       )}
     </div>

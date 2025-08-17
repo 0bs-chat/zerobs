@@ -20,13 +20,13 @@ export function ProjectDocumentList({
             projectId,
             paginationOpts: { numItems: 25, cursor: null },
           }
-        : "skip"
+        : "skip",
     ),
   });
   const { mutate: toggleSelectAll, isPending: isTogglingSelectAll } =
     useMutation({
       mutationFn: useConvexMutation(
-        api.projectDocuments.mutations.toggleSelect
+        api.projectDocuments.mutations.toggleSelect,
       ),
     });
 
@@ -48,7 +48,7 @@ export function ProjectDocumentList({
   }
 
   const allSelected = projectDocuments.projectDocuments.every(
-    (projectDocument) => projectDocument.selected
+    (projectDocument) => projectDocument.selected,
   );
 
   return (
@@ -76,7 +76,7 @@ export function ProjectDocumentList({
               (
               {
                 projectDocuments.projectDocuments.filter(
-                  (projectDocument) => projectDocument.selected
+                  (projectDocument) => projectDocument.selected,
                 ).length
               }
               /{projectDocuments.projectDocuments.length})

@@ -47,7 +47,7 @@ function RouteComponent() {
   const { data: queryChat } = useQuery({
     ...convexQuery(
       api.chats.queries.get,
-      chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip"
+      chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip",
     ),
   });
 

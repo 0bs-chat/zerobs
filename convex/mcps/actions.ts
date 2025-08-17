@@ -37,7 +37,11 @@ export const create = internalAction({
 
       // Process configurableEnvs if template is specified
       const configurableEnvValues = await resolveConfigurableEnvs(ctx, mcp);
-      const machineConfig = await createMachineConfig(mcp, appName, configurableEnvValues);
+      const machineConfig = await createMachineConfig(
+        mcp,
+        appName,
+        configurableEnvValues,
+      );
 
       const app = await fly.createApp({
         app_name: appName,
@@ -164,55 +168,61 @@ export const getConvexDeployKey = internalAction({
   args: {
     name: v.string(),
   },
-  handler: async (ctx, args): Promise<{
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
     CONVEX_DEPLOY_KEY: string;
     CONVEX_DEPLOYMENT_NAME: string;
     CONVEX_DEPLOYMENT_URL: string;
   }> => {
-    const CONVEX_ACCESS_TOKEN = (await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
-      key: "CONVEX_ACCESS_TOKEN",
-    }))?.value ?? process.env.CONVEX_ACCESS_TOKEN;
-    const tokenDetails = await (await fetch(
-      "https://api.convex.dev/v1/token_details",
-      {
+    const CONVEX_ACCESS_TOKEN =
+      (
+        await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
+          key: "CONVEX_ACCESS_TOKEN",
+        })
+      )?.value ?? process.env.CONVEX_ACCESS_TOKEN;
+    const tokenDetails = await (
+      await fetch("https://api.convex.dev/v1/token_details", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${CONVEX_ACCESS_TOKEN}`
+          Authorization: `Bearer ${CONVEX_ACCESS_TOKEN}`,
         },
-      }
-    )).json();
+      })
+    ).json();
     const teamId = tokenDetails.teamId;
 
-    const projectRes = await (await fetch(
-      `https://api.convex.dev/v1/teams/${teamId}/create_project`,
-      {
+    const projectRes = await (
+      await fetch(`https://api.convex.dev/v1/teams/${teamId}/create_project`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${CONVEX_ACCESS_TOKEN}`
+          Authorization: `Bearer ${CONVEX_ACCESS_TOKEN}`,
         },
         body: JSON.stringify({
-          "deploymentType": "dev",
-          "projectName": args.name
-        })
-      }
-    )).json();
+          deploymentType: "dev",
+          projectName: args.name,
+        }),
+      })
+    ).json();
     const devDeploymentName = projectRes.deploymentName;
 
-    const deployKeyRes = await (await fetch(
-      `https://api.convex.dev/v1/deployments/${devDeploymentName}/create_deploy_key`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${CONVEX_ACCESS_TOKEN}`
+    const deployKeyRes = await (
+      await fetch(
+        `https://api.convex.dev/v1/deployments/${devDeploymentName}/create_deploy_key`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${CONVEX_ACCESS_TOKEN}`,
+          },
+          body: JSON.stringify({
+            name: "vibz-mcp-server",
+          }),
         },
-        body: JSON.stringify({
-          "name": "vibz-mcp-server"
-        })
-      }
-    )).json();
+      )
+    ).json();
     return {
       CONVEX_DEPLOY_KEY: deployKeyRes.deployKey,
       CONVEX_DEPLOYMENT_NAME: devDeploymentName,

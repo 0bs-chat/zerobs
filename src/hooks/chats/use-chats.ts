@@ -95,7 +95,7 @@ export const useHandleSubmit = () => {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to send message. Please try again."
+          : "Failed to send message. Please try again.",
       );
     }
   };
@@ -108,7 +108,7 @@ export const useInfiniteChats = () => {
     {},
     {
       initialNumItems: 25,
-    }
+    },
   );
 
   const pinnedChats = results?.filter((chat) => chat.pinned) ?? [];
