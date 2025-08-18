@@ -45,7 +45,7 @@ export function AppSidebar() {
   } = useSearchChats();
   const loadMoreRef = React.useRef<HTMLButtonElement>(null);
   const [pinnedChatsAccordionOpen, setPinnedChatsAccordionOpen] = useAtom(
-    pinnedChatsAccordionOpenAtom
+    pinnedChatsAccordionOpenAtom,
   );
 
   const handleNewChat = () => {
@@ -87,7 +87,7 @@ export function AppSidebar() {
         root: null,
         rootMargin: "0px",
         threshold: 0.1,
-      }
+      },
     );
 
     observer.observe(loadMoreElement);

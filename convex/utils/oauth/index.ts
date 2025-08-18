@@ -4,7 +4,8 @@ import { v } from "convex/values";
 import { providers } from "./providers";
 
 function buildCorsHeaders(request: Request): Record<string, string> {
-  const origin = request.headers.get("Origin") ?? request.headers.get("origin") ?? "";
+  const origin =
+    request.headers.get("Origin") ?? request.headers.get("origin") ?? "";
   const allowedOrigins = [
     process.env.FRONTEND_ORIGIN,
     process.env.VITE_APP_URL,
@@ -17,12 +18,15 @@ function buildCorsHeaders(request: Request): Record<string, string> {
     "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Vary": "Origin",
+    Vary: "Origin",
   };
 }
 
 export const handleOAuthRedirectOptions = httpAction(async (_ctx, request) => {
-  return new Response(null, { status: 204, headers: buildCorsHeaders(request) });
+  return new Response(null, {
+    status: 204,
+    headers: buildCorsHeaders(request),
+  });
 });
 
 export const handleOAuthRedirect = httpAction(async (_ctx, request) => {
@@ -49,13 +53,13 @@ export const handleOAuthRedirect = httpAction(async (_ctx, request) => {
   }
   url.searchParams.set("state", stateString);
 
-  return new Response(
-    JSON.stringify({ redirect: url.toString() }),
-    {
-      status: 200,
-      headers: { "content-type": "application/json", ...buildCorsHeaders(request) },
+  return new Response(JSON.stringify({ redirect: url.toString() }), {
+    status: 200,
+    headers: {
+      "content-type": "application/json",
+      ...buildCorsHeaders(request),
     },
-  );
+  });
 });
 
 export const handleOAuthCallback = httpAction(async (_ctx, request) => {
@@ -81,7 +85,10 @@ export const handleOAuthCallback = httpAction(async (_ctx, request) => {
 
   const response = await fetch(providerConfig.tokenUrl, {
     method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded", accept: providerConfig.tokenAcceptJson ? "application/json" : "*/*" },
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      accept: providerConfig.tokenAcceptJson ? "application/json" : "*/*",
+    },
     body: new URLSearchParams(basePayload),
   });
   const data = await response.json();
@@ -92,18 +99,28 @@ export const handleOAuthCallback = httpAction(async (_ctx, request) => {
   // call /apiKeys/create
   const res = await fetch(`${process.env.CONVEX_SITE_URL}/apiKeys/create`, {
     method: "POST",
-    body: JSON.stringify({ provider: state.provider, accessToken, refreshToken }),
+    body: JSON.stringify({
+      provider: state.provider,
+      accessToken,
+      refreshToken,
+    }),
     headers: {
       "content-type": "application/json",
-      "Authorization": `Bearer ${state.token}`,
+      Authorization: `Bearer ${state.token}`,
     },
   });
 
   if (!res.ok) {
-    return new Response(JSON.stringify({ error: "Failed to create API keys" }), { status: 500, headers: { "content-type": "application/json" } });
+    return new Response(
+      JSON.stringify({ error: "Failed to create API keys" }),
+      { status: 500, headers: { "content-type": "application/json" } },
+    );
   }
 
-  return Response.redirect(`${process.env.SITE_URL}/settings/integrations`, 302);
+  return Response.redirect(
+    `${process.env.SITE_URL}/settings/integrations`,
+    302,
+  );
 });
 
 export const handleApiKeysCreate = httpAction(async (ctx, request) => {
@@ -131,7 +148,13 @@ export const handleApiKeysCreate = httpAction(async (ctx, request) => {
 
   await Promise.all(ops);
 
-  return new Response(JSON.stringify({ success: true }), { status: 200, headers: { "content-type": "application/json", ...buildCorsHeaders(request) } });
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers: {
+      "content-type": "application/json",
+      ...buildCorsHeaders(request),
+    },
+  });
 });
 
 export const getRefreshedAccessToken = internalAction({
@@ -153,24 +176,32 @@ export const getRefreshedAccessToken = internalAction({
 
     const refreshKeyKey = providerConfig.refreshKeyKey;
 
-    const refreshKeyDoc = await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
-      key: refreshKeyKey,
-    });
+    const refreshKeyDoc = await ctx.runQuery(
+      internal.apiKeys.queries.getFromKey,
+      {
+        key: refreshKeyKey,
+      },
+    );
 
     const refreshToken = refreshKeyDoc?.value as string | undefined;
     if (!refreshToken) {
       throw new Error(`No refresh token found for ${args.provider}`);
     }
 
-    const headers: Record<string, string> = { "content-type": "application/x-www-form-urlencoded", accept: "application/json" };
-    const includeGrantTypeOnRefresh = providerConfig.includeGrantTypeOnRefresh !== false;
+    const headers: Record<string, string> = {
+      "content-type": "application/x-www-form-urlencoded",
+      accept: "application/json",
+    };
+    const includeGrantTypeOnRefresh =
+      providerConfig.includeGrantTypeOnRefresh !== false;
     const refreshPayload: Record<string, string> = {
       client_id: clientId!,
       client_secret: clientSecret!,
       refresh_token: refreshToken,
     };
-    if (includeGrantTypeOnRefresh) refreshPayload["grant_type"] = "refresh_token";
-    const body = new URLSearchParams(refreshPayload)
+    if (includeGrantTypeOnRefresh)
+      refreshPayload["grant_type"] = "refresh_token";
+    const body = new URLSearchParams(refreshPayload);
     const tokenResponse = await fetch(providerConfig.tokenUrl, {
       method: "POST",
       headers,
@@ -193,10 +224,13 @@ export const getRefreshedAccessToken = internalAction({
       tokenData = Object.fromEntries(p.entries());
     }
     const newAccessToken = tokenData.access_token as string | undefined;
-    const maybeNewRefreshToken = (tokenData.refresh_token as string | undefined) ?? refreshToken;
+    const maybeNewRefreshToken =
+      (tokenData.refresh_token as string | undefined) ?? refreshToken;
 
     if (!newAccessToken) {
-      throw new Error(`Token endpoint did not return an access_token for ${args.provider}`);
+      throw new Error(
+        `Token endpoint did not return an access_token for ${args.provider}`,
+      );
     }
 
     // Persist the new access token (and rotated refresh token if provided)

@@ -28,7 +28,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   } = useQuery({
     ...convexQuery(
       api.projects.queries.get,
-      projectId ? { projectId } : "skip"
+      projectId ? { projectId } : "skip",
     ),
   });
   const { mutate: updateProject } = useMutation({

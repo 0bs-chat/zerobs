@@ -69,9 +69,7 @@ async function makeGmailAPIRequest(
   return response.json();
 }
 
-export const getGoogleTools = async (
-  config: ExtendedRunnableConfig,
-) => {
+export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
   const accessToken = await getGoogleAccessToken(config);
   if (!accessToken) {
     return [];

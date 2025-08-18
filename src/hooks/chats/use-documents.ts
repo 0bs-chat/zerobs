@@ -12,7 +12,7 @@ export const useRemoveDocument = () => {
   const { data: chatInputQuery } = useQuery({
     ...convexQuery(
       api.chats.queries.get,
-      chatId !== "new" ? { chatId } : "skip"
+      chatId !== "new" ? { chatId } : "skip",
     ),
   });
 
@@ -29,7 +29,7 @@ export const useRemoveDocument = () => {
       }
 
       const filteredDocuments = chatInputQuery.documents.filter(
-        (id) => id !== documentId
+        (id) => id !== documentId,
       );
 
       updateChatInputMutation({
@@ -41,7 +41,7 @@ export const useRemoveDocument = () => {
     } else {
       setNewChat((prev) => {
         const filteredDocuments = prev.documents.filter(
-          (id) => id !== documentId
+          (id) => id !== documentId,
         );
         return { ...prev, documents: filteredDocuments };
       });
@@ -56,7 +56,7 @@ export const useUploadDocuments = (
   }: {
     type: "file" | "url" | "site" | "youtube" | "text" | "github";
     chat?: Doc<"chats">;
-  } = { type: "file" }
+  } = { type: "file" },
 ) => {
   const chatId = useAtomValue(chatIdAtom);
   const { mutateAsync: updateChatMutation } = useMutation({
@@ -104,7 +104,7 @@ export const useUploadDocuments = (
             size: file.size,
             key: storageId,
           });
-        })
+        }),
       );
 
       // Update chat input with new documents
@@ -125,7 +125,7 @@ export const useUploadDocuments = (
       }
 
       toast(
-        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`
+        `${files.length} file${files.length > 1 ? "s" : ""} uploaded successfully`,
       );
 
       return documentIds;

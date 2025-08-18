@@ -36,45 +36,46 @@ export const sidebarOpenAtom = atomWithStorage("sidebarOpen", false);
 export const resizePanelOpenAtom = atomWithStorage("resizePanelOpen", false);
 export const selectedPanelTabAtom = atomWithStorage(
   "selectedPanelTab",
-  "projects"
+  "projects",
 );
 export const resizePanelWidthAtom = atomWithStorage("resizePanelWidth", 40);
 
 export const documentDialogOpenAtom = atom<Id<"documents"> | undefined>(
-  undefined
+  undefined,
 );
 export const createProjectDialogOpenAtom = atom(false);
 
 export const wrapLongLinesAtom = atomWithStorage("wrapLongLines", false);
 
 export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
-  undefined
+  undefined,
 );
 export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
+export const selectedVibzMcpAtom = atom<Doc<"mcps"> | undefined>(undefined);
 
 export const pinnedChatsAccordionOpenAtom = atomWithStorage(
   "pinnedChatsAccordionOpen",
-  false
+  false,
 );
 
 export const currentThreadAtom = atom<
   ReturnType<typeof buildThread> | undefined
 >(undefined);
 export const groupedMessagesAtom = selectAtom(currentThreadAtom, (thread) =>
-  thread ? groupMessages(thread) : []
+  thread ? groupMessages(thread) : [],
 );
 export const lastChatMessageAtom = selectAtom(currentThreadAtom, (thread) =>
   thread && thread.length > 0
     ? thread[thread.length - 1].message._id
-    : undefined
+    : undefined,
 );
 
 export const useStreamAtom = atom<ReturnType<typeof useStream> | undefined>(
-  undefined
+  undefined,
 );
 export const streamStatusAtom = selectAtom(
   useStreamAtom,
-  (stream) => stream?.status
+  (stream) => stream?.status,
 );
 
 export const allArtifactsAtom = atom((get) => {

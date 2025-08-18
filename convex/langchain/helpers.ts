@@ -96,9 +96,7 @@ export async function createAgentWithTools(
       }),
     );
     return createSupervisor({
-      agents: [
-        ...agents,
-      ],
+      agents: [...agents],
       llm: supervisorLlm,
       prompt: createAgentSystemMessage(
         chat.model,
@@ -173,10 +171,7 @@ export async function getAvailableTools(
 ): Promise<Toolkit[] | StructuredToolInterface<ToolSchemaBase>[]> {
   const chat = config.chat;
 
-  const [
-    mcpTools,
-    retrievalTools
-  ] = await Promise.all([
+  const [mcpTools, retrievalTools] = await Promise.all([
     getMCPTools(config.ctx, state, config),
     getRetrievalTools(state, config, true),
   ]);
@@ -190,7 +185,10 @@ export async function getAvailableTools(
   }
 
   // Group MCP tools by server name (tool name format: "mcp__<server>__<tool>")
-  const mcpGrouped = new Map<string, StructuredToolInterface<ToolSchemaBase>[]>();
+  const mcpGrouped = new Map<
+    string,
+    StructuredToolInterface<ToolSchemaBase>[]
+  >();
   for (const tool of mcpTools) {
     const parts = tool.name.split("__");
     const groupName = parts.length >= 2 ? parts[1] : "MCP";
@@ -199,9 +197,16 @@ export async function getAvailableTools(
   }
 
   const toolkits: Toolkit[] = [
-    ...Array.from(mcpGrouped.entries()).map(([name, tools]) => ({ name, tools })),
-    ...(chat.webSearch ? [{ name: "WebSearch", tools: [retrievalTools.webSearch] }] : []),
-    ...(chat.projectId ? [{ name: "VectorSearch", tools: [retrievalTools.vectorSearch] }] : []),
+    ...Array.from(mcpGrouped.entries()).map(([name, tools]) => ({
+      name,
+      tools,
+    })),
+    ...(chat.webSearch
+      ? [{ name: "WebSearch", tools: [retrievalTools.webSearch] }]
+      : []),
+    ...(chat.projectId
+      ? [{ name: "VectorSearch", tools: [retrievalTools.vectorSearch] }]
+      : []),
   ];
 
   return toolkits;
@@ -211,7 +216,8 @@ export async function getAvailableToolsDescription(
   state: typeof GraphState.State,
   config: ExtendedRunnableConfig,
 ): Promise<string> {
-  const toolsInfo: StructuredToolInterface<ToolSchemaBase>[] = await getAvailableTools(state, config);
+  const toolsInfo: StructuredToolInterface<ToolSchemaBase>[] =
+    await getAvailableTools(state, config);
 
   if (toolsInfo.length === 0) {
     return "No tools are currently available.";

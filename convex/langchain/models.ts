@@ -44,7 +44,6 @@ export const models: {
   temperature?: number;
   parser?: "base" | "functionCalling";
 }[] = [
-
   {
     label: "GPT-5 Mini",
     model_name: "gpt-5-mini",
@@ -53,7 +52,8 @@ export const models: {
     toolSupport: false,
     provider: "openai",
     modalities: ["text", "image"],
-    image: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     description:
       "GPT-5 Mini is a compact version of GPT-5, designed to handle lighter-weight reasoning tasks. It provides the same instruction-following and safety-tuning benefits as GPT-5, but with reduced latency and cost. GPT-5 Mini is the successor to OpenAI's o4-mini model.",
     owner: "openai",
@@ -68,7 +68,8 @@ export const models: {
     toolSupport: false,
     provider: "openai",
     modalities: ["text", "image"],
-    image: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     description:
       "GPT-5 Chat is designed for advanced, natural, multimodal, and context-aware conversations for enterprise applications.",
     owner: "openai",
@@ -180,7 +181,8 @@ export const models: {
     toolSupport: true,
     provider: "openai",
     modalities: ["text"],
-    image: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+    image:
+      "https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
     description:
       "GPT OSS 120B is an open-weight, 117B-parameter Mixture-of-Experts (MoE) language model from OpenAI designed for high-reasoning, agentic, and general-purpose production use cases. It activates 5.1B parameters per forward pass and supports configurable reasoning depth, full chain-of-thought access, and native tool use.",
     owner: "openai",
@@ -350,7 +352,7 @@ export async function getModel(
         userId,
       })
     )?.value ?? process.env.OPENAI_API_KEY;
-    
+
   return new ChatOpenAI({
     model: modelConfig.model,
     apiKey: OPENAI_API_KEY,
@@ -397,7 +399,7 @@ export async function getEmbeddingModel(
   } else {
     return new OpenAIEmbeddings({
       model: modelConfig.model,
-      apiKey: API_KEY
+      apiKey: API_KEY,
     });
   }
 }

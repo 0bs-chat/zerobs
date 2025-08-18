@@ -38,9 +38,8 @@ const useGithub = () => {
   const apiKeys = useAtomValue(apiKeysAtom);
   const githubAccessToken = useMemo(
     () =>
-      (apiKeys || []).find(
-        (k) => k.key === "GITHUB_ACCESS_TOKEN" && k.enabled,
-      )?.value as string | undefined,
+      (apiKeys || []).find((k) => k.key === "GITHUB_ACCESS_TOKEN" && k.enabled)
+        ?.value as string | undefined,
     [apiKeys],
   );
 
@@ -443,7 +442,8 @@ const useGithub = () => {
         const headers: Record<string, string> = {
           Accept: "application/vnd.github+json",
         };
-        if (githubAccessToken) headers["Authorization"] = `Bearer ${githubAccessToken}`;
+        if (githubAccessToken)
+          headers["Authorization"] = `Bearer ${githubAccessToken}`;
 
         const resp = await fetch(
           `https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`,
@@ -460,7 +460,13 @@ const useGithub = () => {
         return availableBranches.length ? availableBranches : ["main"];
       }
     },
-    [parseGitHubUrl, currentRepo, availableBranches, setAvailableBranches, githubAccessToken],
+    [
+      parseGitHubUrl,
+      currentRepo,
+      availableBranches,
+      setAvailableBranches,
+      githubAccessToken,
+    ],
   );
 
   // Clear repository data

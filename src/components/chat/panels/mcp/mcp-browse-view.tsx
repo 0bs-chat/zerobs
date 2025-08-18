@@ -8,7 +8,10 @@ interface MCPBrowseViewProps {
   handleImport: () => void;
 }
 
-export const MCPBrowseView = ({ selectedTemplate, setSelectedTemplate }: MCPBrowseViewProps) => {
+export const MCPBrowseView = ({
+  selectedTemplate,
+  setSelectedTemplate,
+}: MCPBrowseViewProps) => {
   const MCPTypeBadge = ({ type }: { type: McpTemplate["type"] }) => {
     const badgeConfig = {
       http: {

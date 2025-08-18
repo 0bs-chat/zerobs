@@ -27,14 +27,14 @@ export function ProjectDocumentList({
             projectId,
             paginationOpts: { numItems: 25, cursor: null },
           }
-        : "skip"
+        : "skip",
     ),
   });
 
   const { mutate: toggleSelectAll, isPending: isTogglingSelectAll } =
     useMutation({
       mutationFn: useConvexMutation(
-        api.projectDocuments.mutations.toggleSelect
+        api.projectDocuments.mutations.toggleSelect,
       ),
     });
 
@@ -56,11 +56,11 @@ export function ProjectDocumentList({
   }
 
   const allSelected = projectDocuments.projectDocuments.every(
-    (projectDocument) => projectDocument.selected
+    (projectDocument) => projectDocument.selected,
   );
 
   return (
-    <div className="flex flex-col gap-2 bg-card rounded-xl shadow-sm border p-4 h-full min-h-0">
+    <div className="flex flex-col gap-2 bg-card rounded-xl shadow-sm border p-4 h-full min-h-0 max-h-[98%]">
       <div className="flex items-center justify-start">
         <div className="flex items-center gap-2">
           <Toggle
@@ -84,7 +84,7 @@ export function ProjectDocumentList({
               (
               {
                 projectDocuments.projectDocuments.filter(
-                  (projectDocument) => projectDocument.selected
+                  (projectDocument) => projectDocument.selected,
                 ).length
               }
               /{projectDocuments.projectDocuments.length})

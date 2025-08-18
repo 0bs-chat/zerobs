@@ -29,7 +29,7 @@ export const DocumentDialog = () => {
   } = useQuery({
     ...convexQuery(
       api.documents.queries.get,
-      documentDialogOpen ? { documentId: documentDialogOpen } : "skip"
+      documentDialogOpen ? { documentId: documentDialogOpen } : "skip",
     ),
   });
 

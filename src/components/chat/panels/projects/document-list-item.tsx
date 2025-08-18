@@ -24,7 +24,7 @@ export function ProjectDocumentListItem({
   const { mutate: removeDocument, isPending: isRemovingDocument } = useMutation(
     {
       mutationFn: useConvexMutation(api.projectDocuments.mutations.remove),
-    }
+    },
   );
   const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
 
@@ -46,7 +46,7 @@ export function ProjectDocumentListItem({
         />
         {(() => {
           const { icon: Icon, className } = getDocTagInfo(
-            projectDocument.document
+            projectDocument.document,
           );
           return (
             <>

@@ -9,7 +9,11 @@ export const create = mutation({
   args: {
     name: v.string(),
     model: v.string(),
-    reasoningEffort: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    reasoningEffort: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+    ),
     projectId: v.union(v.id("projects"), v.null()),
     conductorMode: v.boolean(),
     orchestratorMode: v.boolean(),

@@ -64,7 +64,7 @@ export const ChatInput = () => {
         }));
       }
     },
-    300
+    300,
   );
 
   // Handle paste events for images
@@ -93,11 +93,11 @@ export const ChatInput = () => {
 
         await handleFileUpload(fileList);
         toast.success(
-          `${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""} pasted and uploaded`
+          `${imageFiles.length} image${imageFiles.length > 1 ? "s" : ""} pasted and uploaded`,
         );
       }
     },
-    [handleFileUpload]
+    [handleFileUpload],
   );
 
   // Handle drag and drop
@@ -109,7 +109,7 @@ export const ChatInput = () => {
         await handleFileUpload(e.dataTransfer.files);
       }
     },
-    [handleFileUpload]
+    [handleFileUpload],
   );
 
   const handleDragOver = useCallback(
@@ -117,7 +117,7 @@ export const ChatInput = () => {
       e.preventDefault();
       if (!isDragActive) setIsDragActive(true);
     },
-    [isDragActive]
+    [isDragActive],
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {

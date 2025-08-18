@@ -30,18 +30,18 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   } = useQuery({
     ...convexQuery(
       api.chatMessages.queries.get,
-      chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip"
+      chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip",
     ),
     enabled: chatId !== "new",
   });
 
   const messageTree = useMemo(
     () => (messages ? buildMessageTree(messages) : []),
-    [messages]
+    [messages],
   );
   const currentThread = useMemo(
     () => buildThread(messageTree, branchPath),
-    [messageTree, branchPath]
+    [messageTree, branchPath],
   );
   const streamData = useStream(chatId);
 
@@ -76,7 +76,7 @@ export const useChangeBranch = () => {
         return newPath;
       });
     },
-    [setBranchPath]
+    [setBranchPath],
   );
 };
 
@@ -107,6 +107,6 @@ export const useNavigateBranch = () => {
 
       changeBranch(depth, newIndex);
     },
-    [currentThread, branchPath, changeBranch]
+    [currentThread, branchPath, changeBranch],
   );
 };

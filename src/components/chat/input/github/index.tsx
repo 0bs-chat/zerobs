@@ -221,15 +221,14 @@ const GitHubDialog = ({
     <Suspense fallback={<div>...</div>}>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogTrigger asChild>{children}</DialogTrigger>
-        <DialogContent
-          className={`sm:max-w-[800px]`}
-        >
+        <DialogContent className={`sm:max-w-[800px]`}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
               <p>Add from GitHub</p>
             </DialogTitle>
             <DialogDescription>
-              Add files from a GitHub repository (public or private if connected).
+              Add files from a GitHub repository (public or private if
+              connected).
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 w-full flex flex-col gap-4">
