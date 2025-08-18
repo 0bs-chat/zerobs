@@ -94,7 +94,7 @@ export async function createMachineConfig(
     name: `${appName}-machine`,
     region: "sea",
     config: {
-      image: mcp.dockerImage || "mantrakp04/mcprunner:v2",
+      image: mcp.dockerImage || "registry.fly.io/floral-brook-444:v1",
       env: {
         ...(await verifyEnv(mcp.env!)),
         ...configurableEnvValues,
