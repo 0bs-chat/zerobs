@@ -73,7 +73,7 @@ if (rootElement && !rootElement.innerHTML) {
           </QueryClientProvider>
         </ConvexAuthProvider>
       </ThemeProvider>
-    </StrictMode>
+    </StrictMode>,
   );
 }
 

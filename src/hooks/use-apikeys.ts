@@ -9,7 +9,9 @@ export const apiKeysAtom = atom<Doc<"apiKeys">[]>([]);
 
 export const useApiKeys = () => {
   const [apiKeys, setApiKeys] = useAtom(apiKeysAtom);
-  const { data: existingKeys } = useQuery(convexQuery(api.apiKeys.queries.getAll, {}));
+  const { data: existingKeys } = useQuery(
+    convexQuery(api.apiKeys.queries.getAll, {}),
+  );
   useEffect(() => {
     setApiKeys(existingKeys ?? []);
   }, [existingKeys]);

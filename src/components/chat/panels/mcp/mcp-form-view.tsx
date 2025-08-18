@@ -11,7 +11,11 @@ interface MCPFormViewProps {
   handleTypeChange: (type: McpType) => void;
 }
 
-export const MCPFormView = ({ mcp, setMcp, handleTypeChange }: MCPFormViewProps) => {
+export const MCPFormView = ({
+  mcp,
+  setMcp,
+  handleTypeChange,
+}: MCPFormViewProps) => {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
@@ -20,9 +24,7 @@ export const MCPFormView = ({ mcp, setMcp, handleTypeChange }: MCPFormViewProps)
           id="mcp-name"
           placeholder="MCP name (e.g., my-mcp)"
           value={mcp.name}
-          onChange={(e) =>
-            setMcp({ ...mcp, name: e.target.value })
-          }
+          onChange={(e) => setMcp({ ...mcp, name: e.target.value })}
         />
       </div>
 
@@ -38,9 +40,7 @@ export const MCPFormView = ({ mcp, setMcp, handleTypeChange }: MCPFormViewProps)
             id="mcp-command"
             placeholder="STDIO command (e.g., python -m my_mcp)"
             value={mcp.command}
-            onChange={(e) =>
-              setMcp({ ...mcp, command: e.target.value })
-            }
+            onChange={(e) => setMcp({ ...mcp, command: e.target.value })}
           />
         </div>
       )}
@@ -52,9 +52,7 @@ export const MCPFormView = ({ mcp, setMcp, handleTypeChange }: MCPFormViewProps)
             id="mcp-url"
             placeholder="HTTP URL (e.g., http://localhost:3000/sse)"
             value={mcp.url}
-            onChange={(e) =>
-              setMcp({ ...mcp, url: e.target.value })
-            }
+            onChange={(e) => setMcp({ ...mcp, url: e.target.value })}
           />
         </div>
       )}
@@ -67,9 +65,7 @@ export const MCPFormView = ({ mcp, setMcp, handleTypeChange }: MCPFormViewProps)
               id="mcp-docker-image"
               placeholder="Docker image (e.g., my-mcp:latest)"
               value={mcp.dockerImage}
-              onChange={(e) =>
-                setMcp({ ...mcp, dockerImage: e.target.value })
-              }
+              onChange={(e) => setMcp({ ...mcp, dockerImage: e.target.value })}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -113,7 +109,7 @@ export const MCPFormView = ({ mcp, setMcp, handleTypeChange }: MCPFormViewProps)
           <div className="space-y-0.5">
             <Label htmlFor="per-chat-toggle">Per-Chat MCP</Label>
             <p className="text-sm text-muted-foreground">
-              {mcp.type === "http" 
+              {mcp.type === "http"
                 ? "Not applicable for HTTP MCPs"
                 : "Create a separate instance for each chat,\nthis will take longer to start up.\nOnly toggle this if you are sure you need it."}
             </p>
@@ -126,7 +122,6 @@ export const MCPFormView = ({ mcp, setMcp, handleTypeChange }: MCPFormViewProps)
           />
         </div>
       </div>
-
     </div>
   );
 };

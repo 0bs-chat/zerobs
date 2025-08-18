@@ -124,13 +124,6 @@ export const fly = {
     appName: string,
     params: CreateMachineRequest,
   ): Promise<FlyMachine | null> => {
-    const existingMachines = await fly.listMachines(appName);
-    if (existingMachines && existingMachines.length > 0) {
-      console.warn(
-        `App ${appName} already has ${existingMachines.length} machine(s). Returning the first one.`,
-      );
-      return existingMachines[0];
-    }
     return await flyRequest(`/apps/${appName}/machines`, "POST", params);
   },
 
@@ -139,6 +132,17 @@ export const fly = {
     machineId: string,
   ): Promise<FlyMachine | null> => {
     return await flyRequest(`/apps/${appName}/machines/${machineId}`, "GET");
+  },
+
+  getMachineByName: async (
+    appName: string,
+    machineName: string,
+  ): Promise<FlyMachine | null> => {
+    const machines = await fly.listMachines(appName);
+    if (!machines) {
+      return null;
+    }
+    return machines.find((m) => m.name === machineName) || null;
   },
 
   deleteMachine: async (appName: string, machineId: string) => {
@@ -250,8 +254,8 @@ export const fly = {
 
       // If there are health checks, they must all pass
       if (machine.checks && machine.checks.length > 0) {
-        return machine.checks.every(check => 
-          check.status === "passing" || check.status === "success"
+        return machine.checks.every(
+          (check) => check.status === "passing" || check.status === "success",
         );
       }
 
@@ -264,14 +268,14 @@ export const fly = {
         // Get app info to verify it exists
         const app = await fly.getApp(appName);
         if (!app) {
-          await new Promise(resolve => setTimeout(resolve, interval));
+          await new Promise((resolve) => setTimeout(resolve, interval));
           continue;
         }
 
         // Get all machines for the app
         const machines = await fly.listMachines(appName);
         if (!machines) {
-          await new Promise(resolve => setTimeout(resolve, interval));
+          await new Promise((resolve) => setTimeout(resolve, interval));
           continue;
         }
 
@@ -291,7 +295,8 @@ export const fly = {
 
         // Check if all machines are in a failed state
         const failedMachines = machines.filter(
-          machine => machine.state === "destroyed" || machine.state === "failed"
+          (machine) =>
+            machine.state === "destroyed" || machine.state === "failed",
         );
 
         if (failedMachines.length === machines.length && machines.length > 0) {
@@ -306,17 +311,17 @@ export const fly = {
         }
 
         // Wait before next check
-        await new Promise(resolve => setTimeout(resolve, interval));
+        await new Promise((resolve) => setTimeout(resolve, interval));
       } catch (error) {
         console.error(`Error checking health for app ${appName}:`, error);
-        await new Promise(resolve => setTimeout(resolve, interval));
+        await new Promise((resolve) => setTimeout(resolve, interval));
       }
     }
 
     // Timeout reached - get final state
     try {
       const app = await fly.getApp(appName);
-      const machines = await fly.listMachines(appName) || [];
+      const machines = (await fly.listMachines(appName)) || [];
       const healthyMachines = machines.filter(isMachineHealthy);
 
       return {

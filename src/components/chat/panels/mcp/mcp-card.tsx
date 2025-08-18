@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Loader2, Play, Square, Trash2, RotateCcw } from "lucide-react";
+import { Loader2, Play, Square, Trash2, RotateCcw, Eye } from "lucide-react";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Doc, Id } from "convex/_generated/dataModel";
+import { useSetAtom } from "jotai";
+import { selectedVibzMcpAtom } from "@/store/chatStore";
 
 export const MCPCard = ({
   mcp,
@@ -17,6 +19,15 @@ export const MCPCard = ({
   onDelete: (mcpId: Id<"mcps">) => Promise<void>;
   onRestart?: (mcpId: Id<"mcps">) => Promise<void>;
 }) => {
+  const setSelectedVibzMcp = useSetAtom(selectedVibzMcpAtom);
+
+  const isVibzTemplate = mcp.template === "vibz";
+  const canShowPreview = isVibzTemplate && mcp.enabled && status === "created";
+
+  const handlePreview = () => {
+    setSelectedVibzMcp(mcp);
+  };
+
   const getDisplayValue = () => {
     switch (mcp.type) {
       case "stdio":
@@ -75,6 +86,17 @@ export const MCPCard = ({
           </CardDescription>
         </div>
         <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+          {canShowPreview && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="cursor-pointer"
+              onClick={handlePreview}
+              aria-label="Preview App"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
           {onRestart && (
             <Button
               variant="outline"

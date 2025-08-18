@@ -59,14 +59,12 @@ export const providers: {
   },
   github: {
     title: "GitHub",
-    description: "Connect to GitHub to access your repositories and manage code.",
+    description:
+      "Connect to GitHub to access your repositories and manage code.",
     icon: "https://github.com/favicon.ico",
     clientIdKey: "AUTH_GITHUB_ID",
     clientSecretKey: "AUTH_GITHUB_SECRET",
-    scope: [
-      "repo",
-      "user",
-    ].join(" "),
+    scope: ["repo", "user"].join(" "),
     authUrl: new URL("https://github.com/login/oauth/authorize"),
     tokenUrl: new URL("https://github.com/login/oauth/access_token"),
     accessKeyKey: "GITHUB_ACCESS_TOKEN",
@@ -75,5 +73,5 @@ export const providers: {
     includeGrantTypeOnAuthCode: false,
     includeGrantTypeOnRefresh: true,
     returnsRefreshToken: false,
-  }
+  },
 };
