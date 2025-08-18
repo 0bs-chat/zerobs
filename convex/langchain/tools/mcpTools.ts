@@ -147,6 +147,12 @@ export const getMCPTools = async (
   const validResults = mcpResults.filter(
     (result): result is NonNullable<typeof result> => result !== null,
   );
+  
+  // Early return if no valid MCPs are available
+  if (validResults.length === 0) {
+    return [];
+  }
+  
   const mcpServers: Record<string, Connection> = Object.fromEntries(
     validResults.map((result) => [result.name, result.connection]),
   );

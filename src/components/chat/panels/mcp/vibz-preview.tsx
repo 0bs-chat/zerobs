@@ -45,12 +45,12 @@ export const VibzPreview = () => {
         skipTimestamp: true,
       });
 
-      const mcpName = `${chatId}-${selectedVibzMcp._id}`.slice(0, 62);
+      const appName = selectedVibzMcp._id;
 
       setUrls({
-        previewUrl: `https://${mcpName}.fly.dev/`,
-        codeUrl: `https://${mcpName}.fly.dev/8080${oauthToken}/`,
-        dashboardUrl: `https://${mcpName}.fly.dev/dashboard?auth=${oauthToken}`,
+        previewUrl: `https://${appName}.fly.dev/`,
+        codeUrl: `https://${appName}.fly.dev/8080${oauthToken}/`,
+        dashboardUrl: `https://${appName}.fly.dev/dashboard?auth=${oauthToken}`,
       });
       console.log(urls);
     };

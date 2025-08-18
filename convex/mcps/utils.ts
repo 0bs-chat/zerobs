@@ -91,13 +91,15 @@ export async function createMachineConfig(
   configurableEnvValues: Record<string, string> = {},
   machineName: string,
 ): Promise<CreateMachineRequest> {
+  const verifiedEnv = await verifyEnv(mcp.env!);
+  
   return {
     name: machineName,
     region: "sea",
     config: {
       image: mcp.dockerImage || "registry.fly.io/floral-brook-444:v1",
       env: {
-        ...(await verifyEnv(mcp.env!)),
+        ...verifiedEnv,
         ...configurableEnvValues,
         MCP_COMMAND: mcp.command || "",
         HOST: "https://" + appName + ".fly.dev",
@@ -110,7 +112,7 @@ export async function createMachineConfig(
           protocol: "tcp",
           internal_port: mcp.dockerPort || 8000,
           autostart: true,
-          autostop: "suspend",
+          autostop: "suspend" as const,
           min_machines_running: 0,
           checks: [
             {

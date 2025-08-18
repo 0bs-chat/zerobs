@@ -52,7 +52,7 @@ export function ProjectDocumentList({
   );
 
   return (
-    <div className="flex flex-col gap-2 bg-card rounded-xl shadow-sm border p-4 h-full min-h-0">
+    <div className="flex flex-col gap-2 bg-card rounded-xl shadow-sm border p-4 h-full min-h-0 max-h-[98%]">
       <div className="flex items-center justify-start">
         <div className="flex items-center gap-2">
           <Toggle
