@@ -24,7 +24,7 @@ export const getRetrievalTools = async (
       toolConfig: any
     ) => {
       await dispatchCustomEvent(
-        "tool_stream",
+        "tool_progress",
         { chunk: "Initializing vector store..." },
         toolConfig
       );
@@ -35,7 +35,7 @@ export const getRetrievalTools = async (
       });
 
       await dispatchCustomEvent(
-        "tool_stream",
+        "tool_progress",
         { chunk: "Loading selected project documents..." },
         toolConfig
       );
@@ -50,7 +50,7 @@ export const getRetrievalTools = async (
       if (includedProjectDocuments.length === 0) {
         const msg = "No project documents available for retrieval.";
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: msg, complete: true },
           toolConfig
         );
@@ -58,7 +58,7 @@ export const getRetrievalTools = async (
       }
 
       await dispatchCustomEvent(
-        "tool_stream",
+        "tool_progress",
         { chunk: "Searching vector index..." },
         toolConfig
       );
@@ -74,7 +74,7 @@ export const getRetrievalTools = async (
       });
 
       await dispatchCustomEvent(
-        "tool_stream",
+        "tool_progress",
         { chunk: `Found ${results.length} results. Building response...` },
         toolConfig
       );
@@ -108,7 +108,7 @@ export const getRetrievalTools = async (
       );
 
       await dispatchCustomEvent(
-        "tool_stream",
+        "tool_progress",
         { chunk: "Formatting final output...", complete: true },
         toolConfig
       );
@@ -139,7 +139,7 @@ export const getRetrievalTools = async (
       toolConfig: any
     ) => {
       await dispatchCustomEvent(
-        "tool_stream",
+        "tool_progress",
         { chunk: "Preparing web search..." },
         toolConfig
       );
@@ -154,7 +154,7 @@ export const getRetrievalTools = async (
 
       try {
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: "Querying Exa..." },
           toolConfig
         );
@@ -172,7 +172,7 @@ export const getRetrievalTools = async (
         if (searchResponse.length === 0) {
           const msg = "No results found.";
           await dispatchCustomEvent(
-            "tool_stream",
+            "tool_progress",
             { chunk: msg, complete: true },
             toolConfig
           );
@@ -180,7 +180,7 @@ export const getRetrievalTools = async (
         }
 
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           {
             chunk: `Found ${searchResponse.length} results. Formatting...`,
             complete: true,
@@ -208,7 +208,7 @@ export const getRetrievalTools = async (
           error instanceof Error ? error.message : "Unknown error"
         }`;
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: msg, complete: true },
           toolConfig
         );

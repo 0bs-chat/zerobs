@@ -304,7 +304,7 @@ export const getMCPTools = async (
       const wrapped = tool(
         async (args: any, toolConfig: any) => {
           await dispatchCustomEvent(
-            "tool_stream",
+            "tool_progress",
             {
               chunk: `Connecting to ${serverName} and invoking ${prettyName}…`,
             },
@@ -312,13 +312,13 @@ export const getMCPTools = async (
           );
           try {
             await dispatchCustomEvent(
-              "tool_stream",
+              "tool_progress",
               { chunk: `Executing ${prettyName} with provided parameters…` },
               toolConfig
             );
             const result = await (baseTool as any).invoke(args, toolConfig);
             await dispatchCustomEvent(
-              "tool_stream",
+              "tool_progress",
               {
                 chunk: `${prettyName} finished. Preparing results for display…`,
               },
@@ -329,7 +329,7 @@ export const getMCPTools = async (
             const message =
               error instanceof Error ? error.message : "Unknown error";
             await dispatchCustomEvent(
-              "tool_stream",
+              "tool_progress",
               { chunk: `${prettyName} failed: ${message}`, complete: true },
               toolConfig
             );

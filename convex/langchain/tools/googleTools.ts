@@ -79,16 +79,16 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
   }
 
   // Google Calendar Tools
-  const listCalendarseTool = tool(
+  const listCalendarsTool = tool(
     async (_args: {}, toolConfig: any) => {
       try {
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: "Checking Google authentication…" },
           toolConfig
         );
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: "Fetching your Google calendars…" },
           toolConfig
         );
@@ -107,7 +107,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           })) || [];
 
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Found ${calendars.length} calendars. Formatting results…` },
           toolConfig
         );
@@ -117,7 +117,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         const message =
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Failed to list calendars: ${message}`, complete: true },
           toolConfig
         );
@@ -151,7 +151,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
     ) => {
       try {
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           {
             chunk: `Fetching events from calendar '${calendarId}'${
               timeMin || timeMax
@@ -189,7 +189,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
             organizer: event.organizer,
           })) || [];
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Found ${events.length} events. Formatting results…` },
           toolConfig
         );
@@ -199,7 +199,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         const message =
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           {
             chunk: `Failed to list calendar events: ${message}`,
             complete: true,
@@ -267,7 +267,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
     ) => {
       try {
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           {
             chunk: `Creating event '${summary}' on '${calendarId}' from ${startDateTime} to ${endDateTime}…`,
           },
@@ -304,7 +304,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         };
 
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: "Event created successfully. Preparing output…" },
           toolConfig
         );
@@ -314,7 +314,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         const message =
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           {
             chunk: `Failed to create calendar event: ${message}`,
             complete: true,
@@ -380,7 +380,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
     ) => {
       try {
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           {
             chunk: `Loading existing event '${eventId}' from '${calendarId}'…`,
           },
@@ -392,7 +392,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         );
 
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: "Applying updates to the event…" },
           toolConfig
         );
@@ -423,7 +423,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         };
 
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: "Event updated successfully. Preparing output…" },
           toolConfig
         );
@@ -433,7 +433,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         const message =
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           {
             chunk: `Failed to update calendar event: ${message}`,
             complete: true,
@@ -487,7 +487,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
     ) => {
       try {
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Deleting event '${eventId}' from '${calendarId}'…` },
           toolConfig
         );
@@ -502,7 +502,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           message: `Event ${eventId} deleted successfully`,
         };
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: "Event deleted successfully." },
           toolConfig
         );
@@ -512,7 +512,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         const message =
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           {
             chunk: `Failed to delete calendar event: ${message}`,
             complete: true,
@@ -548,7 +548,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
     ) => {
       try {
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: "Fetching Gmail messages…" },
           toolConfig
         );
@@ -593,7 +593,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         );
 
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Found ${messages.length} messages. Formatting results…` },
           toolConfig
         );
@@ -603,7 +603,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         const message =
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           {
             chunk: `Failed to list Gmail messages: ${message}`,
             complete: true,
@@ -648,7 +648,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
     ) => {
       try {
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Fetching Gmail message '${messageId}'…` },
           toolConfig
         );
@@ -687,7 +687,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         };
 
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: "Message loaded. Preparing output…" },
           toolConfig
         );
@@ -697,7 +697,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         const message =
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Failed to get Gmail message: ${message}`, complete: true },
           toolConfig
         );
@@ -737,7 +737,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
     ) => {
       try {
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Composing email to ${to} with subject '${subject}'…` },
           toolConfig
         );
@@ -754,7 +754,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           .replace(/=+$/, "");
 
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: "Sending email via Gmail API…" },
           toolConfig
         );
@@ -773,7 +773,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         };
 
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: "Email sent successfully. Preparing output…" },
           toolConfig
         );
@@ -783,7 +783,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         const message =
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Failed to send Gmail message: ${message}`, complete: true },
           toolConfig
         );
@@ -811,7 +811,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
     ) => {
       try {
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Searching Gmail for: ${query}…` },
           toolConfig
         );
@@ -853,7 +853,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         );
 
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Found ${messages.length} matching messages. Formatting…` },
           toolConfig
         );
@@ -863,7 +863,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         const message =
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
-          "tool_stream",
+          "tool_progress",
           { chunk: `Failed to search Gmail: ${message}`, complete: true },
           toolConfig
         );
@@ -891,7 +891,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
   );
 
   return [
-    listCalendarseTool,
+    listCalendarsTool,
     listCalendarEventsTool,
     createCalendarEventTool,
     updateCalendarEventTool,

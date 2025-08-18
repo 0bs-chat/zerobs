@@ -171,26 +171,44 @@ export async function getAvailableTools(
 ): Promise<Toolkit[] | StructuredToolInterface<ToolSchemaBase>[]> {
   const chat = config.chat;
 
-  const [mcpTools, retrievalTools] = await Promise.all([
+  const [mcpResult, retrievalResult] = await Promise.allSettled([
     getMCPTools(config.ctx, state, config),
     getRetrievalTools(state, config, true),
   ]);
 
+  const mcpTools =
+    mcpResult.status === "fulfilled"
+      ? mcpResult.value
+      : {
+          tools: [],
+          groupedTools: {} as Record<
+            string,
+            StructuredToolInterface<ToolSchemaBase>[]
+          >,
+        };
+  const retrievalTools =
+    retrievalResult.status === "fulfilled" ? retrievalResult.value : null;
+
   if (!groupTools) {
     const pickedRetrievalTools: StructuredToolInterface<ToolSchemaBase>[] = [
-      ...(chat.projectId ? [retrievalTools.vectorSearch] : []),
-      ...(chat.webSearch ? [retrievalTools.webSearch] : []),
+      ...(chat.projectId && retrievalTools?.vectorSearch
+        ? [retrievalTools.vectorSearch]
+        : []),
+      ...(chat.webSearch && retrievalTools?.webSearch
+        ? [retrievalTools.webSearch]
+        : []),
     ];
+    return [...mcpTools.tools, ...pickedRetrievalTools];
   }
   const toolkits: Toolkit[] = [
     ...Object.entries(mcpTools.groupedTools).map(([name, tools]) => ({
       name,
       tools,
     })),
-    ...(chat.webSearch
+    ...(chat.webSearch && retrievalTools?.webSearch
       ? [{ name: "WebSearch", tools: [retrievalTools.webSearch] }]
       : []),
-    ...(chat.projectId
+    ...(chat.projectId && retrievalTools?.vectorSearch
       ? [{ name: "VectorSearch", tools: [retrievalTools.vectorSearch] }]
       : []),
   ];

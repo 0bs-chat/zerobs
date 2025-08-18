@@ -272,12 +272,15 @@ export const chat = action({
                   return;
                 }
 
+                // Prefer the framework-provided event name
                 const eventName =
-                  typeof (data as any).event === "string"
-                    ? (data as any).event
-                    : typeof (data as any).name === "string"
-                      ? (data as any).name
-                      : undefined;
+                  typeof raw?.name === "string"
+                    ? raw.name
+                    : typeof (data as any).event === "string"
+                      ? (data as any).event
+                      : typeof (data as any).name === "string"
+                        ? (data as any).name
+                        : undefined;
 
                 if (!eventName) {
                   console.warn(
@@ -289,32 +292,21 @@ export const chat = action({
                   return;
                 }
 
-                const payloadCandidate =
-                  (data as any).data ?? (data as any).payload;
-                const payload =
-                  payloadCandidate && typeof payloadCandidate === "object"
-                    ? payloadCandidate
-                    : undefined;
-                if (!payload) {
-                  console.warn(
-                    "[stream] Ignoring custom event without object payload",
-                    {
-                      eventName,
-                    }
-                  );
-                  return;
-                }
-
+                // For dispatchCustomEvent, the payload is in evt.data
+                const payload = data;
                 const chunk =
                   typeof (payload as any).chunk === "string"
                     ? (payload as any).chunk
                     : undefined;
                 const isComplete = (payload as any).complete === true;
 
-                if (eventName === "tool_stream") {
+                if (
+                  eventName === "tool_stream" ||
+                  eventName === "tool_progress"
+                ) {
                   if (!chunk) {
                     console.warn(
-                      "[stream] tool_stream custom event missing chunk; skipping"
+                      "[stream] tool_progress custom event missing chunk; skipping"
                     );
                     return;
                   }
