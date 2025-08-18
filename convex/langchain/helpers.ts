@@ -219,13 +219,18 @@ export async function getAvailableTools(
       name,
       tools,
     })),
-    ...(chat.webSearch
-      ? [{ name: "WebSearch", tools: [retrievalData!.webSearch] }]
-      : []),
-    ...(chat.projectId
-      ? [{ name: "VectorSearch", tools: [retrievalData!.vectorSearch] }]
-      : []),
   ];
+
+  if (chat.webSearch && retrievalData?.webSearch) {
+    toolkits.push({ name: "WebSearch", tools: [retrievalData.webSearch] });
+  }
+
+  if (chat.projectId && retrievalData?.vectorSearch) {
+    toolkits.push({
+      name: "VectorSearch",
+      tools: [retrievalData.vectorSearch],
+    });
+  }
 
   return toolkits;
 }
