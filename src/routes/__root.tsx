@@ -21,45 +21,45 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       {
-        charSet: 'utf-8',
+        charSet: "utf-8",
       },
       {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1.0',
+        name: "viewport",
+        content: "width=device-width, initial-scale=1.0",
       },
       {
-        name: 'theme-color',
-        content: '#000000',
+        name: "theme-color",
+        content: "#000000",
       },
       {
-        name: 'description',
-        content: 'the everything ai app',
+        name: "description",
+        content: "the everything ai app",
       },
     ],
     links: [
       {
-        rel: 'icon',
-        href: 'favicon.ico',
+        rel: "icon",
+        href: "favicon.ico",
       },
       {
-        rel: 'apple-touch-icon',
-        href: 'favicon.ico',
+        rel: "apple-touch-icon",
+        href: "favicon.ico",
       },
       {
-        rel: 'manifest',
-        href: '/manifest.json',
+        rel: "manifest",
+        href: "/manifest.json",
       },
     ],
     scripts: [
       {
-        src: 'https://cdn.databuddy.cc/databuddy.js',
-        'data-client-id': 'NSQmSNKXIn2VGySald6BR',
-        'data-enable-batching': 'true',
-        crossOrigin: 'anonymous',
+        src: "https://cdn.databuddy.cc/databuddy.js",
+        "data-client-id": "NSQmSNKXIn2VGySald6BR",
+        "data-enable-batching": "true",
+        crossOrigin: "anonymous",
         async: true,
       },
     ],
-    title: '0bs',
+    title: "0bs",
   }),
   component: () => {
     const location = useLocation();

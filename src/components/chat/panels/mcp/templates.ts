@@ -8,13 +8,11 @@ export type McpTemplate = Omit<
   image: string;
   official: boolean;
   promptTool?: string;
-  configurableEnv?: {
-    [key: string]: {
-      type: "query" | "mutation" | "action";
-      func: string;
-      args: Record<string, any>;
-    };
-  };
+  configurableEnvs?: readonly {
+    type: "query" | "mutation" | "action";
+    func: string;
+    args: Record<string, any> | readonly Record<string, any>[];
+  }[];
   customAuthTokenFromEnv?: string;
 };
 
@@ -33,20 +31,13 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     official: true,
     env: {},
     perChat: false,
-    configurableEnv: {
-      GITHUB_TOKEN: {
-        type: "query",
-        func: "internal.apiKeys.queries",
-        args: {},
-      },
-    },
     customAuthTokenFromEnv: "GITHUB_ACCESS_TOKEN",
   },
   {
     template: "python-exec",
     name: "Python Exec",
     type: "docker",
-    dockerImage: "mantrakp04/py_exec:latest",
+    dockerImage: "registry.fly.io/bitter-leaf-7106:v1",
     dockerPort: 8000,
     status: "creating",
     description:
@@ -92,8 +83,7 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     status: "creating",
     description:
       "Enables AI models to break down complex problems into sequential steps, improving reasoning capabilities and providing structured thinking processes for better problem-solving and decision-making.",
-    image:
-      "https://avatars.githubusercontent.com/u/182288589?s=200&v=4",
+    image: "https://avatars.githubusercontent.com/u/182288589?s=200&v=4",
     official: true,
     env: {},
     perChat: false,
@@ -103,22 +93,23 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     name: "Vibz",
     type: "docker",
     status: "creating",
-    description:
-      "Vibe code full stack convex + tanstack router apps",
-    image:
-      "https://www.convex.dev/favicon.ico",
+    description: "Vibe code full stack convex + tanstack router apps",
+    image: "https://www.convex.dev/favicon.ico",
     official: false,
     env: {},
     perChat: true,
-    dockerImage: "mantrakp04/vibz@sha256:2764fde8a8e875940864e56791ed3b61a2ea1bece4aa2cdb49a85c2015671e21",
+    dockerImage:
+      "registry.fly.io/still-smoke-7835:v1",
     dockerPort: 80,
     promptTool: "prompt",
-    configurableEnv: {
-      CONVEX_DEPLOY_KEY: {
+    configurableEnvs: [
+      {
         type: "action",
         func: "internal.mcps.actions.getConvexDeployKey",
-        args: {},
+        args: {
+          name: "vibz-mcp-server",
+        },
       },
-    },
-  }
+    ],
+  },
 ] as const;

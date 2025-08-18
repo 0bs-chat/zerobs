@@ -176,7 +176,7 @@ export async function getAvailableTools(
     getRetrievalTools(state, config, true),
   ]);
 
-  const mcpTools =
+  const mcpData =
     mcpResult.status === "fulfilled"
       ? mcpResult.value
       : {
@@ -186,30 +186,44 @@ export async function getAvailableTools(
             StructuredToolInterface<ToolSchemaBase>[]
           >,
         };
-  const retrievalTools =
+
+  const retrievalData =
     retrievalResult.status === "fulfilled" ? retrievalResult.value : null;
 
   if (!groupTools) {
     const pickedRetrievalTools: StructuredToolInterface<ToolSchemaBase>[] = [
-      ...(chat.projectId && retrievalTools?.vectorSearch
-        ? [retrievalTools.vectorSearch]
+      ...(chat.projectId && retrievalData?.vectorSearch
+        ? [retrievalData.vectorSearch]
         : []),
-      ...(chat.webSearch && retrievalTools?.webSearch
-        ? [retrievalTools.webSearch]
+      ...(chat.webSearch && retrievalData?.webSearch
+        ? [retrievalData.webSearch]
         : []),
     ];
-    return [...mcpTools.tools, ...pickedRetrievalTools];
+    return [...mcpData.tools, ...pickedRetrievalTools];
   }
+
+  // Group MCP tools by server name (tool name format: "mcp__<server>__<tool>")
+  const mcpGrouped = new Map<
+    string,
+    StructuredToolInterface<ToolSchemaBase>[]
+  >();
+  for (const tool of mcpData.tools) {
+    const parts = tool.name.split("__");
+    const groupName = parts.length >= 2 ? parts[1] : "MCP";
+    if (!mcpGrouped.has(groupName)) mcpGrouped.set(groupName, []);
+    mcpGrouped.get(groupName)!.push(tool);
+  }
+
   const toolkits: Toolkit[] = [
-    ...Object.entries(mcpTools.groupedTools).map(([name, tools]) => ({
+    ...Array.from(mcpGrouped.entries()).map(([name, tools]) => ({
       name,
       tools,
     })),
-    ...(chat.webSearch && retrievalTools?.webSearch
-      ? [{ name: "WebSearch", tools: [retrievalTools.webSearch] }]
+    ...(chat.webSearch
+      ? [{ name: "WebSearch", tools: [retrievalData!.webSearch] }]
       : []),
-    ...(chat.projectId && retrievalTools?.vectorSearch
-      ? [{ name: "VectorSearch", tools: [retrievalTools.vectorSearch] }]
+    ...(chat.projectId
+      ? [{ name: "VectorSearch", tools: [retrievalData!.vectorSearch] }]
       : []),
   ];
 

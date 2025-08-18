@@ -59,16 +59,10 @@ export function useStream(chatId: Id<"chats"> | "new") {
               chunkDoc._creationTime > lastSeenTime
           )
           .flatMap((chunkDoc: any) =>
-            chunkDoc.chunks.map((chunkStr: string) => {
-              try {
-                return JSON.parse(chunkStr) as ChunkGroup;
-              } catch (e) {
-                console.error("Failed to parse stream chunk", { chunkStr, e });
-                return undefined as unknown as ChunkGroup;
-              }
-            })
-          )
-          .filter(Boolean) as ChunkGroup[];
+            chunkDoc.chunks.map(
+              (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup
+            )
+          );
         if (newEvents.length > 0) {
           setGroupedChunks((prev) => {
             const newGroups = [...prev];

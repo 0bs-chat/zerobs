@@ -3,6 +3,7 @@ import { ModeToggle } from "@/components/theme-provider";
 import {
   resizePanelOpenAtom,
   selectedArtifactAtom,
+  selectedVibzMcpAtom,
   sidebarOpenAtom,
   userAtom,
 } from "@/store/chatStore";
@@ -22,6 +23,7 @@ export function TopNav() {
   const navigate = useNavigate();
   const sidebarOpen = useAtomValue(sidebarOpenAtom);
   const selectedArtifact = useAtomValue(selectedArtifactAtom);
+  const selectedVibzMcp = useAtomValue(selectedVibzMcpAtom);
   const setUser = useSetAtom(userAtom);
   const location = useLocation();
 
@@ -98,7 +100,7 @@ export function TopNav() {
           <Button
             variant="ghost"
             size="icon"
-            className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent" : "bg-transparent"} ${selectedArtifact ? "hidden" : ""}`}
+            className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent" : "bg-transparent"} ${selectedArtifact || selectedVibzMcp ? "hidden" : ""}`}
             onClick={() => {
               setResizePanelOpen(!resizePanelOpen);
               setSelectedArtifact(undefined);

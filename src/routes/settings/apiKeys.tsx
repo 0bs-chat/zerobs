@@ -248,7 +248,7 @@ function RouteComponent() {
       enabled,
     });
     toast.success(
-      `${config.title} ${enabled ? "enabled" : "disabled"} successfully`
+      `${config.title} ${enabled ? "enabled" : "disabled"} successfully`,
     );
   };
 
