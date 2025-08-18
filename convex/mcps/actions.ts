@@ -41,6 +41,7 @@ export const create = internalAction({
         mcp,
         appName,
         configurableEnvValues,
+        "machine",
       );
 
       const app = await fly.createApp({

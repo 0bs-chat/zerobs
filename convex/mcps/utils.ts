@@ -89,9 +89,10 @@ export async function createMachineConfig(
   mcp: Doc<"mcps">,
   appName: string,
   configurableEnvValues: Record<string, string> = {},
+  machineName: string,
 ): Promise<CreateMachineRequest> {
   return {
-    name: `${appName}-machine`,
+    name: machineName,
     region: "sea",
     config: {
       image: mcp.dockerImage || "registry.fly.io/floral-brook-444:v1",

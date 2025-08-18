@@ -13,7 +13,7 @@ import {
 import type { GraphState } from "../state";
 import { createJwt } from "../../utils/encryption";
 import { MCP_TEMPLATES } from "../../../src/components/chat/panels/mcp/templates";
-import { resolveConfigurableEnvs } from "../../mcps/utils";
+import { resolveConfigurableEnvs, createMachineConfig } from "../../mcps/utils";
 
 export const getMCPTools = async (
   ctx: ActionCtx,
@@ -41,78 +41,47 @@ export const getMCPTools = async (
       const mcpConfigurableEnvs = await resolveConfigurableEnvs(ctx, mcp);
 
       let updatedMcp = mcp;
+      let machineId: string = "machine";
 
       // Handle per-chat MCPs - create infrastructure on demand
       if (mcp.perChat && ["stdio", "docker"].includes(mcp.type) && config) {
-        const mcpName = `${config.chat._id}-${mcp._id}`.slice(0, 62);
+        const appName = mcp._id.toString();
+        machineId = config.chat._id.toString();
 
         try {
-          // Get or create fly.io app and machine similar to vibz logic
-          let app = await fly.getApp(mcpName);
-          let machine = null;
-
-          if (app) {
-            const machines = await fly.listMachines(mcpName);
-            if (machines && machines.length > 0) {
-              machine = machines[0];
-            }
-          }
-
-          // If no app, create it
+          // Get or create fly.io app and machine
+          let app = await fly.getApp(appName);
           if (!app) {
             app = await fly.createApp({
-              app_name: mcpName,
+              app_name: appName,
               org_slug: "personal",
             });
-
             if (app) {
               await fly.allocateIpAddress(app.name!, "shared_v4");
             }
           }
 
+          if (!app) {
+            throw new Error(`Failed to get or create app: ${appName}`);
+          }
+
+          let machine = await fly.getMachineByName(appName, machineId);
+
           if (!machine) {
-            const machineConfig = {
-              name: `${mcpName}-machine`,
-              region: "sea",
-              config: {
-                image: mcp.dockerImage || "mantrakp04/mcprunner:v2",
-                env: {
-                  ...mcp.env,
-                  ...mcpConfigurableEnvs,
-                  MCP_COMMAND: mcp.command || "",
-                  HOST: `https://${mcpName}.fly.dev`,
-                  OAUTH_TOKEN: await createJwt(
-                    "OAUTH_TOKEN",
-                    mcp._id,
-                    mcp.userId,
-                    true,
-                  ),
-                },
-                guest: { cpus: 2, memory_mb: 2048, cpu_kind: "shared" },
-                services: [
-                  {
-                    ports: [{ port: 443, handlers: ["tls", "http"] }],
-                    protocol: "tcp",
-                    internal_port: mcp.dockerPort || 8000,
-                    autostart: true,
-                    autostop: "suspend" as const,
-                    min_machines_running: 0,
-                    checks: [
-                      {
-                        type: "tcp",
-                      },
-                    ],
-                  },
-                ],
-              },
-            };
-            machine = await fly.createMachine(mcpName, machineConfig);
-            await fly.waitTillHealthy(mcpName, {
+            const machineConfig = await createMachineConfig(
+              mcp,
+              appName,
+              mcpConfigurableEnvs,
+              machineId,
+            );
+            machine = await fly.createMachine(appName, machineConfig);
+            await fly.waitTillHealthy(appName, {
               timeout: 120000,
               interval: 1000,
             });
           }
-          const sseUrl = `https://${mcpName}.fly.dev/sse`;
+
+          const sseUrl = `https://${appName}.fly.dev/sse`;
 
           // Update MCP with the URL
           await ctx.runMutation(internal.mcps.crud.update, {
@@ -122,7 +91,10 @@ export const getMCPTools = async (
 
           updatedMcp = { ...mcp, url: sseUrl, status: "created" as const };
         } catch (error) {
-          console.error(`Failed to create per-chat MCP ${mcpName}:`, error);
+          console.error(
+            `Failed to create per-chat MCP ${appName} machine ${machineId}:`,
+            error,
+          );
           // Don't return null - continue to check if this MCP has existing URL
         }
       }
@@ -143,16 +115,22 @@ export const getMCPTools = async (
         }
       }
 
+      const headers: Record<string, string> = {
+        ...updatedMcp.env,
+        ...mcpConfigurableEnvs,
+        fly_force_instance_id: machineId,
+        Authorization: `Bearer ${
+          authToken ||
+          (await createJwt("OAUTH_TOKEN", updatedMcp._id, updatedMcp.userId, true))
+        }`,
+      };
+      
       return {
         name: updatedMcp.name,
         connection: {
           transport: "http" as const,
           url: updatedMcp.url!,
-          headers: {
-            ...updatedMcp.env,
-            ...mcpConfigurableEnvs,
-            Authorization: `Bearer ${authToken || (await createJwt("OAUTH_TOKEN", updatedMcp._id, updatedMcp.userId, true))}`,
-          },
+          headers,
           useNodeEventSource: true,
           reconnect: {
             enabled: true,

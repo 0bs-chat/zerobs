@@ -124,13 +124,6 @@ export const fly = {
     appName: string,
     params: CreateMachineRequest,
   ): Promise<FlyMachine | null> => {
-    const existingMachines = await fly.listMachines(appName);
-    if (existingMachines && existingMachines.length > 0) {
-      console.warn(
-        `App ${appName} already has ${existingMachines.length} machine(s). Returning the first one.`,
-      );
-      return existingMachines[0];
-    }
     return await flyRequest(`/apps/${appName}/machines`, "POST", params);
   },
 
@@ -139,6 +132,17 @@ export const fly = {
     machineId: string,
   ): Promise<FlyMachine | null> => {
     return await flyRequest(`/apps/${appName}/machines/${machineId}`, "GET");
+  },
+
+  getMachineByName: async (
+    appName: string,
+    machineName: string,
+  ): Promise<FlyMachine | null> => {
+    const machines = await fly.listMachines(appName);
+    if (!machines) {
+      return null;
+    }
+    return machines.find((m) => m.name === machineName) || null;
   },
 
   deleteMachine: async (appName: string, machineId: string) => {
