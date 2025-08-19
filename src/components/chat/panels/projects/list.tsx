@@ -72,7 +72,7 @@ export const ProjectsList = () => {
             {allProjects?.page.map((project) => (
               <Card
                 key={project._id}
-                className={`${isOnProjectsRoute ? "relative group/card p-5 rounded-lg border bg-card shadow-sm hover:shadow-md flex flex-col h-full" : "group flex-row relative group/card px-4 py-4 flex items-center justify-between"} cursor-pointer hover:bg-accent/30 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50`}
+                className={`${isOnProjectsRoute ? "relative group/card p-5 rounded-lg border bg-card shadow-sm hover:shadow-md flex flex-col h-full" : "group flex-row relative group/card px-4 py-4 flex items-center justify-between"} cursor-pointer hover:bg-accent dark:hover:bg-accent/50 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50`}
                 onClick={() => {
                   // Only navigate to project page if we're on the /projects route
                   if (isOnProjectsRoute) {

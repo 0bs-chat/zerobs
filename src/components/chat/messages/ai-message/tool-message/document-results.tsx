@@ -63,7 +63,7 @@ export const DocumentResultDisplay = ({
         <AccordionContent className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[36rem] overflow-y-auto">
           {results.map((result, index) => {
             const { icon: Icon, className } = getDocTagInfo(
-              result.metadata.document,
+              result.metadata.document
             );
             return (
               <Card key={index} className="hover:shadow-md transition-shadow">

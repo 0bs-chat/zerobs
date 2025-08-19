@@ -8,7 +8,14 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, KeyIcon, Plug, User, Wallet2 } from "lucide-react";
+import {
+  ArrowLeft,
+  KeyIcon,
+  MessageCircle,
+  Plug,
+  User,
+  Wallet2,
+} from "lucide-react";
 import { useEffect } from "react";
 import { useApiKeys } from "@/hooks/use-apikeys";
 
@@ -32,6 +39,11 @@ const settingsNavItems = [
     title: "Billing",
     href: "/settings/billing",
     icon: Wallet2,
+  },
+  {
+    title: "Feedback",
+    href: "/settings/feedback",
+    icon: MessageCircle,
   },
 ];
 

@@ -24,7 +24,7 @@ code {
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0 0 0);
-  --card: oklch(1 0 0);
+  --card: oklch(0.9702 0.005 296.2598);
   --card-foreground: oklch(0 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0 0 0);
@@ -85,7 +85,7 @@ code {
 .dark {
   --background: oklch(0.18 0.01 296.2598);
   --foreground: oklch(1 0 0);
-  --card: oklch(0.21 0.01 296.2598);
+  --card: oklch(0.213 0.01 296.2598);
   --card-foreground: oklch(0.937 0 0);
   --popover: oklch(0.1776 0 0);
   --popover-foreground: oklch(0.937 0 0);
@@ -115,9 +115,9 @@ code {
   --sidebar-accent-foreground: oklch(0.937 0 0);
   --sidebar-border: oklch(0.3211 0 0);
   --sidebar-ring: oklch(0.6656 0.1168 296.4904);
-  --font-sans: Inter;
-  --font-serif: Lora;
-  --font-mono: JetBrains Mono;
+  --font-sans: "Rubik", sans-serif;
+  --font-serif: "Rubik", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
   --radius: 0.5rem;
   --shadow-2xs: 0px 2px 4px 0px hsl(0 0% 0% / 0.05);
   --shadow-xs: 0px 2px 4px 0px hsl(0 0% 0% / 0.05);
@@ -176,9 +176,9 @@ code {
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --font-sans: Inter;
-  --font-mono: JetBrains Mono;
-  --font-serif: Lora;
+  --font-sans: "Rubik", sans-serif;
+  --font-serif: "Rubik", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

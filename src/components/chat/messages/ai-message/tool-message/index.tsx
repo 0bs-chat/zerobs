@@ -40,7 +40,7 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
         const isMixed = maybeArr.some(
           (i) =>
             (i.type === "file" && i.file?.file_id) ||
-            (i.type === "text" && i.text),
+            (i.type === "text" && i.text)
         );
         if (isMixed) {
           return { type: "mixed" as const, content: maybeArr };
@@ -75,10 +75,9 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
     return (
       <ToolAccordion
         messageName={message.name ?? "unknown"}
-        input={input}
         isComplete={(message.additional_kwargs as any)?.is_complete}
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 text-foreground/80">
           {parsedContent.content.map((item, idx) => {
             if (item.type === "file" && item.file?.file_id) {
               return <FileDisplay key={idx} fileId={item.file.file_id} />;
@@ -87,7 +86,7 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
               return (
                 <pre
                   key={idx}
-                  className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap"
+                  className="text-xs text-foreground/80 bg-muted dark:bg-card  p-2 rounded-md overflow-x-auto whitespace-pre-wrap"
                 >
                   {item.text}
                 </pre>
@@ -104,15 +103,14 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
   return (
     <ToolAccordion
       messageName={message.name ?? "unknown"}
-      input={input}
       isComplete={(message.additional_kwargs as any)?.is_complete}
     >
       {typeof parsedContent.content === "string" ? (
-        <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+        <pre className="text-xs text-foreground/80 bg-muted dark:bg-card  p-2 rounded-md overflow-x-auto whitespace-pre-wrap">
           {parsedContent.content}
         </pre>
       ) : (
-        <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+        <pre className="text-xs text-foreground/80 bg-muted dark:bg-card  p-2 rounded-md overflow-x-auto whitespace-pre-wrap">
           {JSON.stringify(parsedContent.content, null, 2)}
         </pre>
       )}

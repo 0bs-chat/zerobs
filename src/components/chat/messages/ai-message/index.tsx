@@ -98,7 +98,7 @@ export const AiMessage = memo(({ group }: { group: MessageGroup }) => {
                 );
               })}
               {group.response.length > 0 && (
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="opacity-0 group-hover:opacity-70 transition-opacity">
                   <AiUtilsBar input={group.input} response={group.response} />
                 </div>
               )}

@@ -4,11 +4,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Favicon } from "@/components/ui/favicon";
-import { Markdown } from "@/components/ui/markdown";
-import { extractDomain, formatDate } from "@/lib/utils";
-import { ExternalLinkIcon, GlobeIcon, ClockIcon } from "lucide-react";
+import { extractDomain } from "@/lib/utils";
+import { ExternalLinkIcon, GlobeIcon } from "lucide-react";
 
 // Type definition for search results output
 export type SearchResultMetadata = {
@@ -42,21 +40,20 @@ export const SearchResultDisplay = ({
       </div>
     );
   }
-
   return (
     <Accordion
       type="multiple"
-      className="w-full border p-1.5 border-border/50 bg-card rounded-lg"
-      // defaultValue={["web-search-results"]} // Remove this line to keep it closed by default
+      className="w-full border p-1.5 dark:border-border/50 bg-card  rounded-lg"
     >
       <AccordionItem value="web-search-results" className="px-0 border-none">
-        <AccordionTrigger className="py-1 gap-2 text-xs font-semibold items-center justify-start">
+        <AccordionTrigger
+          showIcon={false}
+          className="py-1 gap-2 text-xs font-medium items-center justify-start text-foreground/50  cursor-pointer"
+        >
           <div className="flex items-center justify-between w-full gap-2">
             <div className="flex items-center gap-2">
               <GlobeIcon className="w-4 h-4" />
-              <span className="text-muted-foreground">
-                Web Search ({results.length})
-              </span>
+              <span className="text-foreground/50">Web Search</span>
             </div>
             {input?.query ? (
               <div className="text-[11px] text-muted-foreground truncate max-w-[50%]">
@@ -65,57 +62,38 @@ export const SearchResultDisplay = ({
             ) : null}
           </div>
         </AccordionTrigger>
-        <AccordionContent className="bg-card rounded-md p-2  mt-2 max-h-[36rem] overflow-x-auto">
-          <div className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border flex gap-2 overflow-x-auto">
+        <AccordionContent className="bg-card rounded-md p-2 mt-2 overflow-x-auto ">
+          <div className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border flex gap-2 overflow-x-auto snap-x snap-mandatory pr-1 pb-1">
             {results.map((result) => (
-              <Card
+              <a
                 key={result.metadata.source}
-                className="hover:shadow-md transition-shadow flex-shrink-0 w-64 min-w-64"
+                href={result.metadata.source}
+                title={result.metadata.title}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Open ${result.metadata.title} in new tab`}
+                className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 rounded-md"
               >
-                <CardHeader className="flex flex-col gap-2">
-                  <div className="flex flex-col gap-1 items-start w-full">
-                    <div className="flex flex-row items-center gap-2 w-full">
+                <div className="w-64 min-w-64 h-28 rounded-md border border-border/50 p-3 flex flex-col justify-between bg-muted snap-start text-foreground/50 transition-colors hover:bg-card">
+                  <div className="flex items-center gap-2 justify-between">
+                    <div className="flex items-center gap-2  justify-center">
                       <Favicon
                         url={result.metadata.source}
-                        size={28}
-                        className="h-6 w-6 rounded object-contain"
+                        size={16}
+                        className="h-3.5 w-3.5 rounded object-contain"
                         fallbackIcon={GlobeIcon}
                       />
-
-                      <a
-                        href={result.metadata.source}
-                        title={result.metadata.title}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-medium text-sm leading-snug text-foreground line-clamp-2 overflow-hidden break-words whitespace-normal flex-1 text-left hover:underline"
-                        aria-label={`Open ${result.metadata.title} in new tab`}
-                      >
-                        {result.metadata.title}
-                      </a>
-                      <ExternalLinkIcon className="h-4 w-4 text-muted-foreground/70" />
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                      <span className="flex items-center gap-1">
-                        <GlobeIcon className="h-3 w-3" />
+                      <span className="text-xs font-medium truncate break-words">
                         {extractDomain(result.metadata.source)}
                       </span>
-                      {result.metadata.publishedDate ? (
-                        <span className="flex items-center gap-1">
-                          <ClockIcon className="h-3 w-3" />
-                          {formatDate(result.metadata.publishedDate) ?? ""}
-                        </span>
-                      ) : null}
                     </div>
+                    <ExternalLinkIcon className="w-3.5 h-3.5" />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <Markdown
-                    content={`${result.pageContent.slice(0, 300)}...`}
-                    id={result.metadata.source}
-                    className="text-xs text-muted-foreground"
-                  />
-                </CardContent>
-              </Card>
+                  <div className="text-sm leading-snug line-clamp-2 break-words">
+                    {result.metadata.title}
+                  </div>
+                </div>
+              </a>
             ))}
           </div>
         </AccordionContent>

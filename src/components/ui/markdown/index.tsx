@@ -80,7 +80,7 @@ export const MarkdownBlock = memo(
         margin: "0",
         wrapLongLines: wrapLongLines,
       }),
-      [wrapLongLines],
+      [wrapLongLines]
     );
 
     const components = useMemo(
@@ -152,14 +152,14 @@ export const MarkdownBlock = memo(
           );
         },
       }),
-      [copy, copied, wrapLongLines, setWrapLongLines, theme],
+      [copy, copied, wrapLongLines, setWrapLongLines, theme]
     );
 
     return (
       <article
         className={`prose max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent
           prose-pre:p-0 prose-h1:mb-2 prose-h2:mb-2 prose-h3:mb-2 prose-h3:mt-6 prose-h4:my-2 prose-h5:my-2 prose-h6:my-2
-          prose-p:mt-2 prose-hr:my-12 prose-hr:border-primary/20 prose-blockquote:border-primary/20
+          prose-p:mt-2 prose-hr:my-12 prose-hr:border-primary/20 prose-blockquote:border-primary/20 prose-blockquote:text-muted-foreground/70
           ${className}`}
         style={{
           fontFamily: "Rubik",
@@ -178,7 +178,7 @@ export const MarkdownBlock = memo(
         </ReactMarkdown>
       </article>
     );
-  },
+  }
 );
 
 MarkdownBlock.displayName = "MarkdownBlock";
@@ -202,7 +202,7 @@ export const Markdown = memo(
         className={className}
       />
     ));
-  },
+  }
 );
 
 Markdown.displayName = "Markdown";

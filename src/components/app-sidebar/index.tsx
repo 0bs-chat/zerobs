@@ -29,7 +29,7 @@ export function AppSidebar() {
   const { searchQuery, setSearchQuery, searchResults } = useSearchChats();
   const loadMoreRef = React.useRef<HTMLButtonElement>(null);
   const [pinnedChatsAccordionOpen, setPinnedChatsAccordionOpen] = useAtom(
-    pinnedChatsAccordionOpenAtom,
+    pinnedChatsAccordionOpenAtom
   );
 
   const handleNewChat = () => {
@@ -71,7 +71,7 @@ export function AppSidebar() {
         root: null,
         rootMargin: "0px",
         threshold: 0.1,
-      },
+      }
     );
 
     observer.observe(loadMoreElement);
@@ -106,7 +106,6 @@ export function AppSidebar() {
               New chat
             </div>
           </Button>
-
           <Button
             variant="outline"
             className="w-full cursor-pointer text-foreground/75 hover:text-foreground"
@@ -117,7 +116,6 @@ export function AppSidebar() {
               Projects
             </div>
           </Button>
-
           <div className="flex items-center border-b border-border gap-2">
             <span className="flex items-center justify-center">
               <SearchIcon className="w-4 h-4 text-muted-foreground" />

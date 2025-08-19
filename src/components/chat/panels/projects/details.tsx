@@ -28,7 +28,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const { data: project } = useQuery({
     ...convexQuery(
       api.projects.queries.get,
-      projectId ? { projectId } : "skip",
+      projectId ? { projectId } : "skip"
     ),
   });
   const { mutateAsync: updateProject } = useMutation({
@@ -68,7 +68,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   return (
     <div className="flex h-full flex-col gap-4 mx-auto">
       <div
-        className={`${isProjectRoute ? "relative overflow-hidden rounded-lg border dark:border-border/60  bg-card p-4 shadow-sm " : "bg-transparent relative overflow-hidden rounded-lg"}`}
+        className={`${isProjectRoute ? "relative overflow-hidden rounded-lg border dark:border-border/60 bg-card p-4 shadow-sm" : "bg-transparent relative overflow-hidden rounded-lg"}`}
       >
         <div className="flex items-start justify-between">
           <div className="min-w-0 w-full gap-1 flex flex-col">

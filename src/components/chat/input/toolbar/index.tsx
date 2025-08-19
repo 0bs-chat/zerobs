@@ -63,7 +63,7 @@ export const ToolBar = () => {
   const selectedModel = chat.model;
   const reasoningEffort = chat.reasoningEffort;
   const selectedModelConfig = models.find(
-    (m) => m.model_name === selectedModel,
+    (m) => m.model_name === selectedModel
   );
   const showReasoningEffort = selectedModelConfig?.isThinking ?? false;
   const router = useRouter();
@@ -76,7 +76,7 @@ export const ToolBar = () => {
   const { data: project } = useQuery({
     ...convexQuery(
       api.projects.queries.get,
-      chat.projectId ? { projectId: chat.projectId } : "skip",
+      chat.projectId ? { projectId: chat.projectId } : "skip"
     ),
   });
 
@@ -128,7 +128,10 @@ export const ToolBar = () => {
               <PlusIcon className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
+          <DropdownMenuContent
+            align="start"
+            className="dark:border-border/60  "
+          >
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
               <PaperclipIcon className="w-4 h-4" />
               Attach Documents
