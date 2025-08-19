@@ -64,7 +64,7 @@ export const UserUtilsBar = memo(
           }
         }
       },
-      [handleFileUpload, editedDocuments, onDocumentsChange],
+      [handleFileUpload, editedDocuments, onDocumentsChange]
     );
 
     const handleDrop = useCallback(
@@ -78,7 +78,7 @@ export const UserUtilsBar = memo(
           }
         }
       },
-      [handleFileUpload, editedDocuments, onDocumentsChange],
+      [handleFileUpload, editedDocuments, onDocumentsChange]
     );
 
     const handleDragOver = useCallback(
@@ -86,7 +86,7 @@ export const UserUtilsBar = memo(
         e.preventDefault();
         if (!isDragActive) setIsDragActive(true);
       },
-      [isDragActive],
+      [isDragActive]
     );
 
     const handleDragLeave = useCallback(
@@ -95,7 +95,7 @@ export const UserUtilsBar = memo(
         if (e.currentTarget.contains(e.relatedTarget as Node)) return;
         setIsDragActive(false);
       },
-      [],
+      []
     );
 
     const copyText = (() => {
@@ -104,7 +104,7 @@ export const UserUtilsBar = memo(
 
       if (Array.isArray(content)) {
         const textContent = (content as MessageContent[]).find(
-          (entry) => entry.type === "text",
+          (entry) => entry.type === "text"
         );
         return textContent?.text || "";
       }
@@ -130,7 +130,7 @@ export const UserUtilsBar = memo(
     if (isEditing) {
       return (
         <div
-          className="flex flex-row items-center gap-1 self-start"
+          className="flex flex-row items-center gap-1 self-start "
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -167,7 +167,7 @@ export const UserUtilsBar = memo(
     }
 
     return (
-      <div className={`flex flex-row items-center gap-1 self-start`}>
+      <div className={`flex flex-row items-center gap-1 self-start opacity-70`}>
         <BranchNavigation item={input} navigateBranch={navigateBranch!} />
         {setEditing && (
           <TooltipButton
@@ -210,7 +210,7 @@ export const UserUtilsBar = memo(
         {copyText && <CopyButton text={copyText} />}
       </div>
     );
-  },
+  }
 );
 
 UserUtilsBar.displayName = "UserUtilsBar";

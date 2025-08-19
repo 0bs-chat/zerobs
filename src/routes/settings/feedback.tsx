@@ -18,9 +18,9 @@ function RouteComponent() {
           href={DiscordInviteURL}
           target="_blank"
           rel="noopener noreferrer"
-          className="group block"
+          className="group block bg-card hover:bg-accent dark:hover:bg-accent/50"
         >
-          <div className="flex items-center justify-between rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="flex items-center gap-3">
               <DiscordLogoIcon className="size-5" />
               <div className="flex flex-col">
@@ -34,8 +34,11 @@ function RouteComponent() {
           </div>
         </a>
 
-        <a href={EmailURL} className="group block">
-          <div className="flex items-center justify-between rounded-lg border bg-card p-4">
+        <a
+          href={EmailURL}
+          className="group block bg-card hover:bg-accent dark:hover:bg-accent/50"
+        >
+          <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="flex items-center gap-3">
               <Mail className="size-5" />
               <div className="flex flex-col">
@@ -50,9 +53,9 @@ function RouteComponent() {
           href={GitHubURL}
           target="_blank"
           rel="noopener noreferrer"
-          className="group block"
+          className="group block bg-card hover:bg-accent dark:hover:bg-accent/50"
         >
-          <div className="flex items-center justify-between rounded-lg border bg-card p-4  ">
+          <div className="flex items-center justify-between rounded-lg border p-4  ">
             <div className="flex items-center gap-3">
               <Github className="size-5" />
               <div className="flex flex-col">

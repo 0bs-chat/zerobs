@@ -136,7 +136,7 @@ export function createAgentSystemMessage(
   plannerMode: boolean = false,
   customPrompt?: string,
   baseAgentType: boolean = true,
-  artifacts: boolean = true,
+  artifacts: boolean = true
 ): SystemMessage {
   const baseIdentity = `You are 0bs Chat, an AI assistant powered by the ${model} model.`;
 
@@ -178,7 +178,7 @@ export function createAgentSystemMessage(
     `- If documents are provided, they are made avilable to in /mnt/data directory.\n`;
 
   return new SystemMessage(
-    `${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`,
+    `${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`
   );
 }
 
@@ -205,8 +205,38 @@ export function createPlannerPrompt(availableToolsDescription: string) {
         `- Each planStep object must include both "step" (short instruction) and "context" (detailed explanation) properties\n` +
         `- Use the discriminated union format: {{ type: "single", data: planStep }} for single steps or {{ type: "parallel", data: planStep[] }} for parallel execution\n` +
         `${toolsSection}\n\n` +
-        `**Output Format:**\n` +
-        `Your response must be a valid JSON array following the planArray schema. Do not include any other text, explanations, or formatting.\n`,
+        `**EXACT JSON FORMAT REQUIRED:**\n` +
+        `Your response must be a JSON array with this EXACT structure:\n\n` +
+        `**For single steps:**\n` +
+        `[\n` +
+        `  {{\n` +
+        `    "type": "single",\n` +
+        `    "data": {{\n` +
+        `      "step": "short instruction",\n` +
+        `      "context": "detailed explanation"\n` +
+        `    }}\n` +
+        `  }}\n` +
+        `]\n\n` +
+        `**For parallel steps:**\n` +
+        `[\n` +
+        `  {{\n` +
+        `    "type": "parallel",\n` +
+        `    "data": [\n` +
+        `      {{\n` +
+        `        "step": "first parallel task",\n` +
+        `        "context": "context for first task"\n` +
+        `      }},\n` +
+        `      {{\n` +
+        `        "step": "second parallel task",\n` +
+        `        "context": "context for second task"\n` +
+        `      }}\n` +
+        `    ]\n` +
+        `  }}\n` +
+        `]\n\n` +
+        `**CRITICAL RULES:**\n` +
+        `- Each plan item MUST have type "single" or "parallel" (NOT "planStep")\n` +
+        `- Each plan step data MUST be an object with "step" and "context" properties (NOT an array of strings)\n` +
+        `- Output ONLY the JSON array, no additional text, explanations, or markdown formatting\n`,
     ],
     new MessagesPlaceholder("messages"),
   ]);
@@ -245,7 +275,31 @@ export function createReplannerPrompt(availableToolsDescription: string) {
         ` - **If ready to respond:** Set type to "respond_to_user" and data as the response. Formulate the complete, synthesized response. This is not a draft; it is the complete, polished answer.\n` +
         ` - **If not ready:** Set type to "continue_planning" and provide a new plan containing **only the remaining steps needed** to fill ` +
         `the gaps you identified.\n\n` +
-        `**ALWAYS** output valid JSON, do not include any extraneous text or explanations, make sure you understand unions in the output format and respond correctly`,
+        `**CRITICAL JSON FORMAT REQUIREMENTS:**\n` +
+        `Your output MUST be valid JSON matching this EXACT structure:\n\n` +
+        `**For continuing planning (type: "continue_planning"):**\n` +
+        `{{\n` +
+        `  "type": "continue_planning",\n` +
+        `  "data": [\n` +
+        `    {{\n` +
+        `      "type": "single",\n` +
+        `      "data": {{\n` +
+        `        "step": "short instruction",\n` +
+        `        "context": "detailed explanation"\n` +
+        `      }}\n` +
+        `    }}\n` +
+        `  ]\n` +
+        `}}\n\n` +
+        `**For final response (type: "respond_to_user"):**\n` +
+        `{{\n` +
+        `  "type": "respond_to_user",\n` +
+        `  "data": "your complete final answer as a string"\n` +
+        `}}\n\n` +
+        `**CRITICAL RULES:**\n` +
+        `- Each plan step MUST have type "single" or "parallel" (NOT "planStep")\n` +
+        `- Each plan step data MUST be an object with "step" and "context" properties (NOT an array of strings)\n` +
+        `- Output ONLY valid JSON with no additional text, explanations, or markdown formatting\n` +
+        `- Do not include any text before or after the JSON`,
     ],
   ]);
 }
@@ -266,7 +320,7 @@ export const replannerOutputSchema = (artifacts: boolean) =>
               "coherent, and well-formatted answer. This is the ONLY output the end-user will see. It must fully and directly " +
               "address the user's original query, leaving no questions unanswered. Do not include any conversational filler, " +
               "apologies, or meta-commentary about the process; provide only the definitive answer." +
-              `${artifacts ? ` Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`,
+              `${artifacts ? ` Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`
           ),
       ])
       .describe("The response data - either a plan array or a string response"),

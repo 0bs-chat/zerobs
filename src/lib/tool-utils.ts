@@ -44,15 +44,18 @@ export function cleanToolName(
 }
 
 export function formatToolInput(input: any): string {
-  if (!input) return "No input provided";
+  if (input == null) return "No input provided";
 
   try {
     if (typeof input === "string") {
+      const trimmed = input.trim();
+      if (trimmed.length === 0) return "No input provided";
+
       try {
         const parsed = JSON.parse(input);
         return JSON.stringify(parsed, null, 2);
       } catch {
-        return input.length > 1 ? input : "No input provided";
+        return trimmed.length > 0 ? trimmed : "No input provided";
       }
     }
 
@@ -62,29 +65,36 @@ export function formatToolInput(input: any): string {
   }
 }
 
-export function formatToolOutput(output: any, isStreaming?: boolean): string {
-  if (!output) {
-    if (isStreaming) return "Waiting for output...";
-    return "";
+export function formatToolOutput(
+  output: unknown,
+  isStreaming?: boolean
+): string {
+  if (output == null) {
+    return isStreaming ? "Waiting for output..." : "";
   }
 
   try {
     if (typeof output === "string") {
-      // Handle malformed JSON inputs like '{"'
-      if (
-        output.length <= 3 &&
-        (output === '{"' || output === "{" || output === '"')
-      ) {
-        return isStreaming ? "Receiving data..." : "Invalid output";
+      const s = output.trim();
+      if (s.length === 0) {
+        return isStreaming ? "Waiting for output..." : "";
+      }
+      // Handle likely in-flight JSON for streaming cases
+      if (isStreaming && (s.startsWith("{") || s.startsWith("["))) {
+        try {
+          JSON.parse(s);
+        } catch {
+          return "Receiving data...";
+        }
       }
 
       // Try to parse as JSON first
       try {
-        const parsed = JSON.parse(output);
+        const parsed = JSON.parse(s);
         return JSON.stringify(parsed, null, 2);
       } catch {
         // If not JSON, return as plain text
-        return output;
+        return s;
       }
     }
 
