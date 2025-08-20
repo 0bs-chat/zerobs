@@ -18,8 +18,8 @@ export const providers: {
   };
 } = {
   convex: {
-    title: "Vibz Coding",
-    description: "Connect to Convex to enable vibe coding.",
+    title: "Convex",
+    description: "Connect to Convex DB to enable vibe coding.",
     icon: "https://www.google.com/s2/favicons?sz=32&domain_url=https%3A%2F%2Fwww.convex.dev",
     clientIdKey: "AUTH_CONVEX_ID",
     clientSecretKey: "AUTH_CONVEX_SECRET",

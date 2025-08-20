@@ -33,7 +33,7 @@ export const SearchResultDisplay = ({
   results,
   input,
 }: SearchResultDisplayProps) => {
-  if (true) {
+  if (!results || results.length === 0) {
     return (
       <div className="text-sm text-muted-foreground">
         No search results found

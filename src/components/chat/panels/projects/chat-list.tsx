@@ -42,7 +42,7 @@ export const ProjectChatList = ({ projectId }: ProjectChatListProps) => {
         {chats.map((chat) => (
           <Card
             key={chat._id}
-            className="p-4 cursor-pointer hover:bg-accent/30 transition-colors border dark:border-border/60"
+            className="p-4 cursor-pointer hover:bg-accent dark:hover:bg-accent/50 transition-colors border dark:border-border/60"
             onClick={() => {
               navigate({ to: "/chat/$chatId", params: { chatId: chat._id } });
             }}
