@@ -74,7 +74,7 @@ export const PlanningStep = memo(
                   animate="animate"
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 >
-                  <Loader2 className="w-4 h-4" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 </motion.div>
               ) : (
                 <Check className="w-4 h-4" />

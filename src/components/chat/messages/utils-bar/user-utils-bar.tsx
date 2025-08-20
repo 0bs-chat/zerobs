@@ -144,22 +144,22 @@ export const UserUtilsBar = memo(
           />
           <TooltipButton
             onClick={() => setEditing?.(null)}
-            icon={<X className="h-4 w-4" />}
+            icon={<X className="h-4 w-4 text-foreground/70" />}
             tooltip="Cancel"
           />
           <TooltipButton
             onClick={() => handleSubmit(true)}
-            icon={<Check className="h-4 w-4" />}
+            icon={<Check className="h-4 w-4 text-foreground/70" />}
             tooltip="Submit"
           />
           <TooltipButton
             onClick={() => handleSubmit(false)}
-            icon={<CheckCheck className="h-4 w-4" />}
+            icon={<CheckCheck className="h-4 w-4 text-foreground/70" />}
             tooltip="Submit and Regenerate"
           />
           <TooltipButton
             onClick={() => fileInputRef.current?.click()}
-            icon={<PaperclipIcon className="h-4 w-4" />}
+            icon={<PaperclipIcon className="h-4 w-4 text-foreground/70" />}
             tooltip="Attach files"
           />
         </div>

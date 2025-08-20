@@ -18,7 +18,7 @@ import { resolveConfigurableEnvs, createMachineConfig } from "../../mcps/utils";
 export const getMCPTools = async (
   ctx: ActionCtx,
   state: typeof GraphState.State,
-  config?: ExtendedRunnableConfig,
+  config?: ExtendedRunnableConfig
 ) => {
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
     paginationOpts: {
@@ -72,7 +72,7 @@ export const getMCPTools = async (
               mcp,
               appName,
               mcpConfigurableEnvs,
-              machineId,
+              machineId
             );
             machine = await fly.createMachine(appName, machineConfig);
             await fly.waitTillHealthy(appName, {
@@ -93,7 +93,7 @@ export const getMCPTools = async (
         } catch (error) {
           console.error(
             `Failed to create per-chat MCP ${appName} machine ${machineId}:`,
-            error,
+            error
           );
           // Don't return null - continue to check if this MCP has existing URL
         }
@@ -108,7 +108,7 @@ export const getMCPTools = async (
       let authToken = null;
       if (updatedMcp.template) {
         const matchingTemplate = MCP_TEMPLATES.find(
-          (t) => t.template === updatedMcp.template,
+          (t) => t.template === updatedMcp.template
         );
         if (matchingTemplate && matchingTemplate.customAuthTokenFromEnv) {
           authToken = updatedMcp.env[matchingTemplate.customAuthTokenFromEnv];
@@ -121,10 +121,15 @@ export const getMCPTools = async (
         fly_force_instance_id: machineId,
         Authorization: `Bearer ${
           authToken ||
-          (await createJwt("OAUTH_TOKEN", updatedMcp._id, updatedMcp.userId, true))
+          (await createJwt(
+            "OAUTH_TOKEN",
+            updatedMcp._id,
+            updatedMcp.userId,
+            true
+          ))
         }`,
       };
-      
+
       return {
         name: updatedMcp.name,
         connection: {
@@ -140,21 +145,21 @@ export const getMCPTools = async (
         },
         mcp: updatedMcp,
       };
-    }),
+    })
   );
 
   // Filter out null results and create servers object
   const validResults = mcpResults.filter(
-    (result): result is NonNullable<typeof result> => result !== null,
+    (result): result is NonNullable<typeof result> => result !== null
   );
-  
+
   // Early return if no valid MCPs are available
   if (validResults.length === 0) {
     return [];
   }
-  
+
   const mcpServers: Record<string, Connection> = Object.fromEntries(
-    validResults.map((result) => [result.name, result.connection]),
+    validResults.map((result) => [result.name, result.connection])
   );
   const readyMcps = validResults.map((result) => result.mcp);
 
@@ -180,7 +185,7 @@ export const getMCPTools = async (
       // If this is the last attempt, throw the error
       if (attempt === 60) {
         throw new Error(
-          `Failed to create MCP client after 60 attempts: ${lastError.message}`,
+          `Failed to create MCP client after 60 attempts: ${lastError.message}`
         );
       }
 
@@ -196,7 +201,7 @@ export const getMCPTools = async (
     readyMcps.map(async (mcp) => {
       if (mcp.template) {
         const matchingTemplate = MCP_TEMPLATES.find(
-          (t) => t.template === mcp.template,
+          (t) => t.template === mcp.template
         );
         if (matchingTemplate && matchingTemplate.promptTool) {
           const mcpClient = await client!.getClient(mcp.name);
@@ -213,7 +218,7 @@ export const getMCPTools = async (
           }
         }
       }
-    }),
+    })
   );
 
   // Extract file IDs from the last message content instead of chat document
@@ -232,7 +237,7 @@ export const getMCPTools = async (
               internal.documents.crud.read,
               {
                 id: documentId as Id<"documents">,
-              },
+              }
             );
             if (!documentDoc) return null;
             // Include various document types for upload (file, image, github, text)
@@ -241,7 +246,7 @@ export const getMCPTools = async (
               name: `${index}_${documentDoc.name}`,
               url,
             };
-          }),
+          })
         )
       )
         // Filter out any null results from documents without URLs
@@ -252,7 +257,7 @@ export const getMCPTools = async (
           if (["stdio", "docker"].includes(mcp.type) && files.length > 0) {
             await fly.uploadFileToAllMachines(mcp._id, files);
           }
-        }),
+        })
       );
     }
   }

@@ -20,7 +20,7 @@ import { models } from "../../../../convex/langchain/models";
 import { UserUtilsBar } from "./utils-bar/user-utils-bar";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 
-const DocumentButton = ({
+const DocumentDisplayBadge = ({
   fileId,
   setDocumentDialogOpen,
 }: {
@@ -34,12 +34,31 @@ const DocumentButton = ({
   });
 
   return (
-    <Button
-      className="py-7 cursor-pointer"
+    <Badge
+      variant="default"
+      className="group flex gap-1.5 py-1.5 cursor-pointer bg-muted-foreground/15 hover:bg-muted-foreground/25 hover:text-accent-foreground text-accent-foreground/70 transition duration-300 items-center justify-center px-2 flex-shrink-0"
       onClick={() => setDocumentDialogOpen(fileId as Id<"documents">)}
     >
-      {documentData?.name}
-    </Button>
+      <div className="relative h-4 w-4">
+        {documentData &&
+          (() => {
+            const selectedModel = models.find((m) => m.model_name === "gpt-4");
+            const modalities = selectedModel?.modalities;
+            const { icon: Icon, className: IconClassName } = getDocTagInfo(
+              documentData,
+              modalities
+            );
+            return (
+              <Icon
+                className={`${IconClassName} h-4 w-4 transition duration-300 opacity-80`}
+              />
+            );
+          })()}
+      </div>
+      <span className="max-w-32 text-foreground/70 truncate text-xs cursor-pointer">
+        {documentData?.name}
+      </span>
+    </Badge>
   );
 };
 
@@ -69,8 +88,8 @@ const EditingDocumentList = ({
   const modalities = selectedModel?.modalities;
 
   return (
-    <ScrollArea className="max-h-24 w-full px-1 pt-1 whitespace-nowrap">
-      <div className="flex gap-1">
+    <ScrollArea className="max-h-24 w-full px-1 pt-1">
+      <div className="flex flex-wrap gap-1">
         {documents.map((doc) => {
           const { icon: Icon, className: IconClassName } = getDocTagInfo(
             doc,
@@ -80,23 +99,29 @@ const EditingDocumentList = ({
           return (
             <Badge
               key={doc._id}
-              variant="secondary"
-              className="flex items-center gap-1.5 pr-1 cursor-pointer"
+              variant="default"
+              className="group flex gap-1.5 py-1.5 cursor-pointer bg-muted-foreground/15 hover:bg-muted-foreground/25 hover:text-accent-foreground text-accent-foreground/70 transition duration-300 items-center justify-center px-2 flex-shrink-0"
               onClick={() => handlePreview(doc._id)}
             >
-              <Icon className={`${IconClassName} h-3 w-3`} />
-              <span className="max-w-32 truncate">{doc.name}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 p-0.5 hover:bg-muted-foreground/20"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(doc._id);
-                }}
-              >
-                <XIcon className="w-3 h-3" />
-              </Button>
+              <div className="relative h-4 w-4">
+                <Icon
+                  className={`${IconClassName} h-4 w-4 group-hover:opacity-0 transition duration-300 opacity-80`}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute inset-0 h-4 w-4 opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 cursor-pointer transition duration-300"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove(doc._id);
+                  }}
+                >
+                  <XIcon className="w-3 h-3" />
+                </Button>
+              </div>
+              <span className="max-w-32 text-foreground/70 truncate text-xs cursor-pointer">
+                {doc.name}
+              </span>
             </Badge>
           );
         })}
@@ -171,37 +196,58 @@ export const UserMessage = memo(
     // Memoize the content rendering to avoid unnecessary calculations
     const renderedContent = useMemo(() => {
       if (Array.isArray(content)) {
-        return content.map((entry, idx) => (
-          <div key={entry.type === "file" ? entry.file.file_id : `text-${idx}`}>
-            {entry.type === "text" ? (
+        const textContent = content.filter(
+          (c) => (c as any).type === "text"
+        ) as Array<{ type: "text"; text: string }>;
+        const fileContent = content.filter(
+          (c) => (c as any).type === "file"
+        ) as Array<{ type: "file"; file: { file_id: string } }>;
+
+        return (
+          <>
+            {textContent.map((entry, idx) => (
               <Markdown
+                key={`text-${idx}`}
                 content={entry.text}
                 id={item.message._id}
                 className="prose [&_p]:mt-0"
               />
-            ) : null}
-            {entry.type === "file" ? (
-              <DocumentButton
-                fileId={entry.file.file_id}
-                setDocumentDialogOpen={setDocumentDialogOpen}
-              />
-            ) : null}
-          </div>
-        ));
+            ))}
+            {fileContent.length > 0 && (
+              <ScrollArea className="max-h-24 w-full px-1 pt-1 whitespace-nowrap">
+                <div className="flex gap-1">
+                  {fileContent.map((entry) => (
+                    <DocumentDisplayBadge
+                      key={(entry as any).file.file_id}
+                      fileId={(entry as any).file.file_id}
+                      setDocumentDialogOpen={setDocumentDialogOpen}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </>
+        );
       }
-      return content;
+      return (
+        <Markdown
+          content={content as string}
+          id={item.message._id}
+          className="prose [&_p]:mt-0"
+        />
+      );
     }, [content, item.message._id, setDocumentDialogOpen]);
 
     return (
-      <div className="group flex flex-col gap-1 max-w-[80%] self-end">
+      <div className="flex group/edit flex-col gap-1 max-w-[80%] self-end">
         {isEditing ? (
-          <div className="bg-card max-w-full self-end rounded-md shadow-sm w-full p-2 border-2 border-transparent">
+          <div className="flex w-screen bg-primary/15 dark:bg-primary/10 flex-col max-h-96 max-w-full self-end rounded-md px-4 py-3 shadow-sm border border-border/50">
             <AutosizeTextarea
               value={editedText}
               onChange={(e) => setEditedText(e.target.value)}
               minHeight={32}
               maxHeight={120}
-              className="bg-transparent resize-none border-none min-w-96 max-w-full ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none focus-visible:outline-none text-base"
+              className="bg-transparent text-foreground/80 resize-none border-none w-full ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none focus-visible:outline-none text-base"
               autoFocus
               placeholder="Edit your message..."
             />
@@ -221,7 +267,7 @@ export const UserMessage = memo(
             {renderedContent}
           </ScrollArea>
         )}
-        <div className="opacity-0 flex gap-2 group-hover:opacity-100 transition-opacity">
+        <div className="opacity-0 flex gap-2 group-hover/edit:opacity-100 transition-opacity">
           <UserUtilsBar
             input={item}
             isEditing={isEditing}

@@ -18,7 +18,7 @@ function RouteComponent() {
           href={DiscordInviteURL}
           target="_blank"
           rel="noopener noreferrer"
-          className="group block bg-card hover:bg-accent dark:hover:bg-accent/50"
+          className="group block bg-card rounded-lg hover:bg-accent dark:hover:bg-accent/50"
         >
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="flex items-center gap-3">
@@ -36,7 +36,7 @@ function RouteComponent() {
 
         <a
           href={EmailURL}
-          className="group block bg-card hover:bg-accent dark:hover:bg-accent/50"
+          className="group block bg-card rounded-lg hover:bg-accent dark:hover:bg-accent/50"
         >
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="flex items-center gap-3">
@@ -53,7 +53,7 @@ function RouteComponent() {
           href={GitHubURL}
           target="_blank"
           rel="noopener noreferrer"
-          className="group block bg-card hover:bg-accent dark:hover:bg-accent/50"
+          className="group block bg-card rounded-lg hover:bg-accent dark:hover:bg-accent/50"
         >
           <div className="flex items-center justify-between rounded-lg border p-4  ">
             <div className="flex items-center gap-3">
