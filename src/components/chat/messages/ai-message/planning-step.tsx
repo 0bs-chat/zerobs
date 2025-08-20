@@ -171,10 +171,6 @@ export const PlanningStep = memo(
       pastStepsData && pastStepsData.length > 0
         ? pastStepsData[pastStepsData.length - 1]
         : "Planning...";
-    const prevStep =
-      pastStepsData && pastStepsData.length > 1
-        ? pastStepsData[pastStepsData.length - 2]
-        : undefined;
 
     const currentText = isStreaming
       ? lastStep
