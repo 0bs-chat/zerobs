@@ -1,18 +1,11 @@
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  FileIcon,
-  Globe2Icon,
-  Network,
-  Binoculars,
-  XIcon,
-  BotIcon,
-} from "lucide-react";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
+import { FileIcon, Globe2Icon, Network } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { chatAtom, chatIdAtom, newChatAtom } from "@/store/chatStore";
 import { useMutation } from "@tanstack/react-query";
@@ -20,6 +13,8 @@ import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import { motion } from "motion/react";
 import { smoothTransition, scaleIn, iconSpinVariants } from "@/lib/motion";
+import { cn } from "@/lib/utils";
+import { ActivityLogIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 
 const TOGGLES = [
   {
@@ -33,7 +28,7 @@ const TOGGLES = [
     key: "webSearch" as const,
     label: "Web Search",
     icon: <Globe2Icon className="h-4 w-4" />,
-    tooltip: "Search the web",
+    tooltip: undefined,
     animation: "rotate" as const,
   },
   {
@@ -46,7 +41,7 @@ const TOGGLES = [
   {
     key: "orchestratorMode" as const,
     label: "Orchestrator",
-    icon: <Binoculars className="h-4 w-4" />,
+    icon: <ActivityLogIcon className="h-4 w-4" />,
     tooltip: undefined,
     animation: "scale" as const,
   },
@@ -80,44 +75,50 @@ export function AgentToggles() {
     }
   };
 
-  const selectedToggles = TOGGLES.filter(
-    (t) => chat[t.key as keyof typeof chat]
+  // Check if any toggle is active
+  const hasActiveToggles = TOGGLES.some(
+    (toggle) => chat[toggle.key as keyof typeof chat]
   );
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            title="Toggles"
-            className="cursor-pointer text-foreground/70 dark:border-none"
-          >
-            <BotIcon className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="start"
-          className="border-border/60 bg-background/70 backdrop-blur-sm"
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          title="Agent Settings"
+          className={cn(
+            "cursor-pointer",
+            hasActiveToggles
+              ? "bg-accent border border-border text-foreground/70 dark:bg-primary/20"
+              : "border-none bg-transparent text-foreground/70 dark:text-foreground/70"
+          )}
         >
-          <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">
-            Agent Settings
-          </div>
+          <MixerHorizontalIcon className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className=" w-56 border-border/80 p-2.5 bg-background backdrop-blur-sm"
+      >
+        <div className="px-1 pb-2.5 text-sm font-medium text-foreground/80">
+          Agent Settings
+        </div>
+        <div className="space-y-2">
           {TOGGLES.map((toggle) => (
-            <DropdownMenuItem
+            <div
               key={toggle.key}
+              className={[
+                "flex items-center justify-between p-2 hover:bg-accent/50 rounded-md cursor-pointer",
+                toggle.key === "orchestratorMode"
+                  ? "bg-gradient-to-r from-input to-card"
+                  : "",
+              ].join(" ")}
               onClick={() =>
                 handleToggle(toggle.key, !chat[toggle.key as keyof typeof chat])
               }
-              className={[
-                "flex items-center justify-between pr-2 cursor-pointer",
-                toggle.key === "orchestratorMode"
-                  ? "bg-gradient-to-r from-input to-card hover:bg-gradient-to-r hover:from-input/80 hover:to-card/80"
-                  : "",
-              ].join(" ")}
             >
-              <span className="flex items-center gap-2 text-foreground/70 dark:text-foreground/70">
+              <div className="flex items-center gap-2 cursor-pointer">
                 <motion.span
                   variants={
                     toggle.animation === "scale" ? scaleIn : iconSpinVariants
@@ -125,53 +126,30 @@ export function AgentToggles() {
                   initial="initial"
                   animate="animate"
                   transition={smoothTransition}
+                  className="text-foreground/70 dark:text-foreground/70"
                 >
                   {toggle.icon}
                 </motion.span>
-                {toggle.label}
-              </span>
-              <span className="ml-auto flex items-center">
-                {chat[toggle.key as keyof typeof chat] && (
-                  <svg
-                    className="size-4 text-primary"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-              </span>
-            </DropdownMenuItem>
+                <div className="flex flex-col cursor-pointer">
+                  <span className="text-sm text-foreground/70 cursor-pointer">
+                    {toggle.label}
+                  </span>
+                  {toggle.tooltip && (
+                    <span className="text-xs text-muted-foreground cursor-pointer">
+                      {toggle.tooltip}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <Switch
+                className="cursor-pointer opacity-90"
+                checked={chat[toggle.key as keyof typeof chat] as boolean}
+                onCheckedChange={(checked) => handleToggle(toggle.key, checked)}
+              />
+            </div>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      {selectedToggles.map((toggle) => (
-        <Button
-          key={toggle.key}
-          variant="outline"
-          size="icon"
-          className="transition-all duration-300 relative group"
-          onClick={() => handleToggle(toggle.key, false)}
-          title={toggle.tooltip || toggle.label}
-        >
-          <motion.span
-            variants={toggle.animation === "scale" ? scaleIn : iconSpinVariants}
-            initial="initial"
-            animate="animate"
-            transition={smoothTransition}
-            className="group-hover:hidden text-foreground/70 dark:text-foreground/70"
-          >
-            {toggle.icon}
-          </motion.span>
-          <span className="absolute inset-0 flex  items-center justify-center hidden group-hover:flex">
-            <XIcon className="w-4 h-4 text-destructive" />
-          </span>
-        </Button>
-      ))}
-    </>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

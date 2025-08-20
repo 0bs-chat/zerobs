@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
+import { GearIcon } from "@radix-ui/react-icons";
 
 export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
@@ -95,7 +96,7 @@ export function TopNav() {
                 navigate({ to: "/settings/profile" });
               }}
             >
-              <Settings2Icon className="h-6 w-6" />
+              <GearIcon className="h-6 w-6" />
             </Button>
             <ModeToggle />
           </>
