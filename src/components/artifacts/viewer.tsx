@@ -263,10 +263,10 @@ export const ArtifactViewer = ({
               onValueChange={(v) => setView(v as "preview" | "source")}
             >
               <TabsList>
-                <TabsTrigger value="preview">
+                <TabsTrigger value="preview" aria-label="Preview view">
                   <EyeIcon className="w-4 h-4" />
                 </TabsTrigger>
-                <TabsTrigger value="source">
+                <TabsTrigger value="source" aria-label="Source view">
                   <CodeIcon className="w-4 h-4" />
                 </TabsTrigger>
               </TabsList>
@@ -274,18 +274,33 @@ export const ArtifactViewer = ({
           )}
 
           {artifact.type === "text/html" && (
-            <Button variant="outline" size="icon" onClick={handleOpenInNewTab}>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Open in new tab"
+              onClick={handleOpenInNewTab}
+            >
               <ExternalLinkIcon className="w-4 h-4" />
             </Button>
           )}
-          <Button variant="outline" size="icon" onClick={handleCopy}>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Copy content"
+            onClick={handleCopy}
+          >
             {copied ? (
               <CheckIcon className="w-4 h-4" />
             ) : (
               <CopyIcon className="w-4 h-4" />
             )}
           </Button>
-          <Button variant="outline" size="icon" onClick={onClose}>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Close viewer"
+            onClick={onClose}
+          >
             <XIcon className="w-4 h-4" />
           </Button>
         </div>

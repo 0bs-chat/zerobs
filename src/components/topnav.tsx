@@ -7,7 +7,7 @@ import {
   sidebarOpenAtom,
   userAtom,
 } from "@/store/chatStore";
-import { PanelRightCloseIcon, PlusIcon, Settings2Icon } from "lucide-react";
+import { PanelRightCloseIcon, PlusIcon } from "lucide-react";
 import { PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -76,6 +76,7 @@ export function TopNav() {
           variant="ghost"
           className={`${sidebarOpen ? "hidden" : ""} size-8 cursor-pointer`}
           size="icon"
+          aria-label="New chat"
           onClick={() => {
             navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
           }}
@@ -92,6 +93,7 @@ export function TopNav() {
               variant="ghost"
               size="icon"
               className="cursor-pointer"
+              aria-label="Open settings"
               onClick={() => {
                 navigate({ to: "/settings/profile" });
               }}
@@ -106,6 +108,7 @@ export function TopNav() {
             variant="ghost"
             size="icon"
             className={`${selectedArtifact || selectedVibzMcp ? "hidden" : ""}`}
+            aria-label="Toggle right panel"
             onClick={() => {
               setResizePanelOpen(!resizePanelOpen);
               setSelectedArtifact(undefined);

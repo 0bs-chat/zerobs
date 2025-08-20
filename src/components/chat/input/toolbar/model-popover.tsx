@@ -46,7 +46,7 @@ export function ModelPopover({
     mutationFn: useConvexMutation(api.chats.mutations.update),
   });
   const selectedModelConfig = models.find(
-    (m) => m.model_name === selectedModel,
+    (m) => m.model_name === selectedModel
   );
   const [searchModel, setSearchModel] = useState("");
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -92,14 +92,12 @@ export function ModelPopover({
           {models
             .filter((model) => !model.hidden)
             .filter((model) =>
-              model.model_name
-                .toLowerCase()
-                .includes(searchModel.toLowerCase()),
+              model.model_name.toLowerCase().includes(searchModel.toLowerCase())
             )
             .map((model) => (
               <div
                 key={model.model_name}
-                className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60`}
+                className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent dark:hover:bg-accent/60`}
                 onClick={() => handleModelSelect(model.model_name)}
               >
                 <div className="text-foreground/70 flex gap-2 items-center justify-center ">
@@ -109,7 +107,7 @@ export function ModelPopover({
                     alt={model.label}
                     className={`h-4 w-4 opacity-70 ${
                       ["openai", "x-ai", "openrouter", "anthropic"].includes(
-                        model.owner,
+                        model.owner
                       )
                         ? "dark:invert"
                         : ""

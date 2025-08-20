@@ -66,7 +66,10 @@ export const DocumentResultDisplay = ({
               result.metadata.document
             );
             return (
-              <Card key={index} className="hover:shadow-md transition-shadow">
+              <Card
+                key={result.metadata.document._id}
+                className="hover:shadow-md transition-shadow"
+              >
                 <CardHeader className="flex flex-col gap-2">
                   <div className="flex flex-col gap-1 items-start w-full">
                     <div className="flex flex-row items-center gap-2 w-full">
@@ -76,6 +79,7 @@ export const DocumentResultDisplay = ({
                           handleDocumentClick(result.metadata.document)
                         }
                         className="font-medium text-sm leading-tight text-foreground truncate break-words whitespace-pre-wrap flex-1 text-left hover:underline"
+                        aria-label="Open document details"
                       >
                         {result.metadata.document.name || "Untitled Document"}
                       </button>
