@@ -12,6 +12,8 @@ import {
   buttonHover,
   iconSpinVariants,
   smoothTransition,
+  layoutTransition,
+  slowTransition,
 } from "@/lib/motion";
 
 interface PlanningStepProps {
@@ -22,7 +24,7 @@ interface PlanningStepProps {
 
 export const PlanningStep = memo(
   ({ message, messageId, isStreaming }: PlanningStepProps) => {
-    const [isMinimized, setIsMinimized] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(true);
     const [userHasScrolledSteps, setUserHasScrolledSteps] = useState(false);
     const [userHasScrolledMessages, setUserHasScrolledMessages] =
       useState(false);
@@ -52,22 +54,38 @@ export const PlanningStep = memo(
         return null;
       }
       return pastStepsData?.map((step, index) => {
+        const isActive = isStreaming && index === pastStepsData.length - 1;
         return (
-          <div
+          <motion.div
             key={`${messageId}-past-step-${index}`}
+            layout
+            transition={layoutTransition}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
             className="flex items-start gap-2"
           >
-            <div className="flex-shrink-0 w-5 h-5 bg-input rounded-full flex items-center justify-center mt-0.5">
-              {isStreaming && index === pastStepsData.length - 1 ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
+            <div
+              className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-[0.125em] ${isActive ? "bg-primary/20" : "bg-input"}`}
+            >
+              {isActive ? (
+                <motion.div
+                  variants={iconSpinVariants}
+                  animate="animate"
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <Loader2 className="w-4 h-4" />
+                </motion.div>
               ) : (
-                <Check className="w-3 h-3 text-foreground-muted" />
+                <Check className="w-4 h-4" />
               )}
             </div>
-            <div className="text-sm text-muted-foreground flex-1 min-w-0 break-all whitespace-pre-wrap">
+            <div
+              className={`text-sm flex-1 min-w-0 break-all whitespace-pre-wrap ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+            >
               {step}
             </div>
-          </div>
+          </motion.div>
         );
       });
     }, [pastStepsData, messageId, isStreaming]);
@@ -153,9 +171,17 @@ export const PlanningStep = memo(
       pastStepsData && pastStepsData.length > 0
         ? pastStepsData[pastStepsData.length - 1]
         : "Planning...";
+    const prevStep =
+      pastStepsData && pastStepsData.length > 1
+        ? pastStepsData[pastStepsData.length - 2]
+        : undefined;
+
+    const currentText = isStreaming
+      ? lastStep
+      : "orchestrator has completed the process";
 
     const streamingContainerClasses = isStreaming
-      ? "bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30 p-0.5 pulsing-border-color"
+      ? "border bg-card ring-1 ring-ring/20"
       : "border bg-card";
 
     if (isMinimized) {
@@ -165,37 +191,68 @@ export const PlanningStep = memo(
           initial="initial"
           animate="animate"
           exit="exit"
-          transition={smoothTransition}
-          className={`rounded-lg p-4 flex justify-between items-center ${streamingContainerClasses}`}
+          transition={slowTransition}
+          className={`rounded-lg ${streamingContainerClasses}`}
+          whileHover={{ y: -1 }}
         >
-          <div className="text-sm font-semibold flex items-center gap-2">
-            <div className="flex-shrink-0 w-5 h-5 bg-input rounded-full flex items-center justify-center">
-              {isStreaming ? (
-                <motion.div
-                  variants={iconSpinVariants}
-                  animate="animate"
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                >
-                  <Loader2 className="w-3 h-3" />
-                </motion.div>
-              ) : (
-                <Check className="w-3 h-3 text-foreground-muted" />
-              )}
+          <div className="rounded-lg p-[1em] bg-card/90">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className=" font-semibold tracking-wide opacity-80">
+                  Orchestrator
+                </div>
+                <div className="mt-[0.25em] overflow-hidden">
+                  <div className="flex items-center gap-2">
+                    <div className="relative h-10 text-sm text-foreground/90 w-full overflow-hidden">
+                      <AnimatePresence mode="popLayout" initial={false}>
+                        <motion.div
+                          key={currentText}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={slowTransition}
+                          className="absolute bottom-0 w-full truncate"
+                          title={currentText}
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            {isStreaming && (
+                              <motion.span
+                                className="inline-flex text-foreground/80"
+                                variants={iconSpinVariants}
+                                animate="animate"
+                                transition={{
+                                  duration: 1,
+                                  repeat: Infinity,
+                                  ease: "linear",
+                                }}
+                              >
+                                <Loader2 className="w-4 h-4" />
+                              </motion.span>
+                            )}
+                            <span className="text-foreground/80">
+                              {currentText}
+                            </span>
+                          </span>
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <motion.button
+                onClick={() => setIsMinimized(false)}
+                className="p-1 rounded-md cursor-pointer hover:bg-muted self-start"
+                variants={buttonHover}
+                initial="rest"
+                aria-label="Expand planning steps"
+                title="Expand planning steps"
+                whileHover="hover"
+                whileTap="tap"
+              >
+                <ChevronDown className="w-4 h-4 text-foreground/80" />
+              </motion.button>
             </div>
-            {lastStep}
           </div>
-          <motion.button
-            onClick={() => setIsMinimized(false)}
-            className="p-1 rounded-md hover:bg-muted"
-            variants={buttonHover}
-            initial="rest"
-            aria-label="Expand planning steps"
-            title="Expand planning steps"
-            whileHover="hover"
-            whileTap="tap"
-          >
-            <ChevronDown className="w-4 h-4" />
-          </motion.button>
         </motion.div>
       );
     }
@@ -216,31 +273,31 @@ export const PlanningStep = memo(
             initial="initial"
             animate="animate"
           >
-            <div className="text-sm font-semibold">Orchestrator</div>
+            <div className=" font-semibold">Orchestrator</div>
             <Separator className="my-2" />
             <div
               ref={stepsContainerRef}
               className="flex flex-col gap-1 pr-4 max-h-[36rem] overflow-y-auto"
               onScroll={handleStepsScroll}
             >
-              <AnimatePresence>{pastSteps}</AnimatePresence>
+              <AnimatePresence initial={false}>{pastSteps}</AnimatePresence>
             </div>
           </motion.div>
           <div className="border-l" />
           <motion.div
             ref={scrollContainerRef}
-            className="flex flex-col gap-1 w-2/3 pl-4 max-h-[36rem] overflow-y-auto"
+            className="flex flex-col text-foreground/80 gap-1 w-2/3 pl-4 max-h-[36rem] overflow-y-auto"
             variants={staggerContainer}
             initial="initial"
             animate="animate"
             onScroll={handleMessagesScroll}
           >
-            <AnimatePresence>{stepMessages}</AnimatePresence>
+            <AnimatePresence initial={false}>{stepMessages}</AnimatePresence>
           </motion.div>
         </div>
         <motion.button
           onClick={() => setIsMinimized(true)}
-          className="absolute bottom-2 left-2 p-1 rounded-md bg-card hover:bg-muted border"
+          className="absolute bottom-2 cursor-pointer right-2 p-1 rounded-md bg-card hover:bg-muted border"
           variants={buttonHover}
           aria-label="Minimize planning steps"
           title="Minimize planning steps"
@@ -248,11 +305,11 @@ export const PlanningStep = memo(
           whileHover="hover"
           whileTap="tap"
         >
-          <ChevronUp className="w-4 h-4" />
+          <ChevronUp className="w-4 h-4 text-foreground/80" />
         </motion.button>
       </motion.div>
     );
-  },
+  }
 );
 
 PlanningStep.displayName = "PlanningStep";
