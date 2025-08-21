@@ -9,12 +9,23 @@ export async function verifyEnv(
   env: Record<string, string>,
 ): Promise<Record<string, string>> {
   const envJwts: Record<string, string> = {};
+  
   await Promise.all(
     Object.entries(env).map(async ([key, value]) => {
-      const { value: decryptedValue } = await verifyJwt(value);
-      envJwts[key] = decryptedValue;
+      try {
+        if (value && typeof value === 'string' && value.split('.').length === 3) {
+          const { value: decryptedValue } = await verifyJwt(value);
+          envJwts[key] = decryptedValue;
+        } else {
+          envJwts[key] = value;
+        }
+      } catch (error) {
+        console.warn(`Failed to verify JWT for env var ${key}:`, error);
+        envJwts[key] = value;
+      }
     }),
   );
+  
   return envJwts;
 }
 
@@ -91,8 +102,8 @@ export async function createMachineConfig(
   configurableEnvValues: Record<string, string> = {},
   machineName: string,
 ): Promise<CreateMachineRequest> {
-  const verifiedEnv = await verifyEnv(mcp.env!);
-  
+  const verifiedEnv = await verifyEnv(mcp.env);
+
   return {
     name: machineName,
     region: "sea",
