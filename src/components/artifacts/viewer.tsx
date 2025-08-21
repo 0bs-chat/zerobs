@@ -7,6 +7,7 @@ import {
   ExternalLinkIcon,
   EyeIcon,
   CodeIcon,
+  WrapTextIcon,
 } from "lucide-react";
 import { useCopy } from "@/hooks/chats/use-copy";
 import { Markdown } from "@/components/ui/markdown";
@@ -99,12 +100,15 @@ const HTMLRenderer = ({ content }: { content: string }) => {
 
 const CodeRenderer = ({
   content,
+  wrapLongLines,
   language,
 }: {
   content: string;
+  wrapLongLines: boolean;
   language?: string;
 }) => {
   const theme = useAtomValue(themeAtom);
+
   return (
     <div className="flex flex-col h-full text-card-foreground overflow-x-auto text-sm font-mono">
       <SyntaxHighlighter
@@ -113,6 +117,7 @@ const CodeRenderer = ({
           padding: "1rem",
           margin: "0",
           height: "100%",
+          overflow: wrapLongLines ? "visible" : "auto",
         }}
         language={language || "text"}
         style={theme === "light" ? oneLight : oneDark}
@@ -121,17 +126,22 @@ const CodeRenderer = ({
           style: {
             backgroundColor: "transparent",
             display: "block",
-            whiteSpace: "pre",
+            whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
+            opacity: 0.9,
+            overflowWrap: wrapLongLines ? "anywhere" : "normal",
+            wordBreak: "normal",
           },
         }}
         lineProps={{
           style: {
             backgroundColor: "transparent",
             display: "block",
-            whiteSpace: "pre",
+            whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
+            overflowWrap: wrapLongLines ? "anywhere" : "normal",
+            wordBreak: "normal",
           },
         }}
-        wrapLines={true}
+        wrapLines={wrapLongLines}
       >
         {content}
       </SyntaxHighlighter>
@@ -172,7 +182,8 @@ const MermaidRenderer = ({ content }: { content: string }) => {
 
 const renderArtifactContent = (
   artifact: Artifact,
-  view: "preview" | "source"
+  view: "preview" | "source",
+  wrapLongLines: boolean
 ) => {
   if (view === "source" && artifact.type !== "application/vnd.ant.code") {
     let language = artifact.language;
@@ -195,7 +206,13 @@ const renderArtifactContent = (
           break;
       }
     }
-    return <CodeRenderer content={artifact.content} language={language} />;
+    return (
+      <CodeRenderer
+        content={artifact.content}
+        language={language}
+        wrapLongLines={wrapLongLines}
+      />
+    );
   }
 
   switch (artifact.type) {
@@ -205,7 +222,11 @@ const renderArtifactContent = (
       return <HTMLRenderer content={artifact.content} />;
     case "application/vnd.ant.code":
       return (
-        <CodeRenderer content={artifact.content} language={artifact.language} />
+        <CodeRenderer
+          content={artifact.content}
+          language={artifact.language}
+          wrapLongLines={wrapLongLines}
+        />
       );
     case "text/markdown":
       return <MarkdownRenderer content={artifact.content} />;
@@ -227,6 +248,7 @@ export const ArtifactViewer = ({
 }) => {
   const { copy, copied } = useCopy({ duration: 500 });
   const [view, setView] = useState<"preview" | "source">("preview");
+  const [wrapLongLines, setWrapLongLines] = useState(false);
 
   useEffect(() => {
     if (artifact.type === "application/vnd.ant.code") {
@@ -298,6 +320,18 @@ export const ArtifactViewer = ({
           <Button
             variant="outline"
             size="icon"
+            aria-label="Wrap long lines"
+            onClick={() => setWrapLongLines(!wrapLongLines)}
+          >
+            {wrapLongLines ? (
+              <WrapTextIcon className="w-4 h-4" />
+            ) : (
+              <WrapTextIcon className="w-4 h-4" />
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
             aria-label="Close viewer"
             onClick={onClose}
           >
@@ -308,7 +342,7 @@ export const ArtifactViewer = ({
 
       {/* Content */}
       <div className="min-h-0 min-w-0">
-        {renderArtifactContent(artifact, view)}
+        {renderArtifactContent(artifact, view, wrapLongLines)}
       </div>
     </div>
   );

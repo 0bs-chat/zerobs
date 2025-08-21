@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -14,8 +14,7 @@ import {
   oneDark,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useCopy } from "@/hooks/chats/use-copy";
-import { wrapLongLinesAtom } from "@/store/chatStore";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtomValue } from "jotai";
 import { themeAtom } from "@/store/settings";
 import { marked } from "marked";
 import rehypeSanitize from "rehype-sanitize";
@@ -71,7 +70,7 @@ export const MarkdownBlock = memo(
   ({ content, className }: { content: string; className?: string }) => {
     const mermaidChartId = React.useRef(0);
     const { copy, copied } = useCopy({ duration: 1000 });
-    const [wrapLongLines, setWrapLongLines] = useAtom(wrapLongLinesAtom);
+    const [wrapLongLines, setWrapLongLines] = useState(false);
     const theme = useAtomValue(themeAtom);
     const customStyle = useMemo(
       () => ({
@@ -146,17 +145,21 @@ export const MarkdownBlock = memo(
                     style: {
                       backgroundColor: "transparent",
                       display: "block",
-                      whiteSpace: "pre",
+                      whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
+                      overflowWrap: wrapLongLines ? "anywhere" : "normal",
+                      wordBreak: "normal",
                     },
                   }}
                   lineProps={{
                     style: {
                       backgroundColor: "transparent",
                       display: "block",
-                      whiteSpace: "pre",
+                      whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
+                      overflowWrap: wrapLongLines ? "anywhere" : "normal",
+                      wordBreak: "normal",
                     },
                   }}
-                  wrapLines={true}
+                  wrapLines={wrapLongLines}
                 >
                   {children}
                 </SyntaxHighlighter>

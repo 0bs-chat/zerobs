@@ -143,7 +143,8 @@ export function AgentToggles() {
               </div>
               <Switch
                 className="cursor-pointer opacity-90"
-                checked={chat[toggle.key as keyof typeof chat] as boolean}
+                onClick={(e) => e.stopPropagation()}
+                checked={!!chat[toggle.key as keyof typeof chat]}
                 onCheckedChange={(checked) => handleToggle(toggle.key, checked)}
               />
             </div>

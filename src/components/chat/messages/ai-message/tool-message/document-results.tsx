@@ -61,7 +61,7 @@ export const DocumentResultDisplay = ({
           </div>
         </AccordionTrigger>
         <AccordionContent className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[36rem] overflow-y-auto">
-          {results.map((result, index) => {
+          {results.map((result) => {
             const { icon: Icon, className } = getDocTagInfo(
               result.metadata.document
             );
