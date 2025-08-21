@@ -14,7 +14,6 @@ import {
 import type { Doc, Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import mime from "mime";
-import { Base64 } from "convex/values";
 import { getDocumentUrl } from "../utils/helpers";
 
 export const models: {
