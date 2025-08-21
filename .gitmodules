@@ -4,3 +4,6 @@
 [submodule "services/doc_processor"]
 	path = services/doc_processor
 	url = https://github.com/0bs-chat/doc_processor.git
+[submodule "services/mcps"]
+	path = services/mcps
+	url = https://github.com/0bs-chat/mcp-runner.git
