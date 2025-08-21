@@ -170,8 +170,20 @@ export const chat = action({
               {
                 chatId,
                 chunks,
-                completedSteps:
-                  extractCompletedStepsFromCheckpoint(localCheckpoint),
+                completedSteps: [
+                  ...(localCheckpoint?.pastSteps?.map(
+                    (pastStep) => pastStep[0]
+                  ) ?? []),
+                  ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
+                    ? [
+                        ...(localCheckpoint.plan[0].type === "parallel"
+                          ? localCheckpoint.plan[0].data.map(
+                              (step) => step.step
+                            )
+                          : [localCheckpoint.plan[0].data.step]),
+                      ]
+                    : []),
+                ],
               }
             );
           }
@@ -242,7 +254,6 @@ export const chat = action({
                     })
                   );
                 }
-
                 appendToolChunk(buffer, {
                   toolName: evt.name,
                   input: evt.data?.input,
@@ -440,7 +451,6 @@ export const chat = action({
 export const regenerate = action({
   args: v.object({
     messageId: v.id("chatMessages"),
-    model: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     const message = await ctx.runQuery(internal.chatMessages.crud.read, {
@@ -452,9 +462,10 @@ export const regenerate = action({
     await ctx.runMutation(internal.chatMessages.mutations.regenerate, {
       messageId: args.messageId,
     });
+    // Intentionally do not forward model here; chat will use the saved chat.model.
+    // If a model change is desired, update the chat first and then call regenerate.
     await ctx.runAction(api.langchain.index.chat, {
       chatId: message.chatId,
-      model: args.model,
     });
   },
 });

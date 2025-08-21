@@ -14,7 +14,6 @@ import {
 import type { Doc, Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import mime from "mime";
-import { Base64 } from "convex/values";
 import { getDocumentUrl } from "../utils/helpers";
 
 export const models: {
@@ -473,20 +472,13 @@ export async function formatMessages(
                         };
                       }
 
-                      const base64 = Base64.fromByteArray(
-                        new Uint8Array(
-                          await (
-                            await ctx.storage.get(
-                              document.key as Id<"_storage">,
-                            )
-                          )?.arrayBuffer()!,
-                        ),
-                      );
+                      // Get the file URL instead of converting to base64 for OpenRouter
+                      const fileUrl = await getDocumentUrl(ctx, document.key);
                       if (fileType === "image") {
                         return {
                           type: "image_url",
                           image_url: {
-                            url: `data:${mimeType};base64,${base64}`,
+                            url: fileUrl,
                             format: mimeType,
                             detail: "high",
                           },
@@ -496,7 +488,7 @@ export async function formatMessages(
                           type: "file",
                           file: {
                             filename: document.name,
-                            file_data: `data:${mimeType};base64,${base64}`,
+                            file_data: fileUrl,
                           },
                         };
                       }

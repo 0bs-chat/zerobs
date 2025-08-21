@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { selectedVibzMcpAtom, chatIdAtom } from "@/store/chatStore";
-import { useState, useEffect, useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 
@@ -24,71 +24,85 @@ export const VibzPreview = () => {
     codeUrl: string;
     dashboardUrl: string;
   } | null>(null);
-
-  // Refs for iframes to enable refresh functionality
+  
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const codeIframeRef = useRef<HTMLIFrameElement>(null);
   const dashboardIframeRef = useRef<HTMLIFrameElement>(null);
 
   const createJwtAction = useAction(api.utils.encryption.createJwtAction);
+  const getMachineId = useAction(api.mcps.actions.getMachineId);
 
   useEffect(() => {
-    if (!selectedVibzMcp || !chatId) {
-      setUrls(null);
-      return;
-    }
+    const initializeUrls = async () => {
+      if (!selectedVibzMcp?._id || !chatId) return;
 
-    const generateUrls = async () => {
-      const oauthToken = await createJwtAction({
-        key: "OAUTH_TOKEN",
-        value: selectedVibzMcp._id,
-        skipTimestamp: true,
-      });
+      try {
+        const oauthToken = await createJwtAction({
+          key: "OAUTH_TOKEN",
+          value: selectedVibzMcp._id,
+          skipTimestamp: true,
+        });
 
-      const appName = selectedVibzMcp._id;
+        const machineId = await getMachineId({
+          mcpId: selectedVibzMcp._id,
+          chatId,
+        });
 
-      setUrls({
-        previewUrl: `https://${appName}.fly.dev/`,
-        codeUrl: `https://${appName}.fly.dev/8080${oauthToken}/`,
-        dashboardUrl: `https://${appName}.fly.dev/dashboard?auth=${oauthToken}`,
-      });
-      console.log(urls);
+        const appName = selectedVibzMcp._id;
+
+        setUrls({
+          previewUrl: `https://${appName}.fly.dev/${machineId}/preview/`,
+          codeUrl: `https://${appName}.fly.dev/${machineId}/8080/${oauthToken}/`,
+          dashboardUrl: `https://${appName}.fly.dev/${machineId}/dashboard?auth=${oauthToken}`,
+        });
+      } catch (error) {
+        console.error("Error initializing URLs:", error);
+      }
     };
 
-    generateUrls();
-  }, [selectedVibzMcp, chatId, createJwtAction]);
-
-  if (!selectedVibzMcp || !chatId || !urls) {
-    return null;
-  }
+    initializeUrls();
+  }, [selectedVibzMcp?._id, chatId, createJwtAction, getMachineId]);
 
   const handleClose = () => {
     setSelectedVibzMcp(undefined);
-  };
-
-  const handleRefresh = () => {
-    // Refresh the currently active iframe
-    const currentIframe =
-      view === "preview"
-        ? previewIframeRef.current
-        : view === "code"
-          ? codeIframeRef.current
-          : dashboardIframeRef.current;
-
-    if (currentIframe) {
-      currentIframe.src = currentIframe.src;
-    }
   };
 
   const handleExternalLink = (url: string) => {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  const handleRefresh = () => {
+    if (!urls) return;
+    
+    if (previewIframeRef.current) {
+      previewIframeRef.current.src = urls.previewUrl;
+    }
+    if (codeIframeRef.current) {
+      codeIframeRef.current.src = urls.codeUrl;
+    }
+    if (dashboardIframeRef.current) {
+      dashboardIframeRef.current.src = urls.dashboardUrl;
+    }
+  };
+
+  if (!urls) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log(urls);
+
   return (
     <div className="w-full h-full grid grid-rows-[auto_1fr]">
       {/* Header */}
       <div className="flex items-center justify-between p-1 pl-3">
-        <h2 className="text-lg font-semibold">{selectedVibzMcp.name}</h2>
+        <h2 className="text-lg font-semibold">{selectedVibzMcp?.name}</h2>
 
         <div className="flex items-center gap-1">
           <Tabs
@@ -136,9 +150,7 @@ export const VibzPreview = () => {
         </div>
       </div>
 
-      {/* Content - Keep all iframes loaded but only show active one */}
       <div className="min-h-0 min-w-0 relative">
-        {/* Preview iframe - always loaded */}
         <iframe
           ref={previewIframeRef}
           src={urls.previewUrl}
@@ -147,7 +159,7 @@ export const VibzPreview = () => {
               ? "opacity-100 pointer-events-auto"
               : "opacity-0 pointer-events-none"
           }`}
-          title={`${selectedVibzMcp.name} Preview`}
+          title={`${selectedVibzMcp?.name} Preview`}
         />
 
         {/* Code iframe - always loaded */}
@@ -159,7 +171,7 @@ export const VibzPreview = () => {
               ? "opacity-100 pointer-events-auto"
               : "opacity-0 pointer-events-none"
           }`}
-          title={`${selectedVibzMcp.name} Code`}
+          title={`${selectedVibzMcp?.name} Code`}
         />
 
         {/* Dashboard iframe - always loaded */}
@@ -171,7 +183,7 @@ export const VibzPreview = () => {
               ? "opacity-100 pointer-events-auto"
               : "opacity-0 pointer-events-none"
           }`}
-          title={`${selectedVibzMcp.name} Dashboard`}
+          title={`${selectedVibzMcp?.name} Dashboard`}
         />
       </div>
     </div>
