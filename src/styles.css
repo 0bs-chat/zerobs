@@ -54,8 +54,8 @@ code {
   --sidebar-accent-foreground: oklch(0.3503 0.0589 295.3634);
   --sidebar-border: oklch(0.937 0 0);
   --sidebar-ring: oklch(0.5136 0.0991 296.6446);
-  --font-sans: "Rubik", sans-serif;
-  --font-serif: "Rubik", sans-serif;
+  --font-sans: "Bricolage Grotesque", sans-serif;
+  --font-serif: "Bricolage Grotesque", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
   --radius: 0.5rem;
   --shadow-2xs: 0px 2px 4px 0px hsl(0 0% 0% / 0.03);

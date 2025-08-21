@@ -15,7 +15,7 @@ import type { Artifact } from "./utils";
 import { useState, useEffect, memo } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
-  atomDark,
+  oneDark,
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useAtomValue } from "jotai";
@@ -115,7 +115,7 @@ const CodeRenderer = ({
           height: "100%",
         }}
         language={language || "text"}
-        style={theme === "light" ? oneLight : atomDark}
+        style={theme === "light" ? oneLight : oneDark}
         PreTag="div"
         codeTagProps={{
           style: {
