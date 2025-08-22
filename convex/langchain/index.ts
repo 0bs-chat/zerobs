@@ -203,7 +203,16 @@ export const chat = action({
             }
             // defer checkpoint refresh; will be done just-in-time before flush
 
-            const allowedNodes = ["baseAgent", "simple", "plannerAgent"];
+            // Include nodes whose chat model or tool events we want to forward to the stream.
+            // "replanner" is where the final AI response is generated in orchestrator mode,
+            // so we add it here to ensure the user sees the last streamed chunks instead of
+            // the message disappearing when the planner finishes.
+            const allowedNodes = [
+              "baseAgent",
+              "simple",
+              "plannerAgent",
+              "replanner",
+            ];
             if (
               allowedNodes.some((node) =>
                 evt.metadata?.checkpoint_ns?.startsWith(node)

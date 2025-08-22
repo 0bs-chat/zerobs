@@ -13,7 +13,6 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const { isLoading, isEmpty } = useMessages({ chatId });
 
   const streamStatus = useAtomValue(streamStatusAtom);
-
   const mainContent = useMemo(() => {
     if (chatId === "new") {
       // Get user name from loadable state

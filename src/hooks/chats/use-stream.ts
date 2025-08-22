@@ -151,9 +151,16 @@ export function useStream(chatId: Id<"chats"> | "new") {
     };
   }, [stream?.status, stream?.chatId, lastSeenTime]);
 
-  // Clear chunks when stream is not active
+  // Clear chunks when the stream is explicitly reset or a new chat is loaded.
+  // Do NOT clear on "done" so that the UI keeps the last streamed output
+  // visible until the persisted messages arrive.
   useEffect(() => {
-    if (!stream || stream.status !== "streaming") {
+    if (!stream) {
+      setGroupedChunks([]);
+      return;
+    }
+
+    if (stream.status === "cancelled" || stream.status === "error") {
       setGroupedChunks([]);
     }
   }, [stream?.status]);
