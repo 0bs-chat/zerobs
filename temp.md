@@ -4,9 +4,6 @@
 
 https://github.com/0bs-chat/zerobs/tree/feat/message-queue : the message queue function.
 
-- vibe coding (better auth -> convex cloud migration -> streaming tool calls -> convex oauth integration -> revamp mcp templates to pass along the env vars)
-  custom ui for vibz mcp. (like artifacts, we will replace the panel content with the ui for vibz)(preview, dashboard (convex dashboard), code (vs code))
-
 - infinite scroll area everywhere.
 - look into action caching.
 - add more integrations on the go allowing to auto fill auth tokens in sse mcp servers like github, nextjs etc.

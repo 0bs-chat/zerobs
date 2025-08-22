@@ -11,10 +11,10 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
   KeyIcon,
+  MessageCircle,
   Plug,
   User,
   Wallet2,
-  MessageSquare,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useApiKeys } from "@/hooks/use-apikeys";
@@ -43,7 +43,7 @@ const settingsNavItems = [
   {
     title: "Feedback",
     href: "/settings/feedback",
-    icon: MessageSquare,
+    icon: MessageCircle,
   },
 ];
 
@@ -70,7 +70,7 @@ function SettingsPage() {
   useApiKeys();
 
   return (
-    <div className="flex h-screen flex-col overflow-y-auto bg-background w-full">
+    <div className="flex h-screen flex-col overflow-y-auto  w-full">
       <div className="container mx-auto flex max-w-6xl flex-1 flex-col p-3 pb-6 lg:max-h-dvh lg:overflow-y-hidden lg:p-6">
         {/* Header */}
         <div className="mb-8 max-md:px-2">
@@ -107,7 +107,7 @@ function SettingsPage() {
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-3 py-2 font-medium transition-colors",
                       isActive
-                        ? "bg-muted text-foreground"
+                        ? "bg-sidebar-primary/10 text-foreground"
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                   >

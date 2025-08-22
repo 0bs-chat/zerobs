@@ -108,6 +108,14 @@ export const getMCPTools = async (
         }
       }
 
+      await fly.waitTillHealthy(mcp._id, {
+        timeout: 120000,
+        interval: 1000,
+      });
+      try {
+        await fly.startMachine(mcp._id, machineId);
+      } catch (error) {}
+
       // Filter out MCPs that don't have a URL or aren't ready
       if (!updatedMcp.url || updatedMcp.status === "creating") {
         return null;
@@ -172,41 +180,25 @@ export const getMCPTools = async (
   );
   const readyMcps = validResults.map((result) => result.mcp);
 
-  // Retry logic for client creation
-  let client: MultiServerMCPClient;
-  let lastError: Error | null = null;
+  const client = new MultiServerMCPClient({
+    prefixToolNameWithServerName: true,
+    additionalToolNamePrefix: "mcp",
+    throwOnLoadError: false,
+    mcpServers,
+  });
 
-  for (let attempt = 0; attempt <= 60; attempt++) {
+  let tools: Awaited<ReturnType<typeof client.getTools>> = [];
+  for (let attempt = 0; attempt <= 180; attempt++) {
     try {
-      client = new MultiServerMCPClient({
-        prefixToolNameWithServerName: true,
-        additionalToolNamePrefix: "mcp",
-        throwOnLoadError: false,
-        mcpServers,
-      });
-
-      // If we get here, client creation succeeded
+      tools = await client.getTools();
       break;
     } catch (error) {
-      lastError = error as Error;
-      console.warn(`MCP client creation attempt ${attempt + 1} failed:`, error);
-
-      // If this is the last attempt, throw the error
-      if (attempt === 60) {
-        throw new Error(
-          `Failed to create MCP client after 60 attempts: ${lastError.message}`
-        );
+      if (attempt === 180) {
+        throw new Error("Failed to create MCP client after 180 attempts");
       }
-
-      // Wait 1 second before retrying
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
-
-  const tools = await client!.getTools();
-
-  const groupedTools: Map<string, StructuredToolInterface<ToolSchemaBase>[]> =
-    new Map();
 
   // if promptTool, fetch the client from the client.getClient(mcpName) and update the first tool's description with the promptTool + description
   await Promise.all(
@@ -284,9 +276,12 @@ export const getMCPTools = async (
           schema: (baseTool as any).schema as any,
         }
       );
-      return wrapped as unknown as StructuredToolInterface<ToolSchemaBase>;
+      return wrapped;
     }
   );
+
+  const groupedTools: Map<string, StructuredToolInterface<ToolSchemaBase>[]> =
+    new Map();
 
   for (const tool of wrappedTools) {
     const parts = tool.name.split("__");

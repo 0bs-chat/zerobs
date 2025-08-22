@@ -49,6 +49,11 @@ export const Route = createRootRoute({
         rel: "manifest",
         href: "/manifest.json",
       },
+      {
+        rel: "preconnect",
+        href: "https://cdn.databuddy.cc",
+        crossOrigin: "anonymous",
+      },
     ],
     scripts: [
       {

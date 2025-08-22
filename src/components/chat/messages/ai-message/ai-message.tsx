@@ -80,7 +80,7 @@ export const AiMessageContent = memo(
       } else {
         return (
           <>
-            <div className="text-sm text-muted-foreground">Unknown:</div>
+            <div className="text-sm text-muted-foreground/70">Unknown:</div>
             <div>Can't parse message</div>
           </>
         );
