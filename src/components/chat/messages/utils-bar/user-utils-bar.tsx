@@ -157,6 +157,27 @@ export const UserUtilsBar = memo(
             icon={<CheckCheck className="h-4 w-4 text-foreground/70" />}
             tooltip="Submit and Regenerate"
           />
+          <ActionDropdown
+            trigger={
+              <Button variant="ghost" size="icon">
+                <GitBranch className="h-4 w-4 text-foreground/70" />
+              </Button>
+            }
+            actionLabel={
+              <>
+                <GitBranch className="h-4 w-4 mr-2" />
+                Branch from edited
+              </>
+            }
+            onAction={() => handleBranch(input, undefined, {
+              text: editedText,
+              documents: editedDocuments,
+            })}
+            onActionWithModel={(model) => handleBranch(input, model, {
+              text: editedText,
+              documents: editedDocuments,
+            })}
+          />
           <TooltipButton
             onClick={() => fileInputRef.current?.click()}
             icon={<PaperclipIcon className="h-4 w-4 text-foreground/70" />}

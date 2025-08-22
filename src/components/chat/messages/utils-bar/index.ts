@@ -30,11 +30,16 @@ export function useMessageActions() {
     mutationFn: useConvexMutation(api.chats.mutations.update),
   });
 
-  const handleBranch = async (input: MessageWithBranchInfo, model?: string) => {
+  const handleBranch = async (
+    input: MessageWithBranchInfo, 
+    model?: string,
+    editedContent?: { text?: string; documents?: Id<"documents">[] }
+  ) => {
     const result = await branchChat({
       chatId: input.message.chatId!,
       branchFrom: input.message._id,
       ...(model && { model }),
+      ...(editedContent && { editedContent }),
     });
     if (result?.newChatId) {
       // Model is already persisted by branchChat; start chat without forwarding model

@@ -11,6 +11,7 @@ import {
   type StoredMessage,
   SystemMessage,
   ToolMessage,
+  HumanMessage,
 } from "@langchain/core/messages";
 import { MemorySaver } from "@langchain/langgraph";
 import type { GraphState, AIChunkGroup, ToolChunkGroup } from "./state";
@@ -325,6 +326,10 @@ export const branchChat = action({
     chatId: v.id("chats"),
     branchFrom: v.id("chatMessages"),
     model: v.optional(v.string()),
+    editedContent: v.optional(v.object({
+      text: v.optional(v.string()),
+      documents: v.optional(v.array(v.id("documents"))),
+    })),
   }),
   handler: async (ctx, args): Promise<{ newChatId: Id<"chats"> }> => {
     const chatDoc = await ctx.runQuery(api.chats.queries.get, {
@@ -353,26 +358,50 @@ export const branchChat = action({
       throw new Error("Branch message not found");
     }
 
-    const thread = getThreadFromMessage(branchFromMessage, allMessages);
+    // Helper function to create message objects
+    const createMessageObject = (message: string) => ({ message });
 
-    const lastMessage = thread.at(-1);
-    if (lastMessage) {
-      const storedMessage = mapChatMessagesToStoredMessages([
-        lastMessage.message,
-      ])[0];
-      if (storedMessage.type === "ai") {
-        thread.pop();
-      }
-    }
-
-    if (thread.length > 0) {
+    // Copy ALL messages from the original chat (entire conversation history)
+    if (allMessages.length > 0) {
       await ctx.runMutation(internal.chats.mutations.createRaw, {
         chatId: newChatId,
-        messages: thread.map((m) => ({
-          message: JSON.stringify(
-            mapChatMessagesToStoredMessages([m.message])[0]
-          ),
-        })),
+        messages: allMessages.map((m) => createMessageObject(m.message)),
+      });
+    }
+
+    // If edited content is provided, create a new message with the edited content
+    if (args.editedContent) {
+      const { text, documents } = args.editedContent;
+      
+      // Only create a message if there's actual content
+      if (!text && (!documents || documents.length === 0)) {
+        return { newChatId };
+      }
+
+      // Create the message using the same pattern as chatMessages/mutations.ts
+      const editedMessage = createMessageObject(
+        JSON.stringify(
+          mapChatMessagesToStoredMessages([
+            new HumanMessage({
+              content: [
+                ...(text ? [{ type: "text", text }] : []),
+                ...(documents && documents.length > 0
+                  ? documents.map((documentId) => ({
+                      type: "file",
+                      file: {
+                        file_id: documentId,
+                      },
+                    }))
+                  : []),
+              ],
+            }),
+          ])[0]
+        )
+      );
+
+      await ctx.runMutation(internal.chats.mutations.createRaw, {
+        chatId: newChatId,
+        messages: [editedMessage],
       });
     }
 

@@ -7,8 +7,7 @@ import {
   sidebarOpenAtom,
   userAtom,
 } from "@/store/chatStore";
-import { PanelRightCloseIcon, PlusIcon } from "lucide-react";
-import { PanelRightOpenIcon } from "lucide-react";
+import { PanelRightCloseIcon, PlusIcon, PanelRightOpenIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
