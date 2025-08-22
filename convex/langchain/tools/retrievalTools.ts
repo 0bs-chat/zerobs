@@ -109,7 +109,7 @@ export const getRetrievalTools = async (
 
       await dispatchCustomEvent(
         "tool_progress",
-        { chunk: "Formatting final output...", complete: true },
+        { chunk: "Formatting final output..." },
         toolConfig
       );
       return returnString ? JSON.stringify(documents, null, 0) : documents;
@@ -183,7 +183,6 @@ export const getRetrievalTools = async (
           "tool_progress",
           {
             chunk: `Found ${searchResponse.length} results. Formatting...`,
-            complete: true,
           },
           toolConfig
         );

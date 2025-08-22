@@ -201,12 +201,7 @@ export const chat = action({
             if (abort.signal.aborted) {
               return;
             }
-            // defer checkpoint refresh; will be done just-in-time before flush
 
-            // Include nodes whose chat model or tool events we want to forward to the stream.
-            // "replanner" is where the final AI response is generated in orchestrator mode,
-            // so we add it here to ensure the user sees the last streamed chunks instead of
-            // the message disappearing when the planner finishes.
             const allowedNodes = [
               "baseAgent",
               "simple",
@@ -272,6 +267,21 @@ export const chat = action({
                 });
                 // Mark that the checkpoint should be refreshed soon
                 pendingCheckpointRefresh = true;
+              } else if (evt.event === "on_tool_error") {
+                // Gracefully surface tool errors to the client and mark the tool call as complete
+                const errorOutput =
+                  (evt.data as any)?.error?.message ??
+                  (evt.data as any)?.error ??
+                  "Tool execution failed";
+                appendToolChunk(buffer, {
+                  toolName: evt.name,
+                  input: (evt.data as any)?.input,
+                  output: `Error: ${errorOutput}`,
+                  isComplete: true,
+                  toolCallId: evt.run_id,
+                });
+                // Force checkpoint refresh so calling step is marked done/errored
+                pendingCheckpointRefresh = true;
               } else if (
                 evt.event === "on_chat_model_end" ||
                 evt.event === "on_chain_end"
@@ -318,7 +328,11 @@ export const chat = action({
                   typeof (payload as any).chunk === "string"
                     ? (payload as any).chunk
                     : undefined;
-                const isComplete = (payload as any).complete === true;
+                // Ignore `complete` flag on tool_progress to prevent duplicate completion chunks; let on_tool_end handle completion.
+                const isComplete =
+                  eventName === "tool_progress"
+                    ? false
+                    : payload.complete === true;
 
                 if (
                   eventName === "tool_stream" ||
