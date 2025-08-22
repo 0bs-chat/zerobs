@@ -99,7 +99,7 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     env: {},
     perChat: true,
     dockerImage:
-      "registry.fly.io/still-smoke-7835",
+      "registry.fly.io/still-smoke-7835:v3",
     dockerPort: 80,
     promptTool: "prompt",
     configurableEnvs: [
