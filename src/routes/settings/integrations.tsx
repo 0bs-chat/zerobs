@@ -58,7 +58,7 @@ function RouteComponent() {
   const handleDisconnect = async (
     accessKey: string,
     refreshKey: string,
-    providerName: string,
+    providerName: string
   ) => {
     try {
       await Promise.all([

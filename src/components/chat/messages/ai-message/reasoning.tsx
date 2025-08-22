@@ -39,7 +39,7 @@ export const Reasoning = memo(
         </AccordionItem>
       </Accordion>
     );
-  },
+  }
 );
 
 Reasoning.displayName = "Reasoning";

@@ -7,6 +7,7 @@ import {
   ExternalLinkIcon,
   EyeIcon,
   CodeIcon,
+  WrapTextIcon,
 } from "lucide-react";
 import { useCopy } from "@/hooks/chats/use-copy";
 import { Markdown } from "@/components/ui/markdown";
@@ -15,7 +16,7 @@ import type { Artifact } from "./utils";
 import { useState, useEffect, memo } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
-  atomDark,
+  oneDark,
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useAtomValue } from "jotai";
@@ -99,24 +100,48 @@ const HTMLRenderer = ({ content }: { content: string }) => {
 
 const CodeRenderer = ({
   content,
+  wrapLongLines,
   language,
 }: {
   content: string;
+  wrapLongLines: boolean;
   language?: string;
 }) => {
   const theme = useAtomValue(themeAtom);
+
   return (
-    <div className="flex flex-col h-full text-card-foreground overflow-x-auto text-sm">
+    <div className="flex flex-col h-full text-card-foreground overflow-x-auto text-sm font-mono">
       <SyntaxHighlighter
         customStyle={{
           backgroundColor: "transparent",
           padding: "1rem",
           margin: "0",
           height: "100%",
+          overflow: wrapLongLines ? "visible" : "auto",
         }}
         language={language || "text"}
-        style={theme === "light" ? oneLight : atomDark}
-        wrapLines={true}
+        style={theme === "light" ? oneLight : oneDark}
+        PreTag="div"
+        codeTagProps={{
+          style: {
+            backgroundColor: "transparent",
+            display: "block",
+            whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
+            opacity: 0.9,
+            overflowWrap: wrapLongLines ? "anywhere" : "normal",
+            wordBreak: "normal",
+          },
+        }}
+        lineProps={{
+          style: {
+            backgroundColor: "transparent",
+            display: "block",
+            whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
+            overflowWrap: wrapLongLines ? "anywhere" : "normal",
+            wordBreak: "normal",
+          },
+        }}
+        wrapLines={wrapLongLines}
       >
         {content}
       </SyntaxHighlighter>
@@ -158,6 +183,7 @@ const MermaidRenderer = ({ content }: { content: string }) => {
 const renderArtifactContent = (
   artifact: Artifact,
   view: "preview" | "source",
+  wrapLongLines: boolean
 ) => {
   if (view === "source" && artifact.type !== "application/vnd.ant.code") {
     let language = artifact.language;
@@ -180,7 +206,13 @@ const renderArtifactContent = (
           break;
       }
     }
-    return <CodeRenderer content={artifact.content} language={language} />;
+    return (
+      <CodeRenderer
+        content={artifact.content}
+        language={language}
+        wrapLongLines={wrapLongLines}
+      />
+    );
   }
 
   switch (artifact.type) {
@@ -190,7 +222,11 @@ const renderArtifactContent = (
       return <HTMLRenderer content={artifact.content} />;
     case "application/vnd.ant.code":
       return (
-        <CodeRenderer content={artifact.content} language={artifact.language} />
+        <CodeRenderer
+          content={artifact.content}
+          language={artifact.language}
+          wrapLongLines={wrapLongLines}
+        />
       );
     case "text/markdown":
       return <MarkdownRenderer content={artifact.content} />;
@@ -212,6 +248,7 @@ export const ArtifactViewer = ({
 }) => {
   const { copy, copied } = useCopy({ duration: 500 });
   const [view, setView] = useState<"preview" | "source">("preview");
+  const [wrapLongLines, setWrapLongLines] = useState(false);
 
   useEffect(() => {
     if (artifact.type === "application/vnd.ant.code") {
@@ -248,10 +285,10 @@ export const ArtifactViewer = ({
               onValueChange={(v) => setView(v as "preview" | "source")}
             >
               <TabsList>
-                <TabsTrigger value="preview">
+                <TabsTrigger value="preview" aria-label="Preview view">
                   <EyeIcon className="w-4 h-4" />
                 </TabsTrigger>
-                <TabsTrigger value="source">
+                <TabsTrigger value="source" aria-label="Source view">
                   <CodeIcon className="w-4 h-4" />
                 </TabsTrigger>
               </TabsList>
@@ -259,18 +296,45 @@ export const ArtifactViewer = ({
           )}
 
           {artifact.type === "text/html" && (
-            <Button variant="outline" size="icon" onClick={handleOpenInNewTab}>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Open in new tab"
+              onClick={handleOpenInNewTab}
+            >
               <ExternalLinkIcon className="w-4 h-4" />
             </Button>
           )}
-          <Button variant="outline" size="icon" onClick={handleCopy}>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Copy content"
+            onClick={handleCopy}
+          >
             {copied ? (
               <CheckIcon className="w-4 h-4" />
             ) : (
               <CopyIcon className="w-4 h-4" />
             )}
           </Button>
-          <Button variant="outline" size="icon" onClick={onClose}>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Wrap long lines"
+            onClick={() => setWrapLongLines(!wrapLongLines)}
+          >
+            {wrapLongLines ? (
+              <WrapTextIcon className="w-4 h-4" />
+            ) : (
+              <WrapTextIcon className="w-4 h-4" />
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Close viewer"
+            onClick={onClose}
+          >
             <XIcon className="w-4 h-4" />
           </Button>
         </div>
@@ -278,7 +342,7 @@ export const ArtifactViewer = ({
 
       {/* Content */}
       <div className="min-h-0 min-w-0">
-        {renderArtifactContent(artifact, view)}
+        {renderArtifactContent(artifact, view, wrapLongLines)}
       </div>
     </div>
   );

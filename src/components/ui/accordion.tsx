@@ -15,7 +15,7 @@ interface AccordionContextType {
 }
 
 const AccordionContext = createContext<AccordionContextType | undefined>(
-  undefined,
+  undefined
 );
 
 function useAccordion() {
@@ -54,7 +54,7 @@ function Accordion({
 
   const currentValue = value !== undefined ? value : internalValue;
   const expandedItems = new Set(
-    Array.isArray(currentValue) ? currentValue : [currentValue].filter(Boolean),
+    Array.isArray(currentValue) ? currentValue : [currentValue].filter(Boolean)
   );
 
   const toggleItem = (itemValue: string) => {
@@ -109,11 +109,13 @@ interface AccordionTriggerProps {
   className?: string;
   children?: React.ReactNode;
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  showIcon?: boolean;
 }
 
 function AccordionTrigger({
   className,
   children,
+  showIcon = true,
   onClick,
   ...props
 }: AccordionTriggerProps) {
@@ -137,19 +139,21 @@ function AccordionTrigger({
         data-slot="accordion-trigger"
         className={cn(
           "focus-visible:border-ring focus-visible:ring-ring/50 flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50",
-          className,
+          className
         )}
         data-state={isOpen ? "open" : "closed"}
         onClick={handleClick}
         {...props}
       >
-        <motion.div
-          animate={{ rotate: isOpen ? 0 : 180 }}
-          transition={{ duration: 0.25 }}
-          className="items-center flex justify-center "
-        >
-          <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />
-        </motion.div>
+        {showIcon && (
+          <motion.div
+            animate={{ rotate: isOpen ? 0 : 180 }}
+            transition={{ duration: 0.25 }}
+            className="items-center flex justify-center "
+          >
+            <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />
+          </motion.div>
+        )}
         {children}
       </motion.button>
     </div>
@@ -200,7 +204,7 @@ function AccordionContent({
 
 // Context for AccordionItem to pass value to children
 const AccordionItemContext = createContext<{ value: string } | undefined>(
-  undefined,
+  undefined
 );
 
 // Enhanced AccordionItem with context

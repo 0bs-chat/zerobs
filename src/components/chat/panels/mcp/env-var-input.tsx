@@ -49,7 +49,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
   const updateEnvVar = (
     index: number,
     field: "key" | "value",
-    value: string,
+    value: string
   ) => {
     const newEnvVars = [...displayEnvVars];
     newEnvVars[index] = { ...newEnvVars[index], [field]: value };
@@ -70,7 +70,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
 
   const handlePaste = (
     e: React.ClipboardEvent<HTMLInputElement>,
-    index: number,
+    index: number
   ) => {
     // Only try bulk parsing if pasting into an empty row's key field
     const currentEnvVar = displayEnvVars[index];
@@ -138,7 +138,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
 
       // Try to match JSON-style "KEY": value pattern (for non-string values like numbers, booleans)
       const jsonValueMatch = trimmedLine.match(
-        /^"([^"]+)"\s*:\s*([^,\s]+)[,]?$/,
+        /^"([^"]+)"\s*:\s*([^,\s]+)[,]?$/
       );
       if (jsonValueMatch) {
         result.push({
@@ -174,6 +174,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
               type="button"
               variant="outline"
               size="icon"
+              aria-label="Add environment variable"
               onClick={addEnvVar}
             >
               <Plus className="h-4 w-4" />
@@ -183,6 +184,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
               type="button"
               variant="outline"
               size="icon"
+              aria-label="Remove environment variable"
               onClick={() => removeEnvVar(index)}
             >
               <X className="h-4 w-4" />
