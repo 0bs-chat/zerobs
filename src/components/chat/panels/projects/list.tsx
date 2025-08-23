@@ -91,9 +91,11 @@ export const ProjectsList = () => {
                 }}
               >
                 <div className="flex items-center justify-between flex-1">
-                  <h3 className="font-medium">{project.name}</h3>
+                  <h3 className="font-medium w-36 flex-shrink-0 truncate">
+                    {project.name}
+                  </h3>
                   {project.description && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground line-clamp-2">
                       {project.description}
                     </p>
                   )}

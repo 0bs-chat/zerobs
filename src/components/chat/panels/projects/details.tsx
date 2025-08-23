@@ -21,7 +21,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
   const { data: project } = useQuery({
     ...convexQuery(
       api.projects.queries.get,
-      projectId ? { projectId } : "skip",
+      projectId ? { projectId } : "skip"
     ),
   });
   const { mutate: updateProject } = useMutation({
@@ -78,7 +78,9 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
           </Button>
         </div>
         {project.description && (
-          <p className="text-muted-foreground">{project.description}</p>
+          <p className="text-muted-foreground text-sm overflow-y-auto max-h-24">
+            {project.description}
+          </p>
         )}
       </div>
 
@@ -87,7 +89,7 @@ export const ProjectDetails = ({ projectId }: ProjectDetailsProps) => {
         <AutosizeTextarea
           defaultValue={project.systemPrompt}
           onChange={(e) => debouncedUpdateSystemPrompt(e.target.value)}
-          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-2 rounded-xl"
+          className="resize-none border shadow-sm focus-visible:ring-0 focus-visible:ring-offset-0 bg-card p-2 text-foreground/80 rounded-xl"
           minHeight={80}
           maxHeight={200}
         />
