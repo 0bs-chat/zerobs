@@ -8,20 +8,11 @@ import {
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  SearchIcon,
-  XIcon,
-  PlusIcon,
-  FolderIcon,
-  PinIcon,
-  HistoryIcon,
-} from "lucide-react";
+import { SearchIcon, XIcon, PlusIcon, FolderIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChatItem } from "@/components/app-sidebar/chat-item";
 import { useInfiniteChats, useSearchChats } from "@/hooks/chats/use-chats";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ErrorState } from "@/components/ui/error-state";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import {
   Accordion,
@@ -35,14 +26,7 @@ import { useAtom } from "jotai";
 export function AppSidebar() {
   const navigate = useNavigate();
   const { pinnedChats, historyChats, status, loadMore } = useInfiniteChats();
-  const {
-    searchQuery,
-    setSearchQuery,
-    searchResults,
-    isSearching,
-    isLoadingSearch,
-    isSearchError,
-  } = useSearchChats();
+  const { searchQuery, setSearchQuery, searchResults } = useSearchChats();
   const loadMoreRef = React.useRef<HTMLButtonElement>(null);
   const [pinnedChatsAccordionOpen, setPinnedChatsAccordionOpen] = useAtom(
     pinnedChatsAccordionOpenAtom
@@ -80,7 +64,6 @@ export function AppSidebar() {
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting) {
-          observer.unobserve(loadMoreElement);
           loadMore(15);
         }
       },
@@ -99,6 +82,7 @@ export function AppSidebar() {
   }, [loadMore, status]);
 
   // Determine whether to show search results or regular chat lists
+  const isSearching = searchQuery.trim().length > 0;
   const searchPinnedChats = isSearching
     ? searchResults.filter((chat) => chat.pinned)
     : [];
@@ -114,7 +98,7 @@ export function AppSidebar() {
       <SidebarHeader className="flex items-center w-full font-bold font-mono text-xl py-3.5 px-2">
         0bs
       </SidebarHeader>
-      <SidebarContent className="overflow-hidden px-1.5 gap-0">
+      <SidebarContent className="overflow-hidden px-1 flex flex-col">
         <SidebarGroup className="gap-2">
           <Button className="w-full cursor-pointer" onClick={handleNewChat}>
             <div className="flex items-center gap-2">
@@ -165,7 +149,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {displayPinnedChats.length > 0 && (
-          <SidebarGroup className="p-0">
+          <SidebarGroup className="gap-0 py-0">
             <Accordion
               type="single"
               collapsible
@@ -176,12 +160,12 @@ export function AppSidebar() {
                 setPinnedChatsAccordionOpen(value === "pinned");
               }}
             >
-              <AccordionItem value="pinned" className="border-none py-1">
+              <AccordionItem value="pinned">
                 <div className="flex justify-between items-center w-full">
                   <SidebarGroupLabel>Pinned</SidebarGroupLabel>
-                  <AccordionTrigger className="cursor-pointer p-0 mr-2" />
+                  <AccordionTrigger className="cursor-pointer" />
                 </div>
-                <AccordionContent className="px-2">
+                <AccordionContent>
                   <SidebarGroupContent>
                     <div className="flex flex-col">
                       {displayPinnedChats.map((chat) => renderChatItem(chat))}
@@ -193,26 +177,13 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        <SidebarGroup className="flex-1 min-h-0 p-0">
+        <SidebarGroup className="flex-1 min-h-0 gap-0">
           <SidebarGroupContent className="h-full flex flex-col">
-            <SidebarGroupLabel className="flex items-center">
-              {isSearching ? "Search Results" : "Previous Chats"}
+            <SidebarGroupLabel>
+              {isSearching ? "Search Results" : "History"}
             </SidebarGroupLabel>
             <div className="flex-1 overflow-y-auto scrollbar-none">
-              <div className="flex flex-col px-2">
-                {isSearching && isLoadingSearch && (
-                  <div className="flex items-center justify-center py-2">
-                    <LoadingSpinner
-                      sizeClassName="h-4 w-4"
-                      label="Searching chats..."
-                    />
-                  </div>
-                )}
-                {isSearching && isSearchError && (
-                  <div className="py-2">
-                    <ErrorState title="Unable to search chats" />
-                  </div>
-                )}
+              <div className="flex flex-col">
                 {displayHistoryChats.map((chat) => renderChatItem(chat))}
                 {!isSearching && status === "CanLoadMore" && (
                   <Button
@@ -224,7 +195,7 @@ export function AppSidebar() {
                     Load More
                   </Button>
                 )}
-                {displayHistoryChats.length === 0 && !isSearching && (
+                {displayHistoryChats.length === 0 && (
                   <div className="text-sm text-muted-foreground text-center py-2">
                     {isSearching
                       ? "No matching chats found"

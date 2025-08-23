@@ -26,7 +26,6 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { GearIcon } from "@radix-ui/react-icons";
 
 export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
