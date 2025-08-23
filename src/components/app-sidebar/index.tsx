@@ -178,10 +178,7 @@ export function AppSidebar() {
             >
               <AccordionItem value="pinned" className="border-none py-1">
                 <div className="flex justify-between items-center w-full">
-                  <SidebarGroupLabel>
-                    <PinIcon className="w-4 h-4 mr-2" />
-                    Pinned
-                  </SidebarGroupLabel>
+                  <SidebarGroupLabel>Pinned</SidebarGroupLabel>
                   <AccordionTrigger className="cursor-pointer p-0 mr-2" />
                 </div>
                 <AccordionContent className="px-2">
@@ -199,7 +196,6 @@ export function AppSidebar() {
         <SidebarGroup className="flex-1 min-h-0 p-0">
           <SidebarGroupContent className="h-full flex flex-col">
             <SidebarGroupLabel className="flex items-center">
-              {!isSearching && <HistoryIcon className="w-4 h-4 mr-2" />}
               {isSearching ? "Search Results" : "Previous Chats"}
             </SidebarGroupLabel>
             <div className="flex-1 overflow-y-auto scrollbar-none">
