@@ -49,11 +49,7 @@ export const getRetrievalTools = async (
 
       if (includedProjectDocuments.length === 0) {
         const msg = "No project documents available for retrieval.";
-        await dispatchCustomEvent(
-          "tool_progress",
-          { chunk: msg, complete: true },
-          toolConfig
-        );
+        await dispatchCustomEvent("tool_progress", { chunk: msg }, toolConfig);
         return msg;
       }
 
@@ -173,7 +169,7 @@ export const getRetrievalTools = async (
           const msg = "No results found.";
           await dispatchCustomEvent(
             "tool_progress",
-            { chunk: msg, complete: true },
+            { chunk: msg },
             toolConfig
           );
           return msg;
@@ -206,11 +202,7 @@ export const getRetrievalTools = async (
         const msg = `Web search failed: ${
           error instanceof Error ? error.message : "Unknown error"
         }`;
-        await dispatchCustomEvent(
-          "tool_progress",
-          { chunk: msg, complete: true },
-          toolConfig
-        );
+        await dispatchCustomEvent("tool_progress", { chunk: msg }, toolConfig);
         return msg;
       }
     },

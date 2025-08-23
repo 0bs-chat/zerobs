@@ -118,7 +118,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
           "tool_progress",
-          { chunk: `Failed to list calendars: ${message}`, complete: true },
+          { chunk: `Failed to list calendars: ${message}` },
           toolConfig
         );
         return `Failed to list calendars: ${message}`;
@@ -202,7 +202,6 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           "tool_progress",
           {
             chunk: `Failed to list calendar events: ${message}`,
-            complete: true,
           },
           toolConfig
         );
@@ -317,7 +316,6 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           "tool_progress",
           {
             chunk: `Failed to create calendar event: ${message}`,
-            complete: true,
           },
           toolConfig
         );
@@ -436,7 +434,6 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           "tool_progress",
           {
             chunk: `Failed to update calendar event: ${message}`,
-            complete: true,
           },
           toolConfig
         );
@@ -515,7 +512,6 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           "tool_progress",
           {
             chunk: `Failed to delete calendar event: ${message}`,
-            complete: true,
           },
           toolConfig
         );
@@ -606,7 +602,6 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           "tool_progress",
           {
             chunk: `Failed to list Gmail messages: ${message}`,
-            complete: true,
           },
           toolConfig
         );
@@ -698,7 +693,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
           "tool_progress",
-          { chunk: `Failed to get Gmail message: ${message}`, complete: true },
+          { chunk: `Failed to get Gmail message: ${message}` },
           toolConfig
         );
         return `Failed to get Gmail message: ${message}`;
@@ -784,7 +779,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
           "tool_progress",
-          { chunk: `Failed to send Gmail message: ${message}`, complete: true },
+          { chunk: `Failed to send Gmail message: ${message}` },
           toolConfig
         );
         return `Failed to send Gmail message: ${message}`;
@@ -864,7 +859,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           error instanceof Error ? error.message : "Unknown error";
         await dispatchCustomEvent(
           "tool_progress",
-          { chunk: `Failed to search Gmail: ${message}`, complete: true },
+          { chunk: `Failed to search Gmail: ${message}` },
           toolConfig
         );
         return `Failed to search Gmail: ${message}`;

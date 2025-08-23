@@ -82,34 +82,26 @@ export function useStream(chatId: Id<"chats"> | "new") {
                 }
               } else {
                 const toolChunk = chunk as ToolChunkGroup;
-                // Try to merge with the latest in-flight chunk for the same toolCallId
+                // Try to merge with an existing group for the same toolCallId (even if it is already marked complete)
                 let mergedIndex = -1;
-                if (
-                  lastGroup?.type === "tool" &&
-                  (lastGroup as ToolChunkGroup).toolCallId ===
-                    toolChunk.toolCallId &&
-                  !(lastGroup as ToolChunkGroup).isComplete
-                ) {
-                  mergedIndex = newGroups.length - 1;
-                } else {
-                  for (let i = newGroups.length - 1; i >= 0; i--) {
-                    const g = newGroups[i];
-                    if (
-                      g.type === "tool" &&
-                      (g as ToolChunkGroup).toolCallId ===
-                        toolChunk.toolCallId &&
-                      !(g as ToolChunkGroup).isComplete
-                    ) {
-                      mergedIndex = i;
-                      break;
-                    }
+                for (let i = newGroups.length - 1; i >= 0; i--) {
+                  const g = newGroups[i];
+                  if (
+                    g.type === "tool" &&
+                    (g as ToolChunkGroup).toolCallId === toolChunk.toolCallId
+                  ) {
+                    mergedIndex = i;
+                    break;
                   }
                 }
 
                 if (mergedIndex >= 0) {
                   const existing = newGroups[mergedIndex] as ToolChunkGroup;
                   // Append incremental output if provided
-                  if (typeof toolChunk.output === "string") {
+                  if (
+                    typeof toolChunk.output === "string" &&
+                    toolChunk.output
+                  ) {
                     const existingOutput =
                       typeof existing.output === "string"
                         ? existing.output
@@ -117,19 +109,23 @@ export function useStream(chatId: Id<"chats"> | "new") {
                     existing.output = existingOutput
                       ? `${existingOutput}\n${toolChunk.output}`
                       : toolChunk.output;
-                  } else if (toolChunk.output !== undefined) {
+                  } else if (
+                    toolChunk.output !== undefined &&
+                    toolChunk.output !== null
+                  ) {
                     existing.output = toolChunk.output as any;
                   }
                   // Update input if present
                   if (toolChunk.input !== undefined) {
                     existing.input = toolChunk.input as any;
                   }
-                  // Mark complete if end event
+                  // Mark complete if any chunk indicates completion
                   if (toolChunk.isComplete) {
                     existing.isComplete = true;
                   }
                   lastGroup = existing;
                 } else {
+                  // No existing group, create a new one
                   lastGroup = toolChunk;
                   newGroups.push(toolChunk);
                 }
