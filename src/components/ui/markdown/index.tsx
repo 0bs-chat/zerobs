@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -10,12 +10,11 @@ import { Button } from "../button";
 import { CopyIcon, TextIcon, WrapTextIcon, CheckIcon } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
-  atomDark,
   oneLight,
+  oneDark,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useCopy } from "@/hooks/chats/use-copy";
-import { wrapLongLinesAtom } from "@/store/chatStore";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtomValue } from "jotai";
 import { themeAtom } from "@/store/settings";
 import { marked } from "marked";
 import rehypeSanitize from "rehype-sanitize";
@@ -71,16 +70,16 @@ export const MarkdownBlock = memo(
   ({ content, className }: { content: string; className?: string }) => {
     const mermaidChartId = React.useRef(0);
     const { copy, copied } = useCopy({ duration: 1000 });
-    const [wrapLongLines, setWrapLongLines] = useAtom(wrapLongLinesAtom);
+    const [wrapLongLines, setWrapLongLines] = useState(false);
     const theme = useAtomValue(themeAtom);
     const customStyle = useMemo(
       () => ({
         backgroundColor: "transparent",
         padding: "0.5rem",
         margin: "0",
-        wrapLongLines: wrapLongLines,
+        height: "100%",
       }),
-      [wrapLongLines],
+      [wrapLongLines]
     );
 
     const components = useMemo(
@@ -102,7 +101,7 @@ export const MarkdownBlock = memo(
               />
             ) : language ? (
               <div className="my-2 flex flex-col overflow-auto rounded-md bg-card">
-                <div className="flex items-center justify-between rounded-t bg-secondary px-2 py-1 text-sm text-secondary-foreground">
+                <div className="flex items-center justify-between rounded-t bg-primary/20 px-2 py-1 text-sm text-secondary-foreground">
                   <span className="text-sm text-muted-foreground">
                     {language}
                   </span>
@@ -113,16 +112,20 @@ export const MarkdownBlock = memo(
                       onClick={() => setWrapLongLines(!wrapLongLines)}
                     >
                       {wrapLongLines ? (
-                        <TextIcon className="h-4 w-4" />
+                        <TextIcon className="h-4 w-4 text-muted-foreground" />
                       ) : (
-                        <WrapTextIcon className="h-4 w-4" />
+                        <WrapTextIcon className="h-4 w-4 text-muted-foreground" />
                       )}
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handleCopy}
-                      className={copied ? "text-green-500" : ""}
+                      className={
+                        copied
+                          ? "text-green-500 cursor-pointer"
+                          : "text-muted-foreground cursor-pointer"
+                      }
                     >
                       {copied ? (
                         <CheckIcon className="h-4 w-4" />
@@ -137,7 +140,26 @@ export const MarkdownBlock = memo(
                   PreTag="div"
                   customStyle={customStyle}
                   language={language}
-                  style={theme === "light" ? oneLight : atomDark}
+                  style={theme === "light" ? oneLight : oneDark}
+                  codeTagProps={{
+                    style: {
+                      backgroundColor: "transparent",
+                      display: "block",
+                      whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
+                      overflowWrap: wrapLongLines ? "anywhere" : "normal",
+                      wordBreak: "normal",
+                    },
+                  }}
+                  lineProps={{
+                    style: {
+                      backgroundColor: "transparent",
+                      display: "block",
+                      whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
+                      overflowWrap: wrapLongLines ? "anywhere" : "normal",
+                      wordBreak: "normal",
+                    },
+                  }}
+                  wrapLines={wrapLongLines}
                 >
                   {children}
                 </SyntaxHighlighter>
@@ -152,17 +174,18 @@ export const MarkdownBlock = memo(
           );
         },
       }),
-      [copy, copied, wrapLongLines, setWrapLongLines, theme],
+      [copy, copied, wrapLongLines, setWrapLongLines, theme]
     );
 
     return (
       <article
         className={`prose max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent
           prose-pre:p-0 prose-h1:mb-2 prose-h2:mb-2 prose-h3:mb-2 prose-h3:mt-6 prose-h4:my-2 prose-h5:my-2 prose-h6:my-2
-          prose-p:mt-2 prose-hr:my-12 prose-hr:border-primary/20 prose-blockquote:border-primary/20
+          prose-p:mt-2 prose-hr:my-12 prose-hr:border-primary/20 prose-blockquote:border-primary/20 prose-blockquote:text-muted-foreground/70
           ${className}`}
         style={{
           fontFamily: "Rubik",
+          opacity: 0.9,
           wordBreak: "break-word",
         }}
       >
@@ -178,7 +201,7 @@ export const MarkdownBlock = memo(
         </ReactMarkdown>
       </article>
     );
-  },
+  }
 );
 
 MarkdownBlock.displayName = "MarkdownBlock";
@@ -202,7 +225,7 @@ export const Markdown = memo(
         className={className}
       />
     ));
-  },
+  }
 );
 
 Markdown.displayName = "Markdown";

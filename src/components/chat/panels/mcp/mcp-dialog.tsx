@@ -23,7 +23,7 @@ export const MCPDialog = () => {
   const { handleCreate, validateMCP } = useMCPs();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<number | undefined>(
-    undefined,
+    undefined
   );
 
   const handleSubmit = async () => {
@@ -157,7 +157,7 @@ export const MCPDialog = () => {
                 disabled={selectedTemplate === undefined}
                 onClick={handleImport}
               >
-                Import MCP
+                Import Selected
               </Button>
             </>
           ) : (

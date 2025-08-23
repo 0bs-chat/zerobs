@@ -27,7 +27,9 @@ export function ActionDropdown({
         className=" w-80 h-96 p-1 overflow-y-auto scrollbar-none relative bg-background "
         align="end"
       >
-        <DropdownMenuItem onClick={onAction}>{actionLabel}</DropdownMenuItem>
+        <DropdownMenuItem className="text-foreground/70" onClick={onAction}>
+          {actionLabel}
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         {models
           .filter((model) => !model.hidden)
@@ -40,13 +42,13 @@ export function ActionDropdown({
                 className="justify-between px-2 py-2"
                 onClick={() => onActionWithModel(model.model_name)}
               >
-                <div className="text-foreground flex gap-2 items-center">
+                <div className="text-foreground/70 flex gap-2 items-center">
                   <img
                     src={model.image}
                     alt={model.label}
-                    className={`h-4 w-4 ${
+                    className={`h-4 w-4 opacity-70 ${
                       ["openai", "x-ai", "openrouter", "anthropic"].includes(
-                        model.owner,
+                        model.owner
                       )
                         ? "dark:invert"
                         : ""

@@ -1,4 +1,6 @@
 import { useAction } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { api } from "../../../../../convex/_generated/api";
 import type { MessageWithBranchInfo } from "@/hooks/chats/use-messages";
@@ -10,7 +12,7 @@ export { AiUtilsBar } from "./ai-utils-bar";
 // Helper function for navigation logic
 const navigateToChat = (
   navigate: ReturnType<typeof useNavigate>,
-  chatId: Id<"chats">,
+  chatId: Id<"chats">
 ) => {
   navigate({
     to: "/chat/$chatId",
@@ -24,30 +26,44 @@ export function useMessageActions() {
   const chat = useAction(api.langchain.index.chat);
   const navigate = useNavigate();
   const navigateBranch = useNavigateBranch();
+  const { mutateAsync: updateChatMutation } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
 
-  const handleBranch = async (input: MessageWithBranchInfo, model?: string) => {
+  const handleBranch = async (
+    input: MessageWithBranchInfo, 
+    model?: string,
+    editedContent?: { text?: string; documents?: Id<"documents">[] }
+  ) => {
     const result = await branchChat({
       chatId: input.message.chatId!,
       branchFrom: input.message._id,
       ...(model && { model }),
+      ...(editedContent && { editedContent }),
     });
     if (result?.newChatId) {
-      // Only trigger regeneration if a model is explicitly selected
-      if (model) {
-        chat({
-          chatId: result.newChatId,
-          model: model,
-        });
-      }
+      // Model is already persisted by branchChat; start chat without forwarding model
+      chat({
+        chatId: result.newChatId,
+      });
       navigateToChat(navigate, result.newChatId);
     }
   };
 
-  const handleRegenerate = (input: MessageWithBranchInfo, model?: string) => {
+  const handleRegenerate = async (
+    input: MessageWithBranchInfo,
+    model?: string
+  ) => {
     navigateBranch?.(input.depth, input.totalBranches);
-    regenerate({
+    // If the model is provided, update the chat with the new model or
+    if (model) {
+      await updateChatMutation({
+        chatId: input.message.chatId!,
+        updates: { model },
+      });
+    }
+    await regenerate({
       messageId: input.message._id,
-      ...(model && { model }),
     });
   };
 

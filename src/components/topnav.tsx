@@ -7,8 +7,12 @@ import {
   sidebarOpenAtom,
   userAtom,
 } from "@/store/chatStore";
-import { PanelRightCloseIcon, PlusIcon, Settings2Icon } from "lucide-react";
-import { PanelRightOpenIcon } from "lucide-react";
+import {
+  PanelRightCloseIcon,
+  PlusIcon,
+  PanelRightOpenIcon,
+  Settings2Icon,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
@@ -22,6 +26,7 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { GearIcon } from "@radix-ui/react-icons";
 
 export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
@@ -60,7 +65,11 @@ export function TopNav() {
   useEffect(() => {
     if (!isOnChatRoute) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "i" && (event.metaKey || event.ctrlKey)) {
+      if (
+        !event.repeat &&
+        event.key === "i" &&
+        (event.metaKey || event.ctrlKey)
+      ) {
         event.preventDefault();
         setResizePanelOpen((open) => {
           if (!open) setSelectedArtifact(undefined);
@@ -74,16 +83,17 @@ export function TopNav() {
 
   return (
     <div
-      className={`fixed right-0 py-2 flex items-center w-full bg-transparent justify-between pointer-events-none z-50 px-1.5 ${isSettingsRoute ? "hidden" : ""}`}
+      className={`fixed right-0 py-2 flex items-center w-full bg-transparent justify-between pointer-events-none text-foreground/70 z-50 px-1.5 ${isSettingsRoute ? "hidden" : ""}`}
     >
       <div
-        className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/80 dark:border-border/40 border bg-accent/25 dark:bg-accent/35"}`}
+        className={`flex items-center gap-1 justify-center top-0 p-0.5 rounded-lg left-0 pointer-events-auto ${sidebarOpen ? "border border-transparent" : "border-border/40 border bg-accent dark:bg-primary/10 backdrop-blur-sm"}`}
       >
         <SidebarTrigger />
         <Button
           variant="ghost"
-          className={`${sidebarOpen ? "hidden" : ""} size-8`}
+          className={`${sidebarOpen ? "hidden" : ""} size-8 cursor-pointer`}
           size="icon"
+          aria-label="New chat"
           onClick={() => {
             navigate({ to: "/chat/$chatId", params: { chatId: "new" } });
           }}
@@ -92,13 +102,14 @@ export function TopNav() {
         </Button>
       </div>
       <div
-        className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "border-border/80 dark:border-border/40 border bg-accent/25 dark:bg-accent/35"} `}
+        className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "bg-accent dark:bg-primary/10 backdrop-blur-sm border-border/40 border"} `}
       >
         {isLoadingUser && (
           <div className="px-2">
             <LoadingSpinner sizeClassName="h-3 w-3" />
           </div>
         )}
+
         {!resizePanelOpen ? (
           <Button
             variant="ghost"
@@ -116,7 +127,8 @@ export function TopNav() {
           <Button
             variant="ghost"
             size="icon"
-            className={`${resizePanelOpen ? "bg-muted-foreground/30 dark:bg-accent" : "bg-transparent"} ${selectedArtifact || selectedVibzMcp ? "hidden" : ""}`}
+            className={`${selectedArtifact || selectedVibzMcp ? "hidden" : ""}`}
+            aria-label="Toggle right panel"
             onClick={() => {
               setResizePanelOpen(!resizePanelOpen);
               setSelectedArtifact(undefined);

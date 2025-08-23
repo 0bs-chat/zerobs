@@ -1,7 +1,7 @@
 "use node";
 
-import { internal } from "../_generated/api";
-import { internalAction } from "../_generated/server";
+import { api, internal } from "../_generated/api";
+import { internalAction, action } from "../_generated/server";
 import { v } from "convex/values";
 import { fly } from "../utils/flyio";
 import type { FlyApp } from "../utils/flyio";
@@ -229,5 +229,23 @@ export const getConvexDeployKey = internalAction({
       CONVEX_DEPLOYMENT_NAME: devDeploymentName,
       CONVEX_DEPLOYMENT_URL: projectRes.deploymentUrl,
     };
+  },
+});
+
+export const getMachineId = action({
+  args: {
+    mcpId: v.id("mcps"),
+    chatId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const mcp = await ctx.runQuery(api.mcps.queries.get, {
+      mcpId: args.mcpId,
+    });
+    if (mcp.perChat) {
+      const machine = await fly.getMachineByName(args.mcpId, args.chatId);
+      return machine?.id;
+    } else {
+      throw new Error("MCP is not per chat");
+    }
   },
 });

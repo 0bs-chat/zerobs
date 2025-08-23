@@ -64,7 +64,7 @@ export const UserUtilsBar = memo(
           }
         }
       },
-      [handleFileUpload, editedDocuments, onDocumentsChange],
+      [handleFileUpload, editedDocuments, onDocumentsChange]
     );
 
     const handleDrop = useCallback(
@@ -78,7 +78,7 @@ export const UserUtilsBar = memo(
           }
         }
       },
-      [handleFileUpload, editedDocuments, onDocumentsChange],
+      [handleFileUpload, editedDocuments, onDocumentsChange]
     );
 
     const handleDragOver = useCallback(
@@ -86,7 +86,7 @@ export const UserUtilsBar = memo(
         e.preventDefault();
         if (!isDragActive) setIsDragActive(true);
       },
-      [isDragActive],
+      [isDragActive]
     );
 
     const handleDragLeave = useCallback(
@@ -95,7 +95,7 @@ export const UserUtilsBar = memo(
         if (e.currentTarget.contains(e.relatedTarget as Node)) return;
         setIsDragActive(false);
       },
-      [],
+      []
     );
 
     const copyText = (() => {
@@ -104,7 +104,7 @@ export const UserUtilsBar = memo(
 
       if (Array.isArray(content)) {
         const textContent = (content as MessageContent[]).find(
-          (entry) => entry.type === "text",
+          (entry) => entry.type === "text"
         );
         return textContent?.text || "";
       }
@@ -130,7 +130,7 @@ export const UserUtilsBar = memo(
     if (isEditing) {
       return (
         <div
-          className="flex flex-row items-center gap-1 self-start"
+          className="flex flex-row items-center gap-1 self-start "
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -144,22 +144,43 @@ export const UserUtilsBar = memo(
           />
           <TooltipButton
             onClick={() => setEditing?.(null)}
-            icon={<X className="h-4 w-4" />}
+            icon={<X className="h-4 w-4 text-foreground/70" />}
             tooltip="Cancel"
           />
           <TooltipButton
             onClick={() => handleSubmit(true)}
-            icon={<Check className="h-4 w-4" />}
+            icon={<Check className="h-4 w-4 text-foreground/70" />}
             tooltip="Submit"
           />
           <TooltipButton
             onClick={() => handleSubmit(false)}
-            icon={<CheckCheck className="h-4 w-4" />}
+            icon={<CheckCheck className="h-4 w-4 text-foreground/70" />}
             tooltip="Submit and Regenerate"
+          />
+          <ActionDropdown
+            trigger={
+              <Button variant="ghost" size="icon">
+                <GitBranch className="h-4 w-4 text-foreground/70" />
+              </Button>
+            }
+            actionLabel={
+              <>
+                <GitBranch className="h-4 w-4 mr-2" />
+                Branch from edited
+              </>
+            }
+            onAction={() => handleBranch(input, undefined, {
+              text: editedText,
+              documents: editedDocuments,
+            })}
+            onActionWithModel={(model) => handleBranch(input, model, {
+              text: editedText,
+              documents: editedDocuments,
+            })}
           />
           <TooltipButton
             onClick={() => fileInputRef.current?.click()}
-            icon={<PaperclipIcon className="h-4 w-4" />}
+            icon={<PaperclipIcon className="h-4 w-4 text-foreground/70" />}
             tooltip="Attach files"
           />
         </div>
@@ -167,7 +188,7 @@ export const UserUtilsBar = memo(
     }
 
     return (
-      <div className={`flex flex-row items-center gap-1 self-start`}>
+      <div className={`flex flex-row items-center gap-1 self-start opacity-70`}>
         <BranchNavigation item={input} navigateBranch={navigateBranch!} />
         {setEditing && (
           <TooltipButton
@@ -210,7 +231,7 @@ export const UserUtilsBar = memo(
         {copyText && <CopyButton text={copyText} />}
       </div>
     );
-  },
+  }
 );
 
 UserUtilsBar.displayName = "UserUtilsBar";

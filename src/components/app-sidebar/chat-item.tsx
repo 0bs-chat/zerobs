@@ -86,10 +86,18 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
                 ref={ref}
                 className={cn(
                   "relative flex w-full items-center isolate justify-between overflow-hidden rounded-md",
-                  isSelected && "bg-secondary/50",
+                  isSelected && "bg-secondary/50"
                 )}
               >
-                <span className="truncate">{chat.name}</span>
+                <span
+                  className={cn(
+                    "truncate",
+                    isSelected ? "text-foreground" : "text-foreground/75"
+                  )}
+                  title={chat.name}
+                >
+                  {chat.name}
+                </span>
                 <div className="absolute inset-y-0 right-0 z-10 flex items-center justify-end gap-2 bg-gradient-to-l from-background via-background/80 to-transparent pl-8 pr-1 text-muted-foreground transition-transform duration-200 group-hover/item:translate-x-0 translate-x-full">
                   {isPinned ? (
                     <PinOffIcon
@@ -160,5 +168,5 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
         </Dialog>
       </>
     );
-  },
+  }
 );

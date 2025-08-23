@@ -10,7 +10,7 @@ export const prepareChat = internalMutation({
   }),
   handler: async (
     ctx,
-    args,
+    args
   ): Promise<
     | {
         chat: Doc<"chats">;
