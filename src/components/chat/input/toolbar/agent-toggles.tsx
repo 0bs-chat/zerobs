@@ -81,7 +81,7 @@ export function AgentToggles() {
   };
 
   const selectedToggles = TOGGLES.filter(
-    (t) => chat[t.key as keyof typeof chat],
+    (t) => chat[t.key as keyof typeof chat]
   );
 
   return (
@@ -92,12 +92,12 @@ export function AgentToggles() {
             variant="outline"
             size="icon"
             title="Toggles"
-            className="cursor-pointer"
+            className="cursor-pointer border-none text-foreground/80 hover:text-foreground"
           >
             <BotIcon className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent align="start" className="border-border/70">
           <div className="px-2 pt-2 pb-1 text-xs text-muted-foreground">
             Agent Settings
           </div>
@@ -108,7 +108,7 @@ export function AgentToggles() {
                 handleToggle(toggle.key, !chat[toggle.key as keyof typeof chat])
               }
               className={[
-                "flex items-center justify-between pr-2 cursor-pointer",
+                "flex items-center justify-between pr-2 cursor-pointer border-none",
                 toggle.key === "orchestratorMode"
                   ? "bg-gradient-to-r from-input to-card hover:bg-gradient-to-r hover:from-input/80 hover:to-card/80"
                   : "",
@@ -151,7 +151,7 @@ export function AgentToggles() {
           key={toggle.key}
           variant="outline"
           size="icon"
-          className="transition-all duration-300 relative group"
+          className="transition-all duration-300 relative group border-none text-foreground/80 hover:text-foreground"
           onClick={() => handleToggle(toggle.key, false)}
           title={toggle.tooltip || toggle.label}
         >
@@ -164,7 +164,7 @@ export function AgentToggles() {
           >
             {toggle.icon}
           </motion.span>
-          <span className="absolute inset-0 flex items-center justify-center hidden group-hover:flex">
+          <span className="absolute inset-0  items-center justify-center hidden group-hover:flex">
             <XIcon className="w-4 h-4 text-destructive" />
           </span>
         </Button>

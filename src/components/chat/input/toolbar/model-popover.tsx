@@ -46,7 +46,7 @@ export function ModelPopover({
     mutationFn: useConvexMutation(api.chats.mutations.update),
   });
   const selectedModelConfig = models.find(
-    (m) => m.model_name === selectedModel,
+    (m) => m.model_name === selectedModel
   );
   const [searchModel, setSearchModel] = useState("");
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -72,15 +72,15 @@ export function ModelPopover({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="justify-between gap-2 cursor-pointer"
+          className="justify-between gap-2 cursor-pointer text-foreground/70 hover:text-foreground border-none"
           onClick={() => setPopoverOpen(!popoverOpen)}
         >
           {selectedModelConfig?.label || selectedModel}
-          <ChevronDownIcon className="h-4 w-4 opacity-50" />
+          <ChevronDownIcon className="h-4 w-4 opacity-70" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-96 h-96 overflow-y-auto p-0 scrollbar-none relative bg-background"
+        className="w-96 h-96 overflow-y-auto p-0 scrollbar-none relative bg-background border-border/70"
         align="end"
       >
         <SearchInput
@@ -92,9 +92,7 @@ export function ModelPopover({
           {models
             .filter((model) => !model.hidden)
             .filter((model) =>
-              model.model_name
-                .toLowerCase()
-                .includes(searchModel.toLowerCase()),
+              model.model_name.toLowerCase().includes(searchModel.toLowerCase())
             )
             .map((model) => (
               <div
@@ -102,14 +100,14 @@ export function ModelPopover({
                 className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60`}
                 onClick={() => handleModelSelect(model.model_name)}
               >
-                <div className="text-foreground flex gap-2 items-center justify-center ">
+                <div className="text-foreground/80 flex gap-2 items-center justify-center ">
                   <img
                     src={model.image}
                     aria-label={`${model.label} model icon`}
                     alt={model.label}
-                    className={`h-4 w-4 ${
+                    className={`h-4 w-4 opacity-80 ${
                       ["openai", "x-ai", "openrouter", "anthropic"].includes(
-                        model.owner,
+                        model.owner
                       )
                         ? "dark:invert"
                         : ""

@@ -25,7 +25,7 @@ const Icons = {
   OpenAI: () => (
     <div className="w-6 h-6 rounded-sm flex items-center justify-center">
       <img
-        src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fopenai.com%2F"
+        src="https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u"
         alt="OpenAI"
         className="w-4 h-4 dark:invert"
       />
@@ -34,7 +34,7 @@ const Icons = {
   Google: () => (
     <div className="w-6 h-6 rounded-sm flex items-center justify-center">
       <img
-        src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fgoogle.com%2F"
+        src="https://ypazyw0thq.ufs.sh/f/38t7p527clgqoM7BgG8ankEhq9Rw0ur6xpgAG3tTCLNQ8eP5"
         alt="Google"
         className="w-4 h-4"
       />
@@ -52,9 +52,9 @@ const Icons = {
   OpenRouter: () => (
     <div className="w-6 h-6 rounded-sm flex items-center justify-center">
       <img
-        src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Fopenrouter.ai%2F"
+        src="https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf"
         alt="OpenRouter"
-        className="w-4 h-4"
+        className="w-4 h-4 dark:invert"
       />
     </div>
   ),
@@ -248,7 +248,7 @@ function RouteComponent() {
       enabled,
     });
     toast.success(
-      `${config.title} ${enabled ? "enabled" : "disabled"} successfully`,
+      `${config.title} ${enabled ? "enabled" : "disabled"} successfully`
     );
   };
 

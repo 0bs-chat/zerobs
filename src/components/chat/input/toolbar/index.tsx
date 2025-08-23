@@ -63,7 +63,7 @@ export const ToolBar = () => {
   const selectedModel = chat.model;
   const reasoningEffort = chat.reasoningEffort;
   const selectedModelConfig = models.find(
-    (m) => m.model_name === selectedModel,
+    (m) => m.model_name === selectedModel
   );
   const showReasoningEffort = selectedModelConfig?.isThinking ?? false;
   const router = useRouter();
@@ -76,7 +76,7 @@ export const ToolBar = () => {
   const { data: project } = useQuery({
     ...convexQuery(
       api.projects.queries.get,
-      chat.projectId ? { projectId: chat.projectId } : "skip",
+      chat.projectId ? { projectId: chat.projectId } : "skip"
     ),
   });
 
@@ -120,7 +120,7 @@ export const ToolBar = () => {
       <div className="flex flex-row items-center gap-1">
         <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" className="border-border/70">
               <PlusIcon className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -187,7 +187,7 @@ export const ToolBar = () => {
               }
             }}
           >
-            <SelectTrigger className="bg-background border border-border">
+            <SelectTrigger className="bg-background border border-none text-foreground/70 hover:text-foreground">
               <BrainIcon className="h-4 w-4" />
               {reasoningEffort}
             </SelectTrigger>
@@ -219,9 +219,15 @@ export const ToolBar = () => {
             }}
           >
             {["pending", "streaming"].includes(streamStatus ?? "") ? (
-              <StopButtonIcon className="h-6 w-6 -translate-y-0.5 -translate-x-0.5" />
+              <StopButtonIcon className="h-6 w-6 cursor-pointer" />
             ) : (
-              <ArrowUp className="h-4 w-4" />
+              <Button
+                variant="default"
+                size="icon"
+                className="flex items-center justify-center bg-primary/10 hover:bg-primary/70 cursor-pointer"
+              >
+                <ArrowUp className="h-10 w-10" />
+              </Button>
             )}
           </Button>
         </motion.div>

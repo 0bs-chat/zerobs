@@ -60,7 +60,7 @@ const EditingDocumentList = ({
     (documentId: Id<"documents">) => {
       setDocumentDialogOpen(documentId);
     },
-    [setDocumentDialogOpen],
+    [setDocumentDialogOpen]
   );
 
   if (!documents?.length) return null;
@@ -74,22 +74,24 @@ const EditingDocumentList = ({
         {documents.map((doc) => {
           const { icon: Icon, className: IconClassName } = getDocTagInfo(
             doc,
-            modalities,
+            modalities
           );
 
           return (
             <Badge
               key={doc._id}
-              variant="secondary"
-              className="flex items-center gap-1.5 pr-1 cursor-pointer"
+              variant="outline"
+              className="flex items-center gap-1.5 py-1 pr-1 cursor-pointer rounded-lg bg-secondary/30 hover:bg-secondary/50 border-secondary text-secondary-foreground hover:text-secondary-foreground transition-all duration-200 shadow-xs hover:shadow-sm"
               onClick={() => handlePreview(doc._id)}
             >
-              <Icon className={`${IconClassName} h-3 w-3`} />
-              <span className="max-w-32 truncate">{doc.name}</span>
+              <Icon className={`${IconClassName} h-3.5 w-3.5 opacity-70`} />
+              <span className="max-w-32 truncate text-sm font-medium text-secondary-foreground/90">
+                {doc.name}
+              </span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-4 w-4 p-0.5 hover:bg-muted-foreground/20"
+                className="h-4 w-4 p-0.5 text-secondary-foreground/60 hover:text-destructive hover:bg-destructive/15 transition-colors cursor-pointer rounded-md"
                 onClick={(e) => {
                   e.stopPropagation();
                   onRemove(doc._id);
@@ -115,11 +117,11 @@ export const UserMessage = memo(
   }) => {
     // State management moved from UserMessageGroup
     const [editingMessageId, setEditingMessageId] = useState<string | null>(
-      null,
+      null
     );
     const [editedText, setEditedText] = useState("");
     const [editedDocuments, setEditedDocuments] = useState<Id<"documents">[]>(
-      [],
+      []
     );
 
     const isEditing = editingMessageId === item.message._id;
@@ -127,7 +129,7 @@ export const UserMessage = memo(
     useEffect(() => {
       if (editingMessageId) {
         const messageToEdit = groupedMessages?.find(
-          (g) => g.input.message._id === editingMessageId,
+          (g) => g.input.message._id === editingMessageId
         );
         if (messageToEdit) {
           const content = messageToEdit.input.message.message.content;
@@ -165,7 +167,7 @@ export const UserMessage = memo(
       (documents: Id<"documents">[]) => {
         setEditedDocuments(documents);
       },
-      [],
+      []
     );
 
     // Memoize the content rendering to avoid unnecessary calculations
@@ -193,35 +195,39 @@ export const UserMessage = memo(
     }, [content, item.message._id, setDocumentDialogOpen]);
 
     return (
-      <div className="group flex flex-col gap-1 max-w-[80%] self-end">
-        {isEditing ? (
-          <div className="bg-card max-w-full self-end rounded-md shadow-sm w-full p-2 border-2 border-transparent">
-            <AutosizeTextarea
-              value={editedText}
-              onChange={(e) => setEditedText(e.target.value)}
-              minHeight={32}
-              maxHeight={120}
-              className="bg-transparent resize-none border-none min-w-96 max-w-full ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 outline-none focus-visible:outline-none text-base"
-              autoFocus
-              placeholder="Edit your message..."
-            />
+      <div className="group flex flex-col gap-1 w-full">
+        <div
+          className={`${isEditing ? "w-[80%]" : "max-w-[80%]"} self-end transition-all duration-300`}
+        >
+          {isEditing ? (
+            <div className="bg-card w-full rounded-md shadow-sm p-2 border-2 border-transparent">
+              <AutosizeTextarea
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                minHeight={32}
+                maxHeight={120}
+                className="bg-transparent resize-none border-none w-full ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground/80 outline-none focus-visible:outline-none text-base"
+                autoFocus
+                placeholder="Edit your message..."
+              />
 
-            {/* File management section */}
-            <div className="flex flex-col gap-2 ">
-              {editedDocuments && editedDocuments.length > 0 && (
-                <EditingDocumentList
-                  documentIds={editedDocuments}
-                  onRemove={handleRemoveDocument}
-                />
-              )}
+              {/* File management section */}
+              <div className="flex flex-col gap-2 ">
+                {editedDocuments && editedDocuments.length > 0 && (
+                  <EditingDocumentList
+                    documentIds={editedDocuments}
+                    onRemove={handleRemoveDocument}
+                  />
+                )}
+              </div>
             </div>
-          </div>
-        ) : (
-          <ScrollArea className="bg-card flex flex-col max-h-96 max-w-full self-end px-4 py-3 rounded-md shadow-sm">
-            {renderedContent}
-          </ScrollArea>
-        )}
-        <div className="opacity-0 flex gap-2 group-hover:opacity-100 transition-opacity">
+          ) : (
+            <ScrollArea className="bg-card flex flex-col max-h-96 max-w-full px-4 py-3 rounded-md shadow-sm">
+              {renderedContent}
+            </ScrollArea>
+          )}
+        </div>
+        <div className="opacity-0 flex gap-2 group-hover:opacity-100 transition-opacity self-end">
           <UserUtilsBar
             input={item}
             isEditing={isEditing}
@@ -234,7 +240,7 @@ export const UserMessage = memo(
         </div>
       </div>
     );
-  },
+  }
 );
 
 UserMessage.displayName = "UserMessage";
