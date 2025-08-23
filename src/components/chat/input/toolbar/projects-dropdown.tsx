@@ -9,6 +9,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
 import { FoldersIcon, PlusIcon } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 import {
   createProjectDialogOpenAtom,
   newChatAtom,
@@ -27,7 +29,12 @@ export const ProjectsDropdown = ({
   onCloseDropdown,
 }: ProjectsDropdownProps) => {
   const chatId = useAtomValue(chatIdAtom);
-  const { data: projects, isFetching: isFetchingProjects } = useQuery({
+  const {
+    data: projects,
+    isLoading: isLoadingProjects,
+    isError: isProjectsError,
+    error: projectsError,
+  } = useQuery({
     ...convexQuery(api.projects.queries.getAll, {
       paginationOpts: { numItems: 3, cursor: null },
     }),
@@ -49,39 +56,57 @@ export const ProjectsDropdown = ({
         </div>
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent className="ml-2">
-        {projects?.page.slice(0, 3).map((project) => (
-          <DropdownMenuItem
-            key={project._id}
-            onSelect={() => {
-              if (chatId === "new") {
-                setNewChat((prev) => ({ ...prev, projectId: project._id }));
-              } else {
-                updateChatMutation({
-                  chatId,
-                  updates: {
-                    projectId: project._id,
-                  },
-                });
-              }
-              onCloseDropdown();
-              setResizePanelOpen(true);
-              setSelectedPanelTab("projects");
-            }}
-          >
-            {isFetchingProjects ? <div>Fetching...</div> : project.name}
-          </DropdownMenuItem>
-        ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={(e) => {
-            e.preventDefault();
-            onCloseDropdown();
-            setProjectDialogOpen(true);
-          }}
-        >
-          <PlusIcon className="w-4 h-4" />
-          Add New Project
-        </DropdownMenuItem>
+        {isProjectsError ? (
+          <ErrorState error={projectsError} />
+        ) : (
+          <>
+            {isLoadingProjects ? (
+              <DropdownMenuItem>
+                <LoadingSpinner
+                  className="h-4 w-4"
+                  label="Loading projects..."
+                />
+              </DropdownMenuItem>
+            ) : (
+              projects?.page?.slice(0, 3).map((project: any) => (
+                <DropdownMenuItem
+                  key={project._id}
+                  onSelect={() => {
+                    if (chatId === "new") {
+                      setNewChat((prev) => ({
+                        ...prev,
+                        projectId: project._id,
+                      }));
+                    } else {
+                      updateChatMutation({
+                        chatId,
+                        updates: {
+                          projectId: project._id,
+                        },
+                      });
+                    }
+                    onCloseDropdown();
+                    setResizePanelOpen(true);
+                    setSelectedPanelTab("projects");
+                  }}
+                >
+                  {project.name}
+                </DropdownMenuItem>
+              ))
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                onCloseDropdown();
+                setProjectDialogOpen(true);
+              }}
+            >
+              <PlusIcon className="w-4 h-4" />
+              Add New Project
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuSubContent>
     </DropdownMenuSub>
   );

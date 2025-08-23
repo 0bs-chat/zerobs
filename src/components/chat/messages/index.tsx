@@ -1,4 +1,5 @@
 import { useMessages } from "../../../hooks/chats/use-messages";
+import { ErrorState } from "@/components/ui/error-state";
 import { useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessagesList } from "./messages";
@@ -7,10 +8,12 @@ import { TriangleAlertIcon } from "lucide-react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import { streamStatusAtom, userLoadableAtom } from "@/store/chatStore";
 import { useAtomValue } from "jotai";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const userLoadable = useAtomValue(userLoadableAtom);
-  const { isLoading, isEmpty } = useMessages({ chatId });
+  const { isLoading, isEmpty, isError, error, isStreamError, streamError } =
+    useMessages({ chatId });
 
   const streamStatus = useAtomValue(streamStatusAtom);
 
@@ -38,7 +41,37 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
     if (isLoading) {
       return (
         <div className="flex items-center justify-center h-full">
+          <LoadingSpinner />
           <div className="text-muted-foreground">Loading messages...</div>
+        </div>
+      );
+    }
+
+    if (isError || error) {
+      return (
+        <div className="flex items-center justify-center w-full h-full">
+          <ErrorState
+            className="max-w-4xl"
+            title="Failed to load messages"
+            error={error}
+            description="Please try again later."
+            density="comfy"
+          />
+        </div>
+      );
+    }
+
+    if (isStreamError || streamError) {
+      return (
+        <div className="flex items-center justify-center w-full h-full">
+          <ErrorState
+            className="max-w-4xl"
+            density="comfy"
+            description="Unable to load messages, this might be due to either a network issue or a server error."
+            title="Error loading messages"
+            error={streamError}
+            showIcon={false}
+          />
         </div>
       );
     }

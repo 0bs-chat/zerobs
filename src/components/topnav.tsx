@@ -7,15 +7,25 @@ import {
   sidebarOpenAtom,
   userAtom,
 } from "@/store/chatStore";
-import { PanelRightCloseIcon, PlusIcon, PanelRightOpenIcon } from "lucide-react";
+import {
+  PanelRightCloseIcon,
+  PlusIcon,
+  PanelRightOpenIcon,
+  Settings2Icon,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
-import { GearIcon } from "@radix-ui/react-icons";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
@@ -27,9 +37,17 @@ export function TopNav() {
   const setUser = useSetAtom(userAtom);
   const location = useLocation();
 
-  const { data: user } = useQuery({
+  const {
+    data: user,
+    isError: isErrorUser,
+    isLoading: isLoadingUser,
+  } = useQuery({
     ...convexQuery(api.auth.getUser, {}),
   });
+
+  if (isErrorUser) {
+    return <Navigate to="/auth" />;
+  }
 
   useEffect(() => {
     if (user) {
@@ -42,7 +60,7 @@ export function TopNav() {
   const isOnChatRoute = !!params.chatId;
   const isSettingsRoute = location.pathname.startsWith("/settings");
 
-  // Global shortcut for toggling resizable panel (Ctrl/Cmd+I)
+  // Minimal global shortcut for toggling resizable panel (Ctrl/Cmd+I)
   useEffect(() => {
     if (!isOnChatRoute) return;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -58,7 +76,6 @@ export function TopNav() {
         });
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOnChatRoute, setResizePanelOpen, setSelectedArtifact]);
@@ -86,22 +103,25 @@ export function TopNav() {
       <div
         className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "bg-accent dark:bg-primary/10 backdrop-blur-sm border-border/40 border"} `}
       >
-        {!resizePanelOpen && (
-          <>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="cursor-pointer"
-              aria-label="Open settings"
-              onClick={() => {
-                navigate({ to: "/settings/profile" });
-              }}
-            >
-              <GearIcon className="h-6 w-6" />
-            </Button>
-            <ModeToggle />
-          </>
+        {isLoadingUser && (
+          <div className="px-2">
+            <LoadingSpinner sizeClassName="h-3 w-3" />
+          </div>
         )}
+
+        {!resizePanelOpen ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="cursor-pointer"
+            onClick={() => {
+              navigate({ to: "/settings/profile" });
+            }}
+          >
+            <Settings2Icon className="h-6 w-6" />
+          </Button>
+        ) : null}
+        {!resizePanelOpen ? <ModeToggle /> : null}
         {isOnChatRoute && (
           <Button
             variant="ghost"

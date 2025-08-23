@@ -113,9 +113,9 @@ interface AccordionTriggerProps {
 }
 
 function AccordionTrigger({
+  showIcon = true,
   className,
   children,
-  showIcon = true,
   onClick,
   ...props
 }: AccordionTriggerProps) {
