@@ -21,13 +21,13 @@ export function useStream(chatId: Id<"chats"> | "new") {
   const { data: stream } = useQuery({
     ...convexQuery(
       api.streams.queries.get,
-      chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip",
+      chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip"
     ),
   });
 
   const [groupedChunks, setGroupedChunks] = useState<ChunkGroup[]>([]);
   const [lastSeenTime, setLastSeenTime] = useState<number | undefined>(
-    undefined,
+    undefined
   );
 
   // Reset state when chat or stream changes
@@ -56,12 +56,12 @@ export function useStream(chatId: Id<"chats"> | "new") {
           .filter(
             (chunkDoc: any) =>
               lastSeenTime === undefined ||
-              chunkDoc._creationTime > lastSeenTime,
+              chunkDoc._creationTime > lastSeenTime
           )
           .flatMap((chunkDoc: any) =>
             chunkDoc.chunks.map(
-              (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup,
-            ),
+              (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup
+            )
           );
         if (newEvents.length > 0) {
           setGroupedChunks((prev) => {
@@ -81,8 +81,54 @@ export function useStream(chatId: Id<"chats"> | "new") {
                   newGroups.push(lastGroup);
                 }
               } else {
-                lastGroup = chunk;
-                newGroups.push(chunk);
+                const toolChunk = chunk as ToolChunkGroup;
+                // Try to merge with an existing group for the same toolCallId (even if it is already marked complete)
+                let mergedIndex = -1;
+                for (let i = newGroups.length - 1; i >= 0; i--) {
+                  const g = newGroups[i];
+                  if (
+                    g.type === "tool" &&
+                    (g as ToolChunkGroup).toolCallId === toolChunk.toolCallId
+                  ) {
+                    mergedIndex = i;
+                    break;
+                  }
+                }
+
+                if (mergedIndex >= 0) {
+                  const existing = newGroups[mergedIndex] as ToolChunkGroup;
+                  // Append incremental output if provided
+                  if (
+                    typeof toolChunk.output === "string" &&
+                    toolChunk.output
+                  ) {
+                    const existingOutput =
+                      typeof existing.output === "string"
+                        ? existing.output
+                        : "";
+                    existing.output = existingOutput
+                      ? `${existingOutput}\n${toolChunk.output}`
+                      : toolChunk.output;
+                  } else if (
+                    toolChunk.output !== undefined &&
+                    toolChunk.output !== null
+                  ) {
+                    existing.output = toolChunk.output as any;
+                  }
+                  // Update input if present
+                  if (toolChunk.input !== undefined) {
+                    existing.input = toolChunk.input as any;
+                  }
+                  // Mark complete if any chunk indicates completion
+                  if (toolChunk.isComplete) {
+                    existing.isComplete = true;
+                  }
+                  lastGroup = existing;
+                } else {
+                  // No existing group, create a new one
+                  lastGroup = toolChunk;
+                  newGroups.push(toolChunk);
+                }
               }
             }
             return newGroups;
@@ -101,9 +147,16 @@ export function useStream(chatId: Id<"chats"> | "new") {
     };
   }, [stream?.status, stream?.chatId, lastSeenTime]);
 
-  // Clear chunks when stream is not active
+  // Clear chunks when the stream is explicitly reset or a new chat is loaded.
+  // Do NOT clear on "done" so that the UI keeps the last streamed output
+  // visible until the persisted messages arrive.
   useEffect(() => {
-    if (!stream || stream.status !== "streaming") {
+    if (!stream) {
+      setGroupedChunks([]);
+      return;
+    }
+
+    if (stream.status === "cancelled" || stream.status === "error") {
       setGroupedChunks([]);
     }
   }, [stream?.status]);
@@ -114,7 +167,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
     const completedIds = new Set(
       groupedChunks
         .filter((c) => c.type === "tool" && c.isComplete)
-        .map((c) => (c as ToolChunkGroup).toolCallId),
+        .map((c) => (c as ToolChunkGroup).toolCallId)
     );
     return groupedChunks
       .map((chunk) => {
@@ -133,7 +186,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
               name: chunk.toolName,
               tool_call_id: chunk.toolCallId,
               additional_kwargs: {
-                input: JSON.parse(JSON.stringify(chunk.input)),
+                input: chunk.input ?? null,
                 is_complete: true,
               },
             });
@@ -142,9 +195,12 @@ export function useStream(chatId: Id<"chats"> | "new") {
             return new LangChainToolMessage({
               name: chunk.toolName,
               tool_call_id: chunk.toolCallId,
-              content: "",
+              content:
+                typeof chunk.output === "string"
+                  ? chunk.output
+                  : JSON.stringify(chunk.output ?? ""),
               additional_kwargs: {
-                input: JSON.parse(JSON.stringify(chunk.input)),
+                input: chunk.input ?? null,
                 is_complete: false,
               },
             });

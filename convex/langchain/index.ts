@@ -20,6 +20,63 @@ import { getThreadFromMessage } from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
 
+// Helper: Append a ToolChunkGroup JSON string to the provided buffer
+function appendToolChunk(
+  buffer: string[],
+  options: {
+    toolName: string;
+    isComplete: boolean;
+    toolCallId: string;
+    input?: unknown;
+    output?: unknown;
+  }
+): void {
+  buffer.push(
+    JSON.stringify({
+      type: "tool",
+      toolName: options.toolName,
+      input: options.input,
+      output: options.output,
+      isComplete: options.isComplete,
+      toolCallId: options.toolCallId,
+    } as ToolChunkGroup)
+  );
+}
+
+// Helper: Extract completed step names from a LangGraph checkpoint
+function extractCompletedStepsFromCheckpoint(
+  checkpoint: typeof GraphState.State | null | undefined
+): string[] {
+  const completedSteps: string[] = [];
+
+  const pastSteps = (checkpoint as any)?.pastSteps as
+    | Array<[string, unknown[]]>
+    | undefined;
+  if (pastSteps && pastSteps.length > 0) {
+    completedSteps.push(...pastSteps.map((ps) => ps[0]));
+  }
+
+  const plan = (checkpoint as any)?.plan as
+    | Array<
+        | {
+            type: "parallel";
+            data: Array<{ step: string; context: string }>;
+          }
+        | { type: "single"; data: { step: string; context: string } }
+      >
+    | undefined;
+  if (plan && plan.length > 0) {
+    const first = plan[0];
+    if (first.type === "parallel") {
+      completedSteps.push(...first.data.map((s) => s.step));
+    } else {
+      completedSteps.push(first.data.step);
+    }
+  }
+
+  return completedSteps;
+}
+
 export const generateTitle = internalAction({
   args: v.object({
     chat: Chats.doc,
@@ -90,6 +147,7 @@ export const chat = action({
     let buffer: string[] = [];
     let checkpoint: typeof GraphState.State | null = null;
     let finished = false;
+    let pendingCheckpointRefresh = true; // Track when we actually need a checkpoint refresh
 
     const flushAndStream = async (): Promise<
       typeof GraphState.State | null
@@ -99,6 +157,13 @@ export const chat = action({
       const flusher = async () => {
         while (!finished) {
           if (buffer.length > 0) {
+            if (pendingCheckpointRefresh) {
+              // Fetch checkpoint lazily only when we are about to flush
+              localCheckpoint = (
+                await agent.getState({ configurable: { thread_id: chatId } })
+              ).values as typeof GraphState.State;
+              pendingCheckpointRefresh = false;
+            }
             const chunks = buffer;
             buffer = [];
             streamDoc = await ctx.runMutation(
@@ -137,13 +202,13 @@ export const chat = action({
             if (abort.signal.aborted) {
               return;
             }
-            localCheckpoint = (
-              await agent.getState({
-                configurable: { thread_id: chatId },
-              })
-            ).values as typeof GraphState.State;
 
-            const allowedNodes = ["baseAgent", "simple", "plannerAgent"];
+            const allowedNodes = [
+              "baseAgent",
+              "simple",
+              "plannerAgent",
+              "replanner",
+            ];
             if (
               allowedNodes.some((node) =>
                 evt.metadata?.checkpoint_ns?.startsWith(node)
@@ -159,17 +224,21 @@ export const chat = action({
                   } as AIChunkGroup)
                 );
               } else if (evt.event === "on_tool_start") {
-                buffer.push(
-                  JSON.stringify({
-                    type: "tool",
-                    toolName: evt.name,
-                    input: evt.data?.input,
-                    isComplete: false,
-                    toolCallId: evt.run_id,
-                  } as ToolChunkGroup)
-                );
+                appendToolChunk(buffer, {
+                  toolName: evt.name,
+                  input: evt.data?.input,
+                  isComplete: false,
+                  toolCallId: evt.run_id,
+                });
+              } else if (evt.event === "on_tool_stream") {
+                appendToolChunk(buffer, {
+                  toolName: evt.name,
+                  output: evt.data?.chunk,
+                  isComplete: false,
+                  toolCallId: evt.run_id,
+                });
               } else if (evt.event === "on_tool_end") {
-                let output = evt.data?.output.content;
+                let output = evt.data?.output?.content ?? evt.data?.output;
 
                 if (Array.isArray(output)) {
                   output = await Promise.all(
@@ -190,17 +259,104 @@ export const chat = action({
                     })
                   );
                 }
+                appendToolChunk(buffer, {
+                  toolName: evt.name,
+                  input: evt.data?.input,
+                  output,
+                  isComplete: true,
+                  toolCallId: evt.run_id,
+                });
+                // Mark that the checkpoint should be refreshed soon
+                pendingCheckpointRefresh = true;
+              } else if (evt.event === "on_tool_error") {
+                // Gracefully surface tool errors to the client and mark the tool call as complete
+                const errorOutput =
+                  (evt.data as any)?.error?.message ??
+                  (evt.data as any)?.error ??
+                  "Tool execution failed";
+                appendToolChunk(buffer, {
+                  toolName: evt.name,
+                  input: (evt.data as any)?.input,
+                  output: `Error: ${errorOutput}`,
+                  isComplete: true,
+                  toolCallId: evt.run_id,
+                });
+                // Force checkpoint refresh so calling step is marked done/errored
+                pendingCheckpointRefresh = true;
+              } else if (
+                evt.event === "on_chat_model_end" ||
+                evt.event === "on_chain_end"
+              ) {
+                // Model or chain finished a unit of work; refresh on next flush
+                pendingCheckpointRefresh = true;
+              } else if (evt.event === "on_custom_event") {
+                const raw: any = evt;
+                const data = raw?.data;
+                if (!data || typeof data !== "object") {
+                  console.warn(
+                    "[stream] Ignoring custom event without object data",
+                    {
+                      event: raw?.event,
+                      name: raw?.name,
+                    }
+                  );
+                  return;
+                }
 
-                buffer.push(
-                  JSON.stringify({
-                    type: "tool",
-                    toolName: evt.name,
-                    input: evt.data?.input,
-                    output,
-                    isComplete: true,
-                    toolCallId: evt.run_id,
-                  } as ToolChunkGroup)
-                );
+                // Prefer the framework-provided event name
+                const eventName =
+                  typeof raw?.name === "string"
+                    ? raw.name
+                    : typeof (data as any).event === "string"
+                      ? (data as any).event
+                      : typeof (data as any).name === "string"
+                        ? (data as any).name
+                        : undefined;
+
+                if (!eventName) {
+                  console.warn(
+                    "[stream] Ignoring custom event with missing name",
+                    {
+                      name: raw?.name,
+                    }
+                  );
+                  return;
+                }
+
+                // For dispatchCustomEvent, the payload is in evt.data
+                const payload = data;
+                const chunk =
+                  typeof (payload as any).chunk === "string"
+                    ? (payload as any).chunk
+                    : undefined;
+                // Ignore `complete` flag on tool_progress to prevent duplicate completion chunks; let on_tool_end handle completion.
+                const isComplete =
+                  eventName === "tool_progress"
+                    ? false
+                    : payload.complete === true;
+
+                if (
+                  eventName === "tool_stream" ||
+                  eventName === "tool_progress"
+                ) {
+                  if (!chunk) {
+                    console.warn(
+                      "[stream] tool_progress custom event missing chunk; skipping"
+                    );
+                    return;
+                  }
+                  appendToolChunk(buffer, {
+                    toolName:
+                      typeof raw?.name === "string" ? raw.name : "custom_event",
+                    output: chunk,
+                    isComplete,
+                    toolCallId: raw.run_id,
+                  });
+                  if (isComplete) {
+                    // Custom tool stream finished; refresh on next flush
+                    pendingCheckpointRefresh = true;
+                  }
+                }
               }
             }
           }
@@ -210,6 +366,23 @@ export const chat = action({
       };
 
       await Promise.all([flusher(), streamer()]);
+      // Final flush in case there are any buffered chunks left
+      if (buffer.length > 0) {
+        // Always refresh checkpoint before final flush to ensure accuracy
+        localCheckpoint = (
+          await agent.getState({ configurable: { thread_id: chatId } })
+        ).values as typeof GraphState.State;
+        pendingCheckpointRefresh = false;
+        const chunks = buffer;
+        buffer = [];
+        const completedSteps =
+          extractCompletedStepsFromCheckpoint(localCheckpoint);
+        await ctx.runMutation(internal.streams.mutations.flush, {
+          chatId,
+          chunks,
+          completedSteps,
+        });
+      }
       return localCheckpoint;
     };
 

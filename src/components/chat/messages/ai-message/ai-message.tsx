@@ -27,14 +27,18 @@ export const AiMessageContent = memo(
       if (type !== "ai") {
         return [];
       }
-      const parsed = parseContent(content as string);
+      if (Array.isArray(content)) {
+        return [];
+      }
+      // Ensure content is a string before parsing
+      const contentString =
+        typeof content === "string" ? content : String(content);
+      const parsed = parseContent(contentString);
       return parsed;
     }, [content, type]);
 
     // Memoize the content rendering to avoid unnecessary re-renders
     const renderedContent = useMemo(() => {
-      if (type !== "ai") return content as string;
-
       return parsedContent.map((part: ContentPart, index: number) => {
         if (part.type === "text") {
           // Only render non-empty text content

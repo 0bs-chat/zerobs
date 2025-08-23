@@ -1,6 +1,12 @@
 "use node";
 
 import { MultiServerMCPClient, type Connection } from "@langchain/mcp-adapters";
+import type {
+  StructuredToolInterface,
+  ToolSchemaBase,
+} from "@langchain/core/tools";
+import { tool } from "@langchain/core/tools";
+import { dispatchCustomEvent } from "@langchain/core/callbacks/dispatch";
 import { api, internal } from "../../_generated/api";
 import type { ActionCtx } from "../../_generated/server";
 import type { Id } from "../../_generated/dataModel";
@@ -18,8 +24,11 @@ import { resolveConfigurableEnvs, createMachineConfig } from "../../mcps/utils";
 export const getMCPTools = async (
   ctx: ActionCtx,
   state: typeof GraphState.State,
-  config?: ExtendedRunnableConfig,
-) => {
+  config: ExtendedRunnableConfig
+): Promise<{
+  tools: StructuredToolInterface<ToolSchemaBase>[];
+  groupedTools: Record<string, StructuredToolInterface<ToolSchemaBase>[]>;
+}> => {
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
     paginationOpts: {
       numItems: 100,
@@ -31,7 +40,7 @@ export const getMCPTools = async (
   });
 
   if (mcps.page.length === 0) {
-    return [];
+    return { tools: [], groupedTools: {} };
   }
 
   // Process all MCPs in one async loop - handle per-chat creation and build connections
@@ -72,7 +81,7 @@ export const getMCPTools = async (
               mcp,
               appName,
               mcpConfigurableEnvs,
-              machineId,
+              machineId
             );
             machine = await fly.createMachine(appName, machineConfig);
             await fly.waitTillHealthy(appName, {
@@ -93,7 +102,7 @@ export const getMCPTools = async (
         } catch (error) {
           console.error(
             `Failed to create per-chat MCP ${appName} machine ${machineId}:`,
-            error,
+            error
           );
           // Don't return null - continue to check if this MCP has existing URL
         }
@@ -116,7 +125,7 @@ export const getMCPTools = async (
       let authToken = null;
       if (updatedMcp.template) {
         const matchingTemplate = MCP_TEMPLATES.find(
-          (t) => t.template === updatedMcp.template,
+          (t) => t.template === updatedMcp.template
         );
         if (matchingTemplate && matchingTemplate.customAuthTokenFromEnv) {
           authToken = updatedMcp.env[matchingTemplate.customAuthTokenFromEnv];
@@ -129,10 +138,15 @@ export const getMCPTools = async (
         fly_force_instance_id: machineId,
         Authorization: `Bearer ${
           authToken ||
-          (await createJwt("OAUTH_TOKEN", updatedMcp._id, updatedMcp.userId, true))
+          (await createJwt(
+            "OAUTH_TOKEN",
+            updatedMcp._id,
+            updatedMcp.userId,
+            true
+          ))
         }`,
       };
-      
+
       return {
         name: updatedMcp.name,
         connection: {
@@ -148,21 +162,21 @@ export const getMCPTools = async (
         },
         mcp: updatedMcp,
       };
-    }),
+    })
   );
 
   // Filter out null results and create servers object
   const validResults = mcpResults.filter(
-    (result): result is NonNullable<typeof result> => result !== null,
+    (result): result is NonNullable<typeof result> => result !== null
   );
-  
+
   // Early return if no valid MCPs are available
   if (validResults.length === 0) {
-    return [];
+    return { tools: [], groupedTools: {} };
   }
-  
+
   const mcpServers: Record<string, Connection> = Object.fromEntries(
-    validResults.map((result) => [result.name, result.connection]),
+    validResults.map((result) => [result.name, result.connection])
   );
   const readyMcps = validResults.map((result) => result.mcp);
 
@@ -191,7 +205,7 @@ export const getMCPTools = async (
     readyMcps.map(async (mcp) => {
       if (mcp.template) {
         const matchingTemplate = MCP_TEMPLATES.find(
-          (t) => t.template === mcp.template,
+          (t) => t.template === mcp.template
         );
         if (matchingTemplate && matchingTemplate.promptTool) {
           const mcpClient = await client!.getClient(mcp.name);
@@ -208,9 +222,77 @@ export const getMCPTools = async (
           }
         }
       }
-    }),
+    })
   );
 
+  // Wrap MCP tools to emit descriptive streaming events
+  const wrappedTools: StructuredToolInterface<ToolSchemaBase>[] = tools.map(
+    (baseTool) => {
+      const parts = baseTool.name.split("__");
+      const serverName = parts.length >= 2 ? parts[1] : "MCP";
+      const prettyName =
+        parts.length >= 3 ? parts.slice(2).join(": ") : baseTool.name;
+
+      // Preserve original schema/description/name
+      const wrapped = tool(
+        async (args: any, toolConfig: any) => {
+          await dispatchCustomEvent(
+            "tool_progress",
+            {
+              chunk: `Connecting to ${serverName} and invoking ${prettyName}…`,
+            },
+            toolConfig
+          );
+          try {
+            await dispatchCustomEvent(
+              "tool_progress",
+              { chunk: `Executing ${prettyName} with provided parameters…` },
+              toolConfig
+            );
+            const result = await (baseTool as any).invoke(args, toolConfig);
+            await dispatchCustomEvent(
+              "tool_progress",
+              {
+                chunk: `${prettyName} finished. Preparing results for display…`,
+              },
+              toolConfig
+            );
+            return result as any;
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : "Unknown error";
+            await dispatchCustomEvent(
+              "tool_progress",
+              { chunk: `${prettyName} failed: ${message}`, complete: true },
+              toolConfig
+            );
+            throw error;
+          }
+        },
+        {
+          name: baseTool.name,
+          description:
+            (baseTool as any).description ?? `MCP tool from ${serverName}`,
+          schema: (baseTool as any).schema as any,
+        }
+      );
+      return wrapped;
+    }
+  );
+
+  const groupedTools: Map<string, StructuredToolInterface<ToolSchemaBase>[]> =
+    new Map();
+
+  for (const tool of wrappedTools) {
+    const parts = tool.name.split("__");
+    if (parts.length >= 2) {
+      const serverName = parts[1];
+      if (!groupedTools.has(serverName)) {
+        groupedTools.set(serverName, []);
+      }
+      groupedTools.get(serverName)?.push(tool);
+    }
+  }
   // Extract file IDs from the last message content instead of chat document
   if (state) {
     if (state.messages && state.messages.length > 0) {
@@ -227,7 +309,7 @@ export const getMCPTools = async (
               internal.documents.crud.read,
               {
                 id: documentId as Id<"documents">,
-              },
+              }
             );
             if (!documentDoc) return null;
             // Include various document types for upload (file, image, github, text)
@@ -236,7 +318,7 @@ export const getMCPTools = async (
               name: `${index}_${documentDoc.name}`,
               url,
             };
-          }),
+          })
         )
       )
         // Filter out any null results from documents without URLs
@@ -247,10 +329,13 @@ export const getMCPTools = async (
           if (["stdio", "docker"].includes(mcp.type) && files.length > 0) {
             await fly.uploadFileToAllMachines(mcp._id, files);
           }
-        }),
+        })
       );
     }
   }
 
-  return tools;
+  return {
+    tools: wrappedTools,
+    groupedTools: Object.fromEntries(groupedTools),
+  };
 };
