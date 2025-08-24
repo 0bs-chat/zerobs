@@ -115,7 +115,7 @@ export const ToolBar = () => {
 			<GitHubDialog
 				open={isDialogOpen}
 				onOpenChange={setIsDialogOpen}
-				chat={chat}
+				chat={chat!}
 			/>
 
 			<div className="flex flex-row items-center gap-1">
