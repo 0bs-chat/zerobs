@@ -4,6 +4,7 @@ import { requireAuth } from "../utils/helpers";
 import { api, internal } from "../_generated/api";
 import { partial } from "convex-helpers/validators";
 import * as schema from "../schema";
+import type { Id } from "../_generated/dataModel";
 
 export const create = mutation({
   args: {
@@ -80,18 +81,16 @@ export const createRaw = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
-    // Create messages sequentially to maintain parent-child relationships
-    let currentParent = args.messages[0]?.parentId ?? null;
+    let parentId: Id<"chatMessages"> | null = null;
 
     for (const message of args.messages) {
-      const created = await ctx.runMutation(internal.chatMessages.crud.create, {
+      const created: { _id: Id<"chatMessages"> } = await ctx.runMutation(internal.chatMessages.crud.create, {
         chatId: args.chatId,
-        parentId: currentParent,
+        parentId: message.parentId ?? parentId,
         message: message.message,
         minimized: false,
       });
-      // Set the current message as parent for the next message
-      currentParent = created._id;
+      parentId = created._id;
     }
 
     return null;

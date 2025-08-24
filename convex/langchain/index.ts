@@ -358,29 +358,26 @@ export const branchChat = action({
       throw new Error("Branch message not found");
     }
 
-    // Helper function to create message objects
-    const createMessageObject = (message: string) => ({ message });
+    const thread = getThreadFromMessage(branchFromMessage, allMessages);
 
-    // Copy ALL messages from the original chat (entire conversation history)
-    if (allMessages.length > 0) {
-      await ctx.runMutation(internal.chats.mutations.createRaw, {
-        chatId: newChatId,
-        messages: allMessages.map((m) => createMessageObject(m.message)),
-      });
+    const lastMessage = thread.at(-1);
+    if (lastMessage) {
+      const storedMessage = mapChatMessagesToStoredMessages([
+        lastMessage.message,
+      ])[0];
+      if (storedMessage.type === "ai") {
+        thread.pop();
+      }
     }
 
-    // If edited content is provided, create a new message with the edited content
+    // If edited content is provided, replace the last message with edited content
     if (args.editedContent) {
       const { text, documents } = args.editedContent;
       
-      // Only create a message if there's actual content
-      if (!text && (!documents || documents.length === 0)) {
-        return { newChatId };
-      }
-
-      // Create the message using the same pattern as chatMessages/mutations.ts
-      const editedMessage = createMessageObject(
-        JSON.stringify(
+      // Only proceed if there's actual content
+      if (text || (documents && documents.length > 0)) {
+        // Create the edited message
+        const editedMessage = JSON.stringify(
           mapChatMessagesToStoredMessages([
             new HumanMessage({
               content: [
@@ -396,12 +393,47 @@ export const branchChat = action({
               ],
             }),
           ])[0]
-        )
-      );
+        );
+        
+        // Replace the last message in the thread with the edited content
+        if (thread.length > 0) {
+          // We'll handle this replacement during the mapping phase
+          thread[thread.length - 1] = {
+            ...thread[thread.length - 1],
+            // Mark this message for replacement
+            _replacementMessage: editedMessage
+          } as any;
+        } else {
+          // If no thread, create a new message
+          const editedHumanMessage = new HumanMessage({
+            content: [
+              ...(text ? [{ type: "text", text }] : []),
+              ...(documents && documents.length > 0
+                ? documents.map((documentId) => ({
+                    type: "file",
+                    file: {
+                      file_id: documentId,
+                    },
+                  }))
+                : []),
+            ],
+          });
+          
+          thread.push({
+            ...branchFromMessage,
+            message: editedHumanMessage
+          });
+        }
+      }
+    }
 
+    if (thread.length > 0) {
       await ctx.runMutation(internal.chats.mutations.createRaw, {
         chatId: newChatId,
-        messages: [editedMessage],
+        messages: thread.map((m) => ({
+          message: (m as any)._replacementMessage || 
+                  (typeof m.message === 'string' ? m.message : JSON.stringify(mapChatMessagesToStoredMessages([m.message])[0]))
+        })),
       });
     }
 
