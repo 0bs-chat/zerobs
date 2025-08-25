@@ -252,7 +252,7 @@ export const PlanningStep = memo(
         </motion.button>
       </motion.div>
     );
-  },
+  }
 );
 
 PlanningStep.displayName = "PlanningStep";

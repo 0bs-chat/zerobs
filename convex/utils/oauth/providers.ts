@@ -20,7 +20,7 @@ export const providers: {
   convex: {
     title: "Vibz Coding",
     description: "Connect to Convex to enable vibe coding.",
-    icon: "https://www.google.com/s2/favicons?sz=32&domain_url=https%3A%2F%2Fwww.convex.dev",
+    icon: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqdPiZbseemzNCrxPWVuU4cE5vB9TSlHZQ01JF",
     clientIdKey: "AUTH_CONVEX_ID",
     clientSecretKey: "AUTH_CONVEX_SECRET",
     scope: "team", // Convex uses team-scoped tokens by default
@@ -36,7 +36,7 @@ export const providers: {
   google: {
     title: "Google",
     description: "Connect to Google to access your calendar and email.",
-    icon: "https://www.google.com/favicon.ico",
+    icon: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqoM7BgG8ankEhq9Rw0ur6xpgAG3tTCLNQ8eP5",
     clientIdKey: "AUTH_GOOGLE_ID",
     clientSecretKey: "AUTH_GOOGLE_SECRET",
     scope: [
@@ -61,7 +61,7 @@ export const providers: {
     title: "GitHub",
     description:
       "Connect to GitHub to access your repositories and manage code.",
-    icon: "https://github.com/favicon.ico",
+    icon: "https://ypazyw0thq.ufs.sh/f/38t7p527clgqVqW8w8rP8ucaGgpRSEd10zrBoDAHP2nQM6mY",
     clientIdKey: "AUTH_GITHUB_ID",
     clientSecretKey: "AUTH_GITHUB_SECRET",
     scope: ["repo", "user"].join(" "),

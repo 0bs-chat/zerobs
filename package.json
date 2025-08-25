@@ -114,8 +114,8 @@
   },
   "devDependencies": {
     "@convex-dev/migrations": "^0.2.9",
-    "@tanstack/react-query-devtools": "^5.84.1",
     "@tanstack/eslint-plugin-query": "^5.78.0",
+    "@tanstack/react-query-devtools": "^5.84.1",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
     "@types/dockerode": "^3.3.38",
@@ -127,6 +127,7 @@
     "@types/react-dom": "^19.0.3",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react-swc": "^4.0.1",
     "cheerio": "^1.1.0",
     "clipboardy": "^4.0.0",
     "jsdom": "^26.1.0",
