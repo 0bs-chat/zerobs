@@ -12,7 +12,6 @@ https://github.com/0bs-chat/zerobs/tree/feat/message-queue : the message queue f
 
 - pricing [imp]
 - usage
-- improve ux overall with loading states and whatnot. [done]
 - google integration (the code is already there just need to setup oauth)
 - business related mcp with ability to autofill connection info (like auto fetching api key/oauth key for the headers in mcp using oauth, etc to reduce friction)
 

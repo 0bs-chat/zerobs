@@ -103,23 +103,6 @@ export function TopNav() {
 			<div
 				className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "bg-accent dark:bg-primary/10 backdrop-blur-sm border-border/40 border"} `}
 			>
-				{!resizePanelOpen && (
-					<>
-						<Button
-							variant="ghost"
-							size="icon"
-							className="cursor-pointer"
-							aria-label="Open settings"
-							onClick={() => {
-								navigate({ to: "/settings/profile" });
-							}}
-						>
-							<Settings2Icon className="h-6 w-6" />
-						</Button>
-						<ModeToggle />
-					</>
-				)}
-
 				{!resizePanelOpen ? (
 					<Button
 						variant="ghost"
