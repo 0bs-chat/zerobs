@@ -7,7 +7,7 @@ import {
 import { Favicon } from "@/components/ui/favicon";
 import { Markdown } from "@/components/ui/markdown";
 import { extractDomain } from "@/lib/utils";
-import { ChevronDownIcon, ExternalLinkIcon, GlobeIcon } from "lucide-react";
+import { ExternalLinkIcon, GlobeIcon } from "lucide-react";
 
 // Type definition for search results output
 export type SearchResultMetadata = {
