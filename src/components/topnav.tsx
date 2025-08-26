@@ -20,6 +20,7 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
 import { Settings2Icon } from "lucide-react";
+import { Navigate } from "@tanstack/react-router";
 
 export function TopNav() {
 	const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
@@ -30,12 +31,15 @@ export function TopNav() {
 	const selectedVibzMcp = useAtomValue(selectedVibzMcpAtom);
 	const setUser = useSetAtom(userAtom);
 	const location = useLocation();
+	const params = useParams({ strict: false });
+	const isOnChatRoute = !!params.chatId;
+	const isSettingsRoute = location.pathname.startsWith("/settings");
 
 	function isUnauthorized(err: unknown) {
 		return err instanceof Error && err.message.includes("401");
 	}
 
-	const { data: user } = useQuery({
+	const { data: user, isError: isErrorUser } = useQuery({
 		...convexQuery(api.auth.getUser, {}),
 		// Avoid looping on auth errors; tolerate brief transient failures.
 		retry: (failureCount, err) => !isUnauthorized(err) && failureCount < 2,
@@ -47,11 +51,6 @@ export function TopNav() {
 			setUser(user);
 		}
 	}, [user, setUser]);
-
-	// Check if we're on a chat route by looking for chatId parameter
-	const params = useParams({ strict: false });
-	const isOnChatRoute = !!params.chatId;
-	const isSettingsRoute = location.pathname.startsWith("/settings");
 
 	// Global shortcut for toggling resizable panel (Ctrl/Cmd+I)
 	useEffect(() => {
@@ -73,6 +72,10 @@ export function TopNav() {
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [isOnChatRoute, setResizePanelOpen, setSelectedArtifact]);
+
+	if (isErrorUser) {
+		return <Navigate to="/auth" />;
+	}
 
 	return (
 		<div

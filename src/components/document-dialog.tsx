@@ -14,6 +14,16 @@ import { formatBytes } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 
+// Helper function to validate URLs to only allow http and https schemes
+const isValidExternalUrl = (url: string): boolean => {
+	try {
+		const parsed = new URL(url);
+		return parsed.protocol === "http:" || parsed.protocol === "https:";
+	} catch {
+		return false;
+	}
+};
+
 export const DocumentDialog = () => {
 	const documentDialogOpen = useAtomValue(documentDialogOpenAtom);
 	const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
@@ -52,15 +62,21 @@ export const DocumentDialog = () => {
 					case "pdf":
 					case "file": {
 						// Only files need download URL
+
 						const url = await generateDownloadUrl({
-							documentId: document._id!,
+							documentId: document._id,
 						});
 						setPreviewUrl(url);
 						break;
 					}
 					case "url":
 					case "site": {
-						setPreviewUrl(document.key as string);
+						const externalUrl = document.key as string;
+						if (isValidExternalUrl(externalUrl)) {
+							setPreviewUrl(externalUrl);
+						} else {
+							setPreviewError("Invalid or unsafe URL");
+						}
 						break;
 					}
 					case "youtube": {
@@ -70,7 +86,7 @@ export const DocumentDialog = () => {
 					default:
 						if (["file", "text", "github"].includes(document.type)) {
 							const url = await generateDownloadUrl({
-								documentId: document._id!,
+								documentId: document._id,
 							});
 							setPreviewUrl(url);
 							break;
@@ -96,7 +112,7 @@ export const DocumentDialog = () => {
 	const handleDownload = async () => {
 		if (!document || tag !== "file") return;
 		const url = await generateDownloadUrl({
-			documentId: document._id!,
+			documentId: document._id,
 		});
 		if (url) {
 			const w = window.open(url, "_blank", "noopener,noreferrer");
@@ -107,12 +123,11 @@ export const DocumentDialog = () => {
 	const handleOpen = () => {
 		if (!document) return;
 		if (tag === "url" || tag === "site") {
-			const w = window.open(
-				document.key as string,
-				"_blank",
-				"noopener,noreferrer",
-			);
-			if (w) w.opener = null;
+			const externalUrl = document.key as string;
+			if (isValidExternalUrl(externalUrl)) {
+				const w = window.open(externalUrl, "_blank", "noopener,noreferrer");
+				if (w) w.opener = null;
+			}
 		} else if (tag === "youtube") {
 			const w = window.open(
 				`https://youtube.com/watch?v=${document.key}`,
@@ -191,20 +206,29 @@ export const DocumentDialog = () => {
 										/>
 									);
 								} else if (tag === "url" || tag === "site") {
-									return (
-										<iframe
-											title={`Website preview: ${documentName}`}
-											src={previewUrl}
-											className="absolute inset-0 w-full h-full"
-											sandbox="allow-same-origin allow-scripts"
-											style={{
-												transform: "scale(0.95)",
-												transformOrigin: "top left",
-												width: "105.3%", // 100/0.95 to compensate for scale
-												height: "105.3%",
-											}}
-										/>
-									);
+									// Only render iframe if URL is valid and safe
+									if (isValidExternalUrl(previewUrl)) {
+										return (
+											<iframe
+												title={`Website preview: ${documentName}`}
+												src={previewUrl}
+												className="absolute inset-0 w-full h-full"
+												sandbox="allow-same-origin allow-scripts"
+												style={{
+													transform: "scale(0.95)",
+													transformOrigin: "top left",
+													width: "105.3%", // 100/0.95 to compensate for scale
+													height: "105.3%",
+												}}
+											/>
+										);
+									} else {
+										return (
+											<div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+												Invalid or unsafe URL for preview
+											</div>
+										);
+									}
 								} else if (tag === "file") {
 									// fallback for unknown file types
 									return (
