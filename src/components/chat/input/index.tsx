@@ -8,6 +8,7 @@ import {
   selectedProjectIdAtom,
   chatAtom,
   chatIdAtom,
+  streamStatusAtom,
 } from "@/store/chatStore";
 import { api } from "../../../../convex/_generated/api";
 import { useMutation } from "@tanstack/react-query";
@@ -37,6 +38,7 @@ export const ChatInput = () => {
   const { ref: textareaRef, setRef, focus } = useTextAreaRef();
   const [isDragActive, setIsDragActive] = useState(false);
   const handleFileUpload = useUploadDocuments({ type: "file", chat });
+  const streamStatus = useAtomValue(streamStatusAtom);
 
   useEffect(() => {
     if (chat) {
@@ -186,6 +188,11 @@ export const ChatInput = () => {
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
+
+            // Prevent submission during streaming
+            if (["pending", "streaming"].includes(streamStatus ?? "")) {
+              return;
+            }
 
             if (
               e.currentTarget.value.trim() === "" &&
