@@ -4,7 +4,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Hammer, ChevronDownIcon, Search } from "lucide-react";
+import { Hammer, ChevronDown, Search } from "lucide-react";
 import { useSetAtom } from "jotai";
 import { models } from "../../../../../convex/langchain/models";
 import { getTagInfo } from "@/lib/helper";
@@ -76,7 +76,7 @@ export function ModelPopover({
 					onClick={() => setPopoverOpen(!popoverOpen)}
 				>
 					{selectedModelConfig?.label || selectedModel}
-					<ChevronDownIcon className="h-4 w-4" />
+					<ChevronDown className="h-4 w-4" />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent

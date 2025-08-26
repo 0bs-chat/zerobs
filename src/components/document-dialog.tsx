@@ -44,6 +44,7 @@ export const DocumentDialog = () => {
 	useEffect(() => {
 		setPreviewUrl(null);
 		setPreviewError(null);
+
 		const loadPreviewUrl = async () => {
 			if (!document) return;
 			try {
@@ -53,7 +54,7 @@ export const DocumentDialog = () => {
 					case "file": {
 						// Only files need download URL
 						const url = await generateDownloadUrl({
-							documentId: document._id!,
+							documentId: document._id,
 						});
 						setPreviewUrl(url);
 						break;
@@ -70,7 +71,7 @@ export const DocumentDialog = () => {
 					default:
 						if (["file", "text", "github"].includes(document.type)) {
 							const url = await generateDownloadUrl({
-								documentId: document._id!,
+								documentId: document._id,
 							});
 							setPreviewUrl(url);
 							break;
@@ -96,7 +97,7 @@ export const DocumentDialog = () => {
 	const handleDownload = async () => {
 		if (!document || tag !== "file") return;
 		const url = await generateDownloadUrl({
-			documentId: document._id!,
+			documentId: document._id,
 		});
 		if (url) {
 			const w = window.open(url, "_blank", "noopener,noreferrer");
