@@ -20,10 +20,14 @@ import { TooltipButton } from "@/components/ui/tooltip-button";
 import { CopyButton } from "./copy-button";
 import { useMessageActions } from "./index";
 import { useUploadDocuments } from "@/hooks/chats/use-documents";
+import { toast } from "sonner";
 
 interface MessageContent {
 	type: string;
 	text?: string;
+	file?: {
+		file_id: Id<"documents">;
+	};
 }
 
 interface UserUtilsBarProps {
@@ -110,22 +114,46 @@ export const UserUtilsBar = memo(
 			}
 			return typeof content === "string" ? content : "";
 		})();
+		const handleSubmit = async (applySame: boolean) => {
+			if (!editedText?.trim()) {
+				toast.error("Please enter a message");
+				return;
+			}
 
-		const handleSubmit = (applySame: boolean) => {
-			if (!editedText) return;
-			if (applySame === false) {
+			if (!applySame) {
 				navigateBranch?.(input.depth, "next", input.totalBranches);
 			}
-			updateMessage({
-				id: input.message._id,
-				updates: { text: editedText, documents: editedDocuments || [] },
-				applySame: applySame,
-			}).then(() => {
-				if (applySame === false) {
-					chat({ chatId: input.message.chatId });
+
+			const finalDocuments =
+				editedDocuments ??
+				(Array.isArray(input.message.message.content)
+					? input.message.message.content
+							.filter(
+								(
+									c,
+								): c is MessageContent & {
+									type: "file";
+									file: { file_id: Id<"documents"> };
+								} => c.type === "file" && c.file?.file_id !== undefined,
+							)
+							.map((c) => c.file.file_id)
+					: []);
+
+			try {
+				await updateMessage({
+					id: input.message._id,
+					updates: { text: editedText.trim(), documents: finalDocuments },
+					applySame,
+				});
+
+				if (!applySame) {
+					await chat({ chatId: input.message.chatId });
 				}
-			});
-			onDone?.();
+
+				onDone?.();
+			} catch {
+				toast.error("Failed to submit message edit");
+			}
 		};
 
 		if (isEditing) {
@@ -153,12 +181,14 @@ export const UserUtilsBar = memo(
 						icon={<Check className="h-4 w-4 text-foreground/70 " />}
 						tooltip="Submit"
 						ariaLabel="Submit"
+						disabled={!editedText?.trim() && editedDocuments?.length === 0}
 					/>
 					<TooltipButton
 						onClick={() => handleSubmit(false)}
 						icon={<CheckCheck className="h-4 w-4 text-foreground/70" />}
 						tooltip="Submit and Regenerate"
 						ariaLabel="Submit and Regenerate"
+						// disabled={!editedText?.trim() && editedDocuments?.length === 0}
 					/>
 					<ActionDropdown
 						trigger={
