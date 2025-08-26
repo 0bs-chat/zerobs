@@ -11,20 +11,15 @@ import {
 	PanelRightCloseIcon,
 	PlusIcon,
 	PanelRightOpenIcon,
-	Settings2Icon,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import {
-	Navigate,
-	useLocation,
-	useNavigate,
-	useParams,
-} from "@tanstack/react-router";
+import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
+import { Settings2Icon } from "lucide-react";
 
 export function TopNav() {
 	const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
@@ -34,13 +29,17 @@ export function TopNav() {
 	const selectedArtifact = useAtomValue(selectedArtifactAtom);
 	const selectedVibzMcp = useAtomValue(selectedVibzMcpAtom);
 	const setUser = useSetAtom(userAtom);
-	const params = useParams({ strict: false });
 	const location = useLocation();
-	const isOnChatRoute = !!params.chatId;
-	const isSettingsRoute = location.pathname.startsWith("/settings");
 
-	const { data: user, isError: isErrorUser } = useQuery({
+	function isUnauthorized(err: unknown) {
+		return err instanceof Error && err.message.includes("401");
+	}
+
+	const { data: user } = useQuery({
 		...convexQuery(api.auth.getUser, {}),
+		// Avoid looping on auth errors; tolerate brief transient failures.
+		retry: (failureCount, err) => !isUnauthorized(err) && failureCount < 2,
+		staleTime: 5 * 60 * 1000,
 	});
 
 	useEffect(() => {
@@ -49,7 +48,12 @@ export function TopNav() {
 		}
 	}, [user, setUser]);
 
-	// Minimal global shortcut for toggling resizable panel (Ctrl/Cmd+I)
+	// Check if we're on a chat route by looking for chatId parameter
+	const params = useParams({ strict: false });
+	const isOnChatRoute = !!params.chatId;
+	const isSettingsRoute = location.pathname.startsWith("/settings");
+
+	// Global shortcut for toggling resizable panel (Ctrl/Cmd+I)
 	useEffect(() => {
 		if (!isOnChatRoute) return;
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -65,13 +69,10 @@ export function TopNav() {
 				});
 			}
 		};
+
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [isOnChatRoute, setResizePanelOpen, setSelectedArtifact]);
-
-	if (isErrorUser) {
-		return <Navigate to="/auth" />;
-	}
 
 	return (
 		<div
@@ -96,19 +97,22 @@ export function TopNav() {
 			<div
 				className={`flex items-center gap-1 justify-center top-0 right-0 p-0.5 pointer-events-auto  rounded-lg ${resizePanelOpen ? "border border-transparent translate-y-[.05rem]" : "bg-accent dark:bg-primary/10 backdrop-blur-sm border-border/40 border"} `}
 			>
-				{!resizePanelOpen ? (
-					<Button
-						variant="ghost"
-						size="icon"
-						className="cursor-pointer"
-						onClick={() => {
-							navigate({ to: "/settings/profile" });
-						}}
-					>
-						<Settings2Icon className="h-6 w-6" />
-					</Button>
-				) : null}
-				{!resizePanelOpen ? <ModeToggle /> : null}
+				{!resizePanelOpen && (
+					<>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="cursor-pointer"
+							aria-label="Open settings"
+							onClick={() => {
+								navigate({ to: "/settings/profile" });
+							}}
+						>
+							<Settings2Icon className="h-6 w-6" />
+						</Button>
+						<ModeToggle />
+					</>
+				)}
 				{isOnChatRoute && (
 					<Button
 						variant="ghost"

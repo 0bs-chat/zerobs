@@ -9,8 +9,6 @@ import { api } from "../../convex/_generated/api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { Button } from "@/components/ui/button";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ErrorState } from "@/components/ui/error-state";
 import { getDocTagInfo } from "@/lib/helper";
 import { formatBytes } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -20,17 +18,14 @@ export const DocumentDialog = () => {
 	const documentDialogOpen = useAtomValue(documentDialogOpenAtom);
 	const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+	const [previewError, setPreviewError] = useState<string | null>(null);
 
-	const {
-		data: document,
-		isLoading: isLoadingDocument,
-		isError: isDocumentError,
-		error: documentError,
-	} = useQuery({
+	const { data: document } = useQuery({
 		...convexQuery(
 			api.documents.queries.get,
 			documentDialogOpen ? { documentId: documentDialogOpen } : "skip",
 		),
+		enabled: !!documentDialogOpen,
 	});
 
 	const { mutateAsync: generateDownloadUrl } = useMutation({
@@ -48,6 +43,7 @@ export const DocumentDialog = () => {
 
 	useEffect(() => {
 		setPreviewUrl(null);
+		setPreviewError(null);
 		const loadPreviewUrl = async () => {
 			if (!document) return;
 			try {
@@ -55,6 +51,7 @@ export const DocumentDialog = () => {
 					case "image":
 					case "pdf":
 					case "file": {
+						// Only files need download URL
 						const url = await generateDownloadUrl({
 							documentId: document._id!,
 						});
@@ -82,8 +79,10 @@ export const DocumentDialog = () => {
 						}
 						break;
 				}
-			} catch (e) {
-				setPreviewUrl(null);
+			} catch (error) {
+				setPreviewError(
+					`Failed to load preview: ${error instanceof Error ? error.message : "Unknown error"}`,
+				);
 			}
 		};
 		loadPreviewUrl();
@@ -100,54 +99,29 @@ export const DocumentDialog = () => {
 			documentId: document._id!,
 		});
 		if (url) {
-			window.open(url, "_blank");
+			const w = window.open(url, "_blank", "noopener,noreferrer");
+			if (w) w.opener = null;
 		}
 	};
 
 	const handleOpen = () => {
 		if (!document) return;
 		if (tag === "url" || tag === "site") {
-			window.open(document.key as string, "_blank");
+			const w = window.open(
+				document.key as string,
+				"_blank",
+				"noopener,noreferrer",
+			);
+			if (w) w.opener = null;
 		} else if (tag === "youtube") {
-			window.open(`https://youtube.com/watch?v=${document.key}`, "_blank");
+			const w = window.open(
+				`https://youtube.com/watch?v=${document.key}`,
+				"_blank",
+				"noopener,noreferrer",
+			);
+			if (w) w.opener = null;
 		}
 	};
-
-	if (isLoadingDocument) {
-		return (
-			<Dialog
-				open={!!documentDialogOpen}
-				onOpenChange={() => setDocumentDialogOpen(undefined)}
-			>
-				<DialogContent className="sm:max-w-[800px] h-[80vh] flex items-center justify-center gap-4">
-					<LoadingSpinner className="h-8 w-8" />
-					<div className="text-muted-foreground text-lg">
-						Loading document...
-					</div>
-				</DialogContent>
-			</Dialog>
-		);
-	}
-
-	if (isDocumentError || documentError) {
-		return (
-			<Dialog
-				open={!!documentDialogOpen}
-				onOpenChange={() => setDocumentDialogOpen(undefined)}
-			>
-				<DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col items-center justify-center gap-4">
-					<div className="flex flex-col items-center justify-center gap-4 w-full">
-						<ErrorState
-							title="Failed to load document"
-							error={documentError}
-							description="Please try again later."
-							density="comfy"
-						/>
-					</div>
-				</DialogContent>
-			</Dialog>
-		);
-	}
 
 	return (
 		<Dialog
@@ -176,17 +150,13 @@ export const DocumentDialog = () => {
 						)}
 					</div>
 
-					{isDocumentError ||
-						(documentError && (
-							<div className="flex items-center justify-center text-muted-foreground h-full">
-								<ErrorState
-									density="comfy"
-									title="Unable to preview document"
-									error={documentError}
-								/>
+					{previewError ? (
+						<div className="flex-grow flex items-center justify-center bg-muted rounded-md border">
+							<div className="text-center text-muted-foreground">
+								{previewError}
 							</div>
-						))}
-					{previewUrl && (
+						</div>
+					) : previewUrl ? (
 						<div className="flex-grow relative min-h-0 bg-muted rounded-md border overflow-hidden">
 							{(() => {
 								if (tag === "image") {
@@ -213,7 +183,7 @@ export const DocumentDialog = () => {
 								} else if (tag === "youtube") {
 									return (
 										<iframe
-											title="YouTube video player"
+											title={`YouTube video: ${documentName}`}
 											src={previewUrl}
 											className="absolute inset-0 w-full h-full"
 											allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -223,7 +193,7 @@ export const DocumentDialog = () => {
 								} else if (tag === "url" || tag === "site") {
 									return (
 										<iframe
-											title="Website preview"
+											title={`Website preview: ${documentName}`}
 											src={previewUrl}
 											className="absolute inset-0 w-full h-full"
 											sandbox="allow-same-origin allow-scripts"
@@ -239,7 +209,6 @@ export const DocumentDialog = () => {
 									// fallback for unknown file types
 									return (
 										<object
-											title="File preview"
 											data={previewUrl}
 											className="absolute inset-0 w-full h-full"
 											type="application/octet-stream"
@@ -254,7 +223,7 @@ export const DocumentDialog = () => {
 								return null;
 							})()}
 						</div>
-					)}
+					) : null}
 				</div>
 
 				<div className="flex justify-end gap-2 mt-4">
