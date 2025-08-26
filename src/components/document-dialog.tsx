@@ -1,8 +1,8 @@
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
 } from "@/components/ui/dialog";
 import { documentDialogOpenAtom } from "@/store/chatStore";
 import { api } from "../../convex/_generated/api";
@@ -17,259 +17,262 @@ import { useState, useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 
 export const DocumentDialog = () => {
-  const documentDialogOpen = useAtomValue(documentDialogOpenAtom);
-  const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+	const documentDialogOpen = useAtomValue(documentDialogOpenAtom);
+	const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
+	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const {
-    data: document,
-    isLoading: isLoadingDocument,
-    isError: isDocumentError,
-    error: documentError,
-  } = useQuery({
-    ...convexQuery(
-      api.documents.queries.get,
-      documentDialogOpen ? { documentId: documentDialogOpen } : "skip",
-    ),
-  });
+	const {
+		data: document,
+		isLoading: isLoadingDocument,
+		isError: isDocumentError,
+		error: documentError,
+	} = useQuery({
+		...convexQuery(
+			api.documents.queries.get,
+			documentDialogOpen ? { documentId: documentDialogOpen } : "skip",
+		),
+	});
 
-  const { mutateAsync: generateDownloadUrl } = useMutation({
-    mutationFn: useConvexMutation(api.documents.mutations.generateDownloadUrl),
-  });
+	const { mutateAsync: generateDownloadUrl } = useMutation({
+		mutationFn: useConvexMutation(api.documents.mutations.generateDownloadUrl),
+	});
 
-  const documentName = document?.name ?? "";
-  const {
-    icon: Icon,
-    className: IconClassName,
-    tag,
-  } = document
-    ? getDocTagInfo(document)
-    : { icon: () => null, className: "", tag: "" };
+	const documentName = document?.name ?? "";
+	const {
+		icon: Icon,
+		className: IconClassName,
+		tag,
+	} = document
+		? getDocTagInfo(document)
+		: { icon: () => null, className: "", tag: "" };
 
-  useEffect(() => {
-    setPreviewUrl(null);
-    const loadPreviewUrl = async () => {
-      if (!document) return;
-      try {
-        switch (tag) {
-          case "image":
-          case "pdf":
-          case "file": {
-            const url = await generateDownloadUrl({
-              documentId: document._id!,
-            });
-            setPreviewUrl(url);
-            break;
-          }
-          case "url":
-          case "site": {
-            setPreviewUrl(document.key as string);
-            break;
-          }
-          case "youtube": {
-            setPreviewUrl(`https://www.youtube.com/embed/${document.key}`);
-            break;
-          }
-          default:
-            if (["file", "text", "github"].includes(document.type)) {
-              const url = await generateDownloadUrl({
-                documentId: document._id!,
-              });
-              setPreviewUrl(url);
-              break;
-            } else {
-              setPreviewUrl(document.key as string);
-            }
-            break;
-        }
-      } catch (e) {
-        setPreviewUrl(null);
-      }
-    };
-    loadPreviewUrl();
-  }, [document, tag, generateDownloadUrl]);
+	useEffect(() => {
+		setPreviewUrl(null);
+		const loadPreviewUrl = async () => {
+			if (!document) return;
+			try {
+				switch (tag) {
+					case "image":
+					case "pdf":
+					case "file": {
+						const url = await generateDownloadUrl({
+							documentId: document._id!,
+						});
+						setPreviewUrl(url);
+						break;
+					}
+					case "url":
+					case "site": {
+						setPreviewUrl(document.key as string);
+						break;
+					}
+					case "youtube": {
+						setPreviewUrl(`https://www.youtube.com/embed/${document.key}`);
+						break;
+					}
+					default:
+						if (["file", "text", "github"].includes(document.type)) {
+							const url = await generateDownloadUrl({
+								documentId: document._id!,
+							});
+							setPreviewUrl(url);
+							break;
+						} else {
+							setPreviewUrl(document.key as string);
+						}
+						break;
+				}
+			} catch (e) {
+				setPreviewUrl(null);
+			}
+		};
+		loadPreviewUrl();
+	}, [document, tag, generateDownloadUrl]);
 
-  // Early return if dialog is not open
-  if (!documentDialogOpen) {
-    return null;
-  }
+	// Early return if dialog is not open
+	if (!documentDialogOpen) {
+		return null;
+	}
 
-  const handleDownload = async () => {
-    if (!document || tag !== "file") return;
-    const url = await generateDownloadUrl({
-      documentId: document._id!,
-    });
-    if (url) {
-      window.open(url, "_blank");
-    }
-  };
+	const handleDownload = async () => {
+		if (!document || tag !== "file") return;
+		const url = await generateDownloadUrl({
+			documentId: document._id!,
+		});
+		if (url) {
+			window.open(url, "_blank");
+		}
+	};
 
-  const handleOpen = () => {
-    if (!document) return;
-    if (tag === "url" || tag === "site") {
-      window.open(document.key as string, "_blank");
-    } else if (tag === "youtube") {
-      window.open(`https://youtube.com/watch?v=${document.key}`, "_blank");
-    }
-  };
+	const handleOpen = () => {
+		if (!document) return;
+		if (tag === "url" || tag === "site") {
+			window.open(document.key as string, "_blank");
+		} else if (tag === "youtube") {
+			window.open(`https://youtube.com/watch?v=${document.key}`, "_blank");
+		}
+	};
 
-  if (isLoadingDocument) {
-    return (
-      <Dialog
-        open={!!documentDialogOpen}
-        onOpenChange={() => setDocumentDialogOpen(undefined)}
-      >
-        <DialogContent className="sm:max-w-[800px] h-[80vh] flex items-center justify-center gap-4">
-          <LoadingSpinner className="h-8 w-8" />
-          <div className="text-muted-foreground text-lg">
-            Loading document...
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+	if (isLoadingDocument) {
+		return (
+			<Dialog
+				open={!!documentDialogOpen}
+				onOpenChange={() => setDocumentDialogOpen(undefined)}
+			>
+				<DialogContent className="sm:max-w-[800px] h-[80vh] flex items-center justify-center gap-4">
+					<LoadingSpinner className="h-8 w-8" />
+					<div className="text-muted-foreground text-lg">
+						Loading document...
+					</div>
+				</DialogContent>
+			</Dialog>
+		);
+	}
 
-  if (isDocumentError || documentError) {
-    return (
-      <Dialog
-        open={!!documentDialogOpen}
-        onOpenChange={() => setDocumentDialogOpen(undefined)}
-      >
-        <DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col items-center justify-center gap-4">
-          <div className="flex flex-col items-center justify-center gap-4 w-full">
-            <ErrorState
-              title="Failed to load document"
-              error={documentError}
-              description="Please try again later."
-              density="comfy"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+	if (isDocumentError || documentError) {
+		return (
+			<Dialog
+				open={!!documentDialogOpen}
+				onOpenChange={() => setDocumentDialogOpen(undefined)}
+			>
+				<DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col items-center justify-center gap-4">
+					<div className="flex flex-col items-center justify-center gap-4 w-full">
+						<ErrorState
+							title="Failed to load document"
+							error={documentError}
+							description="Please try again later."
+							density="comfy"
+						/>
+					</div>
+				</DialogContent>
+			</Dialog>
+		);
+	}
 
-  return (
-    <Dialog
-      open={!!documentDialogOpen}
-      onOpenChange={() => setDocumentDialogOpen(undefined)}
-    >
-      <DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Icon className={`${IconClassName} h-8 w-8`} />
-            <span>{documentName}</span>
-          </DialogTitle>
-        </DialogHeader>
+	return (
+		<Dialog
+			open={!!documentDialogOpen}
+			onOpenChange={() => setDocumentDialogOpen(undefined)}
+		>
+			<DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col">
+				<DialogHeader>
+					<DialogTitle className="flex items-center gap-2">
+						<Icon className={`${IconClassName} h-8 w-8`} />
+						<span>{documentName}</span>
+					</DialogTitle>
+				</DialogHeader>
 
-        <div className="flex flex-col gap-4 flex-grow overflow-hidden">
-          <div className="flex flex-col gap-2">
-            <div className="text-sm text-muted-foreground">
-              Type:{" "}
-              {document?.type &&
-                document.type.charAt(0).toUpperCase() + document.type.slice(1)}
-            </div>
-            {document?.size && (
-              <div className="text-sm text-muted-foreground">
-                Size: {formatBytes(document.size)}
-              </div>
-            )}
-          </div>
+				<div className="flex flex-col gap-4 flex-grow overflow-hidden">
+					<div className="flex flex-col gap-2">
+						<div className="text-sm text-muted-foreground">
+							Type:{" "}
+							{document?.type &&
+								document.type.charAt(0).toUpperCase() + document.type.slice(1)}
+						</div>
+						{document?.size && (
+							<div className="text-sm text-muted-foreground">
+								Size: {formatBytes(document.size)}
+							</div>
+						)}
+					</div>
 
-          {isDocumentError ||
-            (documentError && (
-              <div className="flex items-center justify-center text-muted-foreground h-full">
-                <ErrorState
-                  density="comfy"
-                  title="Unable to preview document"
-                  error={documentError}
-                />
-              </div>
-            ))}
-          {previewUrl && (
-            <div className="flex-grow relative min-h-0 bg-muted rounded-md border overflow-hidden">
-              {(() => {
-                if (tag === "image") {
-                  return (
-                    <img
-                      src={previewUrl}
-                      alt={documentName}
-                      className="absolute inset-0 w-full h-full object-contain"
-                    />
-                  );
-                } else if (tag === "pdf") {
-                  return (
-                    <object
-                      data={previewUrl}
-                      className="absolute inset-0 w-full h-full"
-                      type="application/pdf"
-                    >
-                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        PDF preview not supported in your browser. Please
-                        download the file to view it.
-                      </div>
-                    </object>
-                  );
-                } else if (tag === "youtube") {
-                  return (
-                    <iframe
-                      src={previewUrl}
-                      className="absolute inset-0 w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  );
-                } else if (tag === "url" || tag === "site") {
-                  return (
-                    <iframe
-                      src={previewUrl}
-                      className="absolute inset-0 w-full h-full"
-                      sandbox="allow-same-origin allow-scripts"
-                      style={{
-                        transform: "scale(0.95)",
-                        transformOrigin: "top left",
-                        width: "105.3%", // 100/0.95 to compensate for scale
-                        height: "105.3%",
-                      }}
-                    />
-                  );
-                } else if (tag === "file") {
-                  // fallback for unknown file types
-                  return (
-                    <object
-                      data={previewUrl}
-                      className="absolute inset-0 w-full h-full"
-                      type="application/octet-stream"
-                    >
-                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        File preview not supported. Please download the file to
-                        view it.
-                      </div>
-                    </object>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-          )}
-        </div>
+					{isDocumentError ||
+						(documentError && (
+							<div className="flex items-center justify-center text-muted-foreground h-full">
+								<ErrorState
+									density="comfy"
+									title="Unable to preview document"
+									error={documentError}
+								/>
+							</div>
+						))}
+					{previewUrl && (
+						<div className="flex-grow relative min-h-0 bg-muted rounded-md border overflow-hidden">
+							{(() => {
+								if (tag === "image") {
+									return (
+										<img
+											src={previewUrl}
+											alt={documentName}
+											className="absolute inset-0 w-full h-full object-contain"
+										/>
+									);
+								} else if (tag === "pdf") {
+									return (
+										<object
+											data={previewUrl}
+											className="absolute inset-0 w-full h-full"
+											type="application/pdf"
+										>
+											<div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+												PDF preview not supported in your browser. Please
+												download the file to view it.
+											</div>
+										</object>
+									);
+								} else if (tag === "youtube") {
+									return (
+										<iframe
+											title="YouTube video player"
+											src={previewUrl}
+											className="absolute inset-0 w-full h-full"
+											allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+											allowFullScreen
+										/>
+									);
+								} else if (tag === "url" || tag === "site") {
+									return (
+										<iframe
+											title="Website preview"
+											src={previewUrl}
+											className="absolute inset-0 w-full h-full"
+											sandbox="allow-same-origin allow-scripts"
+											style={{
+												transform: "scale(0.95)",
+												transformOrigin: "top left",
+												width: "105.3%", // 100/0.95 to compensate for scale
+												height: "105.3%",
+											}}
+										/>
+									);
+								} else if (tag === "file") {
+									// fallback for unknown file types
+									return (
+										<object
+											title="File preview"
+											data={previewUrl}
+											className="absolute inset-0 w-full h-full"
+											type="application/octet-stream"
+										>
+											<div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+												File preview not supported. Please download the file to
+												view it.
+											</div>
+										</object>
+									);
+								}
+								return null;
+							})()}
+						</div>
+					)}
+				</div>
 
-        <div className="flex justify-end gap-2 mt-4">
-          {tag === "file" ? (
-            <Button onClick={handleDownload}>Download</Button>
-          ) : tag === "url" || tag === "site" || tag === "youtube" ? (
-            <Button onClick={handleOpen}>
-              Open {tag === "youtube" ? "in YouTube" : "in Browser"}
-            </Button>
-          ) : null}
-          <Button
-            variant="outline"
-            onClick={() => setDocumentDialogOpen(undefined)}
-          >
-            Close
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+				<div className="flex justify-end gap-2 mt-4">
+					{tag === "file" ? (
+						<Button onClick={handleDownload}>Download</Button>
+					) : tag === "url" || tag === "site" || tag === "youtube" ? (
+						<Button onClick={handleOpen}>
+							Open {tag === "youtube" ? "in YouTube" : "in Browser"}
+						</Button>
+					) : null}
+					<Button
+						variant="outline"
+						onClick={() => setDocumentDialogOpen(undefined)}
+					>
+						Close
+					</Button>
+				</div>
+			</DialogContent>
+		</Dialog>
+	);
 };

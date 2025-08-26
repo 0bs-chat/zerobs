@@ -34,31 +34,20 @@ export function TopNav() {
 	const selectedArtifact = useAtomValue(selectedArtifactAtom);
 	const selectedVibzMcp = useAtomValue(selectedVibzMcpAtom);
 	const setUser = useSetAtom(userAtom);
+	const params = useParams({ strict: false });
 	const location = useLocation();
+	const isOnChatRoute = !!params.chatId;
+	const isSettingsRoute = location.pathname.startsWith("/settings");
 
-	const {
-		data: user,
-		isError: isErrorUser,
-		isLoading: isLoadingUser,
-	} = useQuery({
+	const { data: user, isError: isErrorUser } = useQuery({
 		...convexQuery(api.auth.getUser, {}),
 	});
-
-	if (isErrorUser) {
-		return <Navigate to="/auth" />;
-	}
 
 	useEffect(() => {
 		if (user) {
 			setUser(user);
 		}
 	}, [user, setUser]);
-
-	// Check if we're on a chat route by looking for chatId parameter
-	const params = useParams({ strict: false });
-
-	const isOnChatRoute = !!params.chatId;
-	const isSettingsRoute = location.pathname.startsWith("/settings");
 
 	// Minimal global shortcut for toggling resizable panel (Ctrl/Cmd+I)
 	useEffect(() => {
@@ -79,6 +68,10 @@ export function TopNav() {
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [isOnChatRoute, setResizePanelOpen, setSelectedArtifact]);
+
+	if (isErrorUser) {
+		return <Navigate to="/auth" />;
+	}
 
 	return (
 		<div
