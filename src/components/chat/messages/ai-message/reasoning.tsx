@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import {
 	Accordion,
 	AccordionItem,
@@ -16,10 +16,16 @@ interface ReasoningProps {
 
 export const Reasoning = memo(
 	({ reasoning, messageId, isStreaming }: ReasoningProps) => {
+		const [isOpen, setIsOpen] = useState(false);
+
 		if (!reasoning) return null;
 
 		return (
-			<Accordion type="multiple" className="w-full ">
+			<Accordion 
+				type="multiple" 
+				className="w-full"
+				onValueChange={(value) => setIsOpen(value.includes("reasoning"))}
+			>
 				<AccordionItem value="reasoning" className="px-0">
 					<AccordionTrigger
 						showIcon={false}
@@ -34,7 +40,7 @@ export const Reasoning = memo(
 						</div>
 						<ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />
 					</AccordionTrigger>
-					<AccordionContent className="bg-card rounded-md p-2 border mt-2 max-h-[36rem] overflow-y-auto">
+					<AccordionContent className={`bg-card rounded-md p-2 mt-2 max-h-[36rem] overflow-y-auto ${isOpen ? '' : 'border'}`}>
 						<Markdown
 							content={reasoning}
 							id={messageId}
