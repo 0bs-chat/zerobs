@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
@@ -16,9 +16,16 @@ import { useStream } from "./use-stream";
 
 export type { MessageGroup, MessageWithBranchInfo, BranchPath };
 
+let globalBranchPath: BranchPath = [];
+let forceUpdateFn: (() => void) | null = null;
+
 export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const setCurrentThread = useSetAtom(currentThreadAtom);
   const setUseStreamAtom = useSetAtom(useStreamAtom);
+  const [counter, setCounter] = useState(0);
+
+  // Register the force update function
+  forceUpdateFn = () => setCounter((c) => c + 1);
 
   const { data: messages, isLoading } = useQuery({
     ...convexQuery(
@@ -28,10 +35,9 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
     enabled: chatId !== "new",
   });
 
-  // Use optimized single-pass processing
   const messageGroups = useMemo(
-    () => (messages ? buildThreadAndGroups(messages) : []),
-    [messages],
+    () => (messages ? buildThreadAndGroups(messages, globalBranchPath) : []),
+    [messages, counter],
   );
 
   const streamData = useStream(chatId);
@@ -46,29 +52,53 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
     setUseStreamAtom,
   ]);
 
+  useEffect(() => {
+    // Reset branch path when chat changes
+    globalBranchPath = [];
+    setCounter((c) => c + 1);
+  }, [chatId]);
+
   return {
     isLoading: isLoading,
     isEmpty: messageGroups.length === 0,
   };
 };
 
-// Legacy branch navigation functions - kept as stubs for compatibility
 export const useNavigateBranch = () => {
   return useCallback(
-    (_depth: number, _direction: "prev" | "next" | number) => {
-      // No-op: linear processing doesn't need branch navigation
-      console.warn("Branch navigation is no longer supported with optimized linear processing");
+    (
+      depth: number,
+      direction: "prev" | "next" | number,
+      totalBranches: number,
+    ) => {
+      if (typeof direction === "number") {
+        globalBranchPath[depth] = direction;
+      } else {
+        const currentIndex = globalBranchPath[depth] ?? (totalBranches - 1); // Default to current displayed branch
+        if (direction === "next") {
+          globalBranchPath[depth] = (currentIndex + 1) % totalBranches;
+        } else if (direction === "prev") {
+          globalBranchPath[depth] =
+            (currentIndex - 1 + totalBranches) % totalBranches;
+        }
+      }
+      globalBranchPath.splice(depth + 1);
+
+      if (forceUpdateFn) {
+        forceUpdateFn();
+      }
     },
     [],
   );
 };
 
 export const useChangeBranch = () => {
-  return useCallback(
-    (_depth: number, _newBranchIndex: number) => {
-      // No-op: linear processing doesn't need branch changes
-      console.warn("Branch changing is no longer supported with optimized linear processing");
-    },
-    [],
-  );
+  return useCallback((depth: number, newBranchIndex: number) => {
+    globalBranchPath[depth] = newBranchIndex;
+    globalBranchPath.splice(depth + 1);
+
+    if (forceUpdateFn) {
+      forceUpdateFn();
+    }
+  }, []);
 };

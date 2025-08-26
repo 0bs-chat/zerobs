@@ -14,6 +14,15 @@ import { formatBytes } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 
+const isSafeHttpUrl = (raw: string): boolean => {
+	try {
+		const url = new URL(raw);
+		return url.protocol === "http:" || url.protocol === "https:";
+	} catch {
+		return false;
+	}
+};
+
 export const DocumentDialog = () => {
 	const documentDialogOpen = useAtomValue(documentDialogOpenAtom);
 	const setDocumentDialogOpen = useSetAtom(documentDialogOpenAtom);
@@ -95,19 +104,29 @@ export const DocumentDialog = () => {
 	}
 
 	const handleDownload = async () => {
-		if (!document || tag !== "file") return;
-		const url = await generateDownloadUrl({
-			documentId: document._id,
-		});
-		if (url) {
-			const w = window.open(url, "_blank", "noopener,noreferrer");
-			if (w) w.opener = null;
+		if (!document || !["file", "image", "pdf", "audio", "video"].includes(tag))
+			return;
+		try {
+			const url = await generateDownloadUrl({
+				documentId: document._id,
+			});
+			if (url) {
+				const w = window.open(url, "_blank", "noopener,noreferrer");
+				if (w) w.opener = null;
+			}
+		} catch (err) {
+			setPreviewError(
+				`Failed to download: ${err instanceof Error ? err.message : "Unknown error"}`,
+			);
 		}
 	};
 
 	const handleOpen = () => {
 		if (!document) return;
 		if (tag === "url" || tag === "site") {
+			if (!isSafeHttpUrl(document.key as string)) {
+				return;
+			}
 			const w = window.open(
 				document.key as string,
 				"_blank",

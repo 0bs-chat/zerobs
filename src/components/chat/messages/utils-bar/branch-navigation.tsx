@@ -8,7 +8,7 @@ export { type MessageWithBranchInfo };
 export type BranchDirection = "prev" | "next";
 
 export interface MessageBranchNavigation {
-  (depth: number, direction: BranchDirection): void;
+  (depth: number, direction: BranchDirection, totalBranches: number): void;
 }
 
 export interface BranchNavigationProps {
@@ -25,7 +25,7 @@ export const BranchNavigation = memo(
     return (
       <div className="flex items-center gap-.5 text-xs text-muted-foreground">
         <Button
-          onClick={() => navigateBranch(item.depth, "prev")}
+          onClick={() => navigateBranch(item.depth, "prev", item.totalBranches)}
           variant="ghost"
           size="icon"
           aria-label="Previous branch"
@@ -37,7 +37,7 @@ export const BranchNavigation = memo(
           {item.branchIndex} / {item.totalBranches}
         </span>
         <Button
-          onClick={() => navigateBranch(item.depth, "next")}
+          onClick={() => navigateBranch(item.depth, "next", item.totalBranches)}
           variant="ghost"
           size="icon"
           aria-label="Next branch"

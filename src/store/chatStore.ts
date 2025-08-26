@@ -6,6 +6,7 @@ import type { Artifact } from "@/components/artifacts/utils";
 import { type MessageGroup } from "../../convex/chatMessages/helpers";
 import { parseArtifacts } from "@/components/artifacts/utils";
 import { AIMessage } from "@langchain/core/messages";
+import { models } from "../../convex/langchain/models";
 
 export const userAtom = atom<Doc<"users">>();
 export const userLoadableAtom = loadable(userAtom);
@@ -140,3 +141,16 @@ export const initialMCPState = {
 };
 
 export const mcpBrowsePanelOpenAtom = atom(false);
+
+export type ModelPreferences = {
+  order: string[];
+  hidden: string[];
+};
+
+export const modelPreferencesAtom = atomWithStorage<ModelPreferences>(
+  "modelPreferences", 
+  {
+    order: models.filter(m => !m.hidden).map(m => m.model_name),
+    hidden: models.filter(m => m.hidden).map(m => m.model_name),
+  }
+);
