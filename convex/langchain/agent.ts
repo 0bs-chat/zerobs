@@ -13,6 +13,7 @@ import {
   BaseMessage,
   AIMessage,
   HumanMessage,
+  ToolMessage,
   mapChatMessagesToStoredMessages,
 } from "@langchain/core/messages";
 import {
@@ -37,6 +38,34 @@ async function shouldPlanOrAgentOrSimple(
   }
 
   return "baseAgent";
+}
+
+function filterMessagesForReplanning(messages: BaseMessage[]): BaseMessage[] {
+  const recentMessages = messages.slice(-20);
+
+  const filteredMessages: BaseMessage[] = [];
+  let skipNextAIMessage = false;
+
+  for (let i = recentMessages.length - 1; i >= 0; i--) {
+    const message = recentMessages[i];
+
+    if (message instanceof ToolMessage) {
+      skipNextAIMessage = true;
+      continue;
+    }
+
+    if (message instanceof AIMessage && skipNextAIMessage) {
+      if (message.tool_calls && message.tool_calls.length > 0) {
+        skipNextAIMessage = false;
+        continue;
+      }
+      skipNextAIMessage = false;
+    }
+
+    filteredMessages.unshift(message);
+  }
+
+  return filteredMessages;
 }
 
 async function simple(state: typeof GraphState.State, config: RunnableConfig) {
@@ -228,9 +257,12 @@ async function replanner(
       : model.withStructuredOutput(outputSchema),
   );
 
+  // Filter messages for replanning: last 20 steps, no tool calls
+  const filteredMessages = filterMessagesForReplanning(state.messages);
+
   const formattedMessages = await formatMessages(
     formattedConfig.ctx,
-    state.messages,
+    filteredMessages,
     formattedConfig.chat.model!,
   );
 
@@ -239,10 +271,13 @@ async function replanner(
       messages: formattedMessages,
       plan: state.plan,
       pastSteps: state.pastSteps
+        .slice(-10) // Also limit pastSteps to last 10 for replanning
         .map((pastStep) => {
           const [step, messages] = pastStep;
+          // Filter out tool messages from past steps as well
+          const filteredStepMessages = filterMessagesForReplanning(messages);
           const stepMessage = new HumanMessage(step as string);
-          return [stepMessage, ...messages];
+          return [stepMessage, ...filteredStepMessages];
         })
         .flat(),
     },
