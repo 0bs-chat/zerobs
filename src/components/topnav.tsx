@@ -36,7 +36,14 @@ export function TopNav() {
 	const isSettingsRoute = location.pathname.startsWith("/settings");
 
 	function isUnauthorized(err: unknown) {
-		return err instanceof Error && err.message.includes("401");
+		const e = err as any;
+		return (
+			e?.response?.status === 401 ||
+			e?.status === 401 ||
+			e?.code === "UNAUTHENTICATED" ||
+			e?.code === "UNAUTHORIZED" ||
+			(e instanceof Error && /\b401\b/.test(e.message))
+		);
 	}
 
 	const { data: user, isError: isErrorUser } = useQuery({

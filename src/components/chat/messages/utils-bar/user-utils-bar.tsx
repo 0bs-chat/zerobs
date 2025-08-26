@@ -92,7 +92,8 @@ export const UserUtilsBar = memo(
 		const handleDragLeave = useCallback(
 			(e: React.DragEvent<HTMLDivElement>) => {
 				e.preventDefault();
-				if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+				const next = (e.relatedTarget as Node | null) ?? null;
+				if (next && e.currentTarget.contains(next)) return;
 				setIsDragActive(false);
 			},
 			[],

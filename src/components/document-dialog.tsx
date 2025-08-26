@@ -62,7 +62,6 @@ export const DocumentDialog = () => {
 					case "pdf":
 					case "file": {
 						// Only files need download URL
-
 						const url = await generateDownloadUrl({
 							documentId: document._id,
 						});
@@ -213,7 +212,7 @@ export const DocumentDialog = () => {
 												title={`Website preview: ${documentName}`}
 												src={previewUrl}
 												className="absolute inset-0 w-full h-full"
-												sandbox="allow-same-origin allow-scripts"
+												sandbox="allow-scripts"
 												style={{
 													transform: "scale(0.95)",
 													transformOrigin: "top left",

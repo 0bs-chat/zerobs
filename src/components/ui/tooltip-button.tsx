@@ -24,16 +24,31 @@ export const TooltipButton = ({
 	<TooltipProvider>
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon"
-					onClick={onClick}
-					aria-label={ariaLabel}
-					className="cursor-pointer"
-					disabled={disabled}
-				>
-					{icon}
-				</Button>
+				{disabled ? (
+					<span className="inline-flex" aria-disabled="true">
+						<Button
+							variant="ghost"
+							size="icon"
+							type="button"
+							aria-label={ariaLabel ?? tooltip}
+							disabled
+							onClick={undefined}
+							className="cursor-not-allowed"
+						>
+							{icon}
+						</Button>
+					</span>
+				) : (
+					<Button
+						variant="ghost"
+						size="icon"
+						type="button"
+						onClick={onClick}
+						aria-label={ariaLabel ?? tooltip}
+					>
+						{icon}
+					</Button>
+				)}
 			</TooltipTrigger>
 			<TooltipContent>{tooltip}</TooltipContent>
 		</Tooltip>
