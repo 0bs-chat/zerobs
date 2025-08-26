@@ -191,14 +191,18 @@ const ModelManagementDialog = ({
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
 
-		if (active.id !== over?.id) {
-			const oldIndex = orderedModels.findIndex(
-				(model) => model.model_name === active.id,
-			);
-			const newIndex = orderedModels.findIndex(
-				(model) => model.model_name === over?.id,
-			);
+		if (!over) return;
 
+		const oldIndex = orderedModels.findIndex(
+			(model) => model.model_name === active.id,
+		);
+		const newIndex = orderedModels.findIndex(
+			(model) => model.model_name === over.id,
+		);
+
+		if (oldIndex < 0 || newIndex < 0) return;
+
+		if (active.id !== over.id) {
 			const newOrder = arrayMove(
 				orderedModels.map((m) => m.model_name),
 				oldIndex,
@@ -368,18 +372,21 @@ export function ModelPopover({
 	const selectModelByIndex = useCallback(
 		async (index: number) => {
 			if (isSelecting) return;
+
 			if (index < filteredModels.length) {
-				setIsSelecting(true);
 				const model = filteredModels[index];
-				console.log(
-					`[ModelSelector] selecting model #${index + 1}: ${model.label}`,
-				);
-				await handleModelSelect(model.model_name);
-				setIsSelecting(false);
+				setIsSelecting(true);
+				try {
+					await handleModelSelect(model.model_name);
+				} finally {
+					setIsSelecting(false);
+				}
 			} else {
-				console.warn(
-					`[ModelSelector] index ${index} out of range (only ${filteredModels.length} models)`,
-				);
+				if (process.env.NODE_ENV !== "production") {
+					console.warn(
+						`[ModelSelector] index ${index} out of range (only ${filteredModels.length} models)`,
+					);
+				}
 			}
 		},
 		[filteredModels, handleModelSelect, isSelecting],

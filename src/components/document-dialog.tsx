@@ -70,7 +70,12 @@ export const DocumentDialog = () => {
 					}
 					case "url":
 					case "site": {
-						setPreviewUrl(document.key as string);
+						const raw = String(document.key ?? "");
+						if (!isSafeHttpUrl(raw)) {
+							setPreviewError("Invalid URL. Only http(s) URLs are allowed.");
+						} else {
+							setPreviewUrl(raw);
+						}
 						break;
 					}
 					case "youtube": {
