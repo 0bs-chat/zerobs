@@ -28,11 +28,11 @@ export const Reasoning = memo(
 						<div className="flex items-center gap-2">
 							<BrainIcon className="text-foreground/70 pointer-events-none size-4 " />
 							<div className="text-foreground/70">Reasoning</div>
+							{isStreaming && (
+								<Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+							)}
 						</div>
 						<ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />
-						{isStreaming && (
-							<Loader2 className="h-3 w-3 animate-spin text-muted-foreground translate-y-[.1rem]" />
-						)}
 					</AccordionTrigger>
 					<AccordionContent className="bg-card rounded-md p-2 border mt-2 max-h-[36rem] overflow-y-auto">
 						<Markdown
