@@ -15,9 +15,10 @@ import {
   modelPreferencesAtom,
 	type ModelPreferences,
 } from "@/store/chatStore";
+import { useModels } from "@/hooks/chats/use-models";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { models } from "../../../../../convex/langchain/models";
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -230,33 +231,7 @@ export function ModelPopover({
 		mutationFn: useConvexMutation(api.chats.mutations.update),
 	});
 	const [preferences, setPreferences] = useAtom(modelPreferencesAtom);
-	
-	// Derive ordered models from preferences
-	const orderedModels = React.useMemo(() => {
-		const allModels = [...models];
-		const modelMap = new Map(allModels.map(model => [model.model_name, model]));
-		
-		// Start with models in the preferred order
-		const orderedModels = preferences.order
-			.map(modelName => modelMap.get(modelName))
-			.filter(Boolean) as typeof models;
-		
-		// Add any new models that aren't in the order yet
-		const orderedModelNames = new Set(preferences.order);
-		const newModels = allModels.filter(
-			(model: typeof models[number]) => !orderedModelNames.has(model.model_name) && 
-			         !preferences.hidden.includes(model.model_name)
-		);
-		
-		return [...orderedModels, ...newModels];
-	}, [preferences]);
-	
-	// Derive visible models
-	const visibleModels = React.useMemo(() => {
-		return orderedModels.filter((model: typeof models[number]) => 
-			!preferences.hidden.includes(model.model_name)
-		);
-	}, [orderedModels, preferences.hidden]);
+	const { orderedModels, visibleModels } = useModels();
 	
 	const selectedModelConfig = visibleModels.find(
 		(m) => m.model_name === selectedModel,

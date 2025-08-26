@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { BranchNavigation } from "./branch-navigation";
 import { Button } from "@/components/ui/button";
@@ -111,7 +111,7 @@ export const UserUtilsBar = memo(
 			return typeof content === "string" ? content : "";
 		})();
 
-		const handleSubmit = (applySame: boolean) => {
+		const handleSubmit = (applySame: boolean, model?: string) => {
 			if (!editedText) {
 				return;
 			}
@@ -124,11 +124,33 @@ export const UserUtilsBar = memo(
 				applySame: applySame,
 			}).then(() => {
 				if (applySame === false) {
-					chat({ chatId: input.message.chatId! });
+					chat({ chatId: input.message.chatId!, model });
 				}
 			});
 			onDone?.();
 		};
+
+		const handleKeyDown = useCallback(
+			(e: KeyboardEvent) => {
+				if (!isEditing) return;
+				
+				if (e.key === "Enter" && !e.shiftKey) {
+					// Enter: Submit and regenerate
+					e.preventDefault();
+					handleSubmit(false);
+				}
+			},
+			[isEditing, handleSubmit],
+		);
+
+		useEffect(() => {
+			if (isEditing) {
+				document.addEventListener("keydown", handleKeyDown);
+				return () => {
+					document.removeEventListener("keydown", handleKeyDown);
+				};
+			}
+		}, [isEditing, handleKeyDown]);
 
 		if (isEditing) {
 			return (
@@ -156,11 +178,20 @@ export const UserUtilsBar = memo(
 						tooltip="Submit"
 						ariaLabel="Submit"
 					/>
-					<TooltipButton
-						onClick={() => handleSubmit(false)}
-						icon={<CheckCheck className="h-4 w-4 text-foreground/70" />}
-						tooltip="Submit and Regenerate"
-						ariaLabel="Submit and Regenerate"
+					<ActionDropdown
+						trigger={
+							<Button variant="ghost" size="icon" className="cursor-pointer">
+								<CheckCheck className="h-4 w-4 text-foreground/70" />
+							</Button>
+						}
+						actionLabel={
+							<>
+								<CheckCheck className="h-4 w-4 mr-2" />
+								Submit and Regenerate
+							</>
+						}
+						onAction={() => handleSubmit(false)}
+						onActionWithModel={(model) => handleSubmit(false, model)}
 					/>
 					<ActionDropdown
 						trigger={

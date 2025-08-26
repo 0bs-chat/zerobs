@@ -5,9 +5,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { models } from "../../../../../convex/langchain/models";
 import { getTagInfo } from "@/lib/helper";
 import { Hammer } from "lucide-react";
+import { useModels } from "@/hooks/chats/use-models";
 
 export function ActionDropdown({
   trigger,
@@ -20,6 +20,8 @@ export function ActionDropdown({
   onAction: () => void;
   onActionWithModel: (model: string) => void;
 }) {
+  const { visibleModels } = useModels();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
@@ -31,9 +33,7 @@ export function ActionDropdown({
           {actionLabel}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {models
-          .filter((model) => !model.hidden)
-          .map((model) => {
+        {visibleModels.map((model) => {
             const hammerTagInfo = getTagInfo("toolSupport");
             const thinkingTagInfo = getTagInfo("thinking");
             return (
