@@ -9,11 +9,15 @@ export async function verifyEnv(
   env: Record<string, string>,
 ): Promise<Record<string, string>> {
   const envJwts: Record<string, string> = {};
-  
+
   await Promise.all(
     Object.entries(env).map(async ([key, value]) => {
       try {
-        if (value && typeof value === 'string' && value.split('.').length === 3) {
+        if (
+          value &&
+          typeof value === "string" &&
+          value.split(".").length === 3
+        ) {
           const { value: decryptedValue } = await verifyJwt(value);
           envJwts[key] = decryptedValue;
         } else {
@@ -25,7 +29,7 @@ export async function verifyEnv(
       }
     }),
   );
-  
+
   return envJwts;
 }
 

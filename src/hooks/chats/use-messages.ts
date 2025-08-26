@@ -65,7 +65,7 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   useEffect(() => {
     if (!messages || messages.length === 0) return;
     if (userSelectedPath) return;
-    
+
     // Update global path if different
     if (!pathsEqual(globalBranchPath, latestPath)) {
       // copy to avoid accidental external mutation
@@ -98,7 +98,7 @@ export const useNavigateBranch = () => {
       if (typeof direction === "number") {
         globalBranchPath[depth] = direction;
       } else {
-        const currentIndex = globalBranchPath[depth] ?? (totalBranches - 1); // Default to current displayed branch
+        const currentIndex = globalBranchPath[depth] ?? totalBranches - 1; // Default to current displayed branch
         if (direction === "next") {
           globalBranchPath[depth] = (currentIndex + 1) % totalBranches;
         } else if (direction === "prev") {

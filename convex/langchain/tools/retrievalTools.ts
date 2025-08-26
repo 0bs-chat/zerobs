@@ -27,7 +27,9 @@ export const getRetrievalTools = async (
         .array(z.string())
         .min(1)
         .max(5)
-        .describe("List of search queries to find relevant documents (1-5 queries)"),
+        .describe(
+          "List of search queries to find relevant documents (1-5 queries)",
+        ),
       limit: z
         .number()
         .min(1)
@@ -35,7 +37,13 @@ export const getRetrievalTools = async (
         .describe("Number of results to return")
         .default(10),
     }),
-    func: async ({ queries, limit = 10 }: { queries: string[]; limit?: number }) => {
+    func: async ({
+      queries,
+      limit = 10,
+    }: {
+      queries: string[];
+      limit?: number;
+    }) => {
       // Initialize ConvexVectorStore with the embedding model
       const embeddingModel = await getEmbeddingModel(config.ctx, "embeddings");
       const vectorStore = new ConvexVectorStore(embeddingModel, {
@@ -59,24 +67,28 @@ export const getRetrievalTools = async (
       // Perform similarity search for each query, filtering by selected documents
       let allResults = [];
       for (const query of queries) {
-        const results = await vectorStore.similaritySearch(query, Math.ceil(limit / queries.length), {
-          filter: (q) =>
-            q.or(
-              // Assuming documentId is stored in the `source` field of metadata
-              ...includedProjectDocuments.map((document) =>
-                q.eq("metadata", {
-                  source: document.documentId,
-                }),
+        const results = await vectorStore.similaritySearch(
+          query,
+          Math.ceil(limit / queries.length),
+          {
+            filter: (q) =>
+              q.or(
+                // Assuming documentId is stored in the `source` field of metadata
+                ...includedProjectDocuments.map((document) =>
+                  q.eq("metadata", {
+                    source: document.documentId,
+                  }),
+                ),
               ),
-            ),
-        });
-        
+          },
+        );
+
         // Add query metadata to results
-        const resultsWithQuery = results.map(doc => ({
+        const resultsWithQuery = results.map((doc) => ({
           ...doc,
-          metadata: { ...doc.metadata, query }
+          metadata: { ...doc.metadata, query },
         }));
-        
+
         allResults.push(...resultsWithQuery);
       }
 
@@ -90,7 +102,9 @@ export const getRetrievalTools = async (
 
       const documents = await Promise.all(
         allResults.map(async (doc) => {
-          const projectDocument = documentsMap.get((doc.metadata as any).source);
+          const projectDocument = documentsMap.get(
+            (doc.metadata as any).source,
+          );
           if (!projectDocument) {
             return null;
           }
@@ -125,7 +139,9 @@ export const getRetrievalTools = async (
         .array(z.string())
         .min(1)
         .max(5)
-        .describe("List of search queries to find relevant web information (1-5 queries)"),
+        .describe(
+          "List of search queries to find relevant web information (1-5 queries)",
+        ),
       topic: z
         .union([
           z.literal("company"),

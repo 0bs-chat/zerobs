@@ -28,7 +28,8 @@ export type MessageGroup = {
 /**
  * Helpers
  */
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(n, max));
+const clamp = (n: number, min: number, max: number) =>
+  Math.max(min, Math.min(n, max));
 
 // Cache parsed BaseMessage to avoid repeated JSON.parse + mapping
 const parsedMessageCache = new Map<string, BaseMessage>();
@@ -53,10 +54,8 @@ const cmpId = (a: Id<"chatMessages">, b: Id<"chatMessages">) => {
   return as < bs ? -1 : as > bs ? 1 : 0;
 };
 
-const byCreatedAsc = (
-  a: Doc<"chatMessages">,
-  b: Doc<"chatMessages">,
-) => a._creationTime - b._creationTime || cmpId(a._id, b._id);
+const byCreatedAsc = (a: Doc<"chatMessages">, b: Doc<"chatMessages">) =>
+  a._creationTime - b._creationTime || cmpId(a._id, b._id);
 
 type Index = {
   byId: Map<Id<"chatMessages">, Doc<"chatMessages">>;
@@ -67,16 +66,11 @@ type Index = {
   rootIndex: Map<Id<"chatMessages">, number>;
 };
 
-const indexChatMessages = (
-  messages: Doc<"chatMessages">[],
-): Index => {
+const indexChatMessages = (messages: Doc<"chatMessages">[]): Index => {
   const byId = new Map<Id<"chatMessages">, Doc<"chatMessages">>();
   for (const m of messages) byId.set(m._id, m);
 
-  const children = new Map<
-    Id<"chatMessages">,
-    Doc<"chatMessages">[]
-  >();
+  const children = new Map<Id<"chatMessages">, Doc<"chatMessages">[]>();
   const roots: Doc<"chatMessages">[] = [];
   const indexInParent = new Map<Id<"chatMessages">, number>();
   const rootIndex = new Map<Id<"chatMessages">, number>();
@@ -123,8 +117,7 @@ export const buildThreadFromMessages = (
   let depth = 0;
 
   while (current.length > 0) {
-    const desired =
-      path?.[depth] ?? current.length - 1; // default to newest created
+    const desired = path?.[depth] ?? current.length - 1; // default to newest created
     const i = clamp(desired, 0, current.length - 1);
     const node = current[i];
 
@@ -249,7 +242,5 @@ export function getThreadFromMessage(
     current = current.parentId ? byId.get(current.parentId) : undefined;
   }
 
-  return chain
-    .reverse()
-    .map((m) => ({ ...m, message: toBaseMessage(m) }));
+  return chain.reverse().map((m) => ({ ...m, message: toBaseMessage(m) }));
 }

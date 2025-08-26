@@ -8,261 +8,263 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router";
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
-import { Route as SettingsIntegrationsRouteImport } from './routes/settings/integrations'
-import { Route as SettingsFeedbackRouteImport } from './routes/settings/feedback'
-import { Route as SettingsBillingRouteImport } from './routes/settings/billing'
-import { Route as SettingsApiKeysRouteImport } from './routes/settings/apiKeys'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as AuthRouteImport } from "./routes/auth";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as SettingsProfileRouteImport } from "./routes/settings/profile";
+import { Route as SettingsIntegrationsRouteImport } from "./routes/settings/integrations";
+import { Route as SettingsFeedbackRouteImport } from "./routes/settings/feedback";
+import { Route as SettingsBillingRouteImport } from "./routes/settings/billing";
+import { Route as SettingsApiKeysRouteImport } from "./routes/settings/apiKeys";
 
-const ProjectsLazyRouteImport = createFileRoute('/projects')()
-const SettingsRouteLazyRouteImport = createFileRoute('/settings')()
-const ProjectProjectIdLazyRouteImport = createFileRoute('/project/$projectId')()
-const ChatChatIdLazyRouteImport = createFileRoute('/chat/$chatId')()
+const ProjectsLazyRouteImport = createFileRoute("/projects")();
+const SettingsRouteLazyRouteImport = createFileRoute("/settings")();
+const ProjectProjectIdLazyRouteImport = createFileRoute(
+  "/project/$projectId",
+)();
+const ChatChatIdLazyRouteImport = createFileRoute("/chat/$chatId")();
 
 const ProjectsLazyRoute = ProjectsLazyRouteImport.update({
-  id: '/projects',
-  path: '/projects',
+  id: "/projects",
+  path: "/projects",
   getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/projects.lazy').then((d) => d.Route))
+} as any).lazy(() => import("./routes/projects.lazy").then((d) => d.Route));
 const SettingsRouteLazyRoute = SettingsRouteLazyRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+  id: "/settings",
+  path: "/settings",
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
-  import('./routes/settings/route.lazy').then((d) => d.Route),
-)
+  import("./routes/settings/route.lazy").then((d) => d.Route),
+);
 const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+  id: "/auth",
+  path: "/auth",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ProjectProjectIdLazyRoute = ProjectProjectIdLazyRouteImport.update({
-  id: '/project/$projectId',
-  path: '/project/$projectId',
+  id: "/project/$projectId",
+  path: "/project/$projectId",
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
-  import('./routes/project.$projectId.lazy').then((d) => d.Route),
-)
+  import("./routes/project.$projectId.lazy").then((d) => d.Route),
+);
 const ChatChatIdLazyRoute = ChatChatIdLazyRouteImport.update({
-  id: '/chat/$chatId',
-  path: '/chat/$chatId',
+  id: "/chat/$chatId",
+  path: "/chat/$chatId",
   getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/chat.$chatId.lazy').then((d) => d.Route))
+} as any).lazy(() => import("./routes/chat.$chatId.lazy").then((d) => d.Route));
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+  id: "/profile",
+  path: "/profile",
   getParentRoute: () => SettingsRouteLazyRoute,
-} as any)
+} as any);
 const SettingsIntegrationsRoute = SettingsIntegrationsRouteImport.update({
-  id: '/integrations',
-  path: '/integrations',
+  id: "/integrations",
+  path: "/integrations",
   getParentRoute: () => SettingsRouteLazyRoute,
-} as any)
+} as any);
 const SettingsFeedbackRoute = SettingsFeedbackRouteImport.update({
-  id: '/feedback',
-  path: '/feedback',
+  id: "/feedback",
+  path: "/feedback",
   getParentRoute: () => SettingsRouteLazyRoute,
-} as any)
+} as any);
 const SettingsBillingRoute = SettingsBillingRouteImport.update({
-  id: '/billing',
-  path: '/billing',
+  id: "/billing",
+  path: "/billing",
   getParentRoute: () => SettingsRouteLazyRoute,
-} as any)
+} as any);
 const SettingsApiKeysRoute = SettingsApiKeysRouteImport.update({
-  id: '/apiKeys',
-  path: '/apiKeys',
+  id: "/apiKeys",
+  path: "/apiKeys",
   getParentRoute: () => SettingsRouteLazyRoute,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/settings': typeof SettingsRouteLazyRouteWithChildren
-  '/projects': typeof ProjectsLazyRoute
-  '/settings/apiKeys': typeof SettingsApiKeysRoute
-  '/settings/billing': typeof SettingsBillingRoute
-  '/settings/feedback': typeof SettingsFeedbackRoute
-  '/settings/integrations': typeof SettingsIntegrationsRoute
-  '/settings/profile': typeof SettingsProfileRoute
-  '/chat/$chatId': typeof ChatChatIdLazyRoute
-  '/project/$projectId': typeof ProjectProjectIdLazyRoute
+  "/": typeof IndexRoute;
+  "/auth": typeof AuthRoute;
+  "/settings": typeof SettingsRouteLazyRouteWithChildren;
+  "/projects": typeof ProjectsLazyRoute;
+  "/settings/apiKeys": typeof SettingsApiKeysRoute;
+  "/settings/billing": typeof SettingsBillingRoute;
+  "/settings/feedback": typeof SettingsFeedbackRoute;
+  "/settings/integrations": typeof SettingsIntegrationsRoute;
+  "/settings/profile": typeof SettingsProfileRoute;
+  "/chat/$chatId": typeof ChatChatIdLazyRoute;
+  "/project/$projectId": typeof ProjectProjectIdLazyRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/settings': typeof SettingsRouteLazyRouteWithChildren
-  '/projects': typeof ProjectsLazyRoute
-  '/settings/apiKeys': typeof SettingsApiKeysRoute
-  '/settings/billing': typeof SettingsBillingRoute
-  '/settings/feedback': typeof SettingsFeedbackRoute
-  '/settings/integrations': typeof SettingsIntegrationsRoute
-  '/settings/profile': typeof SettingsProfileRoute
-  '/chat/$chatId': typeof ChatChatIdLazyRoute
-  '/project/$projectId': typeof ProjectProjectIdLazyRoute
+  "/": typeof IndexRoute;
+  "/auth": typeof AuthRoute;
+  "/settings": typeof SettingsRouteLazyRouteWithChildren;
+  "/projects": typeof ProjectsLazyRoute;
+  "/settings/apiKeys": typeof SettingsApiKeysRoute;
+  "/settings/billing": typeof SettingsBillingRoute;
+  "/settings/feedback": typeof SettingsFeedbackRoute;
+  "/settings/integrations": typeof SettingsIntegrationsRoute;
+  "/settings/profile": typeof SettingsProfileRoute;
+  "/chat/$chatId": typeof ChatChatIdLazyRoute;
+  "/project/$projectId": typeof ProjectProjectIdLazyRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/settings': typeof SettingsRouteLazyRouteWithChildren
-  '/projects': typeof ProjectsLazyRoute
-  '/settings/apiKeys': typeof SettingsApiKeysRoute
-  '/settings/billing': typeof SettingsBillingRoute
-  '/settings/feedback': typeof SettingsFeedbackRoute
-  '/settings/integrations': typeof SettingsIntegrationsRoute
-  '/settings/profile': typeof SettingsProfileRoute
-  '/chat/$chatId': typeof ChatChatIdLazyRoute
-  '/project/$projectId': typeof ProjectProjectIdLazyRoute
+  __root__: typeof rootRouteImport;
+  "/": typeof IndexRoute;
+  "/auth": typeof AuthRoute;
+  "/settings": typeof SettingsRouteLazyRouteWithChildren;
+  "/projects": typeof ProjectsLazyRoute;
+  "/settings/apiKeys": typeof SettingsApiKeysRoute;
+  "/settings/billing": typeof SettingsBillingRoute;
+  "/settings/feedback": typeof SettingsFeedbackRoute;
+  "/settings/integrations": typeof SettingsIntegrationsRoute;
+  "/settings/profile": typeof SettingsProfileRoute;
+  "/chat/$chatId": typeof ChatChatIdLazyRoute;
+  "/project/$projectId": typeof ProjectProjectIdLazyRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
-    | '/'
-    | '/auth'
-    | '/settings'
-    | '/projects'
-    | '/settings/apiKeys'
-    | '/settings/billing'
-    | '/settings/feedback'
-    | '/settings/integrations'
-    | '/settings/profile'
-    | '/chat/$chatId'
-    | '/project/$projectId'
-  fileRoutesByTo: FileRoutesByTo
+    | "/"
+    | "/auth"
+    | "/settings"
+    | "/projects"
+    | "/settings/apiKeys"
+    | "/settings/billing"
+    | "/settings/feedback"
+    | "/settings/integrations"
+    | "/settings/profile"
+    | "/chat/$chatId"
+    | "/project/$projectId";
+  fileRoutesByTo: FileRoutesByTo;
   to:
-    | '/'
-    | '/auth'
-    | '/settings'
-    | '/projects'
-    | '/settings/apiKeys'
-    | '/settings/billing'
-    | '/settings/feedback'
-    | '/settings/integrations'
-    | '/settings/profile'
-    | '/chat/$chatId'
-    | '/project/$projectId'
+    | "/"
+    | "/auth"
+    | "/settings"
+    | "/projects"
+    | "/settings/apiKeys"
+    | "/settings/billing"
+    | "/settings/feedback"
+    | "/settings/integrations"
+    | "/settings/profile"
+    | "/chat/$chatId"
+    | "/project/$projectId";
   id:
-    | '__root__'
-    | '/'
-    | '/auth'
-    | '/settings'
-    | '/projects'
-    | '/settings/apiKeys'
-    | '/settings/billing'
-    | '/settings/feedback'
-    | '/settings/integrations'
-    | '/settings/profile'
-    | '/chat/$chatId'
-    | '/project/$projectId'
-  fileRoutesById: FileRoutesById
+    | "__root__"
+    | "/"
+    | "/auth"
+    | "/settings"
+    | "/projects"
+    | "/settings/apiKeys"
+    | "/settings/billing"
+    | "/settings/feedback"
+    | "/settings/integrations"
+    | "/settings/profile"
+    | "/chat/$chatId"
+    | "/project/$projectId";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
-  SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren
-  ProjectsLazyRoute: typeof ProjectsLazyRoute
-  ChatChatIdLazyRoute: typeof ChatChatIdLazyRoute
-  ProjectProjectIdLazyRoute: typeof ProjectProjectIdLazyRoute
+  IndexRoute: typeof IndexRoute;
+  AuthRoute: typeof AuthRoute;
+  SettingsRouteLazyRoute: typeof SettingsRouteLazyRouteWithChildren;
+  ProjectsLazyRoute: typeof ProjectsLazyRoute;
+  ChatChatIdLazyRoute: typeof ChatChatIdLazyRoute;
+  ProjectProjectIdLazyRoute: typeof ProjectProjectIdLazyRoute;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/projects': {
-      id: '/projects'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/project/$projectId': {
-      id: '/project/$projectId'
-      path: '/project/$projectId'
-      fullPath: '/project/$projectId'
-      preLoaderRoute: typeof ProjectProjectIdLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/chat/$chatId': {
-      id: '/chat/$chatId'
-      path: '/chat/$chatId'
-      fullPath: '/chat/$chatId'
-      preLoaderRoute: typeof ChatChatIdLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings/profile': {
-      id: '/settings/profile'
-      path: '/profile'
-      fullPath: '/settings/profile'
-      preLoaderRoute: typeof SettingsProfileRouteImport
-      parentRoute: typeof SettingsRouteLazyRoute
-    }
-    '/settings/integrations': {
-      id: '/settings/integrations'
-      path: '/integrations'
-      fullPath: '/settings/integrations'
-      preLoaderRoute: typeof SettingsIntegrationsRouteImport
-      parentRoute: typeof SettingsRouteLazyRoute
-    }
-    '/settings/feedback': {
-      id: '/settings/feedback'
-      path: '/feedback'
-      fullPath: '/settings/feedback'
-      preLoaderRoute: typeof SettingsFeedbackRouteImport
-      parentRoute: typeof SettingsRouteLazyRoute
-    }
-    '/settings/billing': {
-      id: '/settings/billing'
-      path: '/billing'
-      fullPath: '/settings/billing'
-      preLoaderRoute: typeof SettingsBillingRouteImport
-      parentRoute: typeof SettingsRouteLazyRoute
-    }
-    '/settings/apiKeys': {
-      id: '/settings/apiKeys'
-      path: '/apiKeys'
-      fullPath: '/settings/apiKeys'
-      preLoaderRoute: typeof SettingsApiKeysRouteImport
-      parentRoute: typeof SettingsRouteLazyRoute
-    }
+    "/projects": {
+      id: "/projects";
+      path: "/projects";
+      fullPath: "/projects";
+      preLoaderRoute: typeof ProjectsLazyRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/settings": {
+      id: "/settings";
+      path: "/settings";
+      fullPath: "/settings";
+      preLoaderRoute: typeof SettingsRouteLazyRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/auth": {
+      id: "/auth";
+      path: "/auth";
+      fullPath: "/auth";
+      preLoaderRoute: typeof AuthRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/project/$projectId": {
+      id: "/project/$projectId";
+      path: "/project/$projectId";
+      fullPath: "/project/$projectId";
+      preLoaderRoute: typeof ProjectProjectIdLazyRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/chat/$chatId": {
+      id: "/chat/$chatId";
+      path: "/chat/$chatId";
+      fullPath: "/chat/$chatId";
+      preLoaderRoute: typeof ChatChatIdLazyRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/settings/profile": {
+      id: "/settings/profile";
+      path: "/profile";
+      fullPath: "/settings/profile";
+      preLoaderRoute: typeof SettingsProfileRouteImport;
+      parentRoute: typeof SettingsRouteLazyRoute;
+    };
+    "/settings/integrations": {
+      id: "/settings/integrations";
+      path: "/integrations";
+      fullPath: "/settings/integrations";
+      preLoaderRoute: typeof SettingsIntegrationsRouteImport;
+      parentRoute: typeof SettingsRouteLazyRoute;
+    };
+    "/settings/feedback": {
+      id: "/settings/feedback";
+      path: "/feedback";
+      fullPath: "/settings/feedback";
+      preLoaderRoute: typeof SettingsFeedbackRouteImport;
+      parentRoute: typeof SettingsRouteLazyRoute;
+    };
+    "/settings/billing": {
+      id: "/settings/billing";
+      path: "/billing";
+      fullPath: "/settings/billing";
+      preLoaderRoute: typeof SettingsBillingRouteImport;
+      parentRoute: typeof SettingsRouteLazyRoute;
+    };
+    "/settings/apiKeys": {
+      id: "/settings/apiKeys";
+      path: "/apiKeys";
+      fullPath: "/settings/apiKeys";
+      preLoaderRoute: typeof SettingsApiKeysRouteImport;
+      parentRoute: typeof SettingsRouteLazyRoute;
+    };
   }
 }
 
 interface SettingsRouteLazyRouteChildren {
-  SettingsApiKeysRoute: typeof SettingsApiKeysRoute
-  SettingsBillingRoute: typeof SettingsBillingRoute
-  SettingsFeedbackRoute: typeof SettingsFeedbackRoute
-  SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute
-  SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsApiKeysRoute: typeof SettingsApiKeysRoute;
+  SettingsBillingRoute: typeof SettingsBillingRoute;
+  SettingsFeedbackRoute: typeof SettingsFeedbackRoute;
+  SettingsIntegrationsRoute: typeof SettingsIntegrationsRoute;
+  SettingsProfileRoute: typeof SettingsProfileRoute;
 }
 
 const SettingsRouteLazyRouteChildren: SettingsRouteLazyRouteChildren = {
@@ -271,10 +273,10 @@ const SettingsRouteLazyRouteChildren: SettingsRouteLazyRouteChildren = {
   SettingsFeedbackRoute: SettingsFeedbackRoute,
   SettingsIntegrationsRoute: SettingsIntegrationsRoute,
   SettingsProfileRoute: SettingsProfileRoute,
-}
+};
 
 const SettingsRouteLazyRouteWithChildren =
-  SettingsRouteLazyRoute._addFileChildren(SettingsRouteLazyRouteChildren)
+  SettingsRouteLazyRoute._addFileChildren(SettingsRouteLazyRouteChildren);
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -283,7 +285,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsLazyRoute: ProjectsLazyRoute,
   ChatChatIdLazyRoute: ChatChatIdLazyRoute,
   ProjectProjectIdLazyRoute: ProjectProjectIdLazyRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();

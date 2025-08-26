@@ -49,7 +49,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
   const updateEnvVar = (
     index: number,
     field: "key" | "value",
-    value: string
+    value: string,
   ) => {
     const newEnvVars = [...displayEnvVars];
     newEnvVars[index] = { ...newEnvVars[index], [field]: value };
@@ -70,7 +70,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
 
   const handlePaste = (
     e: React.ClipboardEvent<HTMLInputElement>,
-    index: number
+    index: number,
   ) => {
     // Only try bulk parsing if pasting into an empty row's key field
     const currentEnvVar = displayEnvVars[index];
@@ -138,7 +138,7 @@ export const EnvVarInput = ({ envVars, onUpdate }: EnvVarInputProps) => {
 
       // Try to match JSON-style "KEY": value pattern (for non-string values like numbers, booleans)
       const jsonValueMatch = trimmedLine.match(
-        /^"([^"]+)"\s*:\s*([^,\s]+)[,]?$/
+        /^"([^"]+)"\s*:\s*([^,\s]+)[,]?$/,
       );
       if (jsonValueMatch) {
         result.push({

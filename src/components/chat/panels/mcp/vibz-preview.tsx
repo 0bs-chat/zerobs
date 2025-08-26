@@ -24,7 +24,7 @@ export const VibzPreview = () => {
     codeUrl: string;
     dashboardUrl: string;
   } | null>(null);
-  
+
   const previewIframeRef = useRef<HTMLIFrameElement>(null);
   const codeIframeRef = useRef<HTMLIFrameElement>(null);
   const dashboardIframeRef = useRef<HTMLIFrameElement>(null);
@@ -73,7 +73,7 @@ export const VibzPreview = () => {
 
   const handleRefresh = () => {
     if (!urls) return;
-    
+
     if (previewIframeRef.current) {
       previewIframeRef.current.src = urls.previewUrl;
     }

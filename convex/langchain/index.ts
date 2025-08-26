@@ -30,10 +30,10 @@ export const generateTitle = internalAction({
       ctx,
       [
         mapStoredMessageToChatMessage(
-          JSON.parse(args.message.message) as StoredMessage
+          JSON.parse(args.message.message) as StoredMessage,
         ),
       ],
-      args.chat.model
+      args.chat.model,
     );
     const model = await getModel(ctx, "worker", undefined, args.chat.userId);
     const titleSchema = z.object({
@@ -44,7 +44,7 @@ export const generateTitle = internalAction({
     const structuredModel = model.withStructuredOutput(titleSchema);
     const title = (await structuredModel.invoke([
       new SystemMessage(
-        "You are a title generator that generates a short title for the following user message."
+        "You are a title generator that generates a short title for the following user message.",
       ),
       ...firstMessage,
     ])) as z.infer<typeof titleSchema>;
@@ -83,7 +83,7 @@ export const chat = action({
         configurable: { ctx, chat, customPrompt, thread_id: chatId },
         recursionLimit: 30,
         signal: abort.signal,
-      }
+      },
     );
 
     let streamDoc: Doc<"streams"> | null = null;
@@ -108,19 +108,19 @@ export const chat = action({
                 chunks,
                 completedSteps: [
                   ...(localCheckpoint?.pastSteps?.map(
-                    (pastStep) => pastStep[0]
+                    (pastStep) => pastStep[0],
                   ) ?? []),
                   ...(localCheckpoint?.plan && localCheckpoint.plan.length > 0
                     ? [
                         ...(localCheckpoint.plan[0].type === "parallel"
                           ? localCheckpoint.plan[0].data.map(
-                              (step) => step.step
+                              (step) => step.step,
                             )
                           : [localCheckpoint.plan[0].data.step]),
                       ]
                     : []),
                 ],
-              }
+              },
             );
           }
           if (streamDoc?.status === "cancelled") {
@@ -146,7 +146,7 @@ export const chat = action({
             const allowedNodes = ["baseAgent", "simple", "plannerAgent"];
             if (
               allowedNodes.some((node) =>
-                evt.metadata?.checkpoint_ns?.startsWith(node)
+                evt.metadata?.checkpoint_ns?.startsWith(node),
               )
             ) {
               if (evt.event === "on_chat_model_stream") {
@@ -156,7 +156,7 @@ export const chat = action({
                     content: evt.data?.chunk?.content ?? "",
                     reasoning:
                       evt.data?.chunk?.additional_kwargs?.reasoning_content,
-                  } as AIChunkGroup)
+                  } as AIChunkGroup),
                 );
               } else if (evt.event === "on_tool_start") {
                 buffer.push(
@@ -166,7 +166,7 @@ export const chat = action({
                     input: evt.data?.input,
                     isComplete: false,
                     toolCallId: evt.run_id,
-                  } as ToolChunkGroup)
+                  } as ToolChunkGroup),
                 );
               } else if (evt.event === "on_tool_end") {
                 let output = evt.data?.output.content;
@@ -187,7 +187,7 @@ export const chat = action({
                         };
                       }
                       return item;
-                    })
+                    }),
                   );
                 }
 
@@ -199,7 +199,7 @@ export const chat = action({
                     output,
                     isComplete: true,
                     toolCallId: evt.run_id,
-                  } as ToolChunkGroup)
+                  } as ToolChunkGroup),
                 );
               }
             }
@@ -264,12 +264,12 @@ export const chat = action({
                     type: "file",
                     key,
                     size: blob.size,
-                  }
+                  },
                 );
                 return { type: "file", file: { file_id: docId } };
               }
               return item;
-            })
+            }),
           );
           stored = {
             ...stored,
@@ -326,10 +326,12 @@ export const branchChat = action({
     chatId: v.id("chats"),
     branchFrom: v.id("chatMessages"),
     model: v.optional(v.string()),
-    editedContent: v.optional(v.object({
-      text: v.optional(v.string()),
-      documents: v.optional(v.array(v.id("documents"))),
-    })),
+    editedContent: v.optional(
+      v.object({
+        text: v.optional(v.string()),
+        documents: v.optional(v.array(v.id("documents"))),
+      }),
+    ),
   }),
   handler: async (ctx, args): Promise<{ newChatId: Id<"chats"> }> => {
     const chatDoc = await ctx.runQuery(api.chats.queries.get, {
@@ -352,7 +354,7 @@ export const branchChat = action({
     });
 
     const branchFromMessage = allMessages.find(
-      (m) => m._id === args.branchFrom
+      (m) => m._id === args.branchFrom,
     );
     if (!branchFromMessage) {
       throw new Error("Branch message not found");
@@ -373,7 +375,7 @@ export const branchChat = action({
     // If edited content is provided, replace the last message with edited content
     if (args.editedContent) {
       const { text, documents } = args.editedContent;
-      
+
       // Only proceed if there's actual content
       if (text || (documents && documents.length > 0)) {
         // Create the edited message
@@ -392,16 +394,16 @@ export const branchChat = action({
                   : []),
               ],
             }),
-          ])[0]
+          ])[0],
         );
-        
+
         // Replace the last message in the thread with the edited content
         if (thread.length > 0) {
           // We'll handle this replacement during the mapping phase
           thread[thread.length - 1] = {
             ...thread[thread.length - 1],
             // Mark this message for replacement
-            _replacementMessage: editedMessage
+            _replacementMessage: editedMessage,
           } as any;
         } else {
           // If no thread, create a new message
@@ -418,10 +420,10 @@ export const branchChat = action({
                 : []),
             ],
           });
-          
+
           thread.push({
             ...branchFromMessage,
-            message: editedHumanMessage
+            message: editedHumanMessage,
           });
         }
       }
@@ -431,8 +433,13 @@ export const branchChat = action({
       await ctx.runMutation(internal.chats.mutations.createRaw, {
         chatId: newChatId,
         messages: thread.map((m) => ({
-          message: (m as any)._replacementMessage || 
-                  (typeof m.message === 'string' ? m.message : JSON.stringify(mapChatMessagesToStoredMessages([m.message])[0]))
+          message:
+            (m as any)._replacementMessage ||
+            (typeof m.message === "string"
+              ? m.message
+              : JSON.stringify(
+                  mapChatMessagesToStoredMessages([m.message])[0],
+                )),
         })),
       });
     }

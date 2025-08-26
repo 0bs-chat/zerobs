@@ -1,19 +1,27 @@
 import { Button } from "@/components/ui/button";
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
-import { Hammer, ChevronDownIcon, Search, Settings, GripVertical, Eye, EyeOff } from "lucide-react";
+import {
+  Hammer,
+  ChevronDownIcon,
+  Search,
+  Settings,
+  GripVertical,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { useSetAtom, useAtom } from "jotai";
 import { getTagInfo } from "@/lib/helper";
 import { api } from "../../../../../convex/_generated/api";
 import { useMutation } from "@tanstack/react-query";
 import { useConvexMutation } from "@convex-dev/react-query";
-import { 
-  newChatAtom, 
+import {
+  newChatAtom,
   modelPreferencesAtom,
-	type ModelPreferences,
+  type ModelPreferences,
 } from "@/store/chatStore";
 import { useModels } from "@/hooks/chats/use-models";
 import type { Id } from "../../../../../convex/_generated/dataModel";
@@ -26,14 +34,31 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // Sortable Model Item Component
-const SortableModelItem = ({ model, preferences, onToggleVisibility }: {
-  model: typeof models[number];
+const SortableModelItem = ({
+  model,
+  preferences,
+  onToggleVisibility,
+}: {
+  model: (typeof models)[number];
   preferences: ModelPreferences;
   onToggleVisibility: (modelName: string) => void;
 }) => {
@@ -61,7 +86,7 @@ const SortableModelItem = ({ model, preferences, onToggleVisibility }: {
       ref={setNodeRef}
       style={style}
       className={`flex items-center gap-2 px-3 py-3 rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
-        isDragging ? 'shadow-lg' : ''
+        isDragging ? "shadow-lg" : ""
       }`}
     >
       <div className="flex items-center gap-2">
@@ -72,7 +97,7 @@ const SortableModelItem = ({ model, preferences, onToggleVisibility }: {
         >
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
-        
+
         <img
           src={model.image}
           aria-label={`${model.label} model icon`}
@@ -83,8 +108,10 @@ const SortableModelItem = ({ model, preferences, onToggleVisibility }: {
               : ""
           }`}
         />
-        
-        <span className={`text-sm ${isHidden ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+
+        <span
+          className={`text-sm ${isHidden ? "text-muted-foreground line-through" : "text-foreground"}`}
+        >
           {model.label}
         </span>
       </div>
@@ -115,8 +142,12 @@ const SortableModelItem = ({ model, preferences, onToggleVisibility }: {
             </div>
           )}
           {model.isThinking && (
-            <div className={`p-1 rounded-md ${thinkingTagInfo.parentClassName}`}>
-              <thinkingTagInfo.icon className={`h-3 w-3 ${thinkingTagInfo.className}`} />
+            <div
+              className={`p-1 rounded-md ${thinkingTagInfo.parentClassName}`}
+            >
+              <thinkingTagInfo.icon
+                className={`h-3 w-3 ${thinkingTagInfo.className}`}
+              />
             </div>
           )}
         </div>
@@ -140,38 +171,41 @@ const SortableModelItem = ({ model, preferences, onToggleVisibility }: {
 };
 
 // Model Management Dialog Component
-const ModelManagementDialog = ({ 
-  orderedModels, 
-  preferences, 
-  onReorderModels, 
-  onToggleVisibility 
+const ModelManagementDialog = ({
+  orderedModels,
+  preferences,
+  onReorderModels,
+  onToggleVisibility,
 }: {
   orderedModels: typeof models;
   preferences: ModelPreferences;
   onReorderModels: (newOrder: string[]) => void;
   onToggleVisibility: (modelName: string) => void;
 }) => {
-  
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (active.id !== over?.id) {
-      const oldIndex = orderedModels.findIndex(model => model.model_name === active.id);
-      const newIndex = orderedModels.findIndex(model => model.model_name === over?.id);
-      
-      const newOrder = arrayMove(
-        orderedModels.map(m => m.model_name), 
-        oldIndex, 
-        newIndex
+      const oldIndex = orderedModels.findIndex(
+        (model) => model.model_name === active.id,
       );
-      
+      const newIndex = orderedModels.findIndex(
+        (model) => model.model_name === over?.id,
+      );
+
+      const newOrder = arrayMove(
+        orderedModels.map((m) => m.model_name),
+        oldIndex,
+        newIndex,
+      );
+
       onReorderModels(newOrder);
     }
   };
@@ -192,13 +226,13 @@ const ModelManagementDialog = ({
           <DialogTitle>Manage Models</DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
-          <DndContext 
+          <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext 
-              items={orderedModels.map(m => m.model_name)} 
+            <SortableContext
+              items={orderedModels.map((m) => m.model_name)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-1">
@@ -220,211 +254,226 @@ const ModelManagementDialog = ({
 };
 
 export function ModelPopover({
-	selectedModel,
-	chatId,
+  selectedModel,
+  chatId,
 }: {
-	selectedModel: string;
-	chatId: Id<"chats">;
+  selectedModel: string;
+  chatId: Id<"chats">;
 }) {
-	const setNewChat = useSetAtom(newChatAtom);
-	const { mutateAsync: updateChatMutation } = useMutation({
-		mutationFn: useConvexMutation(api.chats.mutations.update),
-	});
-	const [preferences, setPreferences] = useAtom(modelPreferencesAtom);
-	const { orderedModels, visibleModels } = useModels();
-	
-	const selectedModelConfig = visibleModels.find(
-		(m) => m.model_name === selectedModel,
-	);
-	const [searchModel, setSearchModel] = useState("");
-	const [popoverOpen, setPopoverOpen] = useState(false);
-	const [isSelecting, setIsSelecting] = useState(false);
-	const toolSupportTag = getTagInfo("toolSupport");
-	const thinkingTagInfo = getTagInfo("thinking");
-	
-	// Detect platform for keyboard shortcut display
-	const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-	const modifierKey = isMac ? '⌥' : 'Alt';
+  const setNewChat = useSetAtom(newChatAtom);
+  const { mutateAsync: updateChatMutation } = useMutation({
+    mutationFn: useConvexMutation(api.chats.mutations.update),
+  });
+  const [preferences, setPreferences] = useAtom(modelPreferencesAtom);
+  const { orderedModels, visibleModels } = useModels();
 
-	const isNewChat = !chatId || chatId === "new";
-	
-	// Local handlers for model management
-	const handleReorderModels = useCallback((newOrder: string[]) => {
-		setPreferences((prev: ModelPreferences) => ({
-			...prev,
-			order: newOrder,
-		}));
-	}, [setPreferences]);
+  const selectedModelConfig = visibleModels.find(
+    (m) => m.model_name === selectedModel,
+  );
+  const [searchModel, setSearchModel] = useState("");
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const toolSupportTag = getTagInfo("toolSupport");
+  const thinkingTagInfo = getTagInfo("thinking");
 
-	const handleToggleVisibility = useCallback((modelName: string) => {
-		setPreferences((prev: ModelPreferences) => {
-			const isHidden = prev.hidden.includes(modelName);
-			if (isHidden) {
-				return {
-					...prev,
-					hidden: prev.hidden.filter((name: string) => name !== modelName),
-				};
-			} else {
-				return {
-					...prev,
-					hidden: [...prev.hidden, modelName],
-				};
-			}
-		});
-	}, [setPreferences]);
+  // Detect platform for keyboard shortcut display
+  const isMac =
+    typeof navigator !== "undefined" &&
+    navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const modifierKey = isMac ? "⌥" : "Alt";
 
-	const handleModelSelect = async (modelName: string) => {
-		if (isNewChat) {
-			setNewChat((prev) => ({ ...prev, model: modelName }));
-		} else {
-			await updateChatMutation({
-				chatId,
-				updates: { model: modelName },
-			});
-		}
-		setPopoverOpen(false);
-	};
+  const isNewChat = !chatId || chatId === "new";
 
-	// Get filtered models for shortcuts
-	const filteredModels = visibleModels
-		.filter((model) =>
-			model.model_name.toLowerCase().includes(searchModel.toLowerCase()) ||
-			model.label.toLowerCase().includes(searchModel.toLowerCase())
-		);
+  // Local handlers for model management
+  const handleReorderModels = useCallback(
+    (newOrder: string[]) => {
+      setPreferences((prev: ModelPreferences) => ({
+        ...prev,
+        order: newOrder,
+      }));
+    },
+    [setPreferences],
+  );
 
-	const selectModelByIndex = useCallback(async (index: number) => {
-		if (isSelecting) return;
-		if (index < filteredModels.length) {
-			setIsSelecting(true);
-			const model = filteredModels[index];
-			console.log(`[ModelSelector] selecting model #${index + 1}: ${model.label}`);
-			await handleModelSelect(model.model_name);
-			setIsSelecting(false);
-		} else {
-			console.warn(`[ModelSelector] index ${index} out of range (only ${filteredModels.length} models)`);
-		}
-	}, [filteredModels, handleModelSelect, isSelecting]);
+  const handleToggleVisibility = useCallback(
+    (modelName: string) => {
+      setPreferences((prev: ModelPreferences) => {
+        const isHidden = prev.hidden.includes(modelName);
+        if (isHidden) {
+          return {
+            ...prev,
+            hidden: prev.hidden.filter((name: string) => name !== modelName),
+          };
+        } else {
+          return {
+            ...prev,
+            hidden: [...prev.hidden, modelName],
+          };
+        }
+      });
+    },
+    [setPreferences],
+  );
 
-	// Keyboard shortcut handler
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (!e.altKey || e.repeat) return;
-			
-			const digit = parseInt(e.key, 10);
-			if (!isNaN(digit) && digit >= 1) {
-				e.preventDefault();
-				selectModelByIndex(digit - 1);
-			}
-		};
+  const handleModelSelect = async (modelName: string) => {
+    if (isNewChat) {
+      setNewChat((prev) => ({ ...prev, model: modelName }));
+    } else {
+      await updateChatMutation({
+        chatId,
+        updates: { model: modelName },
+      });
+    }
+    setPopoverOpen(false);
+  };
 
-		document.addEventListener('keydown', handleKeyDown);
-		return () => document.removeEventListener('keydown', handleKeyDown);
-	}, [selectModelByIndex]);
+  // Get filtered models for shortcuts
+  const filteredModels = visibleModels.filter(
+    (model) =>
+      model.model_name.toLowerCase().includes(searchModel.toLowerCase()) ||
+      model.label.toLowerCase().includes(searchModel.toLowerCase()),
+  );
 
-	return (
-		<Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-			<PopoverTrigger asChild>
-				<Button
-					variant="outline"
-					className="justify-between shadow-none gap-2 cursor-pointer text-foreground/70 hover:text-foreground border-none "
-					onClick={() => setPopoverOpen(!popoverOpen)}
-				>
-					{selectedModelConfig?.label || selectedModel}
-					<ChevronDownIcon className="h-4 w-4" />
-				</Button>
-			</PopoverTrigger>
-			<PopoverContent
-				className="w-96 h-96 overflow-hidden p-0 scrollbar-none relative bg-background border-border/70 flex flex-col"
-				align="end"
-			>
-				<div className="py-2 px-4 flex flex-row items-center gap-0 sticky top-0 z-10 bg-background/70 backdrop-blur-lg border-b border-border">
-					<Search className="h-4 w-4 text-muted-foreground" />
-					<input
-						className="w-full px-2 py-1 outline-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none "
-						placeholder="Search models..."
-						value={searchModel}
-						onChange={(e) => setSearchModel(e.target.value)}
-					/>
-					<ModelManagementDialog
-						orderedModels={orderedModels}
-						preferences={preferences}
-						onReorderModels={handleReorderModels}
-						onToggleVisibility={handleToggleVisibility}
-					/>
-				</div>
+  const selectModelByIndex = useCallback(
+    async (index: number) => {
+      if (isSelecting) return;
+      if (index < filteredModels.length) {
+        setIsSelecting(true);
+        const model = filteredModels[index];
+        console.log(
+          `[ModelSelector] selecting model #${index + 1}: ${model.label}`,
+        );
+        await handleModelSelect(model.model_name);
+        setIsSelecting(false);
+      } else {
+        console.warn(
+          `[ModelSelector] index ${index} out of range (only ${filteredModels.length} models)`,
+        );
+      }
+    },
+    [filteredModels, handleModelSelect, isSelecting],
+  );
 
-				<div className="flex-1 overflow-y-auto">
-					<div className="space-y-1 p-1">
-					{filteredModels.map((model, index) => (
-						<div
-							key={model.model_name}
-							className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
-								model.model_name === selectedModel ? 'bg-accent/20' : ''
-							}`}
-							onClick={() => handleModelSelect(model.model_name)}
-						>
-							<div className="text-foreground/80 flex gap-2 items-center justify-center">
-								<img
-									src={model.image}
-									aria-label={`${model.label} model icon`}
-									alt={model.label}
-									className={`h-4 w-4 opacity-80 ${
-										["openai", "x-ai", "openrouter", "anthropic"].includes(
-											model.owner,
-										)
-											? "dark:invert"
-											: ""
-									} `}
-								/>
-								{model.label}
-								{index < 9 && (
-									<kbd className="ml-1 px-1.5 py-0.5 text-xs font-mono bg-muted/60 text-muted-foreground rounded border">
-										{modifierKey}+{index + 1}
-									</kbd>
-								)}
-							</div>
-							<div className="flex flex-row gap-1 items-center opacity-75">
-								{model.modalities
-									?.filter((modality) => modality !== "text")
-									.map((modality) => {
-										const {
-											icon: Icon,
-											className: IconClassName,
-											parentClassName,
-										} = getTagInfo(modality);
-										return (
-											<div
-												key={modality}
-												className={`p-1 rounded-md ${parentClassName}`}
-											>
-												<Icon className={`h-4 w-4 ${IconClassName}`} />
-											</div>
-										);
-									})}
-								{model.toolSupport && (
-									<div
-										className={`p-1 rounded-md ${toolSupportTag.parentClassName}`}
-									>
-										<Hammer
-											className={`h-4 w-4 ${toolSupportTag.className}`}
-										/>
-									</div>
-								)}
-								{model.isThinking && (
-									<div
-										className={`p-1 rounded-md ${thinkingTagInfo.parentClassName}`}
-									>
-										<thinkingTagInfo.icon
-											className={`h-4 w-4 ${thinkingTagInfo.className}`}
-										/>
-									</div>
-								)}
-							</div>
-						</div>
-					))}
-					</div>
-				</div>
-			</PopoverContent>
-		</Popover>
-	);
+  // Keyboard shortcut handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!e.altKey || e.repeat) return;
+
+      const digit = parseInt(e.key, 10);
+      if (!isNaN(digit) && digit >= 1) {
+        e.preventDefault();
+        selectModelByIndex(digit - 1);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [selectModelByIndex]);
+
+  return (
+    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="justify-between shadow-none gap-2 cursor-pointer text-foreground/70 hover:text-foreground border-none "
+          onClick={() => setPopoverOpen(!popoverOpen)}
+        >
+          {selectedModelConfig?.label || selectedModel}
+          <ChevronDownIcon className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-96 h-96 overflow-hidden p-0 scrollbar-none relative bg-background border-border/70 flex flex-col"
+        align="end"
+      >
+        <div className="py-2 px-4 flex flex-row items-center gap-0 sticky top-0 z-10 bg-background/70 backdrop-blur-lg border-b border-border">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <input
+            className="w-full px-2 py-1 outline-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none "
+            placeholder="Search models..."
+            value={searchModel}
+            onChange={(e) => setSearchModel(e.target.value)}
+          />
+          <ModelManagementDialog
+            orderedModels={orderedModels}
+            preferences={preferences}
+            onReorderModels={handleReorderModels}
+            onToggleVisibility={handleToggleVisibility}
+          />
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="space-y-1 p-1">
+            {filteredModels.map((model, index) => (
+              <div
+                key={model.model_name}
+                className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
+                  model.model_name === selectedModel ? "bg-accent/20" : ""
+                }`}
+                onClick={() => handleModelSelect(model.model_name)}
+              >
+                <div className="text-foreground/80 flex gap-2 items-center justify-center">
+                  <img
+                    src={model.image}
+                    aria-label={`${model.label} model icon`}
+                    alt={model.label}
+                    className={`h-4 w-4 opacity-80 ${
+                      ["openai", "x-ai", "openrouter", "anthropic"].includes(
+                        model.owner,
+                      )
+                        ? "dark:invert"
+                        : ""
+                    } `}
+                  />
+                  {model.label}
+                  {index < 9 && (
+                    <kbd className="ml-1 px-1.5 py-0.5 text-xs font-mono bg-muted/60 text-muted-foreground rounded border">
+                      {modifierKey}+{index + 1}
+                    </kbd>
+                  )}
+                </div>
+                <div className="flex flex-row gap-1 items-center opacity-75">
+                  {model.modalities
+                    ?.filter((modality) => modality !== "text")
+                    .map((modality) => {
+                      const {
+                        icon: Icon,
+                        className: IconClassName,
+                        parentClassName,
+                      } = getTagInfo(modality);
+                      return (
+                        <div
+                          key={modality}
+                          className={`p-1 rounded-md ${parentClassName}`}
+                        >
+                          <Icon className={`h-4 w-4 ${IconClassName}`} />
+                        </div>
+                      );
+                    })}
+                  {model.toolSupport && (
+                    <div
+                      className={`p-1 rounded-md ${toolSupportTag.parentClassName}`}
+                    >
+                      <Hammer
+                        className={`h-4 w-4 ${toolSupportTag.className}`}
+                      />
+                    </div>
+                  )}
+                  {model.isThinking && (
+                    <div
+                      className={`p-1 rounded-md ${thinkingTagInfo.parentClassName}`}
+                    >
+                      <thinkingTagInfo.icon
+                        className={`h-4 w-4 ${thinkingTagInfo.className}`}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }

@@ -183,7 +183,7 @@ const MermaidRenderer = ({ content }: { content: string }) => {
 const renderArtifactContent = (
   artifact: Artifact,
   view: "preview" | "source",
-  wrapLongLines: boolean
+  wrapLongLines: boolean,
 ) => {
   if (view === "source" && artifact.type !== "application/vnd.ant.code") {
     let language = artifact.language;
