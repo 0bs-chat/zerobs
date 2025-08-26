@@ -7,8 +7,11 @@ import {
   sidebarOpenAtom,
   userAtom,
 } from "@/store/chatStore";
-import { PanelRightCloseIcon, PlusIcon } from "lucide-react";
-import { PanelRightOpenIcon } from "lucide-react";
+import {
+  PanelRightCloseIcon,
+  PlusIcon,
+  PanelRightOpenIcon,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
@@ -16,7 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../convex/_generated/api";
 import { useEffect } from "react";
-import { GearIcon } from "@radix-ui/react-icons";
+import { Settings2Icon } from "lucide-react";
 
 export function TopNav() {
   const [resizePanelOpen, setResizePanelOpen] = useAtom(resizePanelOpenAtom);
@@ -98,7 +101,7 @@ export function TopNav() {
                 navigate({ to: "/settings/profile" });
               }}
             >
-              <GearIcon className="h-6 w-6" />
+              <Settings2Icon className="h-6 w-6" />
             </Button>
             <ModeToggle />
           </>

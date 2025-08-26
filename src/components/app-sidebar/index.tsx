@@ -98,7 +98,7 @@ export function AppSidebar() {
       <SidebarHeader className="flex items-center w-full font-bold font-mono text-xl py-3.5 px-2">
         0bs
       </SidebarHeader>
-      <SidebarContent className="overflow-hidden px-1">
+      <SidebarContent className="overflow-hidden px-1 flex flex-col">
         <SidebarGroup className="gap-2">
           <Button className="w-full cursor-pointer" onClick={handleNewChat}>
             <div className="flex items-center gap-2">
@@ -149,7 +149,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {displayPinnedChats.length > 0 && (
-          <SidebarGroup>
+          <SidebarGroup className="gap-0 py-0">
             <Accordion
               type="single"
               collapsible
@@ -163,7 +163,7 @@ export function AppSidebar() {
               <AccordionItem value="pinned">
                 <div className="flex justify-between items-center w-full">
                   <SidebarGroupLabel>Pinned</SidebarGroupLabel>
-                  <AccordionTrigger className=" cursor-pointer" />
+                  <AccordionTrigger className="cursor-pointer" />
                 </div>
                 <AccordionContent>
                   <SidebarGroupContent>
@@ -177,7 +177,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        <SidebarGroup className="flex-1 min-h-0">
+        <SidebarGroup className="flex-1 min-h-0 gap-0">
           <SidebarGroupContent className="h-full flex flex-col">
             <SidebarGroupLabel>
               {isSearching ? "Search Results" : "History"}

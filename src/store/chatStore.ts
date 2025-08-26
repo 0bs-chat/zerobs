@@ -3,7 +3,7 @@ import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { atomWithStorage, selectAtom, loadable } from "jotai/utils";
 import { useStream } from "@/hooks/chats/use-stream";
 import type { Artifact } from "@/components/artifacts/utils";
-import { buildThread, groupMessages } from "../../convex/chatMessages/helpers";
+import { type MessageGroup } from "../../convex/chatMessages/helpers";
 import { parseArtifacts } from "@/components/artifacts/utils";
 import { AIMessage } from "@langchain/core/messages";
 
@@ -23,8 +23,8 @@ export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   projectId: null,
   conductorMode: false,
   orchestratorMode: false,
-  webSearch: false,
-  artifacts: false,
+  webSearch: true,
+  artifacts: true,
   updatedAt: 0,
   public: false,
 });
@@ -58,17 +58,18 @@ export const pinnedChatsAccordionOpenAtom = atomWithStorage(
   false,
 );
 
-export const currentThreadAtom = atom<
-  ReturnType<typeof buildThread> | undefined
->(undefined);
-export const groupedMessagesAtom = selectAtom(currentThreadAtom, (thread) =>
-  thread ? groupMessages(thread) : [],
+export const currentThreadAtom = atom<MessageGroup[] | undefined>(undefined);
+export const groupedMessagesAtom = selectAtom(currentThreadAtom, (groups) =>
+  groups || [],
 );
-export const lastChatMessageAtom = selectAtom(currentThreadAtom, (thread) =>
-  thread && thread.length > 0
-    ? thread[thread.length - 1].message._id
-    : undefined,
-);
+export const lastChatMessageAtom = selectAtom(currentThreadAtom, (groups) => {
+  if (!groups || groups.length === 0) return undefined;
+  const lastGroup = groups[groups.length - 1];
+  if (lastGroup.response.length > 0) {
+    return lastGroup.response[lastGroup.response.length - 1].message._id;
+  }
+  return lastGroup.input.message._id;
+});
 
 export const useStreamAtom = atom<ReturnType<typeof useStream> | undefined>(
   undefined,

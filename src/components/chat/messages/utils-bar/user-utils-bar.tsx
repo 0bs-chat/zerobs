@@ -144,18 +144,45 @@ export const UserUtilsBar = memo(
           />
           <TooltipButton
             onClick={() => setEditing?.(null)}
-            icon={<X className="h-4 w-4 text-foreground/70" />}
+            icon={<X className="h-4 w-4 text-foreground/70 " />}
             tooltip="Cancel"
           />
           <TooltipButton
             onClick={() => handleSubmit(true)}
-            icon={<Check className="h-4 w-4 text-foreground/70" />}
+            icon={<Check className="h-4 w-4 text-foreground/70 " />}
             tooltip="Submit"
+            ariaLabel="Submit"
           />
           <TooltipButton
             onClick={() => handleSubmit(false)}
             icon={<CheckCheck className="h-4 w-4 text-foreground/70" />}
             tooltip="Submit and Regenerate"
+            ariaLabel="Submit and Regenerate"
+          />
+          <ActionDropdown
+            trigger={
+              <Button variant="ghost" size="icon" className="cursor-pointer">
+                <GitBranch className="h-4 w-4 text-foreground/70 " />
+              </Button>
+            }
+            actionLabel={
+              <>
+                <GitBranch className="h-4 w-4 mr-2" />
+                Branch from edited
+              </>
+            }
+            onAction={() =>
+              handleBranch(input, undefined, {
+                text: editedText,
+                documents: editedDocuments,
+              })
+            }
+            onActionWithModel={(model) =>
+              handleBranch(input, model, {
+                text: editedText,
+                documents: editedDocuments,
+              })
+            }
           />
           <TooltipButton
             onClick={() => fileInputRef.current?.click()}
@@ -179,13 +206,13 @@ export const UserUtilsBar = memo(
         )}
         <ActionDropdown
           trigger={
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="cursor-pointer">
               <GitBranch className="h-4 w-4" />
             </Button>
           }
           actionLabel={
             <>
-              <GitBranch className="h-4 w-4 mr-2" />
+              <GitBranch className="h-4 w-4 mr-2 cursor-pointer" />
               Branch
             </>
           }
@@ -194,20 +221,20 @@ export const UserUtilsBar = memo(
         />
         <ActionDropdown
           trigger={
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="cursor-pointer">
               <RefreshCcw className="h-4 w-4" />
             </Button>
           }
           actionLabel={
             <>
-              <RefreshCcw className="h-4 w-4 mr-2" />
+              <RefreshCcw className="h-4 w-4 mr-2 cursor-pointer" />
               Regenerate
             </>
           }
           onAction={() => handleRegenerate(input)}
           onActionWithModel={(model) => handleRegenerate(input, model)}
         />
-        {copyText && <CopyButton text={copyText} />}
+        {copyText && <CopyButton className="cursor-pointer" text={copyText} />}
       </div>
     );
   }

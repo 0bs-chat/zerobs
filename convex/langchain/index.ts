@@ -11,6 +11,7 @@ import {
   type StoredMessage,
   SystemMessage,
   ToolMessage,
+  HumanMessage,
 } from "@langchain/core/messages";
 import { MemorySaver } from "@langchain/langgraph";
 import type { GraphState, AIChunkGroup, ToolChunkGroup } from "./state";
@@ -498,6 +499,10 @@ export const branchChat = action({
     chatId: v.id("chats"),
     branchFrom: v.id("chatMessages"),
     model: v.optional(v.string()),
+    editedContent: v.optional(v.object({
+      text: v.optional(v.string()),
+      documents: v.optional(v.array(v.id("documents"))),
+    })),
   }),
   handler: async (ctx, args): Promise<{ newChatId: Id<"chats"> }> => {
     const chatDoc = await ctx.runQuery(api.chats.queries.get, {
@@ -538,13 +543,69 @@ export const branchChat = action({
       }
     }
 
+    // If edited content is provided, replace the last message with edited content
+    if (args.editedContent) {
+      const { text, documents } = args.editedContent;
+      
+      // Only proceed if there's actual content
+      if (text || (documents && documents.length > 0)) {
+        // Create the edited message
+        const editedMessage = JSON.stringify(
+          mapChatMessagesToStoredMessages([
+            new HumanMessage({
+              content: [
+                ...(text ? [{ type: "text", text }] : []),
+                ...(documents && documents.length > 0
+                  ? documents.map((documentId) => ({
+                      type: "file",
+                      file: {
+                        file_id: documentId,
+                      },
+                    }))
+                  : []),
+              ],
+            }),
+          ])[0]
+        );
+        
+        // Replace the last message in the thread with the edited content
+        if (thread.length > 0) {
+          // We'll handle this replacement during the mapping phase
+          thread[thread.length - 1] = {
+            ...thread[thread.length - 1],
+            // Mark this message for replacement
+            _replacementMessage: editedMessage
+          } as any;
+        } else {
+          // If no thread, create a new message
+          const editedHumanMessage = new HumanMessage({
+            content: [
+              ...(text ? [{ type: "text", text }] : []),
+              ...(documents && documents.length > 0
+                ? documents.map((documentId) => ({
+                    type: "file",
+                    file: {
+                      file_id: documentId,
+                    },
+                  }))
+                : []),
+            ],
+          });
+          
+          thread.push({
+            ...branchFromMessage,
+            message: editedHumanMessage
+          });
+        }
+      }
+    }
+
     if (thread.length > 0) {
       await ctx.runMutation(internal.chats.mutations.createRaw, {
         chatId: newChatId,
         messages: thread.map((m) => ({
-          message: JSON.stringify(
-            mapChatMessagesToStoredMessages([m.message])[0]
-          ),
+          message: (m as any)._replacementMessage || 
+                  (typeof m.message === 'string' ? m.message : JSON.stringify(mapChatMessagesToStoredMessages([m.message])[0]))
         })),
       });
     }

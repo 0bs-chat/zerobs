@@ -27,6 +27,7 @@ export const TooltipButton = ({
           size="icon"
           onClick={onClick}
           aria-label={ariaLabel}
+          className="cursor-pointer"
         >
           {icon}
         </Button>
