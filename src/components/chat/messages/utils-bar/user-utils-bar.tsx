@@ -116,7 +116,7 @@ export const UserUtilsBar = memo(
 				return;
 			}
 			if (applySame === false) {
-				navigateBranch?.(input.depth, "next", input.totalBranches);
+				navigateBranch?.(input.depth, input.totalBranches, input.totalBranches + 1);
 			}
 			updateMessage({
 				id: input.message._id as Id<"chatMessages">,
@@ -124,7 +124,7 @@ export const UserUtilsBar = memo(
 				applySame: applySame,
 			}).then(() => {
 				if (applySame === false) {
-					chat({ chatId: input.message.chatId });
+					chat({ chatId: input.message.chatId! });
 				}
 			});
 			onDone?.();

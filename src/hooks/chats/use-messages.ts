@@ -7,17 +7,24 @@ import {
   buildThreadAndGroups,
   type MessageGroup,
   type MessageWithBranchInfo,
-  type BranchPath,
 } from "../../../convex/chatMessages/helpers";
 import { useStreamAtom, currentThreadAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { useCallback } from "react";
 import { useStream } from "./use-stream";
 
-export type { MessageGroup, MessageWithBranchInfo, BranchPath };
+export type { MessageGroup, MessageWithBranchInfo };
 
-let globalBranchPath: BranchPath = [];
+let globalBranchPath: number[] = [];
 let forceUpdateFn: (() => void) | null = null;
+let userSelectedPath = false;
+
+const pathsEqual = (a: number[], b: number[]) => {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) return false;
+  return true;
+};
 
 export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const setCurrentThread = useSetAtom(currentThreadAtom);
@@ -35,10 +42,11 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
     enabled: chatId !== "new",
   });
 
-  const messageGroups = useMemo(
-    () => (messages ? buildThreadAndGroups(messages, globalBranchPath) : []),
-    [messages, counter],
-  );
+  const { messageGroups, latestPath } = useMemo(() => {
+    if (!messages) return { messageGroups: [], latestPath: [] };
+    const result = buildThreadAndGroups(messages, globalBranchPath);
+    return { messageGroups: result.groups, latestPath: result.latestPath };
+  }, [messages, counter]);
 
   const streamData = useStream(chatId);
 
@@ -52,9 +60,24 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
     setUseStreamAtom,
   ]);
 
+  // Auto-select the branch path that ends at the latest message
+  // unless the user has manually picked a branch.
+  useEffect(() => {
+    if (!messages || messages.length === 0) return;
+    if (userSelectedPath) return;
+    
+    // Update global path if different
+    if (!pathsEqual(globalBranchPath, latestPath)) {
+      // copy to avoid accidental external mutation
+      globalBranchPath = latestPath.slice();
+      setCounter((c) => c + 1);
+    }
+  }, [messages, latestPath]);
+
   useEffect(() => {
     // Reset branch path when chat changes
     globalBranchPath = [];
+    userSelectedPath = false;
     setCounter((c) => c + 1);
   }, [chatId]);
 
@@ -71,6 +94,7 @@ export const useNavigateBranch = () => {
       direction: "prev" | "next" | number,
       totalBranches: number,
     ) => {
+      userSelectedPath = true;
       if (typeof direction === "number") {
         globalBranchPath[depth] = direction;
       } else {
@@ -94,6 +118,7 @@ export const useNavigateBranch = () => {
 
 export const useChangeBranch = () => {
   return useCallback((depth: number, newBranchIndex: number) => {
+    userSelectedPath = true;
     globalBranchPath[depth] = newBranchIndex;
     globalBranchPath.splice(depth + 1);
 

@@ -12,7 +12,7 @@ export { AiUtilsBar } from "./ai-utils-bar";
 // Helper function for navigation logic
 const navigateToChat = (
   navigate: ReturnType<typeof useNavigate>,
-  chatId: Id<"chats">,
+  chatId: Id<"chats">
 ) => {
   navigate({
     to: "/chat/$chatId",
@@ -31,9 +31,9 @@ export function useMessageActions() {
   });
 
   const handleBranch = async (
-    input: MessageWithBranchInfo,
+    input: MessageWithBranchInfo, 
     model?: string,
-    editedContent?: { text?: string; documents?: Id<"documents">[] },
+    editedContent?: { text?: string; documents?: Id<"documents">[] }
   ) => {
     const result = await branchChat({
       chatId: input.message.chatId!,
@@ -52,10 +52,10 @@ export function useMessageActions() {
 
   const handleRegenerate = async (
     input: MessageWithBranchInfo,
-    model?: string,
+    model?: string
   ) => {
-    navigateBranch?.(input.depth, "next", input.totalBranches);
-    // If the model is provided, update the chat with the new model or
+    navigateBranch?.(input.depth, input.totalBranches, input.totalBranches + 1);
+    // If the model is provided, update the chat with the new model
     if (model) {
       await updateChatMutation({
         chatId: input.message.chatId!,
