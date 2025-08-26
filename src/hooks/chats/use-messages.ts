@@ -1,26 +1,24 @@
-import { useMemo, useEffect, useCallback } from "react";
+import { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
-  buildMessageTree,
-  buildThread,
-  type BranchPath,
+  buildThreadAndGroups,
+  type MessageGroup,
   type MessageWithBranchInfo,
+  type BranchPath,
 } from "../../../convex/chatMessages/helpers";
 import { useStreamAtom, currentThreadAtom } from "@/store/chatStore";
-import { atom, useSetAtom, useAtomValue } from "jotai";
+import { useSetAtom } from "jotai";
+import { useCallback } from "react";
 import { useStream } from "./use-stream";
 
-const branchPathAtom = atom<BranchPath>([]);
-
-export type { MessageWithBranchInfo, BranchPath };
+export type { MessageGroup, MessageWithBranchInfo, BranchPath };
 
 export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const setCurrentThread = useSetAtom(currentThreadAtom);
   const setUseStreamAtom = useSetAtom(useStreamAtom);
-  const branchPath = useAtomValue(branchPathAtom);
 
   const { data: messages, isLoading } = useQuery({
     ...convexQuery(
@@ -30,21 +28,19 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
     enabled: chatId !== "new",
   });
 
-  const messageTree = useMemo(
-    () => (messages ? buildMessageTree(messages) : []),
+  // Use optimized single-pass processing
+  const messageGroups = useMemo(
+    () => (messages ? buildThreadAndGroups(messages) : []),
     [messages],
   );
-  const currentThread = useMemo(
-    () => buildThread(messageTree, branchPath),
-    [messageTree, branchPath],
-  );
+
   const streamData = useStream(chatId);
 
   useEffect(() => {
-    setCurrentThread(currentThread);
+    setCurrentThread(messageGroups);
     setUseStreamAtom(streamData);
   }, [
-    currentThread,
+    messageGroups,
     JSON.stringify(streamData),
     setCurrentThread,
     setUseStreamAtom,
@@ -52,52 +48,27 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
 
   return {
     isLoading: isLoading,
-    isEmpty: currentThread.length === 0,
+    isEmpty: messageGroups.length === 0,
   };
 };
 
-// Function to change branch at a specific depth
-export const useChangeBranch = () => {
-  const setBranchPath = useSetAtom(branchPathAtom);
+// Legacy branch navigation functions - kept as stubs for compatibility
+export const useNavigateBranch = () => {
   return useCallback(
-    (depth: number, newBranchIndex: number) => {
-      setBranchPath((prev) => {
-        const newPath = prev.slice(0, depth); // Clear deeper selections
-        newPath[depth] = newBranchIndex;
-        return newPath;
-      });
+    (_depth: number, _direction: "prev" | "next" | number) => {
+      // No-op: linear processing doesn't need branch navigation
+      console.warn("Branch navigation is no longer supported with optimized linear processing");
     },
-    [setBranchPath],
+    [],
   );
 };
 
-// Function to navigate branches (prev/next)
-export const useNavigateBranch = () => {
-  const currentThread = useAtomValue(currentThreadAtom);
-  const branchPath = useAtomValue(branchPathAtom);
-  const changeBranch = useChangeBranch();
-
+export const useChangeBranch = () => {
   return useCallback(
-    (depth: number, direction: "prev" | "next" | number) => {
-      if (typeof direction === "number") {
-        changeBranch(depth, direction);
-        return;
-      }
-
-      const threadItem = currentThread![depth];
-      if (!threadItem) return;
-
-      const currentBranchIndex =
-        branchPath[depth] ?? threadItem.totalBranches - 1;
-      const totalBranches = threadItem.totalBranches;
-
-      const newIndex =
-        direction === "prev"
-          ? (currentBranchIndex - 1 + totalBranches) % totalBranches
-          : (currentBranchIndex + 1) % totalBranches;
-
-      changeBranch(depth, newIndex);
+    (_depth: number, _newBranchIndex: number) => {
+      // No-op: linear processing doesn't need branch changes
+      console.warn("Branch changing is no longer supported with optimized linear processing");
     },
-    [currentThread, branchPath, changeBranch],
+    [],
   );
 };
