@@ -6,6 +6,8 @@ import type {
 	MessageGroup,
 } from "../../../../convex/chatMessages/helpers";
 import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 import { documentDialogOpenAtom } from "@/store/chatStore";
 import { useSetAtom } from "jotai";
 import { api } from "../../../../convex/_generated/api";
@@ -32,9 +34,36 @@ const DocumentList = ({
 	onPreview?: (documentId: Id<"documents">) => void;
 	showRemove?: boolean;
 }) => {
-	const { data: documents } = useQuery({
+	const {
+		data: documents,
+		isLoading,
+		isError,
+	} = useQuery({
 		...convexQuery(api.documents.queries.getMultiple, { documentIds }),
 	});
+
+	if (isLoading) {
+		return (
+			<div className="flex items-center gap-2 px-1 pt-1">
+				<LoadingSpinner sizeClassName="h-3 w-3" />
+				<span className="text-xs text-muted-foreground">
+					Loading documents...
+				</span>
+			</div>
+		);
+	}
+
+	if (isError) {
+		return (
+			<div className="px-1 pt-1">
+				<ErrorState
+					density="compact"
+					title="Failed to load documents"
+					className="h-6"
+				/>
+			</div>
+		);
+	}
 
 	if (!documents?.length) return null;
 

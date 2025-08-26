@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
-import { Loader2 } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Navigate } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -17,7 +17,7 @@ function RouteComponent() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-12 h-12 animate-spin" />
+        <LoadingSpinner sizeClassName="w-8 h-8" />
       </div>
     );
   }

@@ -6,14 +6,15 @@ import {
   HeadContent,
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
-import { Loader2 } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { motion } from "motion/react";
-import { sidebarOpenAtom } from "@/store/chatStore";
+import { sidebarOpenAtom, resizePanelOpenAtom } from "@/store/chatStore";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useConvexAuth } from "convex/react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopNav } from "@/components/topnav";
+import { useEffect } from "react";
 import { DocumentDialog } from "@/components/document-dialog";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
 
@@ -73,11 +74,22 @@ export const Route = createRootRoute({
     const publicRoutes = ["/auth"];
     const sidebarOpen = useAtomValue(sidebarOpenAtom);
     const setSidebarOpen = useSetAtom(sidebarOpenAtom);
+    const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
+
+    const isSettingsRoute = location.pathname.startsWith("/settings");
+
+    // Ensure sidebar and right resizable panel are closed on settings pages
+    // and keep them hidden there.
+    useEffect(() => {
+      if (!isSettingsRoute) return;
+      sidebarOpen && setSidebarOpen(false);
+      setResizePanelOpen(false);
+    }, [isSettingsRoute, sidebarOpen, setSidebarOpen, setResizePanelOpen]);
 
     if (isLoading) {
       return (
         <div className="flex justify-center items-center h-screen font-sans bg-background">
-          <Loader2 className="w-10 h-10 animate-spin [animation-duration:0.3s]" />
+          <LoadingSpinner sizeClassName="w-10 h-10" />
         </div>
       );
     }
@@ -102,10 +114,10 @@ export const Route = createRootRoute({
               setSidebarOpen(!sidebarOpen);
             }}
           >
-            {/* AppSidebar and TopNav are now available on all routes */}
+            {/* AppSidebar and TopNav (sidebar hidden on settings) */}
             {isAuthenticated && (
               <>
-                <AppSidebar />
+                {!isSettingsRoute && <AppSidebar />}
                 <TopNav />
               </>
             )}

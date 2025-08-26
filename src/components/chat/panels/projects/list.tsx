@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlusIcon, TrashIcon } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorState } from "@/components/ui/error-state";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../../../convex/_generated/api";
@@ -16,7 +18,12 @@ export const ProjectsList = () => {
   const chatId = useAtomValue(chatIdAtom);
   const navigate = useNavigate();
   const router = useRouter();
-  const { data: allProjects } = useQuery({
+  const {
+    data: allProjects,
+    isLoading: isLoadingProjects,
+    isError: isProjectsError,
+    error: projectsError,
+  } = useQuery({
     ...convexQuery(api.projects.queries.getAll, {
       paginationOpts: { numItems: 20, cursor: null },
     }),
@@ -33,6 +40,30 @@ export const ProjectsList = () => {
   const setNewChat = useSetAtom(newChatAtom);
 
   const isOnProjectsRoute = useLocation().pathname === "/projects";
+
+  if (isLoadingProjects) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <div className="text-sm text-muted-foreground flex items-center gap-2">
+          <LoadingSpinner sizeClassName="h-4 w-4" />
+          Loading projects...
+        </div>
+      </div>
+    );
+  }
+
+  if (isProjectsError) {
+    return (
+      <div className="flex items-center justify-center">
+        <ErrorState
+          className="h-10 w-full p-2 gap-2 flex items-center justify-center"
+          title="Error loading projects"
+          error={projectsError}
+          showDescription={false}
+        />
+      </div>
+    );
+  }
 
   return (
     <>

@@ -17,18 +17,23 @@ import {
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 
 export function useStream(chatId: Id<"chats"> | "new") {
-  const convex = useConvex();
-  const { data: stream } = useQuery({
+  const {
+    data: stream,
+    isError: isStreamError,
+    error: streamError,
+  } = useQuery({
     ...convexQuery(
       api.streams.queries.get,
-      chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip",
+      chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip"
     ),
   });
 
   const [groupedChunks, setGroupedChunks] = useState<ChunkGroup[]>([]);
   const [lastSeenTime, setLastSeenTime] = useState<number | undefined>(
-    undefined,
+    undefined
   );
+
+  const convex = useConvex();
 
   // Reset state when chat or stream changes
   useEffect(() => {
@@ -56,12 +61,12 @@ export function useStream(chatId: Id<"chats"> | "new") {
           .filter(
             (chunkDoc: any) =>
               lastSeenTime === undefined ||
-              chunkDoc._creationTime > lastSeenTime,
+              chunkDoc._creationTime > lastSeenTime
           )
           .flatMap((chunkDoc: any) =>
             chunkDoc.chunks.map(
-              (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup,
-            ),
+              (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup
+            )
           );
         if (newEvents.length > 0) {
           setGroupedChunks((prev) => {
@@ -114,7 +119,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
     const completedIds = new Set(
       groupedChunks
         .filter((c) => c.type === "tool" && c.isComplete)
-        .map((c) => (c as ToolChunkGroup).toolCallId),
+        .map((c) => (c as ToolChunkGroup).toolCallId)
     );
     return groupedChunks
       .map((chunk) => {
@@ -178,5 +183,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
     status: stream?.status,
     langchainMessages,
     planningStepsMessage,
+    isError: isStreamError,
+    error: streamError,
   };
 }
