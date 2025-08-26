@@ -20,10 +20,14 @@ export const getRetrievalTools = async (
   const vectorSearchTool = new DynamicStructuredTool({
     name: "searchProjectDocuments",
     description:
-      "Search through project documents using vector similarity search. Use this to find relevant information from uploaded project documents." +
+      "Search through project documents using vector similarity search with multiple queries (1-5). Use this to find relevant information from uploaded project documents." +
       "You are always supposed to use this tool if you are asked about something specific to find information but no additional information is provided.",
     schema: z.object({
-      query: z.string().describe("The search query to find relevant documents"),
+      queries: z
+        .array(z.string())
+        .min(1)
+        .max(5)
+        .describe("List of search queries to find relevant documents (1-5 queries)"),
       limit: z
         .number()
         .min(1)
@@ -31,7 +35,7 @@ export const getRetrievalTools = async (
         .describe("Number of results to return")
         .default(10),
     }),
-    func: async ({ query, limit = 10 }: { query: string; limit?: number }) => {
+    func: async ({ queries, limit = 10 }: { queries: string[]; limit?: number }) => {
       // Initialize ConvexVectorStore with the embedding model
       const embeddingModel = await getEmbeddingModel(config.ctx, "embeddings");
       const vectorStore = new ConvexVectorStore(embeddingModel, {
@@ -52,18 +56,32 @@ export const getRetrievalTools = async (
         return "No project documents available for retrieval.";
       }
 
-      // Perform similarity search, filtering by selected documents
-      const results = await vectorStore.similaritySearch(query, limit, {
-        filter: (q) =>
-          q.or(
-            // Assuming documentId is stored in the `source` field of metadata
-            ...includedProjectDocuments.map((document) =>
-              q.eq("metadata", {
-                source: document.documentId,
-              }),
+      // Perform similarity search for each query, filtering by selected documents
+      let allResults = [];
+      for (const query of queries) {
+        const results = await vectorStore.similaritySearch(query, Math.ceil(limit / queries.length), {
+          filter: (q) =>
+            q.or(
+              // Assuming documentId is stored in the `source` field of metadata
+              ...includedProjectDocuments.map((document) =>
+                q.eq("metadata", {
+                  source: document.documentId,
+                }),
+              ),
             ),
-          ),
-      });
+        });
+        
+        // Add query metadata to results
+        const resultsWithQuery = results.map(doc => ({
+          ...doc,
+          metadata: { ...doc.metadata, query }
+        }));
+        
+        allResults.push(...resultsWithQuery);
+      }
+
+      // Limit total results and remove duplicates based on content similarity
+      allResults = allResults.slice(0, limit);
 
       const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
       includedProjectDocuments.forEach((projectDocument) =>
@@ -71,8 +89,8 @@ export const getRetrievalTools = async (
       );
 
       const documents = await Promise.all(
-        results.map(async (doc) => {
-          const projectDocument = documentsMap.get(doc.metadata.source);
+        allResults.map(async (doc) => {
+          const projectDocument = documentsMap.get((doc.metadata as any).source);
           if (!projectDocument) {
             return null;
           }
@@ -84,6 +102,7 @@ export const getRetrievalTools = async (
               document: projectDocument,
               source: url,
               type: "document",
+              query: doc.metadata.query,
             },
           });
         }),
@@ -100,11 +119,13 @@ export const getRetrievalTools = async (
   const webSearchTool = new DynamicStructuredTool({
     name: "searchWeb",
     description:
-      "Search the web for current information using Exa (if API key is configured) or DuckDuckGo. Use this to find up-to-date information from the internet.",
+      "Search the web for current information using multiple queries (1-5) with Exa (if API key is configured) or DuckDuckGo. Use this to find up-to-date information from the internet.",
     schema: z.object({
-      query: z
-        .string()
-        .describe("The search query to find relevant web information"),
+      queries: z
+        .array(z.string())
+        .min(1)
+        .max(5)
+        .describe("List of search queries to find relevant web information (1-5 queries)"),
       topic: z
         .union([
           z.literal("company"),
@@ -138,10 +159,10 @@ export const getRetrievalTools = async (
         .optional(),
     }),
     func: async ({
-      query,
+      queries,
       topic,
     }: {
-      query: string;
+      queries: string[];
       topic?: string | null;
     }) => {
       const EXA_API_KEY =
@@ -155,36 +176,45 @@ export const getRetrievalTools = async (
 
       try {
         const exa = new Exa(EXA_API_KEY, undefined);
+        let allDocuments = [];
 
-        const searchResponse = (
-          await exa.searchAndContents(query, {
-            numResults: 5,
-            type: "auto",
-            useAutoprompt: false,
-            topic: topic,
-            text: true,
-          })
-        ).results;
+        for (const query of queries) {
+          const searchResponse = (
+            await exa.searchAndContents(query, {
+              numResults: Math.ceil(10 / queries.length),
+              type: "auto",
+              useAutoprompt: false,
+              topic: topic,
+              text: true,
+            })
+          ).results;
 
-        if (searchResponse.length === 0) {
+          // Create LangChain Document objects from Exa search results
+          const documents = searchResponse.map((result) => {
+            return new Document({
+              pageContent: `${result.text}`,
+              metadata: {
+                type: "search",
+                title: result.title,
+                source: result.url,
+                publishedDate: result.publishedDate,
+                author: result.author,
+                image: result.image,
+                favicon: result.favicon,
+                query: query,
+              },
+            });
+          });
+
+          allDocuments.push(...documents);
+        }
+
+        if (allDocuments.length === 0) {
           return "No results found.";
         }
 
-        // Create LangChain Document objects from Exa search results
-        const documents = searchResponse.map((result) => {
-          return new Document({
-            pageContent: `${result.text}`,
-            metadata: {
-              type: "search",
-              title: result.title,
-              source: result.url,
-              publishedDate: result.publishedDate,
-              author: result.author,
-              image: result.image,
-              favicon: result.favicon,
-            },
-          });
-        });
+        // Limit total results to 10
+        const documents = allDocuments.slice(0, 10);
 
         if (returnString) {
           return JSON.stringify(documents, null, 0);
