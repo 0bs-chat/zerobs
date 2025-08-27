@@ -388,7 +388,6 @@ export function ModelPopover({
 				<Button
 					variant="outline"
 					className="justify-between shadow-none gap-2 cursor-pointer text-foreground/70 hover:text-foreground border-none "
-					onClick={() => setPopoverOpen(!popoverOpen)}
 				>
 					{selectedModelConfig?.label || selectedModel}
 					<ChevronDown className="h-4 w-4" />

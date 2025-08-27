@@ -260,19 +260,37 @@ export const getRetrievalTools = async (
 				}
 
 				if (allDocuments.length === 0) {
+					await dispatchCustomEvent("tool_stream", {
+						chunk: "No results found.",
+						done: true,
+						error: false,
+					});
 					return "No results found.";
 				}
 
 				// Limit total results to 10
 				const documents = allDocuments.slice(0, 10);
 
+				await dispatchCustomEvent("tool_stream", {
+					chunk: "Search completed successfully.",
+					done: true,
+					error: false,
+				});
+
 				return returnString ? JSON.stringify(documents, null, 0) : documents;
 			} catch (error) {
-				const msg = `Web search failed: ${
+				const errorMessage = `Web search failed: ${
 					error instanceof Error ? error.message : "Unknown error"
 				}`;
-				await dispatchCustomEvent("tool_progress", { chunk: msg });
-				return msg;
+
+				// Send terminal failure event via tool_stream API
+				await dispatchCustomEvent("tool_stream", {
+					chunk: errorMessage,
+					done: true,
+					error: true,
+				});
+
+				return errorMessage;
 			}
 		},
 	});

@@ -182,7 +182,10 @@ export function useStream(chatId: Id<"chats"> | "new") {
 				if (chunk.type === "tool") {
 					if (chunk.isComplete) {
 						return new LangChainToolMessage({
-							content: chunk.output as string,
+							content:
+								typeof chunk.output === "string"
+									? chunk.output
+									: JSON.stringify(chunk.output ?? ""),
 							name: chunk.toolName,
 							tool_call_id: chunk.toolCallId,
 							additional_kwargs: {
