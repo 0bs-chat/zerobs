@@ -119,16 +119,39 @@ export const buildThreadFromMessages = (
   while (current.length > 0) {
     const desired = path?.[depth] ?? current.length - 1; // default to newest created
     const i = clamp(desired, 0, current.length - 1);
-    const node = current[i];
+    const selectedNode = current[i];
 
     result.push({
-      message: { ...node, message: toBaseMessage(node) },
+      message: { ...selectedNode, message: toBaseMessage(selectedNode) },
       branchIndex: i + 1,
       totalBranches: current.length,
       depth,
     });
 
-    current = idx.children.get(node._id) ?? [];
+    // Get children of the selected node
+    current = idx.children.get(selectedNode._id) ?? [];
+    
+    // Include ALL children when there are multiple (this captures tool messages)
+    if (current.length > 1) {
+      // Add all children at this level
+      for (const child of current) {
+        result.push({
+          message: { ...child, message: toBaseMessage(child) },
+          branchIndex: 1, // All are part of the same conversation flow
+          totalBranches: 1,
+          depth: depth + 1,
+        });
+      }
+      // Continue from the last child (usually the final AI response)
+      const lastChild = current[current.length - 1];
+      current = idx.children.get(lastChild._id) ?? [];
+    } else if (current.length === 1) {
+      // Single child - continue normally with path selection
+      const desired = path?.[depth + 1] ?? 0;
+      const i = clamp(desired, 0, current.length - 1);
+      current = idx.children.get(current[i]._id) ?? [];
+    }
+    
     depth += 1;
   }
 
