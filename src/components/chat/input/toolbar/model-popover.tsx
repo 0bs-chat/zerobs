@@ -26,7 +26,7 @@ import {
 import { useModels } from "@/hooks/chats/use-models";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { models } from "../../../../../convex/langchain/models";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -272,7 +272,14 @@ export function ModelPopover({
   );
   const [searchModel, setSearchModel] = useState("");
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [isSelecting, setIsSelecting] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const modelRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Ref callback for model items
+  const setModelRef = useCallback((index: number, el: HTMLDivElement | null) => {
+    modelRefs.current[index] = el;
+  }, []);
   const toolSupportTag = getTagInfo("toolSupport");
   const thinkingTagInfo = getTagInfo("thinking");
 
@@ -325,6 +332,7 @@ export function ModelPopover({
       });
     }
     setPopoverOpen(false);
+    setHighlightedIndex(-1);
   };
 
   // Get filtered models for shortcuts
@@ -336,39 +344,85 @@ export function ModelPopover({
 
   const selectModelByIndex = useCallback(
     async (index: number) => {
-      if (isSelecting) return;
-      if (index < filteredModels.length) {
-        setIsSelecting(true);
-        const model = filteredModels[index];
-        console.log(
-          `[ModelSelector] selecting model #${index + 1}: ${model.label}`,
-        );
-        await handleModelSelect(model.model_name);
-        setIsSelecting(false);
-      } else {
-        console.warn(
-          `[ModelSelector] index ${index} out of range (only ${filteredModels.length} models)`,
-        );
-      }
+      if (index >= filteredModels.length) return;
+      await handleModelSelect(filteredModels[index].model_name);
     },
-    [filteredModels, handleModelSelect, isSelecting],
+    [filteredModels, handleModelSelect],
   );
 
-  // Keyboard shortcut handler
+  // Consolidated keyboard event handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!e.altKey || e.repeat) return;
-
-      const digit = parseInt(e.key, 10);
-      if (!isNaN(digit) && digit >= 1) {
+      // Ctrl+M to toggle popover
+      if (e.ctrlKey && e.key === 'm') {
         e.preventDefault();
-        selectModelByIndex(digit - 1);
+        setPopoverOpen(prev => !prev);
+        return;
+      }
+
+      // Alt+number shortcuts (global)
+      if (e.altKey && !e.repeat) {
+        const digit = parseInt(e.key, 10);
+        if (!isNaN(digit) && digit >= 1) {
+          e.preventDefault();
+          selectModelByIndex(digit - 1);
+        }
+        return;
+      }
+
+      // Arrow keys, Enter, Escape (only when popover is open)
+      if (!popoverOpen) return;
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setHighlightedIndex(prev =>
+            prev < filteredModels.length - 1 ? prev + 1 : 0
+          );
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setHighlightedIndex(prev =>
+            prev > 0 ? prev - 1 : filteredModels.length - 1
+          );
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (highlightedIndex >= 0 && highlightedIndex < filteredModels.length) {
+            handleModelSelect(filteredModels[highlightedIndex].model_name);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          setPopoverOpen(false);
+          setHighlightedIndex(-1);
+          break;
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [selectModelByIndex]);
+  }, [popoverOpen, highlightedIndex, filteredModels, handleModelSelect, selectModelByIndex]);
+
+  // Scroll to highlighted model when index changes
+  useEffect(() => {
+    if (popoverOpen && highlightedIndex >= 0 && highlightedIndex < modelRefs.current.length) {
+      const element = modelRefs.current[highlightedIndex];
+      element?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest'
+      });
+    }
+  }, [popoverOpen, highlightedIndex]);
+
+  // Reset highlighted index when search changes or popover state changes
+  useEffect(() => {
+    if (popoverOpen) {
+      setHighlightedIndex(-1);
+      modelRefs.current = modelRefs.current.slice(0, filteredModels.length);
+    }
+  }, [searchModel, popoverOpen, filteredModels.length]);
 
   return (
     <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
@@ -402,15 +456,19 @@ export function ModelPopover({
           />
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
           <div className="space-y-1 p-1">
             {filteredModels.map((model, index) => (
               <div
                 key={model.model_name}
+                ref={(el) => setModelRef(index, el)}
                 className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
                   model.model_name === selectedModel ? "bg-accent/20" : ""
+                } ${
+                  index === highlightedIndex ? "bg-accent/30 ring-1 ring-accent" : ""
                 }`}
                 onClick={() => handleModelSelect(model.model_name)}
+                onMouseEnter={() => setHighlightedIndex(index)}
               >
                 <div className="text-foreground/80 flex gap-2 items-center justify-center">
                   <img
