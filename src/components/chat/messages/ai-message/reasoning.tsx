@@ -16,20 +16,20 @@ interface ReasoningProps {
 
 export const Reasoning = memo(
   ({ reasoning, messageId, isStreaming }: ReasoningProps) => {
-    const [isOpen, setIsOpen] = useState(false);
-
     if (!reasoning) return null;
+    const [isOpen, setIsOpen] = useState(false);
 
     return (
       <Accordion
         type="multiple"
         className="w-full"
+        defaultValue={["reasoning"]}
         onValueChange={(value) => setIsOpen(value.includes("reasoning"))}
       >
-        <AccordionItem value="reasoning" className="px-0">
+        <AccordionItem value="reasoning" className={`px-0 ${isOpen ? "border-none" : ""}`}>
           <AccordionTrigger
             showIcon={false}
-            className="py-1.5 justify-between gap-2 text-xs font-semibold items-center cursor-pointer "
+            className="py-1.5 justify-between gap-2 text-xs font-semibold items-center cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <BrainIcon className="text-foreground/70 pointer-events-none size-4 " />
@@ -41,7 +41,7 @@ export const Reasoning = memo(
             <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />
           </AccordionTrigger>
           <AccordionContent
-            className={`bg-card rounded-md p-2 mt-2 max-h-[36rem] overflow-y-auto ${isOpen ? "" : "border"}`}
+            className="bg-card rounded-md p-2 mt-2 max-h-[36rem] overflow-y-auto"
           >
             <Markdown
               content={reasoning}

@@ -25,11 +25,12 @@ import {
 } from "@/store/chatStore";
 import { useModels } from "@/hooks/chats/use-models";
 import type { Id } from "../../../../../convex/_generated/dataModel";
-import { models } from "../../../../../convex/langchain/models";
+import type { models } from "../../../../../convex/langchain/models";
 import { useState, useEffect, useCallback } from "react";
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
@@ -225,14 +226,14 @@ const ModelManagementDialog = ({
 			</DialogTrigger>
 			<DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col bg-background border-border/70 rounded-lg">
 				{/* Header outside scrollable area */}
-				<div className="border-b border-border/20 pb-3">
-					<h3 className="text-foreground/90 font-medium text-sm">
+				<DialogHeader>
+					<DialogTitle className="text-foreground/90 font-medium text-sm">
 						Manage Models
-					</h3>
-					<p className="text-xs text-muted-foreground mt-1">
+					</DialogTitle>
+					<DialogDescription className="text-xs text-muted-foreground">
 						Drag to reorder • Click eye to toggle visibility
-					</p>
-				</div>
+					</DialogDescription>
+				</DialogHeader>
 				<div className="flex-1 overflow-y-auto p-2">
 					<DndContext
 						sensors={sensors}

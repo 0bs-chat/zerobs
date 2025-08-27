@@ -26,7 +26,7 @@
 		"@langchain/core": "^0.3.61",
 		"@langchain/google-genai": "^0.2.14",
 		"@langchain/langgraph": "^0.3.5",
-		"@langchain/langgraph-supervisor": "0.0.15",
+		"@langchain/langgraph-supervisor": "^0.0.15",
 		"@langchain/mcp-adapters": "^0.5.2",
 		"@langchain/openai": "https://raw.githubusercontent.com/0bs-chat/langchainjs/refs/heads/main/libs/langchain-openai/langchain-openai-0.6.9.tgz",
 		"@polar-sh/sdk": "^0.34.3",

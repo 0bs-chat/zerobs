@@ -7,12 +7,7 @@ import {
 	createAgentWithTools,
 	getAvailableToolsDescription,
 } from "./helpers";
-import {
-	type CompletedStep,
-	type GraphState,
-	planSchema,
-	planArray,
-} from "./state";
+import { GraphState, planSchema, planArray, type CompletedStep } from "./state";
 import { modelSupportsTools, formatMessages, getModel, models } from "./models";
 import {
 	type BaseMessage,
@@ -26,7 +21,7 @@ import {
 	createReplannerPrompt,
 	replannerOutputSchema,
 } from "./prompts";
-import { type z } from "zod";
+import type { z } from "zod";
 import { END, START, StateGraph } from "@langchain/langgraph/web";
 
 async function shouldPlanOrAgentOrSimple(
@@ -34,7 +29,7 @@ async function shouldPlanOrAgentOrSimple(
 	config: RunnableConfig,
 ) {
 	const formattedConfig = config.configurable as ExtendedRunnableConfig;
-	if (!modelSupportsTools(formattedConfig.chat.model!)) {
+	if (!modelSupportsTools(formattedConfig.chat.model)) {
 		return "simple";
 	}
 
@@ -80,7 +75,7 @@ async function simple(state: typeof GraphState.State, config: RunnableConfig) {
 	const formattedMessages = await formatMessages(
 		formattedConfig.ctx,
 		state.messages,
-		formattedConfig.chat.model!,
+		formattedConfig.chat.model,
 	);
 
 	const response = await chain.invoke(
@@ -105,7 +100,7 @@ async function baseAgent(
 	const formattedMessages = await formatMessages(
 		formattedConfig.ctx,
 		state.messages,
-		formattedConfig.chat.model!,
+		formattedConfig.chat.model,
 	);
 
 	const response = await chain.invoke(
@@ -115,7 +110,7 @@ async function baseAgent(
 		config,
 	);
 
-	let newMessages = response.messages.slice(
+	const newMessages = response.messages.slice(
 		formattedMessages.length,
 	) as BaseMessage[];
 
@@ -134,13 +129,13 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
 
 	const model = await getModel(
 		formattedConfig.ctx,
-		formattedConfig.chat.model!,
+		formattedConfig.chat.model,
 		formattedConfig.chat.reasoningEffort,
 	);
 
 	// Get model config to check if it's anthropic
 	const modelConfig = models.find(
-		(m) => m.model_name === formattedConfig.chat.model!,
+		(m) => m.model_name === formattedConfig.chat.model,
 	);
 	const isFunctionCallingParser = modelConfig?.parser === "functionCalling";
 
@@ -153,7 +148,7 @@ async function planner(state: typeof GraphState.State, config: RunnableConfig) {
 	const formattedMessages = await formatMessages(
 		formattedConfig.ctx,
 		state.messages,
-		formattedConfig.chat.model!,
+		formattedConfig.chat.model,
 	);
 
 	const response = (await modelWithOutputParser.invoke(
@@ -246,14 +241,14 @@ async function replanner(
 
 	const model = await getModel(
 		formattedConfig.ctx,
-		formattedConfig.chat.model!,
+		formattedConfig.chat.model,
 		formattedConfig.chat.reasoningEffort,
 	);
 
 	// Get model config to check if it's anthropic
 	const outputSchema = replannerOutputSchema(formattedConfig.chat.artifacts);
 	const modelConfig = models.find(
-		(m) => m.model_name === formattedConfig.chat.model!,
+		(m) => m.model_name === formattedConfig.chat.model,
 	);
 	const isFunctionCallingParser = modelConfig?.parser === "functionCalling";
 	const modelWithOutputParser = promptTemplate.pipe(
