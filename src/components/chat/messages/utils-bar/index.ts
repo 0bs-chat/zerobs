@@ -54,8 +54,8 @@ export function useMessageActions() {
     input: MessageWithBranchInfo,
     model?: string,
   ) => {
-    navigateBranch?.(input.depth, "next", input.totalBranches);
-    // If the model is provided, update the chat with the new model or
+    navigateBranch?.(input.depth, input.totalBranches, input.totalBranches + 1);
+    // If the model is provided, update the chat with the new model
     if (model) {
       await updateChatMutation({
         chatId: input.message.chatId!,

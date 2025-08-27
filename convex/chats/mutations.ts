@@ -84,12 +84,15 @@ export const createRaw = internalMutation({
     let parentId: Id<"chatMessages"> | null = null;
 
     for (const message of args.messages) {
-      const created: { _id: Id<"chatMessages"> } = await ctx.runMutation(internal.chatMessages.crud.create, {
-        chatId: args.chatId,
-        parentId: message.parentId ?? parentId,
-        message: message.message,
-        minimized: false,
-      });
+      const created: { _id: Id<"chatMessages"> } = await ctx.runMutation(
+        internal.chatMessages.crud.create,
+        {
+          chatId: args.chatId,
+          parentId: message.parentId ?? parentId,
+          message: message.message,
+          minimized: false,
+        },
+      );
       parentId = created._id;
     }
 

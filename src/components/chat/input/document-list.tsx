@@ -24,7 +24,7 @@ const DocumentBadge = React.memo(
   ({ doc, onPreview, onRemove, modalities }: DocumentBadgeProps) => {
     const { icon: Icon, className: IconClassName } = getDocTagInfo(
       doc,
-      modalities
+      modalities,
     );
 
     const handlePreview = useCallback(() => {
@@ -36,7 +36,7 @@ const DocumentBadge = React.memo(
         e.stopPropagation();
         onRemove();
       },
-      [onRemove]
+      [onRemove],
     );
 
     return (
@@ -63,7 +63,7 @@ const DocumentBadge = React.memo(
         </span>
       </Badge>
     );
-  }
+  },
 );
 DocumentBadge.displayName = "DocumentBadge";
 
@@ -84,14 +84,14 @@ export const DocumentList = ({
     (documentId: Id<"documents">) => {
       setDocumentDialogOpen(documentId);
     },
-    [setDocumentDialogOpen]
+    [setDocumentDialogOpen],
   );
 
   const handleRemove = useCallback(
     (documentId: Id<"documents">) => {
       removeDocument(documentId);
     },
-    [removeDocument]
+    [removeDocument],
   );
 
   if (!documents?.length) return null;

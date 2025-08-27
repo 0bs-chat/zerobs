@@ -5,13 +5,13 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-	Hammer,
-	ChevronDown,
 	Search,
 	Settings,
 	GripVertical,
 	Eye,
 	EyeOff,
+	Hammer,
+	ChevronDown,
 } from "lucide-react";
 import { useSetAtom, useAtom } from "jotai";
 import { getTagInfo } from "@/lib/helper";
@@ -23,9 +23,10 @@ import {
 	modelPreferencesAtom,
 	type ModelPreferences,
 } from "@/store/chatStore";
+import { useModels } from "@/hooks/chats/use-models";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 import { models } from "../../../../../convex/langchain/models";
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
 	Dialog,
 	DialogContent,
@@ -84,7 +85,7 @@ const SortableModelItem = ({
 		<div
 			ref={setNodeRef}
 			style={style}
-			className={`flex items-center gap-2 px-3 py-3 rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
+			className={`flex items-center gap-2  px-2 py-3 rounded-lg transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
 				isDragging ? "shadow-lg" : ""
 			}`}
 		>
@@ -94,9 +95,8 @@ const SortableModelItem = ({
 					{...listeners}
 					className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent/25 rounded"
 				>
-					<GripVertical className="h-4 w-4 text-muted-foreground" />
+					<GripVertical className="h-3 w-3 text-muted-foreground" />
 				</div>
-
 				<img
 					src={model.image}
 					aria-label={`${model.label} model icon`}
@@ -108,13 +108,16 @@ const SortableModelItem = ({
 					}`}
 				/>
 
-				<span
-					className={`text-sm ${isHidden ? "text-muted-foreground line-through" : "text-foreground"}`}
-				>
-					{model.label}
-				</span>
+				<div className="flex items-center gap-2">
+					<span
+						className={`text-sm ${isHidden ? "text-muted-foreground line-through" : "text-foreground/80"}`}
+					>
+						{model.label}
+					</span>
+				</div>
 			</div>
 
+			{/* Right Side - Capabilities and Visibility Toggle */}
 			<div className="flex items-center gap-1">
 				{/* Model Tags */}
 				<div className="flex gap-1 items-center opacity-75">
@@ -151,7 +154,7 @@ const SortableModelItem = ({
 					)}
 				</div>
 
-				{/* Action Buttons */}
+				{/* Visibility Toggle */}
 				<Button
 					size="sm"
 					variant="ghost"
@@ -191,18 +194,14 @@ const ModelManagementDialog = ({
 	const handleDragEnd = (event: DragEndEvent) => {
 		const { active, over } = event;
 
-		if (!over) return;
+		if (active.id !== over?.id) {
+			const oldIndex = orderedModels.findIndex(
+				(model) => model.model_name === active.id,
+			);
+			const newIndex = orderedModels.findIndex(
+				(model) => model.model_name === over?.id,
+			);
 
-		const oldIndex = orderedModels.findIndex(
-			(model) => model.model_name === active.id,
-		);
-		const newIndex = orderedModels.findIndex(
-			(model) => model.model_name === over.id,
-		);
-
-		if (oldIndex < 0 || newIndex < 0) return;
-
-		if (active.id !== over.id) {
 			const newOrder = arrayMove(
 				orderedModels.map((m) => m.model_name),
 				oldIndex,
@@ -219,16 +218,22 @@ const ModelManagementDialog = ({
 				<Button
 					size="sm"
 					variant="ghost"
-					className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+					className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
 				>
 					<Settings className="h-4 w-4" />
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
-				<DialogHeader>
-					<DialogTitle>Manage Models</DialogTitle>
-				</DialogHeader>
-				<div className="flex-1 overflow-y-auto">
+			<DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col bg-background border-border/70 rounded-lg">
+				{/* Header outside scrollable area */}
+				<div className="border-b border-border/20 pb-3">
+					<h3 className="text-foreground/90 font-medium text-sm">
+						Manage Models
+					</h3>
+					<p className="text-xs text-muted-foreground mt-1">
+						Drag to reorder • Click eye to toggle visibility
+					</p>
+				</div>
+				<div className="flex-1 overflow-y-auto p-2">
 					<DndContext
 						sensors={sensors}
 						collisionDetection={closestCenter}
@@ -268,37 +273,7 @@ export function ModelPopover({
 		mutationFn: useConvexMutation(api.chats.mutations.update),
 	});
 	const [preferences, setPreferences] = useAtom(modelPreferencesAtom);
-
-	// Derive ordered models from preferences
-	const orderedModels = React.useMemo(() => {
-		const allModels = [...models];
-		const modelMap = new Map(
-			allModels.map((model) => [model.model_name, model]),
-		);
-
-		// Start with models in the preferred order
-		const orderedModels = preferences.order
-			.map((modelName) => modelMap.get(modelName))
-			.filter(Boolean) as typeof models;
-
-		// Add any new models that aren't in the order yet
-		const orderedModelNames = new Set(preferences.order);
-		const newModels = allModels.filter(
-			(model: (typeof models)[number]) =>
-				!orderedModelNames.has(model.model_name) &&
-				!preferences.hidden.includes(model.model_name),
-		);
-
-		return [...orderedModels, ...newModels];
-	}, [preferences]);
-
-	// Derive visible models
-	const visibleModels = React.useMemo(() => {
-		return orderedModels.filter(
-			(model: (typeof models)[number]) =>
-				!preferences.hidden.includes(model.model_name),
-		);
-	}, [orderedModels, preferences.hidden]);
+	const { orderedModels, visibleModels } = useModels();
 
 	const selectedModelConfig = visibleModels.find(
 		(m) => m.model_name === selectedModel,
@@ -347,6 +322,7 @@ export function ModelPopover({
 		},
 		[setPreferences],
 	);
+
 	const handleModelSelect = useCallback(
 		async (modelName: string) => {
 			if (isNewChat) {
@@ -372,21 +348,18 @@ export function ModelPopover({
 	const selectModelByIndex = useCallback(
 		async (index: number) => {
 			if (isSelecting) return;
-
 			if (index < filteredModels.length) {
-				const model = filteredModels[index];
 				setIsSelecting(true);
-				try {
-					await handleModelSelect(model.model_name);
-				} finally {
-					setIsSelecting(false);
-				}
+				const model = filteredModels[index];
+				console.log(
+					`[ModelSelector] selecting model #${index + 1}: ${model.label}`,
+				);
+				await handleModelSelect(model.model_name);
+				setIsSelecting(false);
 			} else {
-				if (process.env.NODE_ENV !== "production") {
-					console.warn(
-						`[ModelSelector] index ${index} out of range (only ${filteredModels.length} models)`,
-					);
-				}
+				console.warn(
+					`[ModelSelector] index ${index} out of range (only ${filteredModels.length} models)`,
+				);
 			}
 		},
 		[filteredModels, handleModelSelect, isSelecting],
@@ -443,12 +416,19 @@ export function ModelPopover({
 				<div className="flex-1 overflow-y-auto">
 					<div className="space-y-1 p-1">
 						{filteredModels.map((model, index) => (
-							<div
+							<button
 								key={model.model_name}
-								className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
+								type="button"
+								className={`w-full flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 text-left ${
 									model.model_name === selectedModel ? "bg-accent/20" : ""
 								}`}
 								onClick={() => handleModelSelect(model.model_name)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault();
+										handleModelSelect(model.model_name);
+									}
+								}}
 							>
 								<div className="text-foreground/80 flex gap-2 items-center justify-center">
 									<img
@@ -507,7 +487,7 @@ export function ModelPopover({
 										</div>
 									)}
 								</div>
-							</div>
+							</button>
 						))}
 					</div>
 				</div>

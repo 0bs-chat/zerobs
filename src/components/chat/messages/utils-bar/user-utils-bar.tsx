@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { BranchNavigation } from "./branch-navigation";
 import { Button } from "@/components/ui/button";
@@ -114,14 +114,19 @@ export const UserUtilsBar = memo(
 			}
 			return typeof content === "string" ? content : "";
 		})();
-		const handleSubmit = async (applySame: boolean) => {
+
+		const handleSubmit = (applySame: boolean, model?: string) => {
 			if (!editedText?.trim()) {
 				toast.error("Please enter a message");
 				return;
 			}
 
 			if (!applySame) {
-				navigateBranch?.(input.depth, "next", input.totalBranches);
+				navigateBranch?.(
+					input.depth,
+					input.totalBranches,
+					input.totalBranches + 1,
+				);
 			}
 
 			const finalDocuments =
@@ -140,21 +145,42 @@ export const UserUtilsBar = memo(
 					: []);
 
 			try {
-				await updateMessage({
-					id: input.message._id,
-					updates: { text: editedText.trim(), documents: finalDocuments },
-					applySame,
+				updateMessage({
+					id: input.message._id as Id<"chatMessages">,
+					updates: { text: editedText, documents: finalDocuments },
+					applySame: applySame,
+				}).then(() => {
+					if (applySame === false) {
+						chat({ chatId: input.message.chatId, model });
+					}
 				});
-
-				if (!applySame) {
-					await chat({ chatId: input.message.chatId });
-				}
-
 				onDone?.();
 			} catch {
 				toast.error("Failed to submit message edit");
 			}
 		};
+
+		const handleKeyDown = useCallback(
+			(e: KeyboardEvent) => {
+				if (!isEditing) return;
+
+				if (e.key === "Enter" && !e.shiftKey) {
+					// Enter: Submit and regenerate
+					e.preventDefault();
+					handleSubmit(false);
+				}
+			},
+			[isEditing, handleSubmit],
+		);
+
+		useEffect(() => {
+			if (isEditing) {
+				document.addEventListener("keydown", handleKeyDown);
+				return () => {
+					document.removeEventListener("keydown", handleKeyDown);
+				};
+			}
+		}, [isEditing, handleKeyDown]);
 
 		if (isEditing) {
 			return (
@@ -188,7 +214,7 @@ export const UserUtilsBar = memo(
 						icon={<CheckCheck className="h-4 w-4 text-foreground/70" />}
 						tooltip="Submit and Regenerate"
 						ariaLabel="Submit and Regenerate"
-						// disabled={!editedText?.trim() && editedDocuments?.length === 0}
+						disabled={!editedText?.trim() && editedDocuments?.length === 0}
 					/>
 					<ActionDropdown
 						trigger={

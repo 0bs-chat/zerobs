@@ -60,8 +60,9 @@ export const pinnedChatsAccordionOpenAtom = atomWithStorage(
 );
 
 export const currentThreadAtom = atom<MessageGroup[] | undefined>(undefined);
-export const groupedMessagesAtom = selectAtom(currentThreadAtom, (groups) =>
-  groups || [],
+export const groupedMessagesAtom = selectAtom(
+  currentThreadAtom,
+  (groups) => groups || [],
 );
 export const lastChatMessageAtom = selectAtom(currentThreadAtom, (groups) => {
   if (!groups || groups.length === 0) return undefined;
@@ -148,9 +149,9 @@ export type ModelPreferences = {
 };
 
 export const modelPreferencesAtom = atomWithStorage<ModelPreferences>(
-  "modelPreferences", 
+  "modelPreferences",
   {
-    order: models.filter(m => !m.hidden).map(m => m.model_name),
-    hidden: models.filter(m => m.hidden).map(m => m.model_name),
-  }
+    order: models.filter((m) => !m.hidden).map((m) => m.model_name),
+    hidden: models.filter((m) => m.hidden).map((m) => m.model_name),
+  },
 );

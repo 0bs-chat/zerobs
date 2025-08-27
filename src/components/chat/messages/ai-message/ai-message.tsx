@@ -88,7 +88,7 @@ export const AiMessageContent = memo(
     }, [type, reasoning, messageId, renderedContent, message, className]);
 
     return <>{messageContent}</>;
-  }
+  },
 );
 
 AiMessageContent.displayName = "AiMessageContent";
