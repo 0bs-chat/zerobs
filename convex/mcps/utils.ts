@@ -2,8 +2,10 @@ import { verifyJwt, createJwt } from "../utils/encryption";
 import { MCP_TEMPLATES } from "../../src/components/chat/panels/mcp/templates";
 import { makeFunctionReference } from "convex/server";
 import type { ActionCtx, MutationCtx, QueryCtx } from "../_generated/server";
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
 import type { CreateMachineRequest } from "../utils/flyio";
+import { fly } from "../utils/flyio";
+import { internal } from "../_generated/api";
 
 export async function verifyEnv(
   env: Record<string, string>,
@@ -98,6 +100,135 @@ export async function resolveConfigurableEnvs(
   }
 
   return configurableEnvValues;
+}
+
+export async function validateMcpForDeployment(mcp: Doc<"mcps">): Promise<void> {
+  if (!mcp.enabled) {
+    throw new Error("MCP is not enabled");
+  }
+  if (!["stdio", "docker"].includes(mcp.type)) {
+    throw new Error("MCP is not a stdio or docker type");
+  }
+  if (mcp.type === "stdio" && !mcp.command) {
+    throw new Error("MCP command is not defined");
+  }
+  if (mcp.type === "docker" && !mcp.dockerImage) {
+    throw new Error("MCP docker image is not defined");
+  }
+}
+
+export async function validateMcpForRestart(mcp: Doc<"mcps">): Promise<void> {
+  if (!["docker", "stdio"].includes(mcp.type)) {
+    throw new Error("MCP is not a docker or stdio type");
+  }
+  if (!mcp.url) {
+    throw new Error("MCP URL is not defined");
+  }
+  if (mcp.status === "creating") {
+    throw new Error("MCP is still creating");
+  }
+}
+
+export async function getOrCreateFlyApp(appName: string): Promise<any> {
+  let app = await fly.getApp(appName);
+  if (!app) {
+    app = await fly.createApp({
+      app_name: appName,
+      org_slug: "personal",
+    });
+    if (app) {
+      await fly.allocateIpAddress(app.name!, "shared_v4");
+    }
+  }
+  return app;
+}
+
+export async function ensureMachineHealthy(
+  appName: string,
+  machineId: string,
+  timeout: number = 120000,
+): Promise<void> {
+  const result = await fly.waitTillHealthy(appName, {
+    timeout,
+    interval: 1000,
+  });
+
+  if (!result.healthy) {
+    throw new Error(`Machine ${machineId} failed to become healthy: ${result.error || 'Unknown error'}`);
+  }
+}
+
+export async function restartAllMachines(appName: string): Promise<void> {
+  const machines = await fly.listMachines(appName);
+
+  if (machines && machines.length > 0) {
+    const machinesWithId = machines.filter((machine) => machine.id);
+
+    // Stop machines
+    await Promise.all(
+      machinesWithId.map((machine) =>
+        fly.stopMachine(appName, machine.id!),
+      ),
+    );
+
+    // Wait for machines to stop
+    for (let i = 0; i < 30; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const updatedMachines = await fly.listMachines(appName);
+      if (
+        updatedMachines?.every(
+          (m) =>
+            !machinesWithId.some((original) => original.id === m.id) ||
+            m.state === "stopped",
+        )
+      ) {
+        break;
+      }
+    }
+
+    // Start machines
+    await Promise.all(
+      machinesWithId.map((machine) =>
+        fly.startMachine(appName, machine.id!),
+      ),
+    );
+  }
+}
+
+export async function createMcpAuthToken(
+  mcp: Doc<"mcps">,
+  machineId: string,
+): Promise<string> {
+  let authToken = null;
+  if (mcp.template) {
+    const matchingTemplate = MCP_TEMPLATES.find(
+      (t) => t.template === mcp.template,
+    );
+    if (matchingTemplate && matchingTemplate.customAuthTokenFromEnv) {
+      authToken = mcp.env[matchingTemplate.customAuthTokenFromEnv];
+    }
+  }
+
+  return authToken ||
+    (await createJwt(
+      "OAUTH_TOKEN",
+      mcp._id,
+      mcp.userId,
+      true,
+    ));
+}
+
+export async function handleMcpActionError(
+  ctx: ActionCtx | MutationCtx,
+  mcpId: Id<"mcps">,
+  error: any,
+  action: string,
+): Promise<void> {
+  console.error(`Error in MCP ${action}:`, error);
+  await ctx.runMutation(internal.mcps.crud.update, {
+    id: mcpId,
+    patch: { status: "error" },
+  });
 }
 
 export async function createMachineConfig(

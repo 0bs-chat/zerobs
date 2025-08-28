@@ -11,9 +11,14 @@ import {
   type ExtendedRunnableConfig,
 } from "../helpers";
 import type { GraphState } from "../state";
-import { createJwt } from "../../utils/encryption";
 import { MCP_TEMPLATES } from "../../../src/components/chat/panels/mcp/templates";
-import { resolveConfigurableEnvs, createMachineConfig } from "../../mcps/utils";
+import {
+  resolveConfigurableEnvs,
+  createMachineConfig,
+  getOrCreateFlyApp,
+  ensureMachineHealthy,
+  createMcpAuthToken
+} from "../../mcps/utils";
 
 export const getMCPTools = async (
   ctx: ActionCtx,
@@ -49,21 +54,7 @@ export const getMCPTools = async (
         machineId = config.chat._id.toString();
 
         try {
-          // Get or create fly.io app and machine
-          let app = await fly.getApp(appName);
-          if (!app) {
-            app = await fly.createApp({
-              app_name: appName,
-              org_slug: "personal",
-            });
-            if (app) {
-              await fly.allocateIpAddress(app.name!, "shared_v4");
-            }
-          }
-
-          if (!app) {
-            throw new Error(`Failed to get or create app: ${appName}`);
-          }
+          await getOrCreateFlyApp(appName);
 
           let machine = await fly.getMachineByName(appName, machineId);
 
@@ -75,10 +66,7 @@ export const getMCPTools = async (
               machineId,
             );
             machine = await fly.createMachine(appName, machineConfig);
-            await fly.waitTillHealthy(appName, {
-              timeout: 120000,
-              interval: 1000,
-            });
+            await ensureMachineHealthy(appName, machineId);
           }
 
           const sseUrl = `https://${appName}.fly.dev/sse`;
@@ -113,29 +101,13 @@ export const getMCPTools = async (
       }
 
       // Build connection object
-      let authToken = null;
-      if (updatedMcp.template) {
-        const matchingTemplate = MCP_TEMPLATES.find(
-          (t) => t.template === updatedMcp.template,
-        );
-        if (matchingTemplate && matchingTemplate.customAuthTokenFromEnv) {
-          authToken = updatedMcp.env[matchingTemplate.customAuthTokenFromEnv];
-        }
-      }
+      const authToken = await createMcpAuthToken(updatedMcp, machineId);
 
       const headers: Record<string, string> = {
         ...updatedMcp.env,
         ...mcpConfigurableEnvs,
         fly_force_instance_id: machineId,
-        Authorization: `Bearer ${
-          authToken ||
-          (await createJwt(
-            "OAUTH_TOKEN",
-            updatedMcp._id,
-            updatedMcp.userId,
-            true,
-          ))
-        }`,
+        Authorization: `Bearer ${authToken}`,
       };
 
       return {
