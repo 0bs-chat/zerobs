@@ -13,7 +13,6 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
   const { isLoading, isEmpty } = useMessages({ chatId });
 
   const streamStatus = useAtomValue(streamStatusAtom);
-
   const mainContent = useMemo(() => {
     if (chatId === "new") {
       // Get user name from loadable state
@@ -23,13 +22,13 @@ export const ChatMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
       return (
         <div className="flex items-center justify-center h-full flex-col gap-4 -translate-y-16">
           <div
-            className="flex items-center gap-2 text-5xl font-semibold text-primary/50"
+            className="flex items-center gap-2 text-5xl font-semibold text-primary/40"
             style={{
               fontFamily: "Rubik",
             }}
           >
             how can i help you,
-            <span className="text-primary/50">{userName} ?</span>
+            <span className="text-primary/40">{userName} ?</span>
           </div>
         </div>
       );
