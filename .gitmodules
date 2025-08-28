@@ -7,3 +7,4 @@
 [submodule "services/mcps"]
 	path = services/mcps
 	url = https://github.com/0bs-chat/mcp-runner.git
+
