@@ -31,23 +31,6 @@ export type MessageGroup = {
 const clamp = (n: number, min: number, max: number) =>
   Math.max(min, Math.min(n, max));
 
-// Cache parsed BaseMessage to avoid repeated JSON.parse + mapping
-const parsedMessageCache = new Map<string, BaseMessage>();
-const toBaseMessage = (doc: Doc<"chatMessages">): BaseMessage => {
-  const cached = parsedMessageCache.get(doc.message);
-  if (cached) return cached;
-  const parsed = mapStoredMessageToChatMessage(
-    JSON.parse(doc.message) as StoredMessage,
-  );
-  parsedMessageCache.set(doc.message, parsed);
-  return parsed;
-};
-
-const getType = (m: MessageWithBranchInfo) => m.message.message.getType();
-const isHuman = (m: MessageWithBranchInfo) => getType(m) === "human";
-const isAI = (m: MessageWithBranchInfo) => getType(m) === "ai";
-const isTool = (m: MessageWithBranchInfo) => getType(m) === "tool";
-
 const cmpId = (a: Id<"chatMessages">, b: Id<"chatMessages">) => {
   const as = String(a);
   const bs = String(b);
@@ -56,6 +39,47 @@ const cmpId = (a: Id<"chatMessages">, b: Id<"chatMessages">) => {
 
 const byCreatedAsc = (a: Doc<"chatMessages">, b: Doc<"chatMessages">) =>
   a._creationTime - b._creationTime || cmpId(a._id, b._id);
+
+// Identify message kinds
+const getType = (m: MessageWithBranchInfo) => m.message.message.getType();
+const isHuman = (m: MessageWithBranchInfo) => getType(m) === "human";
+const isAI = (m: MessageWithBranchInfo) => getType(m) === "ai";
+const isTool = (m: MessageWithBranchInfo) => getType(m) === "tool";
+
+// Small LRU cache for parsed BaseMessage to avoid repeated JSON.parse + mapping
+const MAX_MESSAGE_CACHE = 2000;
+const parsedMessageCache = new Map<string, BaseMessage>();
+
+const getOrSetLRU = (key: string, compute: () => BaseMessage) => {
+  const hit = parsedMessageCache.get(key);
+  if (hit) {
+    // refresh
+    parsedMessageCache.delete(key);
+    parsedMessageCache.set(key, hit);
+    return hit;
+  }
+  const value = compute();
+  parsedMessageCache.set(key, value);
+  if (parsedMessageCache.size > MAX_MESSAGE_CACHE) {
+    const oldestKey = parsedMessageCache.keys().next().value as string;
+    parsedMessageCache.delete(oldestKey);
+  }
+  return value;
+};
+
+const toBaseMessage = (doc: Doc<"chatMessages">): BaseMessage =>
+  getOrSetLRU(doc.message, () =>
+    mapStoredMessageToChatMessage(
+      JSON.parse(doc.message) as StoredMessage,
+    ),
+  );
+
+const wrapDoc = (
+  doc: Doc<"chatMessages">,
+): Omit<Doc<"chatMessages">, "message"> & { message: BaseMessage } => ({
+  ...doc,
+  message: toBaseMessage(doc),
+});
 
 type Index = {
   byId: Map<Id<"chatMessages">, Doc<"chatMessages">>;
@@ -79,16 +103,17 @@ const indexChatMessages = (messages: Doc<"chatMessages">[]): Index => {
   for (const m of messages) {
     const p = m.parentId;
     if (p && byId.has(p)) {
-      if (!children.has(p)) children.set(p, []);
-      children.get(p)!.push(m);
+      const arr = children.get(p);
+      if (arr) arr.push(m);
+      else children.set(p, [m]);
     } else {
       roots.push(m);
     }
   }
 
   // Sort siblings by creation time (natural flow)
-  for (const [, arr] of children) arr.sort(byCreatedAsc);
   roots.sort(byCreatedAsc);
+  for (const [, arr] of children) arr.sort(byCreatedAsc);
 
   // Fill constant-time index maps
   for (const [, arr] of children) {
@@ -113,22 +138,45 @@ export const buildThreadFromMessages = (
   const idx = idxOverride ?? indexChatMessages(messages);
   const result: MessageWithBranchInfo[] = [];
 
-  let current = idx.roots;
+  // Start from roots, then walk down using `path`.
+  let siblings = idx.roots;
   let depth = 0;
 
-  while (current.length > 0) {
-    const desired = path?.[depth] ?? current.length - 1; // default to newest created
-    const i = clamp(desired, 0, current.length - 1);
-    const node = current[i];
+  while (siblings.length > 0) {
+    const desired = path?.[depth] ?? siblings.length - 1; // newest by default
+    const i = clamp(desired, 0, siblings.length - 1);
+    const selectedNode = siblings[i];
 
+    // Push the selected node at this depth
     result.push({
-      message: { ...node, message: toBaseMessage(node) },
+      message: wrapDoc(selectedNode),
       branchIndex: i + 1,
-      totalBranches: current.length,
+      totalBranches: siblings.length,
       depth,
     });
 
-    current = idx.children.get(node._id) ?? [];
+    // Move to children of the selected node
+    const children = idx.children.get(selectedNode._id) ?? [];
+
+    if (children.length > 1) {
+      // Include ALL children (captures tool and intermediate messages)
+      for (const child of children) {
+        result.push({
+          message: wrapDoc(child),
+          // Keep "1 of 1" to treat these as linear flow at this level
+          branchIndex: 1,
+          totalBranches: 1,
+          depth: depth + 1,
+        });
+      }
+      // Continue from the last child's children (usually final AI response)
+      const lastChild = children[children.length - 1];
+      siblings = idx.children.get(lastChild._id) ?? [];
+    } else {
+      // 0 or 1 child: just step into that set for the next selection
+      siblings = children;
+    }
+
     depth += 1;
   }
 
@@ -152,7 +200,7 @@ export const groupMessages = (
     }
 
     if (!group) {
-      // Ignore leading AI/tool messages without a human input
+      // Ignore leading AI/tool/other messages without a human input
       continue;
     }
 
@@ -163,7 +211,6 @@ export const groupMessages = (
     }
 
     if (isTool(item) && lastAI) {
-      // Use lastAI directly (no reverse+find)
       const ai = lastAI.message.message as AIMessage;
       const tool = item.message.message as ToolMessage;
       const tc = ai.tool_calls?.find((t) => t.id === tool.tool_call_id);
@@ -175,6 +222,7 @@ export const groupMessages = (
       }
     }
 
+    // Non-AI responses (tool/system/other) are appended as part of response
     group.response.push(item);
   }
 
@@ -208,6 +256,18 @@ const computeLatestPath = (
   return latestPath;
 };
 
+const latestByCreation = (
+  messages: Doc<"chatMessages">[],
+): Doc<"chatMessages"> => {
+  let latest = messages[0];
+  for (let i = 1; i < messages.length; i += 1) {
+    if (byCreatedAsc(latest, messages[i]) < 0) {
+      latest = messages[i];
+    }
+  }
+  return latest;
+};
+
 export const buildThreadAndGroups = (
   messages: Doc<"chatMessages">[],
   path: number[],
@@ -220,8 +280,8 @@ export const buildThreadAndGroups = (
   const thread = buildThreadFromMessages(messages, path, idx);
   const groups = groupMessages(thread);
 
-  // Compute latest path using O(depth) lookups
-  const latestMessage = messages[messages.length - 1];
+  // Compute latest path using truly latest message by creation time
+  const latestMessage = latestByCreation(messages);
   const latestPath = computeLatestPath(idx, latestMessage);
 
   return { groups, latestPath };
