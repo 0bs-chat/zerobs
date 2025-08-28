@@ -46,8 +46,6 @@ const isHuman = (m: MessageWithBranchInfo) => getType(m) === "human";
 const isAI = (m: MessageWithBranchInfo) => getType(m) === "ai";
 const isTool = (m: MessageWithBranchInfo) => getType(m) === "tool";
 
-// Small LRU cache for parsed BaseMessage to avoid repeated JSON.parse + mapping
-const MAX_MESSAGE_CACHE = 2000;
 const parsedMessageCache = new Map<string, BaseMessage>();
 
 

@@ -197,7 +197,6 @@ export async function restartAllMachines(appName: string): Promise<void> {
 
 export async function createMcpAuthToken(
   mcp: Doc<"mcps">,
-  machineId: string,
 ): Promise<string> {
   let authToken = null;
   if (mcp.template) {
