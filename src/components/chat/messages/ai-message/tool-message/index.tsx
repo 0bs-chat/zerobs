@@ -67,7 +67,7 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
     );
   }
   if (parsedContent.type === "document") {
-    return <DocumentResultDisplay results={parsedContent.results} />;
+    return <DocumentResultDisplay results={parsedContent.results} input={input} />;
   }
 
   // MIXED: files + text blocks

@@ -19,9 +19,7 @@ export const getRetrievalTools = async (
 ) => {
   const vectorSearchTool = new DynamicStructuredTool({
     name: "searchProjectDocuments",
-    description:
-      "Search through project documents using vector similarity search with multiple queries (1-5). Use this to find relevant information from uploaded project documents." +
-      "You are always supposed to use this tool if you are asked about something specific to find information but no additional information is provided.",
+    description: "Search through project documents using semantic similarity with multiple queries (1-5). Finds relevant information from uploaded project documents based on meaning rather than exact matches.",
     schema: z.object({
       queries: z
         .array(z.string())
@@ -30,20 +28,8 @@ export const getRetrievalTools = async (
         .describe(
           "List of search queries to find relevant documents (1-5 queries)",
         ),
-      limit: z
-        .number()
-        .min(1)
-        .max(256)
-        .describe("Number of results to return")
-        .default(10),
     }),
-    func: async ({
-      queries,
-      limit = 10,
-    }: {
-      queries: string[];
-      limit?: number;
-    }) => {
+    func: async ({ queries }: { queries: string[] }) => {
       // Initialize ConvexVectorStore with the embedding model
       const embeddingModel = await getEmbeddingModel(config.ctx, "embeddings");
       const vectorStore = new ConvexVectorStore(embeddingModel, {
@@ -64,12 +50,11 @@ export const getRetrievalTools = async (
         return "No project documents available for retrieval.";
       }
 
-      // Perform similarity search for each query, filtering by selected documents
-      let allResults = [];
-      for (const query of queries) {
+      // Perform similarity search for each query in parallel, filtering by selected documents
+      const searchPromises = queries.map(async (query) => {
         const results = await vectorStore.similaritySearch(
           query,
-          Math.ceil(limit / queries.length),
+          10,
           {
             filter: (q) =>
               q.or(
@@ -84,17 +69,15 @@ export const getRetrievalTools = async (
         );
 
         // Add query metadata to results
-        const resultsWithQuery = results.map((doc) => ({
+        return results.map((doc) => ({
           ...doc,
           metadata: { ...doc.metadata, query },
         }));
+      });
 
-        allResults.push(...resultsWithQuery);
-      }
-
-      // Limit total results and remove duplicates based on content similarity
-      allResults = allResults.slice(0, limit);
-
+      const allResultsArrays = await Promise.all(searchPromises);
+      const allResults = allResultsArrays.flat();
+      
       const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
       includedProjectDocuments.forEach((projectDocument) =>
         documentsMap.set(projectDocument.documentId, projectDocument.document!),
@@ -132,15 +115,14 @@ export const getRetrievalTools = async (
 
   const webSearchTool = new DynamicStructuredTool({
     name: "searchWeb",
-    description:
-      "Search the web for current information using multiple queries (1-5) with Exa (if API key is configured) or DuckDuckGo. Use this to find up-to-date information from the internet.",
+    description: "Search the web for current information using multiple queries (3-5). Access real-time web content including news, research papers, company information, and technical documentation.",
     schema: z.object({
       queries: z
         .array(z.string())
-        .min(1)
+        .min(3)
         .max(5)
         .describe(
-          "List of search queries to find relevant web information (1-5 queries)",
+          "List of search queries to find relevant web information (minimum 3 queries)",
         ),
       topic: z
         .union([
@@ -154,22 +136,7 @@ export const getRetrievalTools = async (
           z.literal("financial report"),
         ])
         .describe(
-          "The topic of the search query (e.g., 'news', 'finance', ). By default, it will perform a google search." +
-            "### SEARCH STRATEGY EXAMPLES:\n" +
-            `- Topic: "AI model performance" → Search: "GPT-4 benchmark results 2024", "LLM performance comparison studies", "AI model evaluation metrics research"` +
-            `- Topic: "Company financials" → Search: "Tesla Q3 2024 earnings report", "Tesla revenue growth analysis", "electric vehicle market share 2024"` +
-            `- Topic: "Technical implementation" → Search: "React Server Components best practices", "Next.js performance optimization techniques", "modern web development patterns"` +
-            `### USAGE GUIDELINES:\n` +
-            `- Search first, search often, search comprehensively` +
-            `- Make 1-3 targeted searches per research topic to get different angles and perspectives` +
-            `- Search queries should be specific and focused` +
-            `- Follow up initial searches with more targeted queries based on what you learn` +
-            `- Cross-reference information by searching for the same topic from different angles` +
-            `- Search for contradictory information to get balanced perspectives` +
-            `- Include exact metrics, dates, technical terms, and proper nouns in queries` +
-            `- Make searches progressively more specific as you gather context` +
-            `- Search for recent developments, trends, and updates on topics` +
-            `- Always verify information with multiple searches from different sources`,
+          "The topic of the search query to optimize results. By default, performs a general web search. Choose the most relevant topic for better results.",
         )
         .nullable()
         .optional(),
@@ -192,21 +159,23 @@ export const getRetrievalTools = async (
 
       try {
         const exa = new Exa(EXA_API_KEY, undefined);
-        let allDocuments = [];
 
-        for (const query of queries) {
+        // Perform web search for all queries in parallel
+        const searchPromises = queries.map(async (query) => {
           const searchResponse = (
+            console.log(query),
             await exa.searchAndContents(query, {
-              numResults: Math.ceil(10 / queries.length),
+              numResults: 10,
               type: "auto",
               useAutoprompt: false,
               topic: topic,
               text: true,
             })
           ).results;
+          console.log(searchResponse.length);
 
           // Create LangChain Document objects from Exa search results
-          const documents = searchResponse.map((result) => {
+          return searchResponse.map((result) => {
             return new Document({
               pageContent: `${result.text}`,
               metadata: {
@@ -221,22 +190,20 @@ export const getRetrievalTools = async (
               },
             });
           });
+        });
 
-          allDocuments.push(...documents);
-        }
+        const allDocumentsArrays = await Promise.all(searchPromises);
+        const allDocuments = allDocumentsArrays.flat();
 
         if (allDocuments.length === 0) {
           return "No results found.";
         }
 
-        // Limit total results to 10
-        const documents = allDocuments.slice(0, 10);
-
         if (returnString) {
-          return JSON.stringify(documents, null, 0);
+          return JSON.stringify(allDocuments, null, 0);
         }
 
-        return documents;
+        return allDocuments;
       } catch (error) {
         return `Web search failed: ${
           error instanceof Error ? error.message : "Unknown error"
