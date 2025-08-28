@@ -101,7 +101,7 @@ export const getMCPTools = async (
       }
 
       // Build connection object
-      const authToken = await createMcpAuthToken(updatedMcp, machineId);
+      const authToken = await createMcpAuthToken(updatedMcp);
 
       const headers: Record<string, string> = {
         ...updatedMcp.env,
