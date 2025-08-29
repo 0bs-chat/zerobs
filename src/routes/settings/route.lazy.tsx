@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/theme-provider";
+import { ThemeSwitcher } from "@/components/theme/switcher";
 import { cn } from "@/lib/utils";
 import {
   createLazyFileRoute,
@@ -81,7 +81,7 @@ function SettingsPage() {
                 Back to chat
               </Button>
             </Link>
-            <ModeToggle />
+            <ThemeSwitcher />
           </div>
 
           <div className="space-y-1">

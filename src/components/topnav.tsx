@@ -1,5 +1,5 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ModeToggle } from "@/components/theme-provider";
+import { ThemeSwitcher } from "@/components/theme/switcher";
 import {
   resizePanelOpenAtom,
   selectedArtifactAtom,
@@ -103,7 +103,7 @@ export function TopNav() {
             >
               <Settings2Icon className="h-6 w-6" />
             </Button>
-            <ModeToggle />
+            <ThemeSwitcher />
           </>
         )}
         {isOnChatRoute && (
