@@ -2,17 +2,7 @@ import { currentThemeModeAtom, themeStateAtom } from "./store"
 import { getDefaultStore } from "jotai"
 import type { ThemeState } from "./types"
 
-// Type declarations for View Transitions API
-declare global {
-    interface Document {
-        startViewTransition?: (updateCallback: () => void) => ViewTransition
-    }
-}
-
-interface ViewTransition {
-    finished: Promise<void>
-    ready: Promise<void>
-}
+// Using built-in DOM View Transitions API types
 
 const store = getDefaultStore()
 
