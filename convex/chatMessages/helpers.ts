@@ -156,10 +156,23 @@ export const buildThreadFromMessages = (
       const lastChild = current[current.length - 1];
       current = idx.children.get(lastChild._id) ?? [];
     } else if (current.length === 1) {
-      // Single child - continue normally with path selection
+      // Single child - ADD the child to result and continue
       const desired = path?.[depth + 1] ?? 0;
       const i = clamp(desired, 0, current.length - 1);
-      current = idx.children.get(current[i]._id) ?? [];
+      const childMessage = current[i];
+
+      // Add the child message to the result
+      result.push({
+        message: wrapDoc(childMessage),
+        branchIndex: i + 1,
+        totalBranches: current.length,
+        depth: depth + 1,
+      });
+
+      // Continue with this child's children
+      current = idx.children.get(childMessage._id) ?? [];
+      depth += 1; // Increment depth here since we added the child
+      continue; // Skip the depth increment at the end of the loop
     }
     
     depth += 1;

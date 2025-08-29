@@ -46,7 +46,6 @@ import type * as projectDocuments_mutations from "../projectDocuments/mutations.
 import type * as projectDocuments_queries from "../projectDocuments/queries.js";
 import type * as projects_mutations from "../projects/mutations.js";
 import type * as projects_queries from "../projects/queries.js";
-import type * as schemaUtils from "../schemaUtils.js";
 import type * as streams_crud from "../streams/crud.js";
 import type * as streams_mutations from "../streams/mutations.js";
 import type * as streams_queries from "../streams/queries.js";
@@ -113,7 +112,6 @@ declare const fullApi: ApiFromModules<{
   "projectDocuments/queries": typeof projectDocuments_queries;
   "projects/mutations": typeof projects_mutations;
   "projects/queries": typeof projects_queries;
-  schemaUtils: typeof schemaUtils;
   "streams/crud": typeof streams_crud;
   "streams/mutations": typeof streams_mutations;
   "streams/queries": typeof streams_queries;
