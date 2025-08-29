@@ -1,5 +1,5 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ModeToggle } from "@/components/theme-provider";
+import { ThemeSwitcher } from "@/components/theme/switcher";
 import {
 	resizePanelOpenAtom,
 	selectedArtifactAtom,
@@ -70,8 +70,8 @@ export function TopNav() {
 			}
 		};
 
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
+		document.addEventListener("keydown", handleKeyDown);
+		return () => document.removeEventListener("keydown", handleKeyDown);
 	}, [isOnChatRoute, setResizePanelOpen, setSelectedArtifact]);
 
 	return (
@@ -110,7 +110,7 @@ export function TopNav() {
 						>
 							<Settings2Icon className="h-6 w-6" />
 						</Button>
-						<ModeToggle />
+						<ThemeSwitcher />
 					</>
 				)}
 				{isOnChatRoute && (

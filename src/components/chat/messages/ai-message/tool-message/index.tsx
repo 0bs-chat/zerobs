@@ -61,8 +61,17 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
 		is_complete?: boolean;
 	}
 
-	const isComplete = (message.additional_kwargs as MessageAdditionalKwargs)
-		?.is_complete;
+	// Search/Web calls render in their own specialized component
+	if (parsedContent.type === "searchWeb") {
+		return (
+			<SearchResultDisplay results={parsedContent.results} input={input} />
+		);
+	}
+	if (parsedContent.type === "document") {
+		return (
+			<DocumentResultDisplay results={parsedContent.results} input={input} />
+		);
+	}
 
 	if (!parsedContent) return null;
 

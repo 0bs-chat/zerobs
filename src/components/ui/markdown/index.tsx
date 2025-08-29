@@ -15,7 +15,7 @@ import {
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useCopy } from "@/hooks/chats/use-copy";
 import { useAtomValue } from "jotai";
-import { themeAtom } from "@/store/settings";
+import { currentThemeModeAtom } from "@/lib/theme/store";
 import { marked } from "marked";
 import rehypeSanitize from "rehype-sanitize";
 
@@ -71,7 +71,7 @@ export const MarkdownBlock = memo(
     const mermaidChartId = React.useRef(0);
     const { copy, copied } = useCopy({ duration: 1000 });
     const [wrapLongLines, setWrapLongLines] = useState(false);
-    const theme = useAtomValue(themeAtom);
+    const theme = useAtomValue(currentThemeModeAtom);
     const customStyle = useMemo(
       () => ({
         backgroundColor: "transparent",

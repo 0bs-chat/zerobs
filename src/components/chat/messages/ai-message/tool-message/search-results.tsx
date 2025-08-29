@@ -6,6 +6,12 @@ import {
 } from "@/components/ui/accordion";
 import { Favicon } from "@/components/ui/favicon";
 import { Markdown } from "@/components/ui/markdown";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { extractDomain } from "@/lib/utils";
 import { ChevronDown, ExternalLink, GlobeIcon } from "lucide-react";
 
@@ -60,12 +66,61 @@ export const SearchResultDisplay = ({
 								Web Search Results ({results.length})
 							</span>
 						</div>
-						<div className="text-xs text-muted-foreground flex items-center gap-2">
-							{Array.isArray(input?.queries)
-								? input.queries.join(", ")
-								: (input?.query as string)}
-							<ChevronDown className="text-muted-foreground pointer-events-none size-4" />
-						</div>
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<div className="text-xs text-muted-foreground flex items-center gap-2 cursor-help">
+										{input?.queries
+											? input.queries.length === 1
+												? input.queries[0]
+												: `${input.queries.length} queries`
+											: (input?.query as string)}
+										{input?.topic && (
+											<span className="text-primary/70">• {input.topic}</span>
+										)}
+										<ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />
+									</div>
+								</TooltipTrigger>
+								<TooltipContent side="bottom" className="max-w-md">
+									<div className="space-y-2">
+										{input?.queries ? (
+											<>
+												<div className="font-medium text-sm">
+													Search Queries:
+												</div>
+												<ul className="space-y-1 text-xs">
+													{input.queries.map((query: string, index: number) => (
+														<li key={index} className="flex items-start gap-2">
+															<span className="text-muted-foreground min-w-[1rem]">
+																{index + 1}.
+															</span>
+															<span className="break-words">{query}</span>
+														</li>
+													))}
+												</ul>
+												{input?.topic && (
+													<div className="pt-2 border-t border-border">
+														<span className="text-xs text-muted-foreground">
+															Topic:{" "}
+															<span className="text-foreground font-medium">
+																{input.topic}
+															</span>
+														</span>
+													</div>
+												)}
+											</>
+										) : (
+											<div>
+												<div className="font-medium text-sm">Search Query:</div>
+												<div className="text-xs mt-1 break-words">
+													{input?.query as string}
+												</div>
+											</div>
+										)}
+									</div>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
 					</div>
 				</AccordionTrigger>
 				<AccordionContent>

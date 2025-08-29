@@ -5,7 +5,16 @@ import { internalAction, action } from "../_generated/server";
 import { v } from "convex/values";
 import { fly } from "../utils/flyio";
 import type { FlyApp } from "../utils/flyio";
-import { resolveConfigurableEnvs, createMachineConfig } from "./utils";
+import {
+  resolveConfigurableEnvs,
+  createMachineConfig,
+  validateMcpForDeployment,
+  validateMcpForRestart,
+  getOrCreateFlyApp,
+  ensureMachineHealthy,
+  restartAllMachines,
+  handleMcpActionError
+} from "./utils";
 
 export const create = internalAction({
   args: {
@@ -19,18 +28,8 @@ export const create = internalAction({
       if (!mcp) {
         throw new Error("MCP not found");
       }
-      if (!mcp.enabled) {
-        throw new Error("MCP is not enabled");
-      }
-      if (!["stdio", "docker"].includes(mcp.type)) {
-        throw new Error("MCP is not a stdio or docker type");
-      }
-      if (mcp.type === "stdio" && !mcp.command) {
-        throw new Error("MCP command is not defined");
-      }
-      if (mcp.type === "docker" && !mcp.dockerImage) {
-        throw new Error("MCP docker image is not defined");
-      }
+
+      await validateMcpForDeployment(mcp);
 
       const appName = String(mcp._id);
       const sseUrl = `https://${appName}.fly.dev/sse`;
@@ -44,28 +43,16 @@ export const create = internalAction({
         "machine",
       );
 
-      const app = await fly.createApp({
-        app_name: appName,
-        org_slug: "personal",
-      });
-
-      await fly.allocateIpAddress(app?.name!, "shared_v4");
+      await getOrCreateFlyApp(appName);
       await fly.createMachine(appName, machineConfig);
-      await fly.waitTillHealthy(appName, {
-        timeout: 120000,
-        interval: 500,
-      });
+      await ensureMachineHealthy(appName, "machine");
 
       await ctx.runMutation(internal.mcps.crud.update, {
         id: args.mcpId,
         patch: { url: sseUrl, status: "created" },
       });
     } catch (error) {
-      console.error(error);
-      await ctx.runMutation(internal.mcps.crud.update, {
-        id: args.mcpId,
-        patch: { status: "error" },
-      });
+      await handleMcpActionError(ctx, args.mcpId, error, "create");
     }
   },
 });
@@ -83,15 +70,8 @@ export const restart = internalAction({
       if (!mcp) {
         throw new Error("MCP not found");
       }
-      if (!["docker", "stdio"].includes(mcp.type)) {
-        throw new Error("MCP is not a docker or stdio type");
-      }
-      if (!mcp.url) {
-        throw new Error("MCP URL is not defined");
-      }
-      if (mcp.status === "creating") {
-        throw new Error("MCP is still creating");
-      }
+
+      await validateMcpForRestart(mcp);
 
       await ctx.runMutation(internal.mcps.crud.update, {
         id: args.mcpId,
@@ -102,40 +82,7 @@ export const restart = internalAction({
       const app: FlyApp | null = await fly.getApp(appName);
 
       if (app && app.name) {
-        const machines = await fly.listMachines(app.name);
-
-        if (machines && machines.length > 0) {
-          const machinesWithId = machines.filter((machine) => machine.id);
-
-          // Stop machines
-          await Promise.all(
-            machinesWithId.map((machine) =>
-              fly.stopMachine(app.name!, machine.id!),
-            ),
-          );
-
-          // Wait for machines to stop
-          for (let i = 0; i < 30; i++) {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            const updatedMachines = await fly.listMachines(app.name!);
-            if (
-              updatedMachines?.every(
-                (m) =>
-                  !machinesWithId.some((original) => original.id === m.id) ||
-                  m.state === "stopped",
-              )
-            ) {
-              break;
-            }
-          }
-
-          // Start machines
-          await Promise.all(
-            machinesWithId.map((machine) =>
-              fly.startMachine(app.name!, machine.id!),
-            ),
-          );
-        }
+        await restartAllMachines(app.name);
       }
 
       await ctx.runMutation(internal.mcps.crud.update, {
@@ -143,11 +90,7 @@ export const restart = internalAction({
         patch: { status: "created" },
       });
     } catch (error) {
-      console.error(error);
-      await ctx.runMutation(internal.mcps.crud.update, {
-        id: args.mcpId,
-        patch: { status: "error" },
-      });
+      await handleMcpActionError(ctx, args.mcpId, error, "restart");
     }
   },
 });

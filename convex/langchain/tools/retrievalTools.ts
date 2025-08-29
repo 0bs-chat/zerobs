@@ -21,8 +21,7 @@ export const getRetrievalTools = async (
 	const vectorSearchTool = new DynamicStructuredTool({
 		name: "searchProjectDocuments",
 		description:
-			"Search through project documents using vector similarity search with multiple queries (1-5). Use this to find relevant information from uploaded project documents." +
-			"You are always supposed to use this tool if you are asked about something specific to find information but no additional information is provided.",
+			"Search through project documents using semantic similarity with multiple queries (1-5). Finds relevant information from uploaded project documents based on meaning rather than exact matches.",
 		schema: z.object({
 			queries: z
 				.array(z.string())
@@ -31,23 +30,8 @@ export const getRetrievalTools = async (
 				.describe(
 					"List of search queries to find relevant documents (1-5 queries)",
 				),
-			limit: z
-				.number()
-				.min(1)
-				.max(256)
-				.describe("Number of results to return")
-				.default(10),
 		}),
-		func: async ({
-			queries,
-			limit = 10,
-		}: {
-			queries: string[];
-			limit?: number;
-		}) => {
-			await dispatchCustomEvent("tool_progress", {
-				chunk: "Initializing vector store...",
-			});
+		func: async ({ queries }: { queries: string[] }) => {
 			// Initialize ConvexVectorStore with the embedding model
 			const embeddingModel = await getEmbeddingModel(config.ctx, "embeddings");
 			const vectorStore = new ConvexVectorStore(embeddingModel, {
@@ -67,56 +51,36 @@ export const getRetrievalTools = async (
 			);
 
 			if (includedProjectDocuments.length === 0) {
-				const msg = "No project documents available for retrieval.";
-				await dispatchCustomEvent("tool_progress", { chunk: msg });
-				return msg;
+				return "No project documents available for retrieval.";
 			}
 
-			await dispatchCustomEvent("tool_progress", {
-				chunk: "Searching vector index...",
-			});
-			// Perform similarity search for each query, filtering by selected documents
-			let allResults = [];
-			for (const query of queries) {
-				const results = await vectorStore.similaritySearch(
-					query,
-					Math.ceil(limit / queries.length),
-					{
-						filter: (q) =>
-							q.or(
-								// Assuming documentId is stored in the `source` field of metadata
-								...includedProjectDocuments.map((document) =>
-									q.eq("metadata", {
-										source: document.documentId,
-									}),
-								),
+			// Perform similarity search for each query in parallel, filtering by selected documents
+			const searchPromises = queries.map(async (query) => {
+				const results = await vectorStore.similaritySearch(query, 10, {
+					filter: (q) =>
+						q.or(
+							// Assuming documentId is stored in the `source` field of metadata
+							...includedProjectDocuments.map((document) =>
+								q.eq("metadata", {
+									source: document.documentId,
+								}),
 							),
-					},
-				);
+						),
+				});
 
 				// Add query metadata to results
-				const resultsWithQuery = results.map((doc) => ({
+				return results.map((doc) => ({
 					...doc,
 					metadata: { ...doc.metadata, query },
 				}));
-
-				allResults.push(...resultsWithQuery);
-			}
-
-			// Limit total results and remove duplicates based on content similarity
-			allResults = allResults.slice(0, limit);
-
-			await dispatchCustomEvent("tool_progress", {
-				chunk: `Found ${allResults.length} results. Building response...`,
 			});
+
+			const allResultsArrays = await Promise.all(searchPromises);
+			const allResults = allResultsArrays.flat();
+
 			const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
 			includedProjectDocuments.forEach((projectDocument) => {
-				if (projectDocument.document) {
-					documentsMap.set(
-						projectDocument.documentId,
-						projectDocument.document,
-					);
-				}
+				documentsMap.set(projectDocument.documentId, projectDocument.document!);
 			});
 
 			const documents = await Promise.all(
@@ -151,14 +115,14 @@ export const getRetrievalTools = async (
 	const webSearchTool = new DynamicStructuredTool({
 		name: "searchWeb",
 		description:
-			"Search the web for current information using multiple queries (1-5) with Exa (if API key is configured) or DuckDuckGo. Use this to find up-to-date information from the internet.",
+			"Search the web for current information using multiple queries (3-5). Access real-time web content including news, research papers, company information, and technical documentation.",
 		schema: z.object({
 			queries: z
 				.array(z.string())
-				.min(1)
+				.min(3)
 				.max(5)
 				.describe(
-					"List of search queries to find relevant web information (1-5 queries)",
+					"List of search queries to find relevant web information (minimum 3 queries)",
 				),
 			topic: z
 				.union([
@@ -172,22 +136,7 @@ export const getRetrievalTools = async (
 					z.literal("financial report"),
 				])
 				.describe(
-					"The topic of the search query (e.g., 'news', 'finance', ). By default, it will perform a google search." +
-						"### SEARCH STRATEGY EXAMPLES:\n" +
-						`- Topic: "AI model performance" → Search: "GPT-4 benchmark results 2024", "LLM performance comparison studies", "AI model evaluation metrics research"` +
-						`- Topic: "Company financials" → Search: "Tesla Q3 2024 earnings report", "Tesla revenue growth analysis", "electric vehicle market share 2024"` +
-						`- Topic: "Technical implementation" → Search: "React Server Components best practices", "Next.js performance optimization techniques", "modern web development patterns"` +
-						`### USAGE GUIDELINES:\n` +
-						`- Search first, search often, search comprehensively` +
-						`- Make 1-3 targeted searches per research topic to get different angles and perspectives` +
-						`- Search queries should be specific and focused` +
-						`- Follow up initial searches with more targeted queries based on what you learn` +
-						`- Cross-reference information by searching for the same topic from different angles` +
-						`- Search for contradictory information to get balanced perspectives` +
-						`- Include exact metrics, dates, technical terms, and proper nouns in queries` +
-						`- Make searches progressively more specific as you gather context` +
-						`- Search for recent developments, trends, and updates on topics` +
-						`- Always verify information with multiple searches from different sources`,
+					"The topic of the search query to optimize results. By default, performs a general web search. Choose the most relevant topic for better results.",
 				)
 				.nullable()
 				.optional(),
@@ -199,9 +148,6 @@ export const getRetrievalTools = async (
 			queries: string[];
 			topic?: string | null;
 		}) => {
-			await dispatchCustomEvent("tool_progress", {
-				chunk: "Preparing web search...",
-			});
 			const EXA_API_KEY =
 				(
 					await config.ctx.runQuery(internal.apiKeys.queries.getFromKey, {
@@ -212,35 +158,22 @@ export const getRetrievalTools = async (
 				"";
 
 			try {
-				await dispatchCustomEvent("tool_progress", {
-					chunk: "Searching the Internet...",
-				});
 				const exa = new Exa(EXA_API_KEY, undefined);
-				let allDocuments = [];
 
-				for (const query of queries) {
-					const searchResponse = (
-						await exa.searchAndContents(query, {
-							numResults: Math.ceil(10 / queries.length),
-							type: "auto",
-							useAutoprompt: false,
-							topic: topic,
-							text: true,
-						})
-					).results;
-
-					if (searchResponse.length === 0) {
-						const msg = `No results found for query: ${query}`;
-						await dispatchCustomEvent("tool_progress", { chunk: msg });
-						return msg;
-					}
-
-					await dispatchCustomEvent("tool_progress", {
-						chunk: `Found ${searchResponse.length} results.`,
-					});
+				// Perform web search for all queries in parallel
+				const searchPromises = queries.map(async (query) => {
+					const searchResponse = (console.log(query),
+					await exa.searchAndContents(query, {
+						numResults: 10,
+						type: "auto",
+						useAutoprompt: false,
+						topic: topic,
+						text: true,
+					})).results;
+					console.log(searchResponse.length);
 
 					// Create LangChain Document objects from Exa search results
-					const documents = searchResponse.map((result) => {
+					return searchResponse.map((result) => {
 						return new Document({
 							pageContent: `${result.text}`,
 							metadata: {
@@ -255,42 +188,24 @@ export const getRetrievalTools = async (
 							},
 						});
 					});
+				});
 
-					allDocuments.push(...documents);
-				}
+				const allResultsArrays = await Promise.all(searchPromises);
+				const allDocuments = allResultsArrays.flat();
 
 				if (allDocuments.length === 0) {
-					await dispatchCustomEvent("tool_stream", {
-						chunk: "No results found.",
-						done: true,
-						error: false,
-					});
 					return "No results found.";
 				}
 
-				// Limit total results to 10
-				const documents = allDocuments.slice(0, 10);
+				if (returnString) {
+					return JSON.stringify(allDocuments, null, 0);
+				}
 
-				await dispatchCustomEvent("tool_stream", {
-					chunk: "Search completed successfully.",
-					done: true,
-					error: false,
-				});
-
-				return returnString ? JSON.stringify(documents, null, 0) : documents;
+				return allDocuments;
 			} catch (error) {
-				const errorMessage = `Web search failed: ${
+				return `Web search failed: ${
 					error instanceof Error ? error.message : "Unknown error"
 				}`;
-
-				// Send terminal failure event via tool_stream API
-				await dispatchCustomEvent("tool_stream", {
-					chunk: errorMessage,
-					done: true,
-					error: true,
-				});
-
-				return errorMessage;
 			}
 		},
 	});

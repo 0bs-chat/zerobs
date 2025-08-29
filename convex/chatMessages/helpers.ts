@@ -46,31 +46,17 @@ const isHuman = (m: MessageWithBranchInfo) => getType(m) === "human";
 const isAI = (m: MessageWithBranchInfo) => getType(m) === "ai";
 const isTool = (m: MessageWithBranchInfo) => getType(m) === "tool";
 
-// Small LRU cache for parsed BaseMessage to avoid repeated JSON.parse + mapping
-const MAX_MESSAGE_CACHE = 2000;
 const parsedMessageCache = new Map<string, BaseMessage>();
 
-const getOrSetLRU = (key: string, compute: () => BaseMessage) => {
-	const hit = parsedMessageCache.get(key);
-	if (hit) {
-		// refresh
-		parsedMessageCache.delete(key);
-		parsedMessageCache.set(key, hit);
-		return hit;
-	}
-	const value = compute();
-	parsedMessageCache.set(key, value);
-	if (parsedMessageCache.size > MAX_MESSAGE_CACHE) {
-		const oldestKey = parsedMessageCache.keys().next().value as string;
-		parsedMessageCache.delete(oldestKey);
-	}
-	return value;
-};
-
-const toBaseMessage = (doc: Doc<"chatMessages">): BaseMessage =>
-	getOrSetLRU(doc.message, () =>
-		mapStoredMessageToChatMessage(JSON.parse(doc.message) as StoredMessage),
+const toBaseMessage = (doc: Doc<"chatMessages">): BaseMessage => {
+	const cached = parsedMessageCache.get(doc.message);
+	if (cached) return cached;
+	const parsed = mapStoredMessageToChatMessage(
+		JSON.parse(doc.message) as StoredMessage,
 	);
+	parsedMessageCache.set(doc.message, parsed);
+	return parsed;
+};
 
 const wrapDoc = (
 	doc: Doc<"chatMessages">,
@@ -136,43 +122,56 @@ export const buildThreadFromMessages = (
 	const idx = idxOverride ?? indexChatMessages(messages);
 	const result: MessageWithBranchInfo[] = [];
 
-	// Start from roots, then walk down using `path`.
-	let siblings = idx.roots;
+	let current = idx.roots;
 	let depth = 0;
 
-	while (siblings.length > 0) {
-		const desired = path?.[depth] ?? siblings.length - 1; // newest by default
-		const i = clamp(desired, 0, siblings.length - 1);
-		const selectedNode = siblings[i];
+	while (current.length > 0) {
+		const desired = path?.[depth] ?? current.length - 1; // default to newest created
+		const i = clamp(desired, 0, current.length - 1);
+		const selectedNode = current[i];
 
-		// Push the selected node at this depth
 		result.push({
 			message: wrapDoc(selectedNode),
 			branchIndex: i + 1,
-			totalBranches: siblings.length,
+			totalBranches: current.length,
 			depth,
 		});
 
-		// Move to children of the selected node
-		const children = idx.children.get(selectedNode._id) ?? [];
+		// Get children of the selected node
+		current = idx.children.get(selectedNode._id) ?? [];
 
-		if (children.length > 1) {
-			// Include ALL children (captures tool and intermediate messages)
-			for (let childIndex = 0; childIndex < children.length; childIndex++) {
-				const child = children[childIndex];
+		// Include ALL children when there are multiple (this captures tool messages)
+		if (current.length > 1) {
+			// Add all children at this level
+			for (const child of current) {
 				result.push({
 					message: wrapDoc(child),
-					branchIndex: childIndex + 1,
-					totalBranches: children.length,
+					branchIndex: 1, // All are part of the same conversation flow
+					totalBranches: 1,
 					depth: depth + 1,
 				});
 			}
-			// Continue from the last child's children (usually final AI response)
-			const lastChild = children[children.length - 1];
-			siblings = idx.children.get(lastChild._id) ?? [];
-		} else {
-			// 0 or 1 child: just step into that set for the next selection
-			siblings = children;
+			// Continue from the last child (usually the final AI response)
+			const lastChild = current[current.length - 1];
+			current = idx.children.get(lastChild._id) ?? [];
+		} else if (current.length === 1) {
+			// Single child - ADD the child to result and continue
+			const desired = path?.[depth + 1] ?? 0;
+			const i = clamp(desired, 0, current.length - 1);
+			const childMessage = current[i];
+
+			// Add the child message to the result
+			result.push({
+				message: wrapDoc(childMessage),
+				branchIndex: i + 1,
+				totalBranches: current.length,
+				depth: depth + 1,
+			});
+
+			// Continue with this child's children
+			current = idx.children.get(childMessage._id) ?? [];
+			depth += 1; // Increment depth here since we added the child
+			continue; // Skip the depth increment at the end of the loop
 		}
 
 		depth += 1;
@@ -254,18 +253,6 @@ const computeLatestPath = (
 	return latestPath;
 };
 
-const latestByCreation = (
-	messages: Doc<"chatMessages">[],
-): Doc<"chatMessages"> => {
-	let latest = messages[0];
-	for (let i = 1; i < messages.length; i += 1) {
-		if (byCreatedAsc(latest, messages[i]) < 0) {
-			latest = messages[i];
-		}
-	}
-	return latest;
-};
-
 export const buildThreadAndGroups = (
 	messages: Doc<"chatMessages">[],
 	path: number[],
@@ -278,8 +265,8 @@ export const buildThreadAndGroups = (
 	const thread = buildThreadFromMessages(messages, path, idx);
 	const groups = groupMessages(thread);
 
-	// Compute latest path using truly latest message by creation time
-	const latestMessage = latestByCreation(messages);
+	// Compute latest path using O(depth) lookups
+	const latestMessage = messages[messages.length - 1];
 	const latestPath = computeLatestPath(idx, latestMessage);
 
 	return { groups, latestPath };
