@@ -20,7 +20,7 @@ import {
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useAtomValue } from "jotai";
-import { themeAtom } from "@/store/settings";
+import { currentThemeModeAtom } from "@/lib/theme/store";
 import {
   SandpackProvider,
   SandpackLayout,
@@ -50,7 +50,7 @@ const SandpackContent = memo(() => {
 SandpackContent.displayName = "SandpackContent";
 
 const ReactComponentRenderer = memo(({ content }: { content: string }) => {
-  const theme = useAtomValue(themeAtom);
+  const theme = useAtomValue(currentThemeModeAtom);
 
   return (
     <SandpackProvider
@@ -107,7 +107,7 @@ const CodeRenderer = ({
   wrapLongLines: boolean;
   language?: string;
 }) => {
-  const theme = useAtomValue(themeAtom);
+  const theme = useAtomValue(currentThemeModeAtom);
 
   return (
     <div className="flex flex-col h-full text-card-foreground overflow-x-auto text-sm font-mono">

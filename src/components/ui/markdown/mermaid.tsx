@@ -1,4 +1,4 @@
-import { themeAtom } from "@/store/settings";
+import { currentThemeModeAtom } from "@/lib/theme/store";
 import { useAtomValue } from "jotai";
 import { memo, useEffect, useRef, useState } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
@@ -8,7 +8,7 @@ export const MermaidChart = memo(
     const containerRef = useRef<HTMLDivElement>(null);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const isDark = useAtomValue(themeAtom) === "dark";
+    const isDark = useAtomValue(currentThemeModeAtom) === "dark";
     const [mermaidHTML, setMermaidHTML] = useState<string | null>(null);
 
     useEffect(() => {
