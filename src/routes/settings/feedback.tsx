@@ -6,7 +6,7 @@ export const Route = createFileRoute("/settings/feedback")({
   component: RouteComponent,
 });
 
-const DiscordInviteURL = "https://discord.gg/rVFT3PqK";
+const DiscordInviteURL = "https://discord.gg/7bhP6cybvx";
 const GitHubURL = "https://github.com/0bs-chat/zerobs";
 const EmailURL = "mailto:0bsaiapp@gmail.com";
 
