@@ -26,7 +26,7 @@ export type SearchResult = {
 };
 
 interface SearchResultDisplayProps {
-	input: Record<string, any> | undefined;
+	input: { queries?: string[]; query?: string } | undefined;
 	results: SearchResult[];
 }
 
@@ -61,7 +61,9 @@ export const SearchResultDisplay = ({
 							</span>
 						</div>
 						<div className="text-xs text-muted-foreground flex items-center gap-2">
-							{input?.query as string}
+							{Array.isArray(input?.queries)
+								? input.queries.join(", ")
+								: (input?.query as string)}
 							<ChevronDown className="text-muted-foreground pointer-events-none size-4" />
 						</div>
 					</div>

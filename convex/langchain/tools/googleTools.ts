@@ -10,7 +10,7 @@ async function getGoogleAccessToken(config: ExtendedRunnableConfig) {
   try {
     const token = await config.ctx.runAction(
       internal.utils.oauth.index.getRefreshedAccessToken,
-      { provider: "google" }
+      { provider: "google" },
     );
     return token;
   } catch (_err) {
@@ -22,7 +22,7 @@ async function makeGoogleAPIRequest(
   endpoint: string,
   accessToken: string,
   method: string = "GET",
-  body?: any
+  body?: any,
 ): Promise<any> {
   const response = await fetch(
     `https://www.googleapis.com/calendar/v3${endpoint}`,
@@ -33,12 +33,12 @@ async function makeGoogleAPIRequest(
         "Content-Type": "application/json",
       },
       body: body ? JSON.stringify(body) : undefined,
-    }
+    },
   );
 
   if (!response.ok) {
     throw new Error(
-      `Google API request failed: ${response.status} ${response.statusText}`
+      `Google API request failed: ${response.status} ${response.statusText}`,
     );
   }
 
@@ -49,7 +49,7 @@ async function makeGmailAPIRequest(
   endpoint: string,
   accessToken: string,
   method: string = "GET",
-  body?: any
+  body?: any,
 ): Promise<any> {
   const response = await fetch(
     `https://www.googleapis.com/gmail/v1${endpoint}`,
@@ -60,12 +60,12 @@ async function makeGmailAPIRequest(
         "Content-Type": "application/json",
       },
       body: body ? JSON.stringify(body) : undefined,
-    }
+    },
   );
 
   if (!response.ok) {
     throw new Error(
-      `Gmail API request failed: ${response.status} ${response.statusText}`
+      `Gmail API request failed: ${response.status} ${response.statusText}`,
     );
   }
 
@@ -85,16 +85,16 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: "Checking Google authentication…" },
-          toolConfig
+          toolConfig,
         );
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: "Fetching your Google calendars…" },
-          toolConfig
+          toolConfig,
         );
         const result = await makeGoogleAPIRequest(
           "/users/me/calendarList",
-          accessToken
+          accessToken,
         );
 
         const calendars =
@@ -109,7 +109,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Found ${calendars.length} calendars. Formatting results…` },
-          toolConfig
+          toolConfig,
         );
 
         return JSON.stringify(calendars, null, 2);
@@ -119,7 +119,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Failed to list calendars: ${message}` },
-          toolConfig
+          toolConfig,
         );
         return `Failed to list calendars: ${message}`;
       }
@@ -129,7 +129,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
       description:
         "List all Google Calendars accessible to the user. Use this to see available calendars before working with events.",
       schema: z.object({}),
-    }
+    },
   );
 
   const listCalendarEventsTool = tool(
@@ -147,7 +147,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         maxResults?: number;
         q?: string;
       },
-      toolConfig: any
+      toolConfig: any,
     ) => {
       try {
         await dispatchCustomEvent(
@@ -159,7 +159,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
                 : ""
             }…`,
           },
-          toolConfig
+          toolConfig,
         );
         const params = new URLSearchParams({
           maxResults: maxResults.toString(),
@@ -173,7 +173,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
 
         const result = await makeGoogleAPIRequest(
           `/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
-          accessToken
+          accessToken,
         );
 
         const events =
@@ -191,7 +191,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Found ${events.length} events. Formatting results…` },
-          toolConfig
+          toolConfig,
         );
 
         return JSON.stringify(events, null, 2);
@@ -203,7 +203,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           {
             chunk: `Failed to list calendar events: ${message}`,
           },
-          toolConfig
+          toolConfig,
         );
         return `Failed to list calendar events: ${message}`;
       }
@@ -221,13 +221,13 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           .string()
           .optional()
           .describe(
-            "Lower bound (inclusive) for an event's end time (RFC3339 timestamp)"
+            "Lower bound (inclusive) for an event's end time (RFC3339 timestamp)",
           ),
         timeMax: z
           .string()
           .optional()
           .describe(
-            "Upper bound (exclusive) for an event's start time (RFC3339 timestamp)"
+            "Upper bound (exclusive) for an event's start time (RFC3339 timestamp)",
           ),
         maxResults: z
           .number()
@@ -240,7 +240,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           .optional()
           .describe("Free text search terms to find events"),
       }),
-    }
+    },
   );
 
   const createCalendarEventTool = tool(
@@ -262,7 +262,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         location?: string;
         attendees?: string[];
       },
-      toolConfig: any
+      toolConfig: any,
     ) => {
       try {
         await dispatchCustomEvent(
@@ -270,7 +270,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           {
             chunk: `Creating event '${summary}' on '${calendarId}' from ${startDateTime} to ${endDateTime}…`,
           },
-          toolConfig
+          toolConfig,
         );
         const event = {
           summary,
@@ -289,7 +289,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           `/calendars/${encodeURIComponent(calendarId)}/events`,
           accessToken,
           "POST",
-          event
+          event,
         );
 
         const createdEvent = {
@@ -305,7 +305,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: "Event created successfully. Preparing output…" },
-          toolConfig
+          toolConfig,
         );
 
         return JSON.stringify(createdEvent, null, 2);
@@ -317,7 +317,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           {
             chunk: `Failed to create calendar event: ${message}`,
           },
-          toolConfig
+          toolConfig,
         );
         return `Failed to create calendar event: ${message}`;
       }
@@ -339,12 +339,12 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         startDateTime: z
           .string()
           .describe(
-            "Start date and time (RFC3339 format, e.g., '2024-01-15T09:00:00-07:00')"
+            "Start date and time (RFC3339 format, e.g., '2024-01-15T09:00:00-07:00')",
           ),
         endDateTime: z
           .string()
           .describe(
-            "End date and time (RFC3339 format, e.g., '2024-01-15T10:00:00-07:00')"
+            "End date and time (RFC3339 format, e.g., '2024-01-15T10:00:00-07:00')",
           ),
         location: z.string().optional().describe("The location of the event"),
         attendees: z
@@ -352,7 +352,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           .optional()
           .describe("List of email addresses of attendees"),
       }),
-    }
+    },
   );
 
   const updateCalendarEventTool = tool(
@@ -374,7 +374,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         endDateTime?: string;
         location?: string;
       },
-      toolConfig: any
+      toolConfig: any,
     ) => {
       try {
         await dispatchCustomEvent(
@@ -382,17 +382,17 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           {
             chunk: `Loading existing event '${eventId}' from '${calendarId}'…`,
           },
-          toolConfig
+          toolConfig,
         );
         const existingEvent = await makeGoogleAPIRequest(
           `/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`,
-          accessToken
+          accessToken,
         );
 
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: "Applying updates to the event…" },
-          toolConfig
+          toolConfig,
         );
         const updatedEvent = {
           ...existingEvent,
@@ -407,7 +407,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           `/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`,
           accessToken,
           "PUT",
-          updatedEvent
+          updatedEvent,
         );
 
         const event = {
@@ -423,7 +423,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: "Event updated successfully. Preparing output…" },
-          toolConfig
+          toolConfig,
         );
 
         return JSON.stringify(event, null, 2);
@@ -435,7 +435,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           {
             chunk: `Failed to update calendar event: ${message}`,
           },
-          toolConfig
+          toolConfig,
         );
         return `Failed to update calendar event: ${message}`;
       }
@@ -471,7 +471,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           .optional()
           .describe("The new location of the event"),
       }),
-    }
+    },
   );
 
   const deleteCalendarEventTool = tool(
@@ -480,18 +480,18 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         calendarId = "primary",
         eventId,
       }: { calendarId: string; eventId: string },
-      toolConfig: any
+      toolConfig: any,
     ) => {
       try {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Deleting event '${eventId}' from '${calendarId}'…` },
-          toolConfig
+          toolConfig,
         );
         await makeGoogleAPIRequest(
           `/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`,
           accessToken,
-          "DELETE"
+          "DELETE",
         );
 
         const result = {
@@ -501,7 +501,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: "Event deleted successfully." },
-          toolConfig
+          toolConfig,
         );
 
         return JSON.stringify(result, null, 2);
@@ -513,7 +513,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           {
             chunk: `Failed to delete calendar event: ${message}`,
           },
-          toolConfig
+          toolConfig,
         );
         return `Failed to delete calendar event: ${message}`;
       }
@@ -529,7 +529,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           .default("primary"),
         eventId: z.string().describe("The ID of the event to delete"),
       }),
-    }
+    },
   );
 
   // Gmail Tools
@@ -540,13 +540,13 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         maxResults = 10,
         labelIds,
       }: { q?: string; maxResults?: number; labelIds?: string[] },
-      toolConfig: any
+      toolConfig: any,
     ) => {
       try {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: "Fetching Gmail messages…" },
-          toolConfig
+          toolConfig,
         );
         const params = new URLSearchParams({
           maxResults: maxResults.toString(),
@@ -559,20 +559,20 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
 
         const result = await makeGmailAPIRequest(
           `/users/me/messages?${params}`,
-          accessToken
+          accessToken,
         );
 
         const messages = await Promise.all(
           (result.messages || []).map(async (message: any) => {
             const fullMessage = await makeGmailAPIRequest(
               `/users/me/messages/${message.id}`,
-              accessToken
+              accessToken,
             );
 
             const headers = fullMessage.payload?.headers || [];
             const getHeader = (name: string) =>
               headers.find(
-                (h: any) => h.name.toLowerCase() === name.toLowerCase()
+                (h: any) => h.name.toLowerCase() === name.toLowerCase(),
               )?.value;
 
             return {
@@ -585,13 +585,13 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
               date: getHeader("date"),
               labelIds: fullMessage.labelIds,
             };
-          })
+          }),
         );
 
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Found ${messages.length} messages. Formatting results…` },
-          toolConfig
+          toolConfig,
         );
 
         return JSON.stringify(messages, null, 2);
@@ -603,7 +603,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           {
             chunk: `Failed to list Gmail messages: ${message}`,
           },
-          toolConfig
+          toolConfig,
         );
         return `Failed to list Gmail messages: ${message}`;
       }
@@ -617,7 +617,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           .string()
           .optional()
           .describe(
-            "Gmail search query (e.g., 'from:example@gmail.com', 'subject:meeting', 'is:unread')"
+            "Gmail search query (e.g., 'from:example@gmail.com', 'subject:meeting', 'is:unread')",
           ),
         maxResults: z
           .number()
@@ -630,7 +630,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           .optional()
           .describe("Only return messages with these label IDs"),
       }),
-    }
+    },
   );
 
   const getGmailMessageTool = tool(
@@ -639,17 +639,17 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         messageId,
         format = "full",
       }: { messageId: string; format?: "full" | "metadata" | "minimal" },
-      toolConfig: any
+      toolConfig: any,
     ) => {
       try {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Fetching Gmail message '${messageId}'…` },
-          toolConfig
+          toolConfig,
         );
         const result = await makeGmailAPIRequest(
           `/users/me/messages/${messageId}?format=${format}`,
-          accessToken
+          accessToken,
         );
 
         const headers = result.payload?.headers || [];
@@ -662,7 +662,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           body = Buffer.from(result.payload.body.data, "base64").toString();
         } else if (result.payload?.parts) {
           const textPart = result.payload.parts.find(
-            (part: any) => part.mimeType === "text/plain"
+            (part: any) => part.mimeType === "text/plain",
           );
           if (textPart?.body?.data) {
             body = Buffer.from(textPart.body.data, "base64").toString();
@@ -684,7 +684,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: "Message loaded. Preparing output…" },
-          toolConfig
+          toolConfig,
         );
 
         return JSON.stringify(message, null, 2);
@@ -694,7 +694,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Failed to get Gmail message: ${message}` },
-          toolConfig
+          toolConfig,
         );
         return `Failed to get Gmail message: ${message}`;
       }
@@ -710,7 +710,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           .default("full")
           .describe("The format to return the message in"),
       }),
-    }
+    },
   );
 
   const sendGmailMessageTool = tool(
@@ -728,13 +728,13 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         cc?: string;
         bcc?: string;
       },
-      toolConfig: any
+      toolConfig: any,
     ) => {
       try {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Composing email to ${to} with subject '${subject}'…` },
-          toolConfig
+          toolConfig,
         );
         let email = `To: ${to}\r\n`;
         if (cc) email += `Cc: ${cc}\r\n`;
@@ -751,13 +751,13 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: "Sending email via Gmail API…" },
-          toolConfig
+          toolConfig,
         );
         const result = await makeGmailAPIRequest(
           `/users/me/messages/send`,
           accessToken,
           "POST",
-          { raw: encodedEmail }
+          { raw: encodedEmail },
         );
 
         const sentMessage = {
@@ -770,7 +770,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: "Email sent successfully. Preparing output…" },
-          toolConfig
+          toolConfig,
         );
 
         return JSON.stringify(sentMessage, null, 2);
@@ -780,7 +780,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Failed to send Gmail message: ${message}` },
-          toolConfig
+          toolConfig,
         );
         return `Failed to send Gmail message: ${message}`;
       }
@@ -796,19 +796,19 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         cc: z.string().optional().describe("CC email address"),
         bcc: z.string().optional().describe("BCC email address"),
       }),
-    }
+    },
   );
 
   const searchGmailTool = tool(
     async (
       { query, maxResults = 10 }: { query: string; maxResults?: number },
-      toolConfig: any
+      toolConfig: any,
     ) => {
       try {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Searching Gmail for: ${query}…` },
-          toolConfig
+          toolConfig,
         );
         const params = new URLSearchParams({
           q: query,
@@ -817,7 +817,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
 
         const result = await makeGmailAPIRequest(
           `/users/me/messages?${params}`,
-          accessToken
+          accessToken,
         );
 
         const messages = await Promise.all(
@@ -826,13 +826,13 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
             .map(async (message: any) => {
               const fullMessage = await makeGmailAPIRequest(
                 `/users/me/messages/${message.id}?format=metadata`,
-                accessToken
+                accessToken,
               );
 
               const headers = fullMessage.payload?.headers || [];
               const getHeader = (name: string) =>
                 headers.find(
-                  (h: any) => h.name.toLowerCase() === name.toLowerCase()
+                  (h: any) => h.name.toLowerCase() === name.toLowerCase(),
                 )?.value;
 
               return {
@@ -844,13 +844,13 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
                 subject: getHeader("subject"),
                 date: getHeader("date"),
               };
-            })
+            }),
         );
 
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Found ${messages.length} matching messages. Formatting…` },
-          toolConfig
+          toolConfig,
         );
 
         return JSON.stringify(messages, null, 2);
@@ -860,7 +860,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         await dispatchCustomEvent(
           "tool_progress",
           { chunk: `Failed to search Gmail: ${message}` },
-          toolConfig
+          toolConfig,
         );
         return `Failed to search Gmail: ${message}`;
       }
@@ -873,7 +873,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
         query: z
           .string()
           .describe(
-            "Gmail search query (supports Gmail search operators like 'from:', 'subject:', 'has:attachment', etc.)"
+            "Gmail search query (supports Gmail search operators like 'from:', 'subject:', 'has:attachment', etc.)",
           ),
         maxResults: z
           .number()
@@ -882,7 +882,7 @@ export const getGoogleTools = async (config: ExtendedRunnableConfig) => {
           .default(10)
           .describe("Maximum number of results to return"),
       }),
-    }
+    },
   );
 
   return [

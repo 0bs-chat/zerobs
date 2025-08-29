@@ -115,50 +115,65 @@ export const UserUtilsBar = memo(
 			return typeof content === "string" ? content : "";
 		})();
 
-		const handleSubmit = (applySame: boolean, model?: string) => {
-			if (!editedText?.trim()) {
-				toast.error("Please enter a message");
-				return;
-			}
+		const handleSubmit = useCallback(
+			(applySame: boolean, model?: string) => {
+				if (!editedText?.trim()) {
+					toast.error("Please enter a message");
+					return;
+				}
 
-			if (!applySame) {
-				navigateBranch?.(
-					input.depth,
-					input.totalBranches,
-					input.totalBranches + 1,
-				);
-			}
+				if (applySame === false) {
+					navigateBranch?.(
+						input.depth,
+						input.totalBranches,
+						input.totalBranches + 1,
+					);
+				}
 
-			const finalDocuments =
-				editedDocuments ??
-				(Array.isArray(input.message.message.content)
-					? input.message.message.content
-							.filter(
-								(
-									c,
-								): c is MessageContent & {
-									type: "file";
-									file: { file_id: Id<"documents"> };
-								} => c.type === "file" && c.file?.file_id !== undefined,
-							)
-							.map((c) => c.file.file_id)
-					: []);
+				const finalDocuments =
+					editedDocuments ??
+					(Array.isArray(input.message.message.content)
+						? input.message.message.content
+								.filter(
+									(
+										c,
+									): c is MessageContent & {
+										type: "file";
+										file: { file_id: Id<"documents"> };
+									} => c.type === "file" && c.file?.file_id !== undefined,
+								)
+								.map((c) => c.file.file_id)
+						: []);
 
-			try {
-				updateMessage({
-					id: input.message._id as Id<"chatMessages">,
-					updates: { text: editedText, documents: finalDocuments },
-					applySame: applySame,
-				}).then(() => {
-					if (applySame === false) {
-						chat({ chatId: input.message.chatId, model });
-					}
-				});
-				onDone?.();
-			} catch {
-				toast.error("Failed to submit message edit");
-			}
-		};
+				try {
+					updateMessage({
+						id: input.message._id as Id<"chatMessages">,
+						updates: { text: editedText, documents: finalDocuments },
+						applySame: applySame,
+					}).then(() => {
+						if (applySame === false) {
+							chat({ chatId: input.message.chatId, model });
+						}
+					});
+					onDone?.();
+				} catch {
+					toast.error("Failed to submit message edit");
+				}
+			},
+			[
+				input.message._id,
+				editedText,
+				editedDocuments,
+				onDone,
+				navigateBranch,
+				chat,
+				input.depth,
+				input.totalBranches,
+				updateMessage,
+				input.message.chatId,
+				input.message.message.content,
+			],
+		);
 
 		const handleKeyDown = useCallback(
 			(e: KeyboardEvent) => {
