@@ -20,12 +20,12 @@ export const toggleThemeMode = () => {
 
         console.log("prefersReducedMotion", prefersReducedMotion)
 
-        if (!document.startViewTransition || prefersReducedMotion) {
+        if (!('startViewTransition' in document) || prefersReducedMotion) {
             store.set(currentThemeModeAtom, newMode)
             return
         }
 
-        document.startViewTransition(() => {
+        (document as any).startViewTransition(() => {
             store.set(currentThemeModeAtom, newMode)
         })
     } catch (error) {
