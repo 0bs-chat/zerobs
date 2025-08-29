@@ -5,13 +5,13 @@ import type { ThemeState } from "./types"
 // Type declarations for View Transitions API
 declare global {
     interface Document {
-        startViewTransition?(updateCallback: () => void): ViewTransition
+        startViewTransition?: (updateCallback: () => void) => ViewTransition
     }
+}
 
-    interface ViewTransition {
-        finished: Promise<void>
-        ready: Promise<void>
-    }
+interface ViewTransition {
+    finished: Promise<void>
+    ready: Promise<void>
 }
 
 const store = getDefaultStore()
