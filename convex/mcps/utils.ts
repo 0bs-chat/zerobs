@@ -82,10 +82,16 @@ export async function resolveConfigurableEnvs(
     if (matchingTemplate && matchingTemplate.configurableEnvs) {
       for (const envConfig of matchingTemplate.configurableEnvs) {
         try {
+          // Auto-inject userId from MCP document into function arguments
+          const argsWithUserId = {
+            ...envConfig.args,
+            userId: mcp.userId,
+          };
+
           const result = await executeFunctionByReference(
             ctx,
             envConfig.func,
-            envConfig.args,
+            argsWithUserId,
             envConfig.type,
           );
           configurableEnvValues = { ...configurableEnvValues, ...result };
@@ -220,10 +226,7 @@ export async function createMcpAuthToken(
 export async function handleMcpActionError(
   ctx: ActionCtx | MutationCtx,
   mcpId: Id<"mcps">,
-  error: any,
-  action: string,
 ): Promise<void> {
-  console.error(`Error in MCP ${action}:`, error);
   await ctx.runMutation(internal.mcps.crud.update, {
     id: mcpId,
     patch: { status: "error" },
@@ -234,12 +237,12 @@ export async function createMachineConfig(
   mcp: Doc<"mcps">,
   appName: string,
   configurableEnvValues: Record<string, string> = {},
-  machineName: string,
+  machineId: string,
 ): Promise<CreateMachineRequest> {
   const verifiedEnv = await verifyEnv(mcp.env);
 
   return {
-    name: machineName,
+    name: machineId,
     region: "sea",
     config: {
       image: mcp.dockerImage || "registry.fly.io/floral-brook-444:v1",

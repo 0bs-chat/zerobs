@@ -14,9 +14,6 @@ import type { GraphState } from "../state";
 import { MCP_TEMPLATES } from "../../../src/components/chat/panels/mcp/templates";
 import {
   resolveConfigurableEnvs,
-  createMachineConfig,
-  getOrCreateFlyApp,
-  ensureMachineHealthy,
   createMcpAuthToken
 } from "../../mcps/utils";
 
@@ -45,76 +42,68 @@ export const getMCPTools = async (
       // Get configurable envs once per MCP
       const mcpConfigurableEnvs = await resolveConfigurableEnvs(ctx, mcp);
 
-      let updatedMcp = mcp;
       let machineId: string = "machine";
 
-      // Handle per-chat MCPs - create infrastructure on demand
+      // Handle per-chat MCPs - assign from pool or create on demand
       if (mcp.perChat && ["stdio", "docker"].includes(mcp.type) && config) {
-        const appName = mcp._id.toString();
-        machineId = config.chat._id.toString();
-
         try {
-          await getOrCreateFlyApp(appName);
-
-          let machine = await fly.getMachineByName(appName, machineId);
-
-          if (!machine) {
-            const machineConfig = await createMachineConfig(
-              mcp,
-              appName,
-              mcpConfigurableEnvs,
-              machineId,
-            );
-            machine = await fly.createMachine(appName, machineConfig);
-            await ensureMachineHealthy(appName, machineId);
-          }
-
-          const sseUrl = `https://${appName}.fly.dev/sse`;
-
-          // Update MCP with the URL
-          await ctx.runMutation(internal.mcps.crud.update, {
-            id: mcp._id,
-            patch: { url: sseUrl, status: "created" },
+          let assignedMachineId = await ctx.runMutation(api.mcps.mutations.assignMachineToChat, {
+            mcpId: mcp._id,
+            chatId: config.chat._id,
           });
 
-          updatedMcp = { ...mcp, url: sseUrl, status: "created" as const };
+          if (!assignedMachineId) {
+            await ctx.runAction(internal.mcps.actions.create, {
+              mcpId: mcp._id,
+            });
+            assignedMachineId = await ctx.runMutation(api.mcps.mutations.assignMachineToChat, {
+              mcpId: mcp._id,
+              chatId: config.chat._id,
+            });
+          } else {
+            await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
+              mcpId: mcp._id,
+            });
+          }
+
+          if (assignedMachineId) {
+            machineId = assignedMachineId;
+          }
         } catch (error) {
-          console.error(
-            `Failed to create per-chat MCP ${appName} machine ${machineId}:`,
-            error,
-          );
-          // Don't return null - continue to check if this MCP has existing URL
+          throw new Error("Failed to assign per-chat MCP machine");
         }
       }
+
+      try {
+        await fly.startMachine(mcp._id, machineId);
+      } catch (error) {}
 
       await fly.waitTillHealthy(mcp._id, {
         timeout: 120000,
         interval: 1000,
       });
-      try {
-        await fly.startMachine(mcp._id, machineId);
-      } catch (error) {}
 
       // Filter out MCPs that don't have a URL or aren't ready
-      if (!updatedMcp.url || updatedMcp.status === "creating") {
+      if (!mcp.url || mcp.status === "creating") {
+        console.error(`MCP ${mcp._id} is not ready`);
         return null;
       }
 
       // Build connection object
-      const authToken = await createMcpAuthToken(updatedMcp);
+      const authToken = await createMcpAuthToken(mcp);
 
       const headers: Record<string, string> = {
-        ...updatedMcp.env,
+        ...mcp.env,
         ...mcpConfigurableEnvs,
         fly_force_instance_id: machineId,
         Authorization: `Bearer ${authToken}`,
       };
 
       return {
-        name: updatedMcp.name,
+        name: mcp.name,
         connection: {
           transport: "http" as const,
-          url: updatedMcp.url!,
+          url: mcp.url!,
           headers,
           useNodeEventSource: true,
           reconnect: {
@@ -123,7 +112,7 @@ export const getMCPTools = async (
             delayMs: 1000,
           },
         },
-        mcp: updatedMcp,
+        mcp: mcp,
       };
     }),
   );
@@ -171,24 +160,25 @@ export const getMCPTools = async (
           (t) => t.template === mcp.template,
         );
         if (matchingTemplate && matchingTemplate.promptTool) {
-          const mcpClient = await client!.getClient(mcp.name);
-          if (mcpClient) {
-            const prompt = await mcpClient.getPrompt({
-              name: matchingTemplate.promptTool,
-            });
-            if (prompt) {
-              const mcpTools = tools.filter((t) => t.name.includes(mcp.name));
-              if (mcpTools.length > 0) {
-                mcpTools[0].description = `${prompt.messages[0].content.text}\n\n${mcpTools[0].description}`;
+          try {
+            const mcpClient = await client!.getClient(mcp.name);
+            if (mcpClient) {
+              const prompt = await mcpClient.getPrompt({
+                name: matchingTemplate.promptTool,
+              });
+              if (prompt && prompt.messages && prompt.messages.length > 0) {
+                const mcpTools = tools.filter((t) => t.name.includes(mcp.name));
+                if (mcpTools.length > 0) {
+                  mcpTools[0].description = `${prompt.messages[0].content.text}\n\n${mcpTools[0].description}`;
+                }
               }
             }
-          }
+          } catch (error) {}
         }
       }
     }),
   );
 
-  // Extract file IDs from the last message content instead of chat document
   if (state) {
     if (state.messages && state.messages.length > 0) {
       const lastMessage = state.messages[state.messages.length - 1];
@@ -200,29 +190,39 @@ export const getMCPTools = async (
       const files: { name: string; url: string }[] = (
         await Promise.all(
           fileIds.map(async (documentId, index) => {
-            const documentDoc = await ctx.runQuery(
-              internal.documents.crud.read,
-              {
-                id: documentId as Id<"documents">,
-              },
-            );
-            if (!documentDoc) return null;
-            // Include various document types for upload (file, image, github, text)
-            const url = await getDocumentUrl(ctx, documentDoc.key);
-            return {
-              name: `${index}_${documentDoc.name}`,
-              url,
-            };
+            try {
+              const documentDoc = await ctx.runQuery(
+                internal.documents.crud.read,
+                {
+                  id: documentId as Id<"documents">,
+                },
+              );
+              if (!documentDoc) {
+                return null;
+              }
+              // Include various document types for upload (file, image, github, text)
+              const url = await getDocumentUrl(ctx, documentDoc.key);
+              return {
+                name: `${index}_${documentDoc.name}`,
+                url,
+              };
+            } catch (error) {
+              return null;
+            }
           }),
         )
       )
         // Filter out any null results from documents without URLs
         .filter((file): file is { name: string; url: string } => file !== null);
 
+      // Upload files to each MCP's specific machine
       await Promise.all(
-        readyMcps.map(async (mcp) => {
+        validResults.map(async (result) => {
+          const { mcp } = result;
           if (["stdio", "docker"].includes(mcp.type) && files.length > 0) {
-            await fly.uploadFileToAllMachines(mcp._id, files);
+            // Extract machineId from the connection headers (fly_force_instance_id)
+            const headerMachineId = result.connection.headers.fly_force_instance_id || "machine";
+            await fly.uploadFileToMachine(mcp._id, headerMachineId, files);
           }
         }),
       );
