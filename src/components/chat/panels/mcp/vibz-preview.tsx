@@ -30,7 +30,7 @@ export const VibzPreview = () => {
   const dashboardIframeRef = useRef<HTMLIFrameElement>(null);
 
   const createJwtAction = useAction(api.utils.encryption.createJwtAction);
-  const getMachineId = useAction(api.mcps.actions.getMachineId);
+  const getMachineName = useAction(api.mcps.actions.getMachineName);
 
   useEffect(() => {
     const initializeUrls = async () => {
@@ -43,17 +43,24 @@ export const VibzPreview = () => {
           skipTimestamp: true,
         });
 
-        const machineId = await getMachineId({
+        const machineName = await getMachineName({
           mcpId: selectedVibzMcp._id,
           chatId,
         });
 
+        // Ensure we have a valid machineName
+        if (!machineName) {
+          console.error("No machine name available for MCP:", selectedVibzMcp._id);
+          setSelectedVibzMcp(undefined);
+          return;
+        }
+
         const appName = selectedVibzMcp._id;
 
         setUrls({
-          previewUrl: `https://${appName}.fly.dev/${machineId}/preview/`,
-          codeUrl: `https://${appName}.fly.dev/${machineId}/8080/${oauthToken}/`,
-          dashboardUrl: `https://${appName}.fly.dev/${machineId}/dashboard?auth=${oauthToken}`,
+          previewUrl: `https://${appName}.fly.dev/${machineName}/preview/`,
+          codeUrl: `https://${appName}.fly.dev/${machineName}/8080/${oauthToken}/`,
+          dashboardUrl: `https://${appName}.fly.dev/${machineName}/dashboard?auth=${oauthToken}`,
         });
       } catch (error) {
         console.error("Error initializing URLs:", error);
@@ -61,7 +68,7 @@ export const VibzPreview = () => {
     };
 
     initializeUrls();
-  }, [selectedVibzMcp?._id, chatId, createJwtAction, getMachineId]);
+  }, [selectedVibzMcp?._id, chatId, createJwtAction, getMachineName]);
 
   const handleClose = () => {
     setSelectedVibzMcp(undefined);
@@ -95,8 +102,6 @@ export const VibzPreview = () => {
       </div>
     );
   }
-
-  console.log(urls);
 
   return (
     <div className="w-full h-full grid grid-rows-[auto_1fr]">

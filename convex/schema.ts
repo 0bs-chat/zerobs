@@ -127,6 +127,12 @@ export const Mcps = Table("mcps", {
   template: v.optional(v.string()),
 });
 
+export const PerChatMcps = Table("perChatMcps", {
+  mcpId: v.id("mcps"),
+  chatId: v.optional(v.id("chats")), // undefined is unassigned
+  machineId: v.optional(v.string()),
+});
+
 export const Usage = Table("usage", {
   userId: v.string(),
   messages: v.number(),
@@ -170,6 +176,10 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_updated", ["userId", "updatedAt"])
     .index("by_enabled_user", ["enabled", "userId"]),
+  perChatMcps: PerChatMcps.table
+    .index("by_mcp", ["mcpId"])
+    .index("by_machine", ["machineId"])
+    .index("by_chat", ["chatId"]),
   streamChunkRefs: StreamChunkRefs.table.index("by_stream", ["streamId"]),
   usage: Usage.table.index("by_user", ["userId"]),
 });

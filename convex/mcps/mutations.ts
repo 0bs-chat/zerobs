@@ -56,14 +56,14 @@ export const create = mutation({
       env: envJwts,
       url: args.url,
       enabled: args.enabled ?? true,
-      status: args.type === "http" || args.perChat ? "created" : "creating",
+      status: args.type === "http" ? "created" : "creating",
       userId: userId,
       updatedAt: Date.now(),
       perChat: args.perChat ?? false,
       template: args.template,
     });
 
-    if (args.type !== "http" && !args.perChat) {
+    if (args.type !== "http") {
       await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
         mcpId: newMCPId,
       });
@@ -113,6 +113,17 @@ export const remove = mutation({
       mcpId: args.mcpId,
     });
 
+    // Remove all per-chat MCP entries for this MCP
+    const perChatMcps = await ctx.db
+      .query("perChatMcps")
+      .withIndex("by_mcp", (q) => q.eq("mcpId", args.mcpId))
+      .collect();
+
+    // Delete each per-chat MCP entry
+    await Promise.all(
+      perChatMcps.map((perChatMcp) => ctx.db.delete(perChatMcp._id))
+    );
+
     if (mcp.type !== "http") {
       await ctx.scheduler.runAfter(0, internal.mcps.actions.remove, {
         mcpId: args.mcpId,
@@ -141,5 +152,43 @@ export const restart = mutation({
     });
 
     return null;
+  },
+});
+
+export const assignMachineToChat = mutation({
+  args: {
+    mcpId: v.id("mcps"),
+    chatId: v.id("chats"),
+  },
+  returns: v.union(v.string(), v.null()), // Returns machineName or null if no unassigned machine available
+  handler: async (ctx, args) => {
+    // First check if there's already an assigned machine for this chat
+    const existingAssignment = await ctx.db
+      .query("perChatMcps")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .filter((q) => q.eq(q.field("mcpId"), args.mcpId))
+      .first();
+
+    if (existingAssignment) {
+      return existingAssignment.machineId;
+    }
+
+    // Find an unassigned machine for this MCP
+    const unassignedMachine = await ctx.db
+      .query("perChatMcps")
+      .withIndex("by_mcp", (q) => q.eq("mcpId", args.mcpId))
+      .filter((q) => q.eq(q.field("chatId"), undefined))
+      .first();
+
+    if (!unassignedMachine) {
+      return null; // No unassigned machine available
+    }
+
+    // Assign the machine to the chat
+    await ctx.db.patch(unassignedMachine._id, {
+      chatId: args.chatId,
+    });
+
+    return unassignedMachine.machineId;
   },
 });

@@ -82,10 +82,16 @@ export async function resolveConfigurableEnvs(
     if (matchingTemplate && matchingTemplate.configurableEnvs) {
       for (const envConfig of matchingTemplate.configurableEnvs) {
         try {
+          // If this is the getConvexDeployKey function, add userId to args
+          let args = { ...envConfig.args };
+          if (envConfig.func === "internal.mcps.actions.getConvexDeployKey" && mcp.userId) {
+            (args as any).userId = mcp.userId;
+          }
+
           const result = await executeFunctionByReference(
             ctx,
             envConfig.func,
-            envConfig.args,
+            args,
             envConfig.type,
           );
           configurableEnvValues = { ...configurableEnvValues, ...result };
@@ -220,10 +226,7 @@ export async function createMcpAuthToken(
 export async function handleMcpActionError(
   ctx: ActionCtx | MutationCtx,
   mcpId: Id<"mcps">,
-  error: any,
-  action: string,
 ): Promise<void> {
-  console.error(`Error in MCP ${action}:`, error);
   await ctx.runMutation(internal.mcps.crud.update, {
     id: mcpId,
     patch: { status: "error" },

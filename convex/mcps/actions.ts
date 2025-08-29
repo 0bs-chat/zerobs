@@ -5,6 +5,7 @@ import { internalAction, action } from "../_generated/server";
 import { v } from "convex/values";
 import { fly } from "../utils/flyio";
 import type { FlyApp } from "../utils/flyio";
+import { randomUUID } from "crypto";
 import {
   resolveConfigurableEnvs,
   createMachineConfig,
@@ -36,6 +37,7 @@ export const create = internalAction({
 
       // Process configurableEnvs if template is specified
       const configurableEnvValues = await resolveConfigurableEnvs(ctx, mcp);
+
       const machineConfig = await createMachineConfig(
         mcp,
         appName,
@@ -44,15 +46,46 @@ export const create = internalAction({
       );
 
       await getOrCreateFlyApp(appName);
-      await fly.createMachine(appName, machineConfig);
-      await ensureMachineHealthy(appName, "machine");
+
+      if (mcp.perChat) {
+        // Query existing unassigned machines
+        const unassignedCount = await ctx.runQuery(internal.mcps.crud.countUnassignedPerChatMcps, {
+          mcpId: args.mcpId,
+        });
+
+        // Only create machines if we have less than 2 unassigned
+        const machinesToCreate = Math.max(0, 2 - unassignedCount);
+
+        if (machinesToCreate > 0) {
+          await Promise.all(
+            Array.from({ length: machinesToCreate }, async () => {
+              const machineConfig = await createMachineConfig(mcp, appName, configurableEnvValues, randomUUID());
+              const machine = await fly.createMachine(appName, machineConfig);
+
+              // Create entry in perChatMcps table with chatId set to undefined (unassigned)
+              await ctx.runMutation(internal.mcps.crud.createPerChatMcp, {
+                mcpId: args.mcpId,
+                chatId: undefined,
+                machineId: machine?.id!
+              });
+
+              // Ensure machine is healthy
+              await ensureMachineHealthy(appName, machine?.id || "");
+            })
+          );
+        }
+      } else {
+        // Create single machine for regular MCPs
+        await fly.createMachine(appName, machineConfig);
+        await ensureMachineHealthy(appName, "machine");
+      }
 
       await ctx.runMutation(internal.mcps.crud.update, {
         id: args.mcpId,
         patch: { url: sseUrl, status: "created" },
       });
     } catch (error) {
-      await handleMcpActionError(ctx, args.mcpId, error, "create");
+      await handleMcpActionError(ctx, args.mcpId);
     }
   },
 });
@@ -90,7 +123,7 @@ export const restart = internalAction({
         patch: { status: "created" },
       });
     } catch (error) {
-      await handleMcpActionError(ctx, args.mcpId, error, "restart");
+      await handleMcpActionError(ctx, args.mcpId);
     }
   },
 });
@@ -111,6 +144,7 @@ export const remove = internalAction({
 export const getConvexDeployKey = internalAction({
   args: {
     name: v.string(),
+    userId: v.string(),
   },
   handler: async (
     ctx,
@@ -124,6 +158,7 @@ export const getConvexDeployKey = internalAction({
       (
         await ctx.runQuery(internal.apiKeys.queries.getFromKey, {
           key: "CONVEX_ACCESS_TOKEN",
+          userId: args.userId,
         })
       )?.value ?? process.env.CONVEX_ACCESS_TOKEN;
     const tokenDetails = await (
@@ -175,20 +210,36 @@ export const getConvexDeployKey = internalAction({
   },
 });
 
-export const getMachineId = action({
+const getMachineNameHandler = action({
   args: {
     mcpId: v.id("mcps"),
     chatId: v.string(),
   },
-  handler: async (ctx, args) => {
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, args): Promise<string | null> => {
     const mcp = await ctx.runQuery(api.mcps.queries.get, {
       mcpId: args.mcpId,
     });
+
     if (mcp.perChat) {
+      // First try to assign/get an assigned machine for this chat
+      const assignedMachineName: string | null = await ctx.runMutation(api.mcps.mutations.assignMachineToChat, {
+        mcpId: args.mcpId,
+        chatId: args.chatId as any, // Type assertion for chatId conversion
+      });
+
+      if (assignedMachineName) {
+        return assignedMachineName;
+      }
+
+      // If no assigned machine, try to get machine by name as fallback
       const machine = await fly.getMachineByName(args.mcpId, args.chatId);
-      return machine?.id;
+      return machine?.name || null;
     } else {
-      throw new Error("MCP is not per chat");
+      // For non-per-chat MCPs, return the default machine name
+      return "machine";
     }
   },
 });
+
+export const getMachineName = getMachineNameHandler;
