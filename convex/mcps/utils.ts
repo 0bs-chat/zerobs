@@ -245,7 +245,7 @@ export async function createMachineConfig(
     name: machineId,
     region: "sea",
     config: {
-      image: mcp.dockerImage || "registry.fly.io/floral-brook-444:v1",
+      image: mcp.dockerImage || "registry.fly.io/floral-brook-444",
       env: {
         ...verifiedEnv,
         ...configurableEnvValues,

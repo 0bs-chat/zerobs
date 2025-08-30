@@ -133,11 +133,6 @@ export const PerChatMcps = Table("perChatMcps", {
   machineId: v.optional(v.string()),
 });
 
-export const Usage = Table("usage", {
-  userId: v.string(),
-  messages: v.number(),
-});
-
 export default defineSchema({
   ...authTables,
   apiKeys: ApiKeys.table
@@ -180,6 +175,5 @@ export default defineSchema({
     .index("by_mcp", ["mcpId"])
     .index("by_machine", ["machineId"])
     .index("by_chat", ["chatId"]),
-  streamChunkRefs: StreamChunkRefs.table.index("by_stream", ["streamId"]),
-  usage: Usage.table.index("by_user", ["userId"]),
+  streamChunkRefs: StreamChunkRefs.table.index("by_stream", ["streamId"])
 });

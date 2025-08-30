@@ -37,7 +37,7 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     template: "python-exec",
     name: "Python Exec",
     type: "docker",
-    dockerImage: "registry.fly.io/bitter-leaf-7106:v1",
+    dockerImage: "registry.fly.io/bitter-leaf-7106",
     dockerPort: 8000,
     status: "creating",
     description:
@@ -98,7 +98,7 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     official: false,
     env: {},
     perChat: true,
-    dockerImage: "registry.fly.io/still-smoke-7835:v3",
+    dockerImage: "registry.fly.io/still-smoke-7835",
     dockerPort: 80,
     promptTool: "prompt",
     configurableEnvs: [

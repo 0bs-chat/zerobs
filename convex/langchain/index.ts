@@ -19,6 +19,7 @@ import { v } from "convex/values";
 import { getThreadFromMessage } from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
+import { autumn } from "../autumn";
 
 export const generateTitle = internalAction({
   args: v.object({
@@ -296,6 +297,14 @@ export const chat = action({
       chatId,
       updates: { status: "done", completedSteps: [] },
     });
+
+    // Track message usage - count the number of new messages created
+    if (newMessages?.length) {
+      await autumn.track(ctx, {
+        featureId: "messages",
+        value: newMessages.length,
+      });
+    }
   },
 });
 

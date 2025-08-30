@@ -16,6 +16,7 @@ import {
   restartAllMachines,
   handleMcpActionError
 } from "./utils";
+import { autumn, trackInternal } from "../autumn";
 
 export const create = internalAction({
   args: {
@@ -73,11 +74,17 @@ export const create = internalAction({
               await ensureMachineHealthy(appName, machine?.id || "");
             })
           );
+
+          // Track MCP usage for per-chat MCPs based on machines created
+          await trackInternal(ctx, mcp.userId!, "mcps", machinesToCreate);
         }
       } else {
         // Create single machine for regular MCPs
         await fly.createMachine(appName, machineConfig);
         await ensureMachineHealthy(appName, "machine");
+
+        // Track MCP usage for regular MCPs (1 machine)
+        await trackInternal(ctx, mcp.userId!, "mcps", 1);
       }
 
       await ctx.runMutation(internal.mcps.crud.update, {
@@ -132,10 +139,25 @@ export const remove = internalAction({
   args: {
     mcpId: v.id("mcps"),
   },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
     const appName = String(args.mcpId);
     const app: FlyApp | null = await fly.getApp(appName);
+    
     if (app && app.name) {
+      // Get all machines for this app to count them
+      const machines = await fly.listMachines(app.name);
+      const machineCount = machines?.length || 0;
+      
+      // Track MCP usage reduction when machines are deleted
+      if (machineCount > 0) {
+        // Get the MCP to get the userId for tracking
+        const mcp = await ctx.runQuery(internal.mcps.crud.read, {
+          id: args.mcpId,
+        });
+        
+        await trackInternal(ctx, mcp?.userId!, "mcps", -machineCount);
+      }
+      
       await fly.deleteApp(app.name);
     }
   },
