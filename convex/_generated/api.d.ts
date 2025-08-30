@@ -11,6 +11,7 @@
 import type * as apiKeys_mutations from "../apiKeys/mutations.js";
 import type * as apiKeys_queries from "../apiKeys/queries.js";
 import type * as auth from "../auth.js";
+import type * as autumn from "../autumn.js";
 import type * as chatMessages_crud from "../chatMessages/crud.js";
 import type * as chatMessages_helpers from "../chatMessages/helpers.js";
 import type * as chatMessages_mutations from "../chatMessages/mutations.js";
@@ -77,6 +78,7 @@ declare const fullApi: ApiFromModules<{
   "apiKeys/mutations": typeof apiKeys_mutations;
   "apiKeys/queries": typeof apiKeys_queries;
   auth: typeof auth;
+  autumn: typeof autumn;
   "chatMessages/crud": typeof chatMessages_crud;
   "chatMessages/helpers": typeof chatMessages_helpers;
   "chatMessages/mutations": typeof chatMessages_mutations;
@@ -222,4 +224,5 @@ export declare const components: {
       >;
     };
   };
+  autumn: {};
 };
