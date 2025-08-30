@@ -16,7 +16,7 @@ import {
   restartAllMachines,
   handleMcpActionError
 } from "./utils";
-import { autumn, trackInternal } from "../autumn";
+import { trackInternal } from "../autumn";
 
 export const create = internalAction({
   args: {
@@ -76,7 +76,7 @@ export const create = internalAction({
           );
 
           // Track MCP usage for per-chat MCPs based on machines created
-          await trackInternal(ctx, mcp.userId!, "mcps", machinesToCreate);
+          await trackInternal(mcp.userId!, "mcps", machinesToCreate);
         }
       } else {
         // Create single machine for regular MCPs
@@ -84,7 +84,7 @@ export const create = internalAction({
         await ensureMachineHealthy(appName, "machine");
 
         // Track MCP usage for regular MCPs (1 machine)
-        await trackInternal(ctx, mcp.userId!, "mcps", 1);
+        await trackInternal(mcp.userId!, "mcps", 1);
       }
 
       await ctx.runMutation(internal.mcps.crud.update, {
@@ -155,7 +155,7 @@ export const remove = internalAction({
           id: args.mcpId,
         });
         
-        await trackInternal(ctx, mcp?.userId!, "mcps", -machineCount);
+        await trackInternal(mcp?.userId!, "mcps", -machineCount);
       }
       
       await fly.deleteApp(app.name);

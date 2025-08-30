@@ -45,7 +45,7 @@ export const {
 /**
  * Custom track function for internal actions that don't have auth context
  */
-export const trackInternal = async (ctx: any, customerId: string, featureId: string, value: number) => {
+export const trackInternal = async (customerId: string, featureId: string, value: number) => {
   // Use the Autumn client directly to track usage with customerId
   const response = await fetch("https://api.useautumn.com/v1/track", {
     method: "POST",

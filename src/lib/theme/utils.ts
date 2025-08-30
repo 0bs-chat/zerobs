@@ -1,10 +1,10 @@
 export const THEME_URLS = [
     "https://tweakcn.com/r/themes/solar-dusk.json",
-    "https://tweakcn.com/r/themes/vintage-paper.json",
+    "https://tweakcn.com/editor/theme?theme=claude",
+    "https://tweakcn.com/editor/theme?theme=t3-chat",
     "https://tweakcn.com/r/themes/amethyst-haze.json",
     "https://tweakcn.com/editor/theme?theme=caffeine",
     "https://tweakcn.com/editor/theme?theme=mono",
-    "https://tweakcn.com/editor/theme?theme=t3-chat",
     "https://tweakcn.com/editor/theme?theme=tangerine",
     "https://tweakcn.com/editor/theme?theme=perpetuity",
     "https://tweakcn.com/editor/theme?theme=modern-minimal",
@@ -13,6 +13,7 @@ export const THEME_URLS = [
     "https://tweakcn.com/editor/theme?theme=pastel-dreams",
     "https://tweakcn.com/editor/theme?theme=supabase",
     "https://tweakcn.com/editor/theme?theme=vercel",
+    "https://tweakcn.com/r/themes/vintage-paper.json",
     "https://tweakcn.com/editor/theme?theme=cyberpunk"
 ]
 
