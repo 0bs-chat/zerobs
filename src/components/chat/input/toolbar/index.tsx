@@ -42,6 +42,7 @@ import { StopButtonIcon } from "./stop-button-icon";
 import { ModelPopover } from "./model-popover";
 import { useRouter } from "@tanstack/react-router";
 import { AgentPopover } from "./agent-popover";
+import { ToolToggles } from "./tool-toggles";
 import { useAgentSettings } from "@/hooks/chats/use-agent-settings";
 import { useApiKeys } from "@/hooks/use-apikeys";
 import { toast } from "sonner";
@@ -153,6 +154,7 @@ export const ToolBar = () => {
           </DropdownMenuContent>
         </DropdownMenu>
         <AgentPopover />
+        <ToolToggles />
         
         {/* Agent toggle quick-cancel buttons */}
         {getEnabledSettings().map((setting) => {
