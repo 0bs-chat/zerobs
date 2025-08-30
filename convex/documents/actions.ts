@@ -121,17 +121,50 @@ async function processUrlsOrSites(
   return await ctx.runAction(internal.utils.services.index.processUrlOrSite, {
     url: document.key,
     maxDepth: depth,
+    documentId: document._id,
   });
 }
 
 async function processYoutubeVideo(
-  _ctx: ActionCtx,
+  ctx: ActionCtx,
   document: Doc<"documents">,
 ): Promise<string> {
   const loader = YoutubeLoader.createFromUrl(document.key, {
     addVideoInfo: true,
     language: "en",
   });
-  const docs = await loader.load();
+  
+  // Run title fetching and content loading in parallel
+  const [docs, title] = await Promise.all([
+    loader.load(),
+    fetchYoutubeTitle(document.key)
+  ]);
+  
+  // Update document name with fetched title
+  if (title) {
+    await ctx.runMutation(internal.documents.crud.update, {
+      id: document._id,
+      patch: { 
+        name: title
+      },
+    });
+  }
+  
   return formatDocumentsAsString(docs);
+}
+
+async function fetchYoutubeTitle(url: string): Promise<string | null> {
+  try {
+    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)?.[1];
+    if (!videoId) return null;
+    
+    const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+    if (response.ok) {
+      const data = await response.json();
+      return data.title || null;
+    }
+  } catch (error) {
+    console.error("Error fetching YouTube video title:", error);
+  }
+  return null;
 }

@@ -49,6 +49,15 @@ const Icons = {
       />
     </div>
   ),
+  Firecrawl: () => (
+    <div className="w-6 h-6 rounded-sm flex items-center justify-center">
+      <img
+        src="https://www.google.com/s2/favicons?sz=256&domain_url=https%3A%2F%2Ffirecrawl.dev%2F"
+        alt="Firecrawl"
+        className="w-4 h-4"
+      />
+    </div>
+  ),
   OpenRouter: () => (
     <div className="w-6 h-6 rounded-sm flex items-center justify-center">
       <img
@@ -196,6 +205,19 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     ),
     icon: <Icons.Exa />,
     placeholder: "Enter your Exa API key...",
+    isPassword: true,
+  },
+  {
+    key: "FIRECRAWL_API_KEY",
+    title: "Firecrawl API Key",
+    description: (
+      <>
+        Required for enhanced web crawling and scraping capabilities. Get your API key from{" "}
+        <ExternalLink href="https://firecrawl.dev">Firecrawl</ExternalLink>
+      </>
+    ),
+    icon: <Icons.Firecrawl />,
+    placeholder: "fc-...",
     isPassword: true,
   },
 ];
