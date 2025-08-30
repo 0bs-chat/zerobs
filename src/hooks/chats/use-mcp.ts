@@ -1,5 +1,5 @@
 import { api } from "../../../convex/_generated/api";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import type { Doc } from "../../../convex/_generated/dataModel";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
@@ -45,7 +45,7 @@ function validateMCP(mcp: MCPFormState): boolean {
   return true;
 }
 
-export function useMCPs() {
+export function useMCPsData() {
   const [mcps, setMcps] = useAtom(mcpsAtom);
   
   const { data: fetchedMcps } = useQuery({
@@ -61,96 +61,43 @@ export function useMCPs() {
     }
   }, [fetchedMcps, setMcps]);
 
-  const getAllMCPs = () => {
-    return mcps;
-  };
-
-  const createMCP = useConvexMutation(api.mcps.mutations.create);
-  const updateMCP = useConvexMutation(api.mcps.mutations.update);
-  const removeMCP = useConvexMutation(api.mcps.mutations.remove);
-
-  const handleCreate = async (
-    newMCPData: MCPFormState,
-    setMcpEditDialogOpen: (open: boolean) => void,
-  ) => {
-    if (!validateMCP(newMCPData)) return;
-    try {
-      const { command, url, dockerImage, dockerPort, env, ...rest } =
-        newMCPData;
-
-      const createParams: Parameters<typeof createMCP>[0] = {
-        ...rest,
-        command: command?.trim() || undefined,
-        url: url?.trim() || undefined,
-        dockerImage: dockerImage?.trim() || undefined,
-        dockerPort: dockerPort,
-        env: env && Object.keys(env).length > 0 ? env : undefined,
-        enabled: true,
-        status: "creating",
-      };
-
-      if (createParams.type !== "docker") {
-        createParams.dockerPort = undefined;
-      }
-
-      await createMCP(createParams);
-      
-      // The cache will be updated when the query refetches
-
-      setMcpEditDialogOpen(false);
-      toast.success("MCP created successfully");
-    } catch (error) {
-      console.error("Failed to create MCP:", error);
-      toast.error("Failed to create MCP");
-      throw error;
-    }
-  };
-
-  const handleDelete = async (mcpId: Id<"mcps">) => {
-    try {
-      await removeMCP({ mcpId });
-      
-      // Update the cached atom
-      setMcps(prev => prev?.filter(mcp => mcp._id !== mcpId) || []);
-      
-      toast.success("MCP deleted successfully");
-    } catch (error) {
-      console.error("Failed to delete MCP:", error);
-      toast.error("Failed to delete MCP");
-    }
-  };
-
-  const toggleMCP = async (mcpId: Id<"mcps">, enabled: boolean) => {
-    try {
-      await updateMCP({ mcpId, updates: { enabled: !enabled } });
-      
-      // Update the cached atom
-      setMcps(prev => prev?.map(mcp => 
-        mcp._id === mcpId ? { ...mcp, enabled: !enabled } : mcp
-      ) || []);
-      
-      toast.success(enabled ? "MCP stopped" : "MCP started");
-    } catch (error) {
-      console.error("Failed to start/stop MCP:", error);
-      toast.error("Failed to start/stop MCP");
-    }
-  };
-
-
-  return {
-    getAllMCPs,
-    createMCP,
-    updateMCP,
-    removeMCP,
-    handleCreate,
-    toggleMCP,
-    handleDelete,
-    validateMCP,
-  };
+  return { mcps, setMcps };
 }
 
-// Lightweight hook to access cached MCPs
-export function useCachedMCPs() {
-  const mcps = useAtom(mcpsAtom)[0];
-  return mcps;
+export async function handleCreateMCP(
+  newMCPData: MCPFormState,
+  createMCP: ReturnType<typeof useConvexMutation<typeof api.mcps.mutations.create>>,
+  setMcpEditDialogOpen: (open: boolean) => void,
+): Promise<void> {
+  if (!validateMCP(newMCPData)) return;
+  
+  try {
+    const { command, url, dockerImage, dockerPort, env, ...rest } = newMCPData;
+
+    const createParams: Parameters<typeof createMCP>[0] = {
+      ...rest,
+      command: command?.trim() || undefined,
+      url: url?.trim() || undefined,
+      dockerImage: dockerImage?.trim() || undefined,
+      dockerPort: dockerPort,
+      env: env && Object.keys(env).length > 0 ? env : undefined,
+      enabled: true,
+      status: "creating",
+    };
+
+    if (createParams.type !== "docker") {
+      createParams.dockerPort = undefined;
+    }
+
+    await createMCP(createParams);
+    
+    setMcpEditDialogOpen(false);
+    toast.success("MCP created successfully");
+  } catch (error) {
+    console.error("Failed to create MCP:", error);
+    toast.error("Failed to create MCP");
+    throw error;
+  }
 }
+
+export { validateMCP };

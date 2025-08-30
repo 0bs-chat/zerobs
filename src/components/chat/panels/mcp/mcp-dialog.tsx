@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useMCPs } from "@/hooks/chats/use-mcp";
+import { handleCreateMCP, validateMCP } from "@/hooks/chats/use-mcp";
 import { PlusIcon, ServerIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -15,12 +15,14 @@ import { initialMCPState, type McpType } from "@/store/chatStore";
 import { MCP_TEMPLATES, type McpTemplate } from "./templates";
 import { MCPBrowseView } from "./mcp-browse-view";
 import { MCPFormView } from "./mcp-form-view";
+import { useConvexMutation } from "@convex-dev/react-query";
+import { api } from "../../../../../convex/_generated/api";
 
 export const MCPDialog = () => {
   const [mcp, setMcp] = useState(initialMCPState);
   const [isOpen, setIsOpen] = useState(false);
   const [view, setView] = useState("browse"); // 'browse' or 'form'
-  const { handleCreate, validateMCP } = useMCPs();
+  const createMCP = useConvexMutation(api.mcps.mutations.create);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<number | undefined>(
     undefined,
@@ -31,7 +33,7 @@ export const MCPDialog = () => {
 
     setIsLoading(true);
     try {
-      await handleCreate(mcp, (open) => {
+      await handleCreateMCP(mcp, createMCP, (open: boolean) => {
         if (!open) {
           // Reset form state when dialog closes after successful creation
           setMcp(initialMCPState);

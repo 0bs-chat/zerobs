@@ -143,6 +143,7 @@ export const MCPCard = ({
             className="cursor-pointer"
             onClick={() => onDelete(mcp._id)}
             aria-label="Delete"
+            disabled={status === "creating"}
           >
             <Trash2 className="h-4 w-4" aria-label="Delete MCP" />
           </Button>
