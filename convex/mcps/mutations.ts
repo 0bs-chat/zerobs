@@ -107,7 +107,7 @@ export const remove = mutation({
     mcpId: v.id("mcps"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const { userId } = await requireAuth(ctx);
 
     const mcp = await ctx.runQuery(api.mcps.queries.get, {
       mcpId: args.mcpId,
@@ -127,6 +127,7 @@ export const remove = mutation({
     if (mcp.type !== "http") {
       await ctx.scheduler.runAfter(0, internal.mcps.actions.remove, {
         mcpId: args.mcpId,
+        userId: userId,
       });
     }
 

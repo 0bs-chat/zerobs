@@ -42,7 +42,7 @@ export const getMCPTools = async (
       // Get configurable envs once per MCP
       const mcpConfigurableEnvs = await resolveConfigurableEnvs(ctx, mcp);
 
-      let machineId: string = "machine";
+      let machineId: string | undefined;
 
       // Handle per-chat MCPs - assign from pool or create on demand
       if (mcp.perChat && ["stdio", "docker"].includes(mcp.type) && config) {
@@ -72,16 +72,18 @@ export const getMCPTools = async (
         } catch (error) {
           throw new Error("Failed to assign per-chat MCP machine");
         }
+      } else {
+        machineId = (await fly.getMachineByName(mcp._id, "machine"))?.id!;
       }
 
       try {
-        await fly.startMachine(mcp._id, machineId);
+        await fly.startMachine(mcp._id, machineId!);
+        await fly.waitTillHealthy(mcp._id, {
+          timeout: 120000,
+          interval: 1000,
+        });
       } catch (error) {}
 
-      await fly.waitTillHealthy(mcp._id, {
-        timeout: 120000,
-        interval: 1000,
-      });
 
       // Filter out MCPs that don't have a URL or aren't ready
       if (!mcp.url || mcp.status === "creating") {
@@ -95,7 +97,7 @@ export const getMCPTools = async (
       const headers: Record<string, string> = {
         ...mcp.env,
         ...mcpConfigurableEnvs,
-        fly_force_instance_id: machineId,
+        fly_force_instance_id: machineId!,
         Authorization: `Bearer ${authToken}`,
       };
 

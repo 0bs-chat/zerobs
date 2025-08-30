@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Doc, Id } from "convex/_generated/dataModel";
 import { useSetAtom } from "jotai";
 import { selectedVibzMcpAtom } from "@/store/chatStore";
+import { MCP_TEMPLATES } from "./templates";
 
 export const MCPCard = ({
   mcp,
@@ -24,6 +25,17 @@ export const MCPCard = ({
 
   const handlePreview = () => {
     setSelectedVibzMcp(mcp);
+  };
+
+  const getLogoUrl = () => {
+    if (mcp.template) {
+      const template = MCP_TEMPLATES.find(t => t.template === mcp.template);
+      if (template?.image) {
+        return template.image;
+      }
+    }
+    // Fallback to default GitHub avatar
+    return "https://avatars.githubusercontent.com/u/182288589?s=200&v=4";
   };
 
   const getDisplayValue = () => {
@@ -63,9 +75,19 @@ export const MCPCard = ({
   return (
     <Card className="px-4 py-3">
       <div className="flex items-center justify-between">
-        <div className="flex flex-col justify-center flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <CardTitle className="text-md font-semibold">{mcp.name}</CardTitle>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <img 
+            src={getLogoUrl()} 
+            alt={`${mcp.name} logo`}
+            className="w-10 h-10 rounded-md object-cover flex-shrink-0"
+            onError={(e) => {
+              // Fallback if image fails to load
+              e.currentTarget.src = "https://avatars.githubusercontent.com/u/182288589?s=200&v=4";
+            }}
+          />
+          <div className="flex flex-col justify-center flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <CardTitle className="text-md font-semibold">{mcp.name}</CardTitle>
             <Badge variant="secondary" className="text-xs flex-shrink-0">
               {mcp.type.toUpperCase()}
             </Badge>
@@ -76,12 +98,13 @@ export const MCPCard = ({
               />
             )}
           </div>
-          <CardDescription
-            className="text-sm text-muted-foreground"
-            style={{ wordBreak: "break-word" }}
-          >
-            {getDisplayValue() || "No configuration"}
-          </CardDescription>
+            <CardDescription
+              className="text-sm text-muted-foreground"
+              style={{ wordBreak: "break-word" }}
+            >
+              {getDisplayValue() || "No configuration"}
+            </CardDescription>
+          </div>
         </div>
         <div className="flex items-center gap-2 ml-4 flex-shrink-0">
           {canShowPreview && (

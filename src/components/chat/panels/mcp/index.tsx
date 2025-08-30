@@ -17,7 +17,7 @@ export const MCPPanel = () => {
       </div>
 
       <div className="grid gap-2">
-        {mcps?.page.map((mcp) => (
+        {mcps?.map((mcp) => (
           <MCPCard
             key={mcp._id}
             mcp={mcp}

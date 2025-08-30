@@ -3,6 +3,12 @@ import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
+import { useAtom } from "jotai";
+import { mcpsAtom } from "@/store/chatStore";
+import { useEffect } from "react";
+
+// Export the atom for direct use if needed
+export { mcpsAtom };
 
 export type MCPFormState = Omit<
   Doc<"mcps">,
@@ -40,14 +46,22 @@ function validateMCP(mcp: MCPFormState): boolean {
 }
 
 export function useMCPs() {
-  const { data: mcps } = useQuery({
+  const [mcps, setMcps] = useAtom(mcpsAtom);
+  
+  const { data: fetchedMcps } = useQuery({
     ...convexQuery(api.mcps.queries.getAll, {
       paginationOpts: { numItems: 10, cursor: null },
     }),
   });
 
+  // Update atom when data is fetched
+  useEffect(() => {
+    if (fetchedMcps) {
+      setMcps(fetchedMcps.page);
+    }
+  }, [fetchedMcps, setMcps]);
+
   const getAllMCPs = () => {
-    if (!mcps) return null;
     return mcps;
   };
 
@@ -80,6 +94,8 @@ export function useMCPs() {
       }
 
       await createMCP(createParams);
+      
+      // The cache will be updated when the query refetches
 
       setMcpEditDialogOpen(false);
       toast.success("MCP created successfully");
@@ -93,6 +109,10 @@ export function useMCPs() {
   const handleDelete = async (mcpId: Id<"mcps">) => {
     try {
       await removeMCP({ mcpId });
+      
+      // Update the cached atom
+      setMcps(prev => prev?.filter(mcp => mcp._id !== mcpId) || []);
+      
       toast.success("MCP deleted successfully");
     } catch (error) {
       console.error("Failed to delete MCP:", error);
@@ -103,6 +123,12 @@ export function useMCPs() {
   const toggleMCP = async (mcpId: Id<"mcps">, enabled: boolean) => {
     try {
       await updateMCP({ mcpId, updates: { enabled: !enabled } });
+      
+      // Update the cached atom
+      setMcps(prev => prev?.map(mcp => 
+        mcp._id === mcpId ? { ...mcp, enabled: !enabled } : mcp
+      ) || []);
+      
       toast.success(enabled ? "MCP stopped" : "MCP started");
     } catch (error) {
       console.error("Failed to start/stop MCP:", error);
@@ -121,4 +147,10 @@ export function useMCPs() {
     handleDelete,
     validateMCP,
   };
+}
+
+// Lightweight hook to access cached MCPs
+export function useCachedMCPs() {
+  const mcps = useAtom(mcpsAtom)[0];
+  return mcps;
 }

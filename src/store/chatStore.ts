@@ -155,3 +155,6 @@ export const modelPreferencesAtom = atomWithStorage<ModelPreferences>(
     hidden: models.filter((m) => m.hidden).map((m) => m.model_name),
   },
 );
+
+// MCP caching atom
+export const mcpsAtom = atom<Doc<"mcps">[]>();

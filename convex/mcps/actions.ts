@@ -10,10 +10,8 @@ import {
   resolveConfigurableEnvs,
   createMachineConfig,
   validateMcpForDeployment,
-  validateMcpForRestart,
   getOrCreateFlyApp,
   ensureMachineHealthy,
-  restartAllMachines,
   handleMcpActionError
 } from "./utils";
 import { trackInternal } from "../autumn";
@@ -97,49 +95,12 @@ export const create = internalAction({
   },
 });
 
-export const restart = internalAction({
-  args: {
-    mcpId: v.id("mcps"),
-  },
-  handler: async (ctx, args) => {
-    try {
-      const mcp = await ctx.runQuery(internal.mcps.crud.read, {
-        id: args.mcpId,
-      });
-
-      if (!mcp) {
-        throw new Error("MCP not found");
-      }
-
-      await validateMcpForRestart(mcp);
-
-      await ctx.runMutation(internal.mcps.crud.update, {
-        id: args.mcpId,
-        patch: { status: "creating" },
-      });
-
-      const appName = String(mcp._id);
-      const app: FlyApp | null = await fly.getApp(appName);
-
-      if (app && app.name) {
-        await restartAllMachines(app.name);
-      }
-
-      await ctx.runMutation(internal.mcps.crud.update, {
-        id: args.mcpId,
-        patch: { status: "created" },
-      });
-    } catch (error) {
-      await handleMcpActionError(ctx, args.mcpId);
-    }
-  },
-});
-
 export const remove = internalAction({
   args: {
     mcpId: v.id("mcps"),
+    userId: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (_ctx, args) => {
     const appName = String(args.mcpId);
     const app: FlyApp | null = await fly.getApp(appName);
     
@@ -147,15 +108,8 @@ export const remove = internalAction({
       // Get all machines for this app to count them
       const machines = await fly.listMachines(app.name);
       const machineCount = machines?.length || 0;
-      
-      // Track MCP usage reduction when machines are deleted
       if (machineCount > 0) {
-        // Get the MCP to get the userId for tracking
-        const mcp = await ctx.runQuery(internal.mcps.crud.read, {
-          id: args.mcpId,
-        });
-        
-        await trackInternal(mcp?.userId!, "mcps", -machineCount);
+        await trackInternal(args.userId, "mcps", -machineCount);
       }
       
       await fly.deleteApp(app.name);
