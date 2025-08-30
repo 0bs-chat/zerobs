@@ -39,13 +39,14 @@ import {
 } from "@/store/chatStore";
 import { models } from "../../../../../convex/langchain/models";
 import { StopButtonIcon } from "./stop-button-icon";
-import { motion } from "motion/react";
-import { buttonHover, smoothTransition } from "@/lib/motion";
 import { ModelPopover } from "./model-popover";
 import { useRouter } from "@tanstack/react-router";
-import { AgentToggles } from "./agent-toggles";
+import { AgentPopover } from "./agent-popover";
+import { useAgentSettings } from "@/hooks/chats/use-agent-settings";
 import { useApiKeys } from "@/hooks/use-apikeys";
 import { toast } from "sonner";
+import { motion } from "motion/react";
+import { buttonHover, smoothTransition, scaleIn, iconSpinVariants } from "@/lib/motion";
 
 export const ToolBar = () => {
   const chatId = useAtomValue(chatIdAtom);
@@ -71,6 +72,7 @@ export const ToolBar = () => {
   const isProjectRoute = router.state.location.pathname.startsWith("/project/");
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
   const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
+  const { handleToggle: handleAgentToggle, getEnabledSettings } = useAgentSettings();
   useApiKeys();
 
   // Get project details if chat has a project
@@ -150,7 +152,38 @@ export const ToolBar = () => {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <AgentToggles />
+        <AgentPopover />
+        
+        {/* Agent toggle quick-cancel buttons */}
+        {getEnabledSettings().map((setting) => {
+          const IconComponent = setting.icon;
+          const animationVariant = setting.animation === "scale" ? scaleIn : iconSpinVariants;
+          
+          return (
+            <Button
+              key={setting.key}
+              variant="outline"
+              size="icon"
+              className="transition-all duration-300 relative group border-none text-foreground/70 hover:text-foreground cursor-pointer shadow-none"
+              onClick={() => handleAgentToggle(setting.key, false)}
+              title={setting.tooltip || setting.label}
+            >
+              <motion.span
+                variants={animationVariant}
+                initial="initial"
+                animate="animate"
+                transition={smoothTransition}
+                className="group-hover:hidden"
+              >
+                <IconComponent className="h-4 w-4" />
+              </motion.span>
+              <span className="absolute inset-0 items-center justify-center hidden group-hover:flex">
+                <XIcon className="w-4 h-4 text-destructive" />
+              </span>
+            </Button>
+          );
+        })}
+
         {/* Render project name with X button on hover */}
         {project && (
           <Button
