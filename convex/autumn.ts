@@ -66,3 +66,25 @@ export const trackInternal = async (customerId: string, featureId: string, value
   
   return response.json();
 };
+
+export const checkInternal = async (customerId: string, featureId: string, requiredQuantity?: number) => {
+  // Use the Autumn client directly to check usage with customerId
+  const response = await fetch("https://api.useautumn.com/v1/check", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.AUTUMN_SECRET_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      customer_id: customerId,
+      feature_id: featureId,
+      ...(requiredQuantity && { required_quantity: requiredQuantity }),
+    }),
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to check usage: ${response.statusText}`);
+  }
+  
+  return response.json();
+};

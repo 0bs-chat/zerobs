@@ -14,7 +14,8 @@ import {
   ensureMachineHealthy,
   handleMcpActionError
 } from "./utils";
-import { trackInternal } from "../autumn";
+import { trackInternal, checkInternal } from "../autumn";
+import { autumn } from "../autumn";
 
 export const create = internalAction({
   args: {
@@ -30,6 +31,12 @@ export const create = internalAction({
       }
 
       await validateMcpForDeployment(mcp);
+
+      // Check usage limits before creating MCPs
+      const usageCheck = await checkInternal(mcp.userId!, "mcps", 1);
+      if (!usageCheck.allowed) {
+        throw new Error(`Usage limit exceeded for MCPs. ${usageCheck.message || 'Please upgrade your plan to create more MCPs.'}`);
+      }
 
       const appName = String(mcp._id);
       const sseUrl = `https://${appName}.fly.dev/sse`;
@@ -56,6 +63,12 @@ export const create = internalAction({
         const machinesToCreate = Math.max(0, 2 - unassignedCount);
 
         if (machinesToCreate > 0) {
+          if (machinesToCreate > 1) {
+            const additionalUsageCheck = await checkInternal(mcp.userId!, "mcps", machinesToCreate);
+            if (!additionalUsageCheck.allowed) {
+              throw new Error(`Usage limit exceeded for MCPs. Cannot create ${machinesToCreate} machines. ${additionalUsageCheck.message || 'Please upgrade your plan.'}`);
+            }
+          }
           await Promise.all(
             Array.from({ length: machinesToCreate }, async () => {
               const machineConfig = await createMachineConfig(mcp, appName, configurableEnvValues, randomUUID());

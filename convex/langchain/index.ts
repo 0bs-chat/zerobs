@@ -20,6 +20,7 @@ import { getThreadFromMessage } from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
 import { autumn } from "../autumn";
+import { checkInternal } from "../autumn";
 
 export const generateTitle = internalAction({
   args: v.object({
@@ -72,6 +73,12 @@ export const chat = action({
     });
     const { chat, message, messages, customPrompt } = prep!;
     const thread = getThreadFromMessage(message, messages);
+
+    // Check usage limits before processing chat
+    const usageCheck = await checkInternal(chat.userId!, "messages", 1);
+    if (!usageCheck.allowed) {
+      throw new Error(`Message limit exceeded. ${usageCheck.message || 'Please upgrade your plan to send more messages.'}`);
+    }
 
     const checkpointer = new MemorySaver();
     const agent = agentGraph.compile({ checkpointer });
