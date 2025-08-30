@@ -65,6 +65,7 @@ export function useMCPMutations() {
   const updateMCP = useConvexMutation(api.mcps.mutations.update);
   const removeMCP = useConvexMutation(api.mcps.mutations.remove);
   const createMCP = useConvexMutation(api.mcps.mutations.create);
+  const batchToggleMCP = useConvexMutation(api.mcps.mutations.batchToggle as any);
 
   const handleToggleMCP = async (mcpId: Id<"mcps">, enabled: boolean) => {
     try {
@@ -81,6 +82,16 @@ export function useMCPMutations() {
       // The cache will be updated when the query refetches
     } catch (error) {
       console.error("Failed to delete MCP:", error);
+    }
+  };
+
+  const handleBatchToggleMCP = async (enabled: boolean) => {
+    try {
+      const count = await batchToggleMCP({ enabled });
+      toast.success(`${enabled ? "Enabled" : "Disabled"} ${count} MCP${count !== 1 ? "s" : ""}`);
+    } catch (error) {
+      console.error("Failed to batch toggle MCPs:", error);
+      toast.error("Failed to toggle MCPs");
     }
   };
 
@@ -125,7 +136,8 @@ export function useMCPMutations() {
     createMCP,
     handleToggleMCP, 
     handleDeleteMCP,
-    handleCreateMCP
+    handleCreateMCP,
+    handleBatchToggleMCP
   };
 }
 

@@ -138,6 +138,33 @@ export const remove = mutation({
 });
 
 
+export const batchToggle = mutation({
+  args: {
+    enabled: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await requireAuth(ctx);
+
+    // Get all MCPs for the user
+    const mcps = await ctx.db
+      .query("mcps")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Update all MCPs to the specified enabled state
+    await Promise.all(
+      mcps.map((mcp) =>
+        ctx.db.patch(mcp._id, {
+          enabled: args.enabled,
+          updatedAt: Date.now(),
+        })
+      )
+    );
+
+    return mcps.length; // Return number of MCPs updated
+  },
+});
+
 export const assignMachineToChat = mutation({
   args: {
     mcpId: v.id("mcps"),

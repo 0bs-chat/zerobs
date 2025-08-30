@@ -15,7 +15,6 @@ import {
   handleMcpActionError
 } from "./utils";
 import { trackInternal, checkInternal } from "../autumn";
-import { autumn } from "../autumn";
 
 export const create = internalAction({
   args: {
