@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Loader2, Play, Square, Trash2, RotateCcw, Eye } from "lucide-react";
+import { Loader2, Play, Square, Trash2, Eye } from "lucide-react";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Doc, Id } from "convex/_generated/dataModel";
@@ -11,13 +11,11 @@ export const MCPCard = ({
   status,
   onStartStop,
   onDelete,
-  onRestart,
 }: {
   mcp: Doc<"mcps">;
   status: "creating" | "created" | "error";
   onStartStop: (mcpId: Id<"mcps">, enabled: boolean) => Promise<void>;
   onDelete: (mcpId: Id<"mcps">) => Promise<void>;
-  onRestart?: (mcpId: Id<"mcps">) => Promise<void>;
 }) => {
   const setSelectedVibzMcp = useSetAtom(selectedVibzMcpAtom);
 
@@ -95,18 +93,6 @@ export const MCPCard = ({
               aria-label="Preview App"
             >
               <Eye className="h-4 w-4" />
-            </Button>
-          )}
-          {onRestart && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="cursor-pointer"
-              onClick={() => onRestart(mcp._id)}
-              aria-label="Restart MCP"
-              disabled={status === "creating"}
-            >
-              <RotateCcw className="h-4 w-4" />
             </Button>
           )}
           <Button

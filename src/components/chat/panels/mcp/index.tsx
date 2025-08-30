@@ -3,7 +3,7 @@ import { useMCPs } from "@/hooks/chats/use-mcp";
 import { MCPDialog } from "./mcp-dialog";
 
 export const MCPPanel = () => {
-  const { getAllMCPs, toggleMCP, handleDelete, restartMCP } = useMCPs();
+  const { getAllMCPs, toggleMCP, handleDelete } = useMCPs();
 
   const mcps = getAllMCPs();
 
@@ -24,7 +24,6 @@ export const MCPPanel = () => {
             status={mcp.status}
             onStartStop={toggleMCP}
             onDelete={handleDelete}
-            onRestart={restartMCP}
           />
         ))}
       </div>

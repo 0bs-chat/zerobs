@@ -136,24 +136,6 @@ export const remove = mutation({
   },
 });
 
-export const restart = mutation({
-  args: {
-    mcpId: v.id("mcps"),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
-    await ctx.runQuery(api.mcps.queries.get, {
-      mcpId: args.mcpId,
-    });
-
-    await ctx.scheduler.runAfter(0, internal.mcps.actions.restart, {
-      mcpId: args.mcpId,
-    });
-
-    return null;
-  },
-});
 
 export const assignMachineToChat = mutation({
   args: {

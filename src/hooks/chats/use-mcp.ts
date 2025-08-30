@@ -54,7 +54,6 @@ export function useMCPs() {
   const createMCP = useConvexMutation(api.mcps.mutations.create);
   const updateMCP = useConvexMutation(api.mcps.mutations.update);
   const removeMCP = useConvexMutation(api.mcps.mutations.remove);
-  const restartMutation = useConvexMutation(api.mcps.mutations.restart);
 
   const handleCreate = async (
     newMCPData: MCPFormState,
@@ -111,15 +110,6 @@ export function useMCPs() {
     }
   };
 
-  const restartMCP = async (mcpId: Id<"mcps">) => {
-    try {
-      await restartMutation({ mcpId });
-      toast.success("MCP restarted successfully");
-    } catch (error) {
-      console.error("Failed to restart MCP:", error);
-      toast.error("Failed to restart MCP");
-    }
-  };
 
   return {
     getAllMCPs,
@@ -129,7 +119,6 @@ export function useMCPs() {
     handleCreate,
     toggleMCP,
     handleDelete,
-    restartMCP,
     validateMCP,
   };
 }
