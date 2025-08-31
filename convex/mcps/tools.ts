@@ -7,6 +7,7 @@ import { api } from "../_generated/api";
 import { createMcpAuthToken, resolveConfigurableEnvs } from "./utils";
 import type { Id } from "../_generated/dataModel";
 import { DynamicStructuredTool } from "@langchain/core/tools";
+import { fly } from "../utils/flyio";
 
 export const getMCPToolsPreview = action({
   args: {
@@ -55,19 +56,33 @@ export const getMCPToolsPreview = action({
 
       // Fetch tools with retry logic
       let tools: DynamicStructuredTool[] = [];
-      for (let attempt = 0; attempt <= 5; attempt++) {
+      for (let attempt = 0; attempt <= 10; attempt++) {
         try {
+          if (attempt === 5) {
+            const machines = await fly.listMachines(mcp._id);
+            try {
+              await fly.startMachine(mcp._id, machines![0].id!);
+            } catch (error) {}
+            await fly.waitTillHealthy(mcp._id, {
+              timeout: 120000,
+              interval: 1000,
+            });
+            try {
+              await fetch(mcp.url!, {
+                headers,
+              });
+            } catch (error) {}
+          }
           tools = await client.getTools();
           break;
         } catch (error) {
-          if (attempt === 5) {
-            throw new Error(`Failed to fetch tools after 5 attempts: ${error}`);
+          if (attempt === 10) {
+            throw new Error(`Failed to fetch tools after 10 attempts: ${error}`);
           }
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
 
-      // Close the client connection
       await client.close();
 
       // Convert tools to serializable format

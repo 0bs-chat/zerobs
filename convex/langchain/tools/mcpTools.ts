@@ -80,11 +80,11 @@ export const getMCPTools = async (
 
         try {
           await fly.startMachine(mcp._id, machineId!);
-          await fly.waitTillHealthy(mcp._id, {
-            timeout: 120000,
-            interval: 1000,
-          });
         } catch (error) {}
+        await fly.waitTillHealthy(mcp._id, {
+          timeout: 120000,
+          interval: 1000,
+        });
 
         // Filter out MCPs that don't have a URL or aren't ready
         if (!mcp.url || mcp.status === "creating") {
@@ -127,6 +127,17 @@ export const getMCPTools = async (
         let tools: Awaited<ReturnType<typeof client.getTools>> = [];
         for (let attempt = 0; attempt <= 180; attempt++) {
           try {
+            if (attempt === 5) {
+              try {
+                await fly.startMachine(mcp._id, machineId!);
+              } catch (error) {}
+              // send a get request to the machine with the same headers as the connection
+              try {
+                await fetch(mcp.url!, {
+                  headers,
+                });
+              } catch (error) {}
+            }
             tools = await client.getTools();
             break;
           } catch (error) {
