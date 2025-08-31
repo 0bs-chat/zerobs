@@ -150,20 +150,7 @@ export async function getOrCreateFlyApp(appName: string): Promise<any> {
   return app;
 }
 
-export async function ensureMachineHealthy(
-  appName: string,
-  machineId: string,
-  timeout: number = 120000,
-): Promise<void> {
-  const result = await fly.waitTillHealthy(appName, {
-    timeout,
-    interval: 1000,
-  });
 
-  if (!result.healthy) {
-    throw new Error(`Machine ${machineId} failed to become healthy: ${result.error || 'Unknown error'}`);
-  }
-}
 
 export async function restartAllMachines(appName: string): Promise<void> {
   const machines = await fly.listMachines(appName);

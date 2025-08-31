@@ -225,16 +225,15 @@ export const fly = {
 
   waitTillHealthy: async (
     appName: string,
+    machineId: string,
     options: {
       timeout?: number;
       interval?: number;
-      minHealthyCount?: number;
     } = {},
   ) => {
     const {
       timeout = 300000, // 5 minutes default
       interval = 5000, // 5 seconds default
-      minHealthyCount = 1,
     } = options;
 
     const startTime = Date.now();
@@ -272,48 +271,37 @@ export const fly = {
           continue;
         }
 
-        // Get all machines for the app
-        const machines = await fly.listMachines(appName);
-        if (!machines) {
+        // Get the specific machine
+        const machine = await fly.getMachine(appName, machineId);
+        if (!machine) {
           await new Promise((resolve) => setTimeout(resolve, interval));
           continue;
         }
 
-        // Filter healthy machines
-        const healthyMachines = machines.filter(isMachineHealthy);
-
-        // Check if we have enough healthy machines
-        if (healthyMachines.length >= minHealthyCount) {
+        // Check if the machine is healthy
+        const isHealthy = isMachineHealthy(machine);
+        if (isHealthy) {
           return {
             healthy: true,
-            healthyCount: healthyMachines.length,
-            totalCount: machines.length,
+            machine,
             app,
-            machines,
           };
         }
 
-        // Check if all machines are in a failed state
-        const failedMachines = machines.filter(
-          (machine) =>
-            machine.state === "destroyed" || machine.state === "failed",
-        );
-
-        if (failedMachines.length === machines.length && machines.length > 0) {
+        // Check if the machine is in a failed state
+        if (machine.state === "destroyed" || machine.state === "failed") {
           return {
             healthy: false,
-            healthyCount: 0,
-            totalCount: machines.length,
+            machine,
             app,
-            machines,
-            error: "All machines failed",
+            error: "Machine failed",
           };
         }
 
         // Wait before next check
         await new Promise((resolve) => setTimeout(resolve, interval));
       } catch (error) {
-        console.error(`Error checking health for app ${appName}:`, error);
+        console.error(`Error checking health for machine ${machineId} in app ${appName}:`, error);
         await new Promise((resolve) => setTimeout(resolve, interval));
       }
     }
@@ -321,25 +309,30 @@ export const fly = {
     // Timeout reached - get final state
     try {
       const app = await fly.getApp(appName);
-      const machines = (await fly.listMachines(appName)) || [];
-      const healthyMachines = machines.filter(isMachineHealthy);
+      const machine = await fly.getMachine(appName, machineId);
 
-      return {
-        healthy: false,
-        healthyCount: healthyMachines.length,
-        totalCount: machines.length,
-        app,
-        machines,
-        error: "Health check timeout",
-      };
+      if (machine) {
+        const isHealthy = isMachineHealthy(machine);
+        return {
+          healthy: isHealthy,
+          machine,
+          app,
+          error: "Health check timeout",
+        };
+      } else {
+        return {
+          healthy: false,
+          machine: null,
+          app,
+          error: "Machine not found and health check timeout",
+        };
+      }
     } catch (error) {
-      console.error(`Error getting final state for app ${appName}:`, error);
+      console.error(`Error getting final state for machine ${machineId} in app ${appName}:`, error);
       return {
         healthy: false,
-        healthyCount: 0,
-        totalCount: 0,
+        machine: null,
         app: null,
-        machines: [],
         error: "Health check timeout and unable to get final state",
       };
     }

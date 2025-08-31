@@ -11,7 +11,6 @@ import {
   createMachineConfig,
   validateMcpForDeployment,
   getOrCreateFlyApp,
-  ensureMachineHealthy,
   handleMcpActionError
 } from "./utils";
 import { trackInternal, checkInternal } from "../autumn";
@@ -38,7 +37,7 @@ export const create = internalAction({
       }
 
       const appName = String(mcp._id);
-      const sseUrl = `https://${appName}.fly.dev/sse`;
+      const sseUrl = `https://${appName}.fly.dev/mcp`;
 
       // Process configurableEnvs if template is specified
       const configurableEnvValues = await resolveConfigurableEnvs(ctx, mcp);
@@ -80,8 +79,11 @@ export const create = internalAction({
                 machineId: machine?.id!
               });
 
-              // Ensure machine is healthy
-              await ensureMachineHealthy(appName, machine?.id || "");
+              // Wait for machine to be healthy
+              await fly.waitTillHealthy(appName, machine?.id || "", {
+                timeout: 120000,
+                interval: 1000,
+              });
             })
           );
 
@@ -91,7 +93,12 @@ export const create = internalAction({
       } else {
         // Create single machine for regular MCPs
         await fly.createMachine(appName, machineConfig);
-        await ensureMachineHealthy(appName, "machine");
+
+        // Wait for machine to be healthy
+        await fly.waitTillHealthy(appName, "machine", {
+          timeout: 120000,
+          interval: 1000,
+        });
 
         // Track MCP usage for regular MCPs (1 machine)
         await trackInternal(mcp.userId!, "mcps", 1);

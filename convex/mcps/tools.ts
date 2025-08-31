@@ -58,27 +58,22 @@ export const getMCPToolsPreview = action({
 
       // Fetch tools with retry logic
       let tools: DynamicStructuredTool[] = [];
-      let success = false;
-      for (let attempt = 0; attempt <= 10 && !success; attempt++) {
+      for (let attempt = 0; attempt <= 10 && tools.length === 0; attempt++) {
         try {
-          if (attempt === 5) {
+          if (attempt >= 5) {
             const machines = await fly.listMachines(mcp._id);
             try {
               await fly.startMachine(mcp._id, machines![0].id!);
             } catch (error) {}
-            await fly.waitTillHealthy(mcp._id, {
+            await fly.waitTillHealthy(mcp._id, machines![0].id!, {
               timeout: 120000,
               interval: 1000,
             });
-
-            try {
-              await fetch(mcp.url!, {
-                headers,
-              });
-            } catch (error) {}
           }
           tools = await client.getTools();
-          success = true;
+          if (tools.length === 0) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          }
         } catch (error) {
           if (attempt === 10) {
             throw new Error(`Failed to fetch tools after 10 attempts: ${error}`);
