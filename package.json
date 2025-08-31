@@ -139,7 +139,7 @@
 		"jsdom": "^26.1.0",
 		"puppeteer-ghost": "^0.0.15",
 		"rollup-plugin-visualizer": "^6.0.3",
-		"typescript": "^5.7.2",
+		"typescript": "^5.9.0-beta",
 		"vite": "^6.1.0",
 		"vitest": "^3.0.5",
 		"web-vitals": "^4.2.4",

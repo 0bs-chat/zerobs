@@ -4,12 +4,12 @@ import { DocumentResultDisplay, type DocumentResult } from "./document-results";
 import type { BaseMessage } from "@langchain/core/messages";
 import { FileDisplay } from "./file-result";
 import ToolAccordion from "@/components/ui/tool-accoordion";
-import { StreamingOutput } from "@/components/ui/streaming-output";
 
 export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
 	const parsedContent = useMemo(() => {
 		if (!message) return null;
 
+		// 1) Known “searchWeb” → SearchResult[]
 		if (message.name === "searchWeb") {
 			try {
 				return {
@@ -21,6 +21,7 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
 			}
 		}
 
+		// 2) Known “searchProjectDocuments” → DocumentResult[]
 		if (message.name === "searchProjectDocuments") {
 			try {
 				return {
@@ -32,6 +33,7 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
 			}
 		}
 
+		// 3) Mixed [ { type: "file", file: { file_id } } | { type: "text", text } ]
 		try {
 			const maybeArr = JSON.parse(message.content as string);
 			if (Array.isArray(maybeArr)) {
@@ -56,10 +58,7 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
 		| Record<string, any>
 		| undefined;
 
-	interface MessageAdditionalKwargs {
-		input?: Record<string, any>;
-		is_complete?: boolean;
-	}
+	if (!parsedContent) return null;
 
 	// Search/Web calls render in their own specialized component
 	if (parsedContent.type === "searchWeb") {
@@ -73,57 +72,27 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
 		);
 	}
 
-	if (!parsedContent) return null;
-
-	// Search/Web calls render in their own specialized component
-	if (parsedContent.type === "searchWeb") {
-		// Show streaming output if not complete
-		if (isComplete === false || !parsedContent.results.length) {
-			return (
-				<ToolAccordion
-					messageName={message.name ?? "unknown"}
-					input={input}
-					isComplete={isComplete}
-				>
-					<StreamingOutput content="" isComplete={isComplete} />
-				</ToolAccordion>
-			);
-		}
-
-		return (
-			<SearchResultDisplay results={parsedContent.results} input={input} />
-		);
-	}
-
-	if (parsedContent.type === "document") {
-		return <DocumentResultDisplay results={parsedContent.results} />;
-	}
-
 	// MIXED: files + text blocks
 	if (parsedContent.type === "mixed") {
 		return (
 			<ToolAccordion
 				messageName={message.name ?? "unknown"}
 				input={input}
-				isComplete={isComplete}
+				isComplete={(message.additional_kwargs as any)?.is_complete}
 			>
 				<div className="flex flex-col gap-4">
-					{parsedContent.content.map((item) => {
+					{parsedContent.content.map((item, idx) => {
 						if (item.type === "file" && item.file?.file_id) {
-							return (
-								<FileDisplay
-									key={item.file.file_id}
-									fileId={item.file.file_id}
-								/>
-							);
+							return <FileDisplay key={idx} fileId={item.file.file_id} />;
 						}
 						if (item.type === "text" && item.text) {
 							return (
-								<StreamingOutput
-									key={item.text}
-									content={item.text}
-									isComplete={isComplete}
-								/>
+								<pre
+									key={idx}
+									className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap"
+								>
+									{item.text}
+								</pre>
 							);
 						}
 						return null;
@@ -138,16 +107,17 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
 		<ToolAccordion
 			messageName={message.name ?? "unknown"}
 			input={input}
-			isComplete={isComplete}
+			isComplete={(message.additional_kwargs as any)?.is_complete}
 		>
-			<StreamingOutput
-				content={
-					typeof parsedContent.content === "string"
-						? parsedContent.content
-						: JSON.stringify(parsedContent.content, null, 2)
-				}
-				isComplete={isComplete}
-			/>
+			{typeof parsedContent.content === "string" ? (
+				<pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+					{parsedContent.content}
+				</pre>
+			) : (
+				<pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+					{JSON.stringify(parsedContent.content, null, 2)}
+				</pre>
+			)}
 		</ToolAccordion>
 	);
 });

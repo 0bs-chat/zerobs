@@ -13,7 +13,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { extractDomain } from "@/lib/utils";
-import { ChevronDown, ExternalLink, GlobeIcon } from "lucide-react";
+import { ChevronDown, ExternalLinkIcon, GlobeIcon } from "lucide-react";
 
 // Type definition for search results output
 export type SearchResultMetadata = {
@@ -32,7 +32,7 @@ export type SearchResult = {
 };
 
 interface SearchResultDisplayProps {
-	input: { queries?: string[]; query?: string } | undefined;
+	input: Record<string, any> | undefined;
 	results: SearchResult[];
 }
 
@@ -78,7 +78,7 @@ export const SearchResultDisplay = ({
 										{input?.topic && (
 											<span className="text-primary/70">• {input.topic}</span>
 										)}
-										<ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />
+										<ChevronDown className="text-muted-foreground pointer-events-none size-4" />
 									</div>
 								</TooltipTrigger>
 								<TooltipContent side="bottom" className="max-w-md">
@@ -148,9 +148,9 @@ export const SearchResultDisplay = ({
 								tabIndex={0}
 								type="button"
 								className="group relative flex flex-col flex-shrink-0 rounded-lg border bg-card text-left transition-all
-                  duration-200 hover:shadow-lg hover:border-primary/20 hover:bg-accent/50 w-64 min-w-64 overflow-hidden
-                  [&:hover]:shadow-lg [&:hover]:border-primary/20 [&:hover]:bg-accent/50 h-96 cursor-pointer
-                  focus:outline-none focus:ring-2 focus:ring-primary/50"
+					duration-200 hover:shadow-lg hover:border-primary/20 hover:bg-accent/50 w-64 min-w-64 overflow-hidden
+					[&:hover]:shadow-lg [&:hover]:border-primary/20 [&:hover]:bg-accent/50 h-96 cursor-pointer
+					focus:outline-none focus:ring-2 focus:ring-primary/50"
 								aria-label={`Open ${result.metadata.title} in new tab`}
 							>
 								<div className="w-full h-36 overflow-hidden flex-shrink-0">
@@ -179,15 +179,15 @@ export const SearchResultDisplay = ({
 											content={`${result.pageContent.slice(0, 500)}...`}
 											id={result.metadata.source}
 											className="prose prose-h1:text-xs prose-h2:text-xs prose-h3:text-xs prose-h4:text-xs prose-h5:text-xs prose-h6:text-xs
-                        prose-p:text-xs prose-li:text-xs prose-ul:text-xs prose-ol:text-xs prose-blockquote:text-xs prose-img:text-xs
-                        prose-strong:text-xs prose-em:text-xs prose-a:text-xs prose-a:underline prose-a:text-primary text-muted-foreground overflow-hidden"
+						  prose-p:text-xs prose-li:text-xs prose-ul:text-xs prose-ol:text-xs prose-blockquote:text-xs prose-img:text-xs
+						  prose-strong:text-xs prose-em:text-xs prose-a:text-xs prose-a:underline prose-a:text-primary text-muted-foreground overflow-hidden"
 										/>
 									</div>
 									<div className="mt-auto flex items-center gap-1.5 border-t border-border/50 pt-2">
 										<span className="flex-1 truncate text-xs text-muted-foreground/70">
 											{extractDomain(result.metadata.source)}
 										</span>
-										<ExternalLink className="size-3 flex-shrink-0 text-muted-foreground/50" />
+										<ExternalLinkIcon className="lucide lucide-external-link size-3 flex-shrink-0 text-muted-foreground/50" />
 									</div>
 								</div>
 							</button>

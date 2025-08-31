@@ -33,3 +33,10 @@ try different frameworks:
 
 1. we can't go around the convex cache ttl. i was thinking of no refetching until or retrieving messages from cache. we are doing that but after a certain time (gctime it cleans the cache).
 2.
+
+
+
+--- temp 
+
+1. response chunks appearing twice./
+2. the tool streaming need to implemented again.
