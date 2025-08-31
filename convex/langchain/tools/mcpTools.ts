@@ -11,7 +11,7 @@ import {
   type ExtendedRunnableConfig,
 } from "../helpers";
 import type { GraphState } from "../state";
-import { getTemplatePromptTool } from "../../mcps/template-helpers";
+import { getTemplatePromptTool } from "../../mcps/templateHelpers";
 import {
   resolveConfigurableEnvs,
   createMcpAuthToken

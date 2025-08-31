@@ -41,7 +41,7 @@ import type * as mcps_actions from "../mcps/actions.js";
 import type * as mcps_crud from "../mcps/crud.js";
 import type * as mcps_mutations from "../mcps/mutations.js";
 import type * as mcps_queries from "../mcps/queries.js";
-import type * as mcps_templateHelpers from "../mcps/template-helpers.js";
+import type * as mcps_templateHelpers from "../mcps/templateHelpers.js";
 import type * as mcps_tools from "../mcps/tools.js";
 import type * as mcps_utils from "../mcps/utils.js";
 import type * as migrations from "../migrations.js";

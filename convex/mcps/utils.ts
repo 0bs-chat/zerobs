@@ -2,7 +2,7 @@ import { verifyJwt, createJwt } from "../utils/encryption";
 import { 
   getTemplateConfigurableEnvs, 
   getTemplateAuthTokenKey 
-} from "./template-helpers";
+} from "./templateHelpers";
 import { makeFunctionReference } from "convex/server";
 import type { ActionCtx, MutationCtx, QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
