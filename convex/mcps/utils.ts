@@ -1,5 +1,8 @@
 import { verifyJwt, createJwt } from "../utils/encryption";
-import { MCP_TEMPLATES } from "../../src/components/chat/panels/mcp/templates";
+import { 
+  getTemplateConfigurableEnvs, 
+  getTemplateAuthTokenKey 
+} from "./template-helpers";
 import { makeFunctionReference } from "convex/server";
 import type { ActionCtx, MutationCtx, QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
@@ -76,11 +79,9 @@ export async function resolveConfigurableEnvs(
   let configurableEnvValues: Record<string, string> = {};
 
   if (mcp.template) {
-    const matchingTemplate = MCP_TEMPLATES.find(
-      (t) => t.template === mcp.template,
-    );
-    if (matchingTemplate && matchingTemplate.configurableEnvs) {
-      for (const envConfig of matchingTemplate.configurableEnvs) {
+    const configurableEnvs = getTemplateConfigurableEnvs(mcp.template);
+    if (configurableEnvs) {
+      for (const envConfig of configurableEnvs) {
         try {
           // Auto-inject userId from MCP document into function arguments
           const argsWithUserId = {
@@ -206,11 +207,9 @@ export async function createMcpAuthToken(
 ): Promise<string> {
   let authToken = null;
   if (mcp.template) {
-    const matchingTemplate = MCP_TEMPLATES.find(
-      (t) => t.template === mcp.template,
-    );
-    if (matchingTemplate && matchingTemplate.customAuthTokenFromEnv) {
-      authToken = mcp.env[matchingTemplate.customAuthTokenFromEnv];
+    const authTokenKey = getTemplateAuthTokenKey(mcp.template);
+    if (authTokenKey) {
+      authToken = mcp.env[authTokenKey];
     }
   }
 

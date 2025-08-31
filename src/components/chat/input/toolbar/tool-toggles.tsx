@@ -9,7 +9,7 @@ import {
   WrenchIcon,
 } from "lucide-react";
 import { useMCPsData, useMCPMutations } from "@/hooks/chats/use-mcp";
-import { MCP_TEMPLATES } from "@/components/chat/panels/mcp/templates";
+import { getMcpLogoUrl } from "@/hooks/chats/use-mcp-helpers";
 import { motion } from "motion/react";
 import { smoothTransition, scaleIn } from "@/lib/motion";
 
@@ -26,16 +26,7 @@ export function ToolToggles() {
     }
   };
 
-  const getIconUrl = (mcp: any) => {
-    if (mcp.template) {
-      const template = MCP_TEMPLATES.find(t => t.template === mcp.template);
-      if (template?.image) {
-        return template.image;
-      }
-    }
-    // Fallback to default GitHub avatar
-    return "https://avatars.githubusercontent.com/u/182288589?s=200&v=4";
-  };
+  const getIconUrl = (mcp: any) => getMcpLogoUrl(mcp.template);
 
   return (
     <DropdownMenu>

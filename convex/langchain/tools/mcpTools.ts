@@ -11,7 +11,7 @@ import {
   type ExtendedRunnableConfig,
 } from "../helpers";
 import type { GraphState } from "../state";
-import { MCP_TEMPLATES } from "../../../src/components/chat/panels/mcp/templates";
+import { getTemplatePromptTool } from "../../mcps/template-helpers";
 import {
   resolveConfigurableEnvs,
   createMcpAuthToken
@@ -140,15 +140,13 @@ export const getMCPTools = async (
 
         // Handle prompt tool if template exists
         if (mcp.template) {
-          const matchingTemplate = MCP_TEMPLATES.find(
-            (t) => t.template === mcp.template,
-          );
-          if (matchingTemplate && matchingTemplate.promptTool) {
+          const promptTool = getTemplatePromptTool(mcp.template);
+          if (promptTool) {
             try {
               const mcpClient = await client.getClient(mcp.name);
               if (mcpClient) {
                 const prompt = await mcpClient.getPrompt({
-                  name: matchingTemplate.promptTool,
+                  name: promptTool,
                 });
                 if (prompt && prompt.messages && prompt.messages.length > 0) {
                   const mcpTools = tools.filter((t) => t.name.includes(mcp.name));

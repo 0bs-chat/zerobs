@@ -6,7 +6,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import type { Doc, Id } from "convex/_generated/dataModel";
 import { useSetAtom } from "jotai";
 import { selectedVibzMcpAtom } from "@/store/chatStore";
-import { MCP_TEMPLATES } from "./templates";
+import { getMcpLogoUrl } from "@/hooks/chats/use-mcp-helpers";
 import { useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useState, useEffect } from "react";
@@ -97,16 +97,7 @@ export const MCPCard = ({
     }
   };
 
-  const getLogoUrl = () => {
-    if (mcp.template) {
-      const template = MCP_TEMPLATES.find(t => t.template === mcp.template);
-      if (template?.image) {
-        return template.image;
-      }
-    }
-    // Fallback to default GitHub avatar
-    return "https://avatars.githubusercontent.com/u/182288589?s=200&v=4";
-  };
+  const getLogoUrl = () => getMcpLogoUrl(mcp.template);
 
   const getDisplayValue = () => {
     switch (mcp.type) {
