@@ -158,3 +158,13 @@ export const modelPreferencesAtom = atomWithStorage<ModelPreferences>(
 
 // MCP caching atom
 export const mcpsAtom = atom<Doc<"mcps">[]>();
+
+// MCP tools batched data atom
+export type MCPTool = {
+  name: string;
+  description: string;
+  inputSchema: any;
+};
+
+export type MCPToolsData = Record<string, { tools: MCPTool[]; error: string | null }>;
+export const mcpToolsAtom = atom<MCPToolsData>({});

@@ -4,18 +4,9 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { Doc, Id } from "convex/_generated/dataModel";
-import { useSetAtom } from "jotai";
-import { selectedVibzMcpAtom } from "@/store/chatStore";
+import { useSetAtom, useAtomValue } from "jotai";
+import { selectedVibzMcpAtom, mcpToolsAtom } from "@/store/chatStore";
 import { getMcpLogoUrl } from "@/hooks/chats/use-mcp-helpers";
-import { useAction } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
-import { useState, useEffect } from "react";
-
-interface MCPTool {
-  name: string;
-  description: string;
-  inputSchema: any;
-}
 
 export const MCPCard = ({
   mcp,
@@ -29,11 +20,7 @@ export const MCPCard = ({
   onDelete: (mcpId: Id<"mcps">) => Promise<void>;
 }) => {
   const setSelectedVibzMcp = useSetAtom(selectedVibzMcpAtom);
-  const [tools, setTools] = useState<MCPTool[]>([]);
-  const [toolsLoading, setToolsLoading] = useState(false);
-  const [toolsError, setToolsError] = useState<string | null>(null);
-
-  const getMCPToolsAction = useAction(api.mcps.tools.getMCPToolsPreview);
+  const mcpToolsData = useAtomValue(mcpToolsAtom);
 
   const isVibzTemplate = mcp.template === "vibz";
   const canShowPreview = isVibzTemplate && mcp.enabled && status === "created";
@@ -43,25 +30,11 @@ export const MCPCard = ({
     setSelectedVibzMcp(mcp);
   };
 
-  // Fetch tools when the MCP becomes available
-  useEffect(() => {
-    if (canLoadTools && tools.length === 0 && !toolsLoading && !toolsError) {
-      setToolsLoading(true);
-      setToolsError(null);
-      
-      getMCPToolsAction({ mcpId: mcp._id })
-        .then((fetchedTools) => {
-          setTools(fetchedTools);
-        })
-        .catch((error) => {
-          console.error("Error fetching MCP tools:", error);
-          setToolsError(error instanceof Error ? error.message : "Failed to fetch tools");
-        })
-        .finally(() => {
-          setToolsLoading(false);
-        });
-    }
-  }, [canLoadTools, mcp._id, tools.length, toolsLoading, toolsError, getMCPToolsAction]);
+  // Get tools data for this MCP from atom
+  const mcpData = mcpToolsData[mcp._id];
+  const tools = mcpData?.tools || [];
+  const toolsError = mcpData?.error || null;
+  const toolsLoading = canLoadTools && !mcpData; // Loading if we expect tools but don't have data yet
 
   const formatInputArgs = (schema: any): string => {
     try {
