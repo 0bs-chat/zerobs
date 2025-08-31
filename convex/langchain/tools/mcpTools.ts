@@ -125,7 +125,8 @@ export const getMCPTools = async (
 
         // Fetch tools with retry logic
         let tools: Awaited<ReturnType<typeof client.getTools>> = [];
-        for (let attempt = 0; attempt <= 180; attempt++) {
+        let success = false;
+        for (let attempt = 0; attempt <= 180 && !success; attempt++) {
           try {
             if (attempt === 5) {
               try {
@@ -139,7 +140,7 @@ export const getMCPTools = async (
               } catch (error) {}
             }
             tools = await client.getTools();
-            break;
+            success = true;
           } catch (error) {
             if (attempt === 180) {
               console.error(`Failed to create MCP client for ${mcp.name} after 180 attempts`, error);

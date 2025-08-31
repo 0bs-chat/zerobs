@@ -38,9 +38,11 @@ export const getMCPToolsPreview = action({
         transport: "http" as const,
         url: mcp.url,
         headers,
-        useNodeEventSource: false, // Don't use Node EventSource
+        useNodeEventSource: true,
         reconnect: {
-          enabled: false, // Disable reconnect for preview
+          enabled: true,
+          maxAttempts: 10,
+          delayMs: 1000,
         },
       };
 
@@ -56,7 +58,8 @@ export const getMCPToolsPreview = action({
 
       // Fetch tools with retry logic
       let tools: DynamicStructuredTool[] = [];
-      for (let attempt = 0; attempt <= 10; attempt++) {
+      let success = false;
+      for (let attempt = 0; attempt <= 10 && !success; attempt++) {
         try {
           if (attempt === 5) {
             const machines = await fly.listMachines(mcp._id);
@@ -67,6 +70,7 @@ export const getMCPToolsPreview = action({
               timeout: 120000,
               interval: 1000,
             });
+
             try {
               await fetch(mcp.url!, {
                 headers,
@@ -74,7 +78,7 @@ export const getMCPToolsPreview = action({
             } catch (error) {}
           }
           tools = await client.getTools();
-          break;
+          success = true;
         } catch (error) {
           if (attempt === 10) {
             throw new Error(`Failed to fetch tools after 10 attempts: ${error}`);
