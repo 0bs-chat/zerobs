@@ -22,6 +22,7 @@ export const mcps = feature({
 export const free = product({
 	id: "free",
 	name: "Free",
+	is_default: true,
 	items: [
 		featureItem({
 			feature_id: mcps.id,

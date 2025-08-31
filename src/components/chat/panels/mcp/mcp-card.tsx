@@ -1,11 +1,21 @@
 import { Button } from "@/components/ui/button";
-import { Loader2, Play, Square, Trash2, Eye } from "lucide-react";
+import { Loader2, Play, Square, Trash2, Eye, WrenchIcon } from "lucide-react";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { Doc, Id } from "convex/_generated/dataModel";
 import { useSetAtom } from "jotai";
 import { selectedVibzMcpAtom } from "@/store/chatStore";
 import { MCP_TEMPLATES } from "./templates";
+import { useAction } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
+import { useState, useEffect } from "react";
+
+interface MCPTool {
+  name: string;
+  description: string;
+  inputSchema: any;
+}
 
 export const MCPCard = ({
   mcp,
@@ -19,12 +29,72 @@ export const MCPCard = ({
   onDelete: (mcpId: Id<"mcps">) => Promise<void>;
 }) => {
   const setSelectedVibzMcp = useSetAtom(selectedVibzMcpAtom);
+  const [tools, setTools] = useState<MCPTool[]>([]);
+  const [toolsLoading, setToolsLoading] = useState(false);
+  const [toolsError, setToolsError] = useState<string | null>(null);
+
+  const getMCPToolsAction = useAction(api.mcps.tools.getMCPToolsPreview);
 
   const isVibzTemplate = mcp.template === "vibz";
   const canShowPreview = isVibzTemplate && mcp.enabled && status === "created";
+  const canLoadTools = mcp.url && mcp.enabled && status === "created";
 
   const handlePreview = () => {
     setSelectedVibzMcp(mcp);
+  };
+
+  // Fetch tools when the MCP becomes available
+  useEffect(() => {
+    if (canLoadTools && tools.length === 0 && !toolsLoading && !toolsError) {
+      setToolsLoading(true);
+      setToolsError(null);
+      
+      getMCPToolsAction({ mcpId: mcp._id })
+        .then((fetchedTools) => {
+          setTools(fetchedTools);
+        })
+        .catch((error) => {
+          console.error("Error fetching MCP tools:", error);
+          setToolsError(error instanceof Error ? error.message : "Failed to fetch tools");
+        })
+        .finally(() => {
+          setToolsLoading(false);
+        });
+    }
+  }, [canLoadTools, mcp._id, tools.length, toolsLoading, toolsError, getMCPToolsAction]);
+
+  const formatInputArgs = (schema: any): string => {
+    try {
+      if (!schema || typeof schema !== "object") {
+        return "No arguments";
+      }
+
+      // Handle Zod schema format
+      if (schema._def && schema._def.shape) {
+        const properties = schema._def.shape();
+        if (!properties || typeof properties !== "object") {
+          return "No arguments";
+        }
+        
+        const args = Object.keys(properties).map((key) => key);
+        return args.length > 0 ? args.join(", ") : "No arguments";
+      }
+
+      // Handle JSON schema format
+      if (schema.properties) {
+        const args = Object.entries(schema.properties).map(([key, value]: [string, any]) => {
+          const required = schema.required?.includes(key) ? " (required)" : "";
+          const type = typeof value === "object" && value.type ? ` : ${value.type}` : "";
+          return `${key}${type}${required}`;
+        });
+
+        return args.length > 0 ? args.join(", ") : "No arguments";
+      }
+
+      return JSON.stringify(schema, null, 2);
+    } catch {
+      return "Invalid schema";
+    }
   };
 
   const getLogoUrl = () => {
@@ -104,6 +174,59 @@ export const MCPCard = ({
             >
               {getDisplayValue() || "No configuration"}
             </CardDescription>
+            
+            {/* Tools section */}
+            {canLoadTools && (
+              <div className="mt-2">
+                {toolsLoading ? (
+                  <div className="flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span className="text-xs text-muted-foreground">Loading tools...</span>
+                  </div>
+                ) : toolsError ? (
+                  <div className="flex items-center gap-1">
+                    <WrenchIcon className="w-3 h-3 text-red-500" />
+                    <span className="text-xs text-red-500">Failed to load tools</span>
+                  </div>
+                ) : tools.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {tools.map((tool, index) => (
+                      <HoverCard key={index}>
+                        <HoverCardTrigger asChild>
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs cursor-help hover:bg-muted"
+                          >
+                            {tool.name}
+                          </Badge>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-80" side="top">
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold">{tool.name}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {tool.description}
+                            </p>
+                            {tool.inputSchema && (
+                              <div className="text-sm text-muted-foreground">
+                                <p className="font-semibold mb-1">Input Arguments:</p>
+                                <pre className="whitespace-pre-wrap font-mono text-xs bg-muted p-2 rounded">
+                                  {formatInputArgs(tool.inputSchema)}
+                                </pre>
+                                {tool.inputSchema?.required && Array.isArray(tool.inputSchema.required) && tool.inputSchema.required.length > 0 && (
+                                  <p className="mt-2 text-xs">
+                                    <strong>Required:</strong> {tool.inputSchema.required.join(", ")}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 ml-4 flex-shrink-0">

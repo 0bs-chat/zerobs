@@ -41,6 +41,7 @@ import type * as mcps_actions from "../mcps/actions.js";
 import type * as mcps_crud from "../mcps/crud.js";
 import type * as mcps_mutations from "../mcps/mutations.js";
 import type * as mcps_queries from "../mcps/queries.js";
+import type * as mcps_tools from "../mcps/tools.js";
 import type * as mcps_utils from "../mcps/utils.js";
 import type * as migrations from "../migrations.js";
 import type * as projectDocuments_mutations from "../projectDocuments/mutations.js";
@@ -106,6 +107,7 @@ declare const fullApi: ApiFromModules<{
   "mcps/crud": typeof mcps_crud;
   "mcps/mutations": typeof mcps_mutations;
   "mcps/queries": typeof mcps_queries;
+  "mcps/tools": typeof mcps_tools;
   "mcps/utils": typeof mcps_utils;
   migrations: typeof migrations;
   "projectDocuments/mutations": typeof projectDocuments_mutations;
