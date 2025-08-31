@@ -166,16 +166,31 @@ export const chat = action({
                       evt.data?.chunk?.additional_kwargs?.reasoning_content,
                   } as AIChunkGroup),
                 );
-              } else if (evt.event === "on_tool_start") {
-                buffer.push(
-                  JSON.stringify({
-                    type: "tool",
-                    toolName: evt.name,
-                    input: evt.data?.input,
-                    isComplete: false,
-                    toolCallId: evt.run_id,
-                  } as ToolChunkGroup),
-                );
+
+                if (evt.data?.chunk?.tool_call_chunks?.length > 0) {
+                  for (const toolCallChunk of evt.data.chunk.tool_call_chunks) {
+                    buffer.push(
+                      JSON.stringify({
+                        type: "tool",
+                        toolCallId: toolCallChunk.id, // Only the first chunk of this
+                        toolName: toolCallChunk.tool_name, // Only the first chunk of this
+                        index: toolCallChunk.index, // All chunks of this tool call will have the same index
+                        input: JSON.stringify(toolCallChunk.args), // proceeding chunks will have the input chunks (not accumulated, token by token)
+                        isComplete: false,
+                      } as ToolChunkGroup)
+                    );
+                  }
+                }
+              // } else if (evt.event === "on_tool_start") {
+              //   buffer.push(
+              //     JSON.stringify({
+              //       type: "tool",
+              //       toolName: evt.name,
+              //       input: evt.data?.input,
+              //       isComplete: false,
+              //       toolCallId: evt.run_id,
+              //     } as ToolChunkGroup),
+              //   );
               } else if (evt.event === "on_tool_end") {
                 let output = evt.data?.output.content;
 

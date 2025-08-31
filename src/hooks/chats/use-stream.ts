@@ -81,53 +81,67 @@ export function useStream(chatId: Id<"chats"> | "new") {
   // Convert chunk groups to LangChain messages
   const langchainMessages = useMemo(() => {
     if (!groupedChunks.length) return [];
-    
-    const completedIds = new Set(
-      groupedChunks
-        .filter((c) => c.type === "tool" && c.isComplete)
-        .map((c) => (c as ToolChunkGroup).toolCallId),
-    );
 
-    return groupedChunks
-      .map((chunk) => {
-        if (chunk.type === "ai") {
-          return new AIMessage({
-            content: chunk.content,
-            additional_kwargs: chunk.reasoning
-              ? { reasoning_content: chunk.reasoning }
-              : {},
-          });
+    // Track tool calls to avoid duplicates and ensure proper ordering
+    const processedToolCalls = new Map<string, {
+      incomplete?: ToolChunkGroup;
+      complete?: ToolChunkGroup;
+    }>();
+
+    // First pass: collect all tool chunks
+    for (const chunk of groupedChunks) {
+      if (chunk.type === "tool" && chunk.toolCallId) {
+        const existing = processedToolCalls.get(chunk.toolCallId) || {};
+        if (chunk.isComplete) {
+          existing.complete = chunk as ToolChunkGroup;
+        } else {
+          existing.incomplete = chunk as ToolChunkGroup;
         }
-        
-        if (chunk.type === "tool") {
-          if (chunk.isComplete) {
-            return new LangChainToolMessage({
-              content: chunk.output as string,
-              name: chunk.toolName,
-              tool_call_id: chunk.toolCallId,
-              additional_kwargs: {
-                input: JSON.parse(JSON.stringify(chunk.input)),
-                is_complete: true,
-              },
-            });
-          }
-          
-          if (!completedIds.has(chunk.toolCallId)) {
-            return new LangChainToolMessage({
-              name: chunk.toolName,
-              tool_call_id: chunk.toolCallId,
-              content: "",
-              additional_kwargs: {
-                input: JSON.parse(JSON.stringify(chunk.input)),
-                is_complete: false,
-              },
-            });
-          }
+        processedToolCalls.set(chunk.toolCallId, existing);
+      }
+    }
+
+    const messages: (AIMessage | LangChainToolMessage)[] = [];
+
+    // Second pass: convert chunks to messages
+    for (const chunk of groupedChunks) {
+      if (chunk.type === "ai") {
+        messages.push(new AIMessage({
+          content: chunk.content,
+          additional_kwargs: chunk.reasoning
+            ? { reasoning_content: chunk.reasoning }
+            : {},
+        }));
+      } else if (chunk.type === "tool" && chunk.toolCallId) {
+        const toolCallData = processedToolCalls.get(chunk.toolCallId);
+
+        if (chunk.isComplete && chunk.toolName && chunk.toolCallId) {
+          // Always include complete tool messages
+          messages.push(new LangChainToolMessage({
+            content: chunk.output as string,
+            name: chunk.toolName,
+            tool_call_id: chunk.toolCallId,
+            additional_kwargs: {
+              input: JSON.parse(JSON.stringify(chunk.input)),
+              is_complete: true,
+            },
+          }));
+        } else if (toolCallData && !toolCallData.complete && chunk.toolName && chunk.toolCallId) {
+          // Only include incomplete tool messages if we haven't seen the complete version yet
+          messages.push(new LangChainToolMessage({
+            name: chunk.toolName,
+            tool_call_id: chunk.toolCallId,
+            content: "",
+            additional_kwargs: {
+              input: JSON.parse(JSON.stringify(chunk.input)),
+              is_complete: false,
+            },
+          }));
         }
-        
-        return undefined;
-      })
-      .filter(Boolean) as (AIMessage | LangChainToolMessage)[];
+      }
+    }
+
+    return messages;
   }, [groupedChunks]);
 
   // Generate planning steps message
