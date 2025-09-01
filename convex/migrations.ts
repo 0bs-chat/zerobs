@@ -91,5 +91,29 @@ export const setPerChatToFalse = migrations.define({
   },
 });
 
-export const runIt = migrations.runner(internal.migrations.setPerChatToFalse);
-// bunx convex run convex/migrations.ts:runIt
+// export const removeStatusFieldFromMcps = migrations.define({
+//   table: "mcps",
+//   migrateOne: async (ctx, doc) => {
+//     if (doc.status !== undefined) {
+//       await ctx.db.patch(doc._id, { status: undefined });
+//     }
+//   },
+// });
+
+// export const removeUrlFieldFromMcps = migrations.define({
+//   table: "mcps",
+//   migrateOne: async (ctx, doc) => {
+//     if (doc.url !== undefined) {
+//       await ctx.db.patch(doc._id, { url: undefined });
+//     }
+//   },
+// });
+
+// export const runIt = migrations.runner(internal.migrations.setPerChatToFalse);
+// // bunx convex run convex/migrations.ts:runIt
+
+// export const runRemoveStatusMigration = migrations.runner(internal.migrations.removeStatusFieldFromMcps);
+// // bunx convex run convex/migrations.ts:runRemoveStatusMigration
+
+// export const runRemoveUrlMigration = migrations.runner(internal.migrations.removeUrlFieldFromMcps);
+// // bunx convex run convex/migrations.ts:runRemoveUrlMigration
