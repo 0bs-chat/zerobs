@@ -2,22 +2,22 @@ import { components } from "./_generated/api";
 import { Autumn } from "@useautumn/convex";
 
 export const autumn = new Autumn(components.autumn, {
-	secretKey: process.env.AUTUMN_SECRET_KEY ?? "",
-	identify: async (ctx: any) => {
-		let user = await ctx.auth.getUserIdentity();
+  secretKey: process.env.AUTUMN_SECRET_KEY ?? "",
+  identify: async (ctx: any) => {
+    let user = await ctx.auth.getUserIdentity();
 
-		if (!user) return null
+    if (!user) return null;
 
-		let userId = user.subject.split('|')[0];
+    let userId = user.subject.split("|")[0];
 
-		return {
-			customerId: userId as string,
-			customerData: {
-				name: user.name as string,
-				email: user.email as string,
-			},
-		};
-	},
+    return {
+      customerId: userId as string,
+      customerData: {
+        name: user.name as string,
+        email: user.email as string,
+      },
+    };
+  },
 });
 
 /**
@@ -45,12 +45,16 @@ export const {
 /**
  * Custom track function for internal actions that don't have auth context
  */
-export const trackInternal = async (customerId: string, featureId: string, value: number) => {
+export const trackInternal = async (
+  customerId: string,
+  featureId: string,
+  value: number,
+) => {
   // Use the Autumn client directly to track usage with customerId
   const response = await fetch("https://api.useautumn.com/v1/track", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${process.env.AUTUMN_SECRET_KEY}`,
+      Authorization: `Bearer ${process.env.AUTUMN_SECRET_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -59,20 +63,24 @@ export const trackInternal = async (customerId: string, featureId: string, value
       value: value,
     }),
   });
-  
+
   if (!response.ok) {
     throw new Error(`Failed to track usage: ${response.statusText}`);
   }
-  
+
   return response.json();
 };
 
-export const checkInternal = async (customerId: string, featureId: string, requiredQuantity?: number) => {
+export const checkInternal = async (
+  customerId: string,
+  featureId: string,
+  requiredQuantity?: number,
+) => {
   // Use the Autumn client directly to check usage with customerId
   const response = await fetch("https://api.useautumn.com/v1/check", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${process.env.AUTUMN_SECRET_KEY}`,
+      Authorization: `Bearer ${process.env.AUTUMN_SECRET_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -89,7 +97,11 @@ export const checkInternal = async (customerId: string, featureId: string, requi
   return response.json();
 };
 
-export const billFirst = async (customerId: string, featureId: string, value: number) => {
+export const billFirst = async (
+  customerId: string,
+  featureId: string,
+  value: number,
+) => {
   // Immediately bill the customer
   await trackInternal(customerId, featureId, value);
   return {
@@ -99,7 +111,12 @@ export const billFirst = async (customerId: string, featureId: string, value: nu
   };
 };
 
-export const deductOnFailure = async (customerId: string, featureId: string, billId: string, value: number) => {
+export const deductOnFailure = async (
+  customerId: string,
+  featureId: string,
+  billId: string,
+  value: number,
+) => {
   // Deduct the billed amount (negative value)
   await trackInternal(customerId, featureId, -value);
   return {
@@ -113,7 +130,7 @@ export const executeWithBilling = async <T>(
   customerId: string,
   featureId: string,
   value: number,
-  operation: () => Promise<T>
+  operation: () => Promise<T>,
 ): Promise<T> => {
   // Bill first
   const bill = await billFirst(customerId, featureId, value);

@@ -19,7 +19,8 @@ export const getRetrievalTools = async (
 ) => {
   const vectorSearchTool = new DynamicStructuredTool({
     name: "searchProjectDocuments",
-    description: "Search through project documents using semantic similarity with multiple queries (1-5). Finds relevant information from uploaded project documents based on meaning rather than exact matches.",
+    description:
+      "Search through project documents using semantic similarity with multiple queries (1-5). Finds relevant information from uploaded project documents based on meaning rather than exact matches.",
     schema: z.object({
       queries: z
         .array(z.string())
@@ -52,21 +53,17 @@ export const getRetrievalTools = async (
 
       // Perform similarity search for each query in parallel, filtering by selected documents
       const searchPromises = queries.map(async (query) => {
-        const results = await vectorStore.similaritySearch(
-          query,
-          10,
-          {
-            filter: (q) =>
-              q.or(
-                // Assuming documentId is stored in the `source` field of metadata
-                ...includedProjectDocuments.map((document) =>
-                  q.eq("metadata", {
-                    source: document.documentId,
-                  }),
-                ),
+        const results = await vectorStore.similaritySearch(query, 10, {
+          filter: (q) =>
+            q.or(
+              // Assuming documentId is stored in the `source` field of metadata
+              ...includedProjectDocuments.map((document) =>
+                q.eq("metadata", {
+                  source: document.documentId,
+                }),
               ),
-          },
-        );
+            ),
+        });
 
         // Add query metadata to results
         return results.map((doc) => ({
@@ -77,7 +74,7 @@ export const getRetrievalTools = async (
 
       const allResultsArrays = await Promise.all(searchPromises);
       const allResults = allResultsArrays.flat();
-      
+
       const documentsMap = new Map<Id<"documents">, Doc<"documents">>();
       includedProjectDocuments.forEach((projectDocument) =>
         documentsMap.set(projectDocument.documentId, projectDocument.document!),
@@ -115,7 +112,8 @@ export const getRetrievalTools = async (
 
   const webSearchTool = new DynamicStructuredTool({
     name: "searchWeb",
-    description: "Search the web for current information using multiple queries (3-5). Access real-time web content including news, research papers, company information, and technical documentation.",
+    description:
+      "Search the web for current information using multiple queries (3-5). Access real-time web content including news, research papers, company information, and technical documentation.",
     schema: z.object({
       queries: z
         .array(z.string())
@@ -162,16 +160,14 @@ export const getRetrievalTools = async (
 
         // Perform web search for all queries in parallel
         const searchPromises = queries.map(async (query) => {
-          const searchResponse = (
-            console.log(query),
-            await exa.searchAndContents(query, {
-              numResults: 10,
-              type: "auto",
-              useAutoprompt: false,
-              topic: topic,
-              text: true,
-            })
-          ).results;
+          const searchResponse = (console.log(query),
+          await exa.searchAndContents(query, {
+            numResults: 10,
+            type: "auto",
+            useAutoprompt: false,
+            topic: topic,
+            text: true,
+          })).results;
           console.log(searchResponse.length);
 
           // Create LangChain Document objects from Exa search results

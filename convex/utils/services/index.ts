@@ -103,36 +103,39 @@ export const processUrlOrSite = internalAction({
     if (FIRECRAWL_API_KEY) {
       try {
         const firecrawl = new Firecrawl({ apiKey: FIRECRAWL_API_KEY });
-        
+
         // Use scrape for single page (maxDepth 0), crawl for multi-page
         if (args.maxDepth === 0) {
           const scrapeResponse = await firecrawl.scrape(args.url, {
-            formats: ['markdown'],
+            formats: ["markdown"],
           });
 
           if (scrapeResponse.markdown) {
             if (scrapeResponse.metadata?.title) {
               await ctx.runMutation(internal.documents.crud.update, {
                 id: args.documentId,
-                patch: { 
-                  name: scrapeResponse.metadata?.title
+                patch: {
+                  name: scrapeResponse.metadata?.title,
                 },
               });
             }
-            
+
             return `### ${scrapeResponse.metadata?.sourceURL || args.url}\n${scrapeResponse.markdown}\n`;
           } else {
-            throw new Error('Firecrawl scrape failed: No markdown content');
+            throw new Error("Firecrawl scrape failed: No markdown content");
           }
         } else {
           const crawlResponse = await firecrawl.crawl(args.url, {
             limit: Math.pow(10, args.maxDepth), // Convert depth to page limit
-            scrapeOptions: { formats: ['markdown'] },
+            scrapeOptions: { formats: ["markdown"] },
             pollInterval: 2,
           });
 
-          if (crawlResponse.status === 'completed' && crawlResponse.data) {
-            if (crawlResponse.data.length > 0 && crawlResponse.data[0].metadata?.title) {
+          if (crawlResponse.status === "completed" && crawlResponse.data) {
+            if (
+              crawlResponse.data.length > 0 &&
+              crawlResponse.data[0].metadata?.title
+            ) {
               await ctx.runMutation(internal.documents.crud.update, {
                 id: args.documentId,
                 patch: { name: crawlResponse.data[0].metadata?.title },
@@ -140,14 +143,22 @@ export const processUrlOrSite = internalAction({
             }
 
             return crawlResponse.data
-              .map((page) => `### ${page.metadata?.sourceURL || args.url}\n${page.markdown}\n`)
+              .map(
+                (page) =>
+                  `### ${page.metadata?.sourceURL || args.url}\n${page.markdown}\n`,
+              )
               .join("\n");
           } else {
-            throw new Error(`Firecrawl crawl failed with status: ${crawlResponse.status}`);
+            throw new Error(
+              `Firecrawl crawl failed with status: ${crawlResponse.status}`,
+            );
           }
         }
       } catch (error) {
-        console.error("Firecrawl error, falling back to legacy crawler:", error);
+        console.error(
+          "Firecrawl error, falling back to legacy crawler:",
+          error,
+        );
         // Fall back to original implementation
       }
     }

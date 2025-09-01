@@ -1,7 +1,7 @@
 import { verifyJwt, createJwt } from "../utils/encryption";
-import { 
-  getTemplateConfigurableEnvs, 
-  getTemplateAuthTokenKey 
+import {
+  getTemplateConfigurableEnvs,
+  getTemplateAuthTokenKey,
 } from "./templateHelpers";
 import { makeFunctionReference } from "convex/server";
 import type { ActionCtx, MutationCtx, QueryCtx } from "../_generated/server";
@@ -109,7 +109,9 @@ export async function resolveConfigurableEnvs(
   return configurableEnvValues;
 }
 
-export async function validateMcpForDeployment(mcp: Doc<"mcps">): Promise<void> {
+export async function validateMcpForDeployment(
+  mcp: Doc<"mcps">,
+): Promise<void> {
   if (!mcp.enabled) {
     throw new Error("MCP is not enabled");
   }
@@ -138,9 +140,7 @@ export async function getOrCreateFlyApp(appName: string): Promise<any> {
   return app;
 }
 
-export async function createMcpAuthToken(
-  mcp: Doc<"mcps">,
-): Promise<string> {
+export async function createMcpAuthToken(mcp: Doc<"mcps">): Promise<string> {
   let authToken = null;
   if (mcp.template) {
     const authTokenKey = getTemplateAuthTokenKey(mcp.template);
@@ -149,13 +149,9 @@ export async function createMcpAuthToken(
     }
   }
 
-  return authToken ||
-    (await createJwt(
-      "OAUTH_TOKEN",
-      mcp._id,
-      mcp.userId,
-      true,
-    ));
+  return (
+    authToken || (await createJwt("OAUTH_TOKEN", mcp._id, mcp.userId, true))
+  );
 }
 
 export async function handleMcpActionError(

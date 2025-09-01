@@ -52,7 +52,9 @@ export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
   undefined,
 );
 export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
-export const selectedVibzMcpAtom = atom<Doc<"mcps"> & { apps?: Doc<"mcpApps">[] } | undefined>(undefined);
+export const selectedVibzMcpAtom = atom<
+  (Doc<"mcps"> & { apps?: Doc<"mcpApps">[] }) | undefined
+>(undefined);
 
 export const pinnedChatsAccordionOpenAtom = atomWithStorage(
   "pinnedChatsAccordionOpen",
@@ -165,5 +167,8 @@ export type MCPTool = {
   inputSchema: any;
 };
 
-export type MCPToolsData = Record<string, { tools: MCPTool[]; error: string | null }>;
+export type MCPToolsData = Record<
+  string,
+  { tools: MCPTool[]; error: string | null }
+>;
 export const mcpToolsAtom = atom<MCPToolsData>({});

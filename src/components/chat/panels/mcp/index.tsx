@@ -1,5 +1,9 @@
 import { MCPCard } from "./mcp-card";
-import { useMCPsData, useMCPMutations, getMcpAppData } from "@/hooks/chats/use-mcp";
+import {
+  useMCPsData,
+  useMCPMutations,
+  getMcpAppData,
+} from "@/hooks/chats/use-mcp";
 import { MCPDialog } from "./mcp-dialog";
 import { useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
@@ -18,40 +22,46 @@ export const MCPPanel = () => {
   useEffect(() => {
     if (!mcps || mcps.length === 0) return;
 
-    const enabledMcpsWithUrl = mcps.filter(mcp => {
+    const enabledMcpsWithUrl = mcps.filter((mcp) => {
       const { url, status } = getMcpAppData(mcp);
       return mcp.enabled && url && status === "created";
     });
-    
+
     if (enabledMcpsWithUrl.length === 0) return;
 
-    const mcpIds = enabledMcpsWithUrl.map(mcp => mcp._id);
-    
+    const mcpIds = enabledMcpsWithUrl.map((mcp) => mcp._id);
+
     // Only fetch if we don't already have data for these MCPs
-    const needsFetch = mcpIds.some(id => !(id in mcpTools));
+    const needsFetch = mcpIds.some((id) => !(id in mcpTools));
     if (!needsFetch) return;
 
     getMCPToolsAction({ mcpIds })
       .then((batchResults) => {
-        setMcpTools(prev => ({
+        setMcpTools((prev) => ({
           ...prev,
-          ...batchResults
+          ...batchResults,
         }));
       })
       .catch((error) => {
         console.error("Error fetching MCP tools batch:", error);
         // Set error state for all requested MCPs
-        const errorResults = mcpIds.reduce((acc, mcpId) => {
-          acc[mcpId] = { 
-            tools: [], 
-            error: error instanceof Error ? error.message : "Failed to fetch tools"
-          };
-          return acc;
-        }, {} as typeof mcpTools);
-        
-        setMcpTools(prev => ({
+        const errorResults = mcpIds.reduce(
+          (acc, mcpId) => {
+            acc[mcpId] = {
+              tools: [],
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to fetch tools",
+            };
+            return acc;
+          },
+          {} as typeof mcpTools,
+        );
+
+        setMcpTools((prev) => ({
           ...prev,
-          ...errorResults
+          ...errorResults,
         }));
       });
   }, [mcps, getMCPToolsAction, mcpTools, setMcpTools]);

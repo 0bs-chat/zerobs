@@ -174,5 +174,5 @@ export default defineSchema({
   mcpApps: McpApps.table
     .index("by_mcp", ["mcpId"])
     .index("by_chat", ["chatId"]),
-  streamChunkRefs: StreamChunkRefs.table.index("by_stream", ["streamId"])
+  streamChunkRefs: StreamChunkRefs.table.index("by_stream", ["streamId"]),
 });

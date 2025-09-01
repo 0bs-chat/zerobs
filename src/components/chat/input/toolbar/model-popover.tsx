@@ -284,9 +284,12 @@ export function ModelPopover({
   const modelRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Ref callback for model items
-  const setModelRef = useCallback((index: number, el: HTMLDivElement | null) => {
-    modelRefs.current[index] = el;
-  }, []);
+  const setModelRef = useCallback(
+    (index: number, el: HTMLDivElement | null) => {
+      modelRefs.current[index] = el;
+    },
+    [],
+  );
   const toolSupportTag = getTagInfo("toolSupport");
   const thinkingTagInfo = getTagInfo("thinking");
 
@@ -361,9 +364,9 @@ export function ModelPopover({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl+M to toggle popover
-      if (e.ctrlKey && e.key === 'm') {
+      if (e.ctrlKey && e.key === "m") {
         e.preventDefault();
-        setPopoverOpen(prev => !prev);
+        setPopoverOpen((prev) => !prev);
         return;
       }
 
@@ -381,25 +384,28 @@ export function ModelPopover({
       if (!popoverOpen) return;
 
       switch (e.key) {
-        case 'ArrowDown':
+        case "ArrowDown":
           e.preventDefault();
-          setHighlightedIndex(prev =>
-            prev < filteredModels.length - 1 ? prev + 1 : 0
+          setHighlightedIndex((prev) =>
+            prev < filteredModels.length - 1 ? prev + 1 : 0,
           );
           break;
-        case 'ArrowUp':
+        case "ArrowUp":
           e.preventDefault();
-          setHighlightedIndex(prev =>
-            prev > 0 ? prev - 1 : filteredModels.length - 1
+          setHighlightedIndex((prev) =>
+            prev > 0 ? prev - 1 : filteredModels.length - 1,
           );
           break;
-        case 'Enter':
+        case "Enter":
           e.preventDefault();
-          if (highlightedIndex >= 0 && highlightedIndex < filteredModels.length) {
+          if (
+            highlightedIndex >= 0 &&
+            highlightedIndex < filteredModels.length
+          ) {
             handleModelSelect(filteredModels[highlightedIndex].model_name);
           }
           break;
-        case 'Escape':
+        case "Escape":
           e.preventDefault();
           setPopoverOpen(false);
           setHighlightedIndex(-1);
@@ -409,16 +415,26 @@ export function ModelPopover({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [popoverOpen, highlightedIndex, filteredModels, handleModelSelect, selectModelByIndex]);
+  }, [
+    popoverOpen,
+    highlightedIndex,
+    filteredModels,
+    handleModelSelect,
+    selectModelByIndex,
+  ]);
 
   // Scroll to highlighted model when index changes
   useEffect(() => {
-    if (popoverOpen && highlightedIndex >= 0 && highlightedIndex < modelRefs.current.length) {
+    if (
+      popoverOpen &&
+      highlightedIndex >= 0 &&
+      highlightedIndex < modelRefs.current.length
+    ) {
       const element = modelRefs.current[highlightedIndex];
       element?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'nearest'
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest",
       });
     }
   }, [popoverOpen, highlightedIndex]);
@@ -472,7 +488,9 @@ export function ModelPopover({
                 className={`flex items-center gap-2 px-3 py-3 cursor-pointer rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
                   model.model_name === selectedModel ? "bg-accent/20" : ""
                 } ${
-                  index === highlightedIndex ? "bg-accent/30 ring-1 ring-accent" : ""
+                  index === highlightedIndex
+                    ? "bg-accent/30 ring-1 ring-accent"
+                    : ""
                 }`}
                 onClick={() => handleModelSelect(model.model_name)}
                 onMouseEnter={() => setHighlightedIndex(index)}
@@ -537,7 +555,9 @@ export function ModelPopover({
                   {/* Usage Rate Multiplier */}
                   {model.usageRateMultiplier !== 1.0 && (
                     <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground">
-                      <span className="font-medium">{model.usageRateMultiplier}x</span>
+                      <span className="font-medium">
+                        {model.usageRateMultiplier}x
+                      </span>
                     </div>
                   )}
                 </div>

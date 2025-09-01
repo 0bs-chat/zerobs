@@ -11,9 +11,9 @@ import {
   AIMessage,
   mapChatMessagesToStoredMessages,
 } from "@langchain/core/messages";
-import { 
-  groupStreamChunks, 
-  convertChunksToLangChainMessages 
+import {
+  groupStreamChunks,
+  convertChunksToLangChainMessages,
 } from "../../../convex/chatMessages/helpers";
 
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
@@ -49,9 +49,9 @@ export function useStream(chatId: Id<"chats"> | "new") {
     const allChunks = chunksResult.chunks.page
       .sort((a, b) => a._creationTime - b._creationTime)
       .flatMap((chunkDoc) =>
-        chunkDoc.chunks.map((chunkStr: string) => 
-          JSON.parse(chunkStr) as ChunkGroup
-        )
+        chunkDoc.chunks.map(
+          (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup,
+        ),
       );
 
     // Use helper function to group chunks intelligently
@@ -61,7 +61,7 @@ export function useStream(chatId: Id<"chats"> | "new") {
   // Convert chunk groups to LangChain messages
   const langchainMessages = useMemo(() => {
     if (!groupedChunks.length) return [];
-    
+
     // Use helper function to convert chunks to LangChain messages
     return convertChunksToLangChainMessages(groupedChunks);
   }, [groupedChunks]);

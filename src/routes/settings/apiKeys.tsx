@@ -212,7 +212,8 @@ const API_KEY_CONFIGS: ApiKeyConfig[] = [
     title: "Firecrawl API Key",
     description: (
       <>
-        Required for enhanced web crawling and scraping capabilities. Get your API key from{" "}
+        Required for enhanced web crawling and scraping capabilities. Get your
+        API key from{" "}
         <ExternalLink href="https://firecrawl.dev">Firecrawl</ExternalLink>
       </>
     ),

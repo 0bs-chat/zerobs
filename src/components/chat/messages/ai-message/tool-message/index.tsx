@@ -67,16 +67,18 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
     );
   }
   if (parsedContent.type === "document") {
-    return <DocumentResultDisplay results={parsedContent.results} input={input} />;
+    return (
+      <DocumentResultDisplay results={parsedContent.results} input={input} />
+    );
   }
 
   // MIXED: files + text blocks
   if (parsedContent.type === "mixed") {
     const images = parsedContent.content.filter(
-      (item) => item.type === "file" && item.file?.file_id
+      (item) => item.type === "file" && item.file?.file_id,
     );
     const nonImageContent = parsedContent.content.filter(
-      (item) => !(item.type === "file" && item.file?.file_id)
+      (item) => !(item.type === "file" && item.file?.file_id),
     );
 
     return (
@@ -108,7 +110,7 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
             </div>
           )}
         </ToolAccordion>
-        
+
         {images.length > 0 && (
           <div className="flex flex-col gap-2">
             {images.map((item, idx) => (

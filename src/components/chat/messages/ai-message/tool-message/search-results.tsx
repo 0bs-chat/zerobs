@@ -70,15 +70,11 @@ export const SearchResultDisplay = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="text-xs text-muted-foreground flex items-center gap-2 cursor-help">
-                    {input?.queries ? (
-                      input.queries.length === 1 ? (
-                        input.queries[0]
-                      ) : (
-                        `${input.queries.length} queries`
-                      )
-                    ) : (
-                      input?.query as string
-                    )}
+                    {input?.queries
+                      ? input.queries.length === 1
+                        ? input.queries[0]
+                        : `${input.queries.length} queries`
+                      : (input?.query as string)}
                     {input?.topic && (
                       <span className="text-primary/70">• {input.topic}</span>
                     )}
@@ -89,7 +85,9 @@ export const SearchResultDisplay = ({
                   <div className="space-y-2">
                     {input?.queries ? (
                       <>
-                        <div className="font-medium text-sm">Search Queries:</div>
+                        <div className="font-medium text-sm">
+                          Search Queries:
+                        </div>
                         <ul className="space-y-1 text-xs">
                           {input.queries.map((query: string, index: number) => (
                             <li key={index} className="flex items-start gap-2">
@@ -103,7 +101,10 @@ export const SearchResultDisplay = ({
                         {input?.topic && (
                           <div className="pt-2 border-t border-border">
                             <span className="text-xs text-muted-foreground">
-                              Topic: <span className="text-foreground font-medium">{input.topic}</span>
+                              Topic:{" "}
+                              <span className="text-foreground font-medium">
+                                {input.topic}
+                              </span>
                             </span>
                           </div>
                         )}
@@ -111,7 +112,9 @@ export const SearchResultDisplay = ({
                     ) : (
                       <div>
                         <div className="font-medium text-sm">Search Query:</div>
-                        <div className="text-xs mt-1 break-words">{input?.query as string}</div>
+                        <div className="text-xs mt-1 break-words">
+                          {input?.query as string}
+                        </div>
                       </div>
                     )}
                   </div>

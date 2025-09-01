@@ -47,7 +47,12 @@ import { useAgentSettings } from "@/hooks/chats/use-agent-settings";
 import { useApiKeys } from "@/hooks/use-apikeys";
 import { toast } from "sonner";
 import { motion } from "motion/react";
-import { buttonHover, smoothTransition, scaleIn, iconSpinVariants } from "@/lib/motion";
+import {
+  buttonHover,
+  smoothTransition,
+  scaleIn,
+  iconSpinVariants,
+} from "@/lib/motion";
 
 export const ToolBar = () => {
   const chatId = useAtomValue(chatIdAtom);
@@ -73,7 +78,8 @@ export const ToolBar = () => {
   const isProjectRoute = router.state.location.pathname.startsWith("/project/");
   const setResizePanelOpen = useSetAtom(resizePanelOpenAtom);
   const setSelectedPanelTab = useSetAtom(selectedPanelTabAtom);
-  const { handleToggle: handleAgentToggle, getEnabledSettings } = useAgentSettings();
+  const { handleToggle: handleAgentToggle, getEnabledSettings } =
+    useAgentSettings();
   useApiKeys();
 
   // Get project details if chat has a project
@@ -155,12 +161,13 @@ export const ToolBar = () => {
         </DropdownMenu>
         <AgentPopover />
         <ToolToggles />
-        
+
         {/* Agent toggle quick-cancel buttons */}
         {getEnabledSettings().map((setting) => {
           const IconComponent = setting.icon;
-          const animationVariant = setting.animation === "scale" ? scaleIn : iconSpinVariants;
-          
+          const animationVariant =
+            setting.animation === "scale" ? scaleIn : iconSpinVariants;
+
           return (
             <Button
               key={setting.key}

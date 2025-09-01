@@ -50,7 +50,6 @@ const isTool = (m: MessageWithBranchInfo) => getType(m) === "tool";
 
 const parsedMessageCache = new Map<string, BaseMessage>();
 
-
 const toBaseMessage = (doc: Doc<"chatMessages">): BaseMessage => {
   const cached = parsedMessageCache.get(doc.message);
   if (cached) return cached;
@@ -142,7 +141,7 @@ export const buildThreadFromMessages = (
 
     // Get children of the selected node
     current = idx.children.get(selectedNode._id) ?? [];
-    
+
     // Include ALL children when there are multiple (this captures tool messages)
     if (current.length > 1) {
       // Add all children at this level
@@ -176,7 +175,7 @@ export const buildThreadFromMessages = (
       depth += 1; // Increment depth here since we added the child
       continue; // Skip the depth increment at the end of the loop
     }
-    
+
     depth += 1;
   }
 
@@ -256,7 +255,6 @@ const computeLatestPath = (
   return latestPath;
 };
 
-
 export const buildThreadAndGroups = (
   messages: Doc<"chatMessages">[],
   path: number[],
@@ -294,7 +292,9 @@ export function getThreadFromMessage(
   return chain.reverse().map((m) => ({ ...m, message: toBaseMessage(m) }));
 }
 
-export function groupStreamChunks(chunks: (AIChunkGroup | ToolChunkGroup)[]): (AIChunkGroup | ToolChunkGroup)[] {
+export function groupStreamChunks(
+  chunks: (AIChunkGroup | ToolChunkGroup)[],
+): (AIChunkGroup | ToolChunkGroup)[] {
   const groups: (AIChunkGroup | ToolChunkGroup)[] = [];
   let currentGroup: (AIChunkGroup | ToolChunkGroup) | null = null;
 
@@ -303,7 +303,8 @@ export function groupStreamChunks(chunks: (AIChunkGroup | ToolChunkGroup)[]): (A
       if (currentGroup?.type === "ai") {
         currentGroup.content += chunk.content;
         if (chunk.reasoning) {
-          currentGroup.reasoning = (currentGroup.reasoning ?? "") + chunk.reasoning;
+          currentGroup.reasoning =
+            (currentGroup.reasoning ?? "") + chunk.reasoning;
         }
       } else {
         currentGroup = { ...chunk };
@@ -319,7 +320,7 @@ export function groupStreamChunks(chunks: (AIChunkGroup | ToolChunkGroup)[]): (A
 }
 
 export function convertChunksToLangChainMessages(
-  groups: (AIChunkGroup | ToolChunkGroup)[]
+  groups: (AIChunkGroup | ToolChunkGroup)[],
 ): (AIMessage | LangChainToolMessage)[] {
   const completedIds = new Set(
     groups
@@ -337,7 +338,7 @@ export function convertChunksToLangChainMessages(
             : {},
         });
       }
-      
+
       if (chunk.type === "tool") {
         if (chunk.isComplete) {
           return new LangChainToolMessage({
@@ -350,7 +351,7 @@ export function convertChunksToLangChainMessages(
             },
           });
         }
-        
+
         if (!completedIds.has(chunk.toolCallId)) {
           return new LangChainToolMessage({
             name: chunk.toolName,
@@ -363,15 +364,19 @@ export function convertChunksToLangChainMessages(
           });
         }
       }
-      
+
       return undefined;
     })
     .filter(Boolean) as (AIMessage | LangChainToolMessage)[];
 }
 
-export function processBufferToMessages(accumulatedBuffer: string[]): (AIMessage | LangChainToolMessage)[] {
+export function processBufferToMessages(
+  accumulatedBuffer: string[],
+): (AIMessage | LangChainToolMessage)[] {
   if (accumulatedBuffer.length === 0) return [];
-  const chunks = accumulatedBuffer.map(chunkStr => JSON.parse(chunkStr) as (AIChunkGroup | ToolChunkGroup));
+  const chunks = accumulatedBuffer.map(
+    (chunkStr) => JSON.parse(chunkStr) as AIChunkGroup | ToolChunkGroup,
+  );
   const groups = groupStreamChunks(chunks);
   return convertChunksToLangChainMessages(groups);
 }

@@ -65,12 +65,16 @@ export const create = mutation({
 
     const numInserts = args.perChat ? 2 : 1;
     await Promise.all(
-      Array.from({ length: numInserts }, async () => await ctx.db.insert("mcpApps", {
-        mcpId: newMCPId,
-        chatId: undefined,
-        url: args.url,
-        status: args.type === "http" ? "created" : "pending",
-      }))
+      Array.from(
+        { length: numInserts },
+        async () =>
+          await ctx.db.insert("mcpApps", {
+            mcpId: newMCPId,
+            chatId: undefined,
+            url: args.url,
+            status: args.type === "http" ? "created" : "pending",
+          }),
+      ),
     );
 
     if (args.type !== "http") {
@@ -128,11 +132,8 @@ export const remove = mutation({
         userId: mcp.userId!,
       });
     }
-    
-    await Promise.all(
-      mcp.apps!.map((mcpApp) => ctx.db.delete(mcpApp._id))
-    );
 
+    await Promise.all(mcp.apps!.map((mcpApp) => ctx.db.delete(mcpApp._id)));
 
     await ctx.db.delete(args.mcpId);
 
@@ -159,8 +160,8 @@ export const batchToggle = mutation({
         ctx.db.patch(mcp._id, {
           enabled: args.enabled,
           updatedAt: Date.now(),
-        })
-      )
+        }),
+      ),
     );
 
     return mcps.length; // Return number of MCPs updated
@@ -179,7 +180,9 @@ export const assignAppToChat = internalMutation({
     });
 
     // First check if there's already an assigned app for this chat
-    const existingAssignment = mcp.apps?.find((app) => app.chatId === args.chatId);
+    const existingAssignment = mcp.apps?.find(
+      (app) => app.chatId === args.chatId,
+    );
 
     if (existingAssignment) {
       return existingAssignment;
@@ -199,14 +202,16 @@ export const assignAppToChat = internalMutation({
 
     if (unassignedApps.length < 2) {
       const numCreate = Math.min(2 - unassignedApps.length, 1);
-      await Promise.all(Array.from({ length: numCreate }, async () => {
-        await ctx.runMutation(internal.mcps.crud.createMcpApp, {
-          mcpId: args.mcpId,
-          chatId: args.chatId,
-          url: "",
-          status: "pending",
-        });
-      }));
+      await Promise.all(
+        Array.from({ length: numCreate }, async () => {
+          await ctx.runMutation(internal.mcps.crud.createMcpApp, {
+            mcpId: args.mcpId,
+            chatId: args.chatId,
+            url: "",
+            status: "pending",
+          });
+        }),
+      );
       await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
         mcpId: args.mcpId,
         userId: mcp.userId!,

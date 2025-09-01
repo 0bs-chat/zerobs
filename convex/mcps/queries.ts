@@ -11,8 +11,10 @@ export const getInternal = internalQuery({
     includeApps: v.optional(v.boolean()),
     userId: v.string(),
   },
-  handler: async (ctx, args): Promise<Doc<"mcps"> & { apps?: Doc<"mcpApps">[] }> => {
-
+  handler: async (
+    ctx,
+    args,
+  ): Promise<Doc<"mcps"> & { apps?: Doc<"mcpApps">[] }> => {
     const mcp = await ctx.db.get(args.mcpId);
 
     if (!mcp || mcp.userId !== args.userId) {
@@ -21,7 +23,10 @@ export const getInternal = internalQuery({
 
     let apps: Doc<"mcpApps">[] = [];
     if (args.includeApps) {
-      apps = await ctx.db.query("mcpApps").withIndex("by_mcp", (q) => q.eq("mcpId", args.mcpId)).collect();
+      apps = await ctx.db
+        .query("mcpApps")
+        .withIndex("by_mcp", (q) => q.eq("mcpId", args.mcpId))
+        .collect();
     }
 
     return {
@@ -37,7 +42,10 @@ export const get = query({
     mcpId: v.id("mcps"),
     includeApps: v.optional(v.boolean()),
   },
-  handler: async (ctx, args): Promise<Doc<"mcps"> & { apps?: Doc<"mcpApps">[] }> => {
+  handler: async (
+    ctx,
+    args,
+  ): Promise<Doc<"mcps"> & { apps?: Doc<"mcpApps">[] }> => {
     const { userId } = await requireAuth(ctx);
     return await ctx.runQuery(internal.mcps.queries.getInternal, {
       mcpId: args.mcpId,
@@ -66,11 +74,15 @@ export const getAll = query({
         args.filters?.enabled === undefined
           ? true
           : q.eq(q.field("enabled"), args.filters.enabled),
-      ).collect();
+      )
+      .collect();
 
     const page = await Promise.all(
       mcps.map(async (mcp) => {
-        const apps = await ctx.db.query("mcpApps").withIndex("by_mcp", (q) => q.eq("mcpId", mcp._id)).collect();
+        const apps = await ctx.db
+          .query("mcpApps")
+          .withIndex("by_mcp", (q) => q.eq("mcpId", mcp._id))
+          .collect();
         return {
           ...mcp,
           env: await verifyEnv(mcp.env!),
@@ -88,7 +100,10 @@ export const getAssignedMcpAppForChat = query({
     mcpId: v.id("mcps"),
     chatId: v.id("chats"),
   },
-  handler: async (ctx, args): Promise<Doc<"mcps"> & { apps?: Doc<"mcpApps">[] } | null> => {
+  handler: async (
+    ctx,
+    args,
+  ): Promise<(Doc<"mcps"> & { apps?: Doc<"mcpApps">[] }) | null> => {
     const { userId } = await requireAuth(ctx);
 
     // Get the MCP to verify ownership

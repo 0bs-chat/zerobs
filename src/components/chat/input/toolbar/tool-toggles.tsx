@@ -5,9 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  WrenchIcon,
-} from "lucide-react";
+import { WrenchIcon } from "lucide-react";
 import { useMCPsData, useMCPMutations } from "@/hooks/chats/use-mcp";
 import { getMcpLogoUrl } from "@/hooks/chats/use-mcp-helpers";
 import { motion } from "motion/react";
@@ -17,9 +15,13 @@ export function ToolToggles() {
   const { mcps } = useMCPsData();
   const { handleToggleMCP, handleBatchToggleMCP } = useMCPMutations();
 
-  const handleToggle = (mcpId: string, enabled: boolean, ctrlKey: boolean = false) => {
+  const handleToggle = (
+    mcpId: string,
+    enabled: boolean,
+    ctrlKey: boolean = false,
+  ) => {
     if (ctrlKey) {
-      const shouldEnableAll = mcps?.some(mcp => !mcp.enabled) ?? false;
+      const shouldEnableAll = mcps?.some((mcp) => !mcp.enabled) ?? false;
       handleBatchToggleMCP(shouldEnableAll);
     } else {
       handleToggleMCP(mcpId as any, enabled);
@@ -40,7 +42,8 @@ export function ToolToggles() {
             if (e.ctrlKey || e.metaKey) {
               e.preventDefault();
               e.stopPropagation();
-              const shouldEnableAll = mcps?.some(mcp => !mcp.enabled) ?? false;
+              const shouldEnableAll =
+                mcps?.some((mcp) => !mcp.enabled) ?? false;
               handleBatchToggleMCP(shouldEnableAll);
             }
           }}
@@ -53,7 +56,10 @@ export function ToolToggles() {
           MCP Tools
           {mcps && mcps.length > 0 && (
             <kbd className="px-1.5 py-0.5 text-xs font-mono bg-muted/60 text-muted-foreground rounded border">
-              {typeof navigator !== "undefined" && navigator.userAgent.toUpperCase().indexOf("MAC") >= 0 ? "⌘+Click" : "Ctrl+Click"}
+              {typeof navigator !== "undefined" &&
+              navigator.userAgent.toUpperCase().indexOf("MAC") >= 0
+                ? "⌘+Click"
+                : "Ctrl+Click"}
             </kbd>
           )}
         </div>
@@ -79,7 +85,8 @@ export function ToolToggles() {
                   className="w-4 h-4 rounded-sm object-cover"
                   onError={(e) => {
                     // Fallback if image fails to load
-                    e.currentTarget.src = "https://avatars.githubusercontent.com/u/182288589?s=200&v=4";
+                    e.currentTarget.src =
+                      "https://avatars.githubusercontent.com/u/182288589?s=200&v=4";
                   }}
                 />
                 {mcp.name}

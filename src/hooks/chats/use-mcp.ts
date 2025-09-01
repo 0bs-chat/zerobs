@@ -19,11 +19,14 @@ export type MCPWithApps = Doc<"mcps"> & {
 };
 
 // Helper function to safely get app data from MCP
-export function getMcpAppData(mcp: MCPWithApps): { url?: string; status?: "creating" | "created" | "error" | "pending" } {
+export function getMcpAppData(mcp: MCPWithApps): {
+  url?: string;
+  status?: "creating" | "created" | "error" | "pending";
+} {
   const app = mcp.apps?.[0];
   return {
     url: app?.url,
-    status: app?.status
+    status: app?.status,
   };
 }
 
@@ -59,7 +62,7 @@ function validateMCP(mcp: MCPFormState): boolean {
 
 export function useMCPsData() {
   const [mcps, setMcps] = useAtom(mcpsAtom);
-  
+
   const { data: fetchedMcps } = useQuery({
     ...convexQuery(api.mcps.queries.getAll, {
       includeApps: true,
@@ -103,7 +106,9 @@ export function useMCPMutations() {
   const handleBatchToggleMCP = async (enabled: boolean) => {
     try {
       const count = await batchToggleMCP({ enabled });
-      toast.success(`${enabled ? "Enabled" : "Disabled"} ${count} MCP${count !== 1 ? "s" : ""}`);
+      toast.success(
+        `${enabled ? "Enabled" : "Disabled"} ${count} MCP${count !== 1 ? "s" : ""}`,
+      );
     } catch (error) {
       console.error("Failed to batch toggle MCPs:", error);
       toast.error("Failed to toggle MCPs");
@@ -115,9 +120,10 @@ export function useMCPMutations() {
     setMcpEditDialogOpen: (open: boolean) => void,
   ): Promise<void> => {
     if (!validateMCP(newMCPData)) return;
-    
+
     try {
-      const { command, url, dockerImage, dockerPort, env, ...rest } = newMCPData;
+      const { command, url, dockerImage, dockerPort, env, ...rest } =
+        newMCPData;
 
       const createParams: Parameters<typeof createMCP>[0] = {
         ...rest,
@@ -134,7 +140,7 @@ export function useMCPMutations() {
       }
 
       await createMCP(createParams);
-      
+
       setMcpEditDialogOpen(false);
       toast.success("MCP created successfully");
     } catch (error) {
@@ -144,14 +150,14 @@ export function useMCPMutations() {
     }
   };
 
-  return { 
-    updateMCP, 
-    removeMCP, 
+  return {
+    updateMCP,
+    removeMCP,
     createMCP,
-    handleToggleMCP, 
+    handleToggleMCP,
     handleDeleteMCP,
     handleCreateMCP,
-    handleBatchToggleMCP
+    handleBatchToggleMCP,
   };
 }
 

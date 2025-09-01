@@ -39,7 +39,7 @@ export const VibzPreview = () => {
     api.mcps.queries.getAssignedMcpAppForChat,
     chatId !== "new" && selectedVibzMcp?._id && chatId
       ? { mcpId: selectedVibzMcp._id, chatId }
-      : "skip"
+      : "skip",
   );
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export const VibzPreview = () => {
       try {
         // Determine which MCP data to use
         let mcpToUse = selectedVibzMcp;
-        
+
         // If chatId is not 'new' and we have an assigned app, use that instead
         if (chatId !== "new" && assignedMcpApp) {
           mcpToUse = assignedMcpApp;
@@ -64,7 +64,7 @@ export const VibzPreview = () => {
         // Use the first app for vibz preview
         const { url } = getMcpAppData(mcpToUse);
         if (!url) return;
-        
+
         const appName = mcpToUse.apps?.[0]?._id;
         if (!appName) return;
 
@@ -90,16 +90,20 @@ export const VibzPreview = () => {
   };
 
   const handleExternalLink = (url: string) => {
-    const fullUrl = view === "dashboard" 
-      ? urls!.dashboardUrl 
-      : `${url}${currentPath === "/" ? "" : currentPath}`;
+    const fullUrl =
+      view === "dashboard"
+        ? urls!.dashboardUrl
+        : `${url}${currentPath === "/" ? "" : currentPath}`;
     window.open(fullUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleRefresh = () => {
     if (!urls) return;
 
-    const previewUrl = view === "preview" ? `${urls.previewUrl}${currentPath === "/" ? "" : currentPath}` : urls.previewUrl;
+    const previewUrl =
+      view === "preview"
+        ? `${urls.previewUrl}${currentPath === "/" ? "" : currentPath}`
+        : urls.previewUrl;
     const codeUrl = urls.codeUrl;
     const dashboardUrl = urls.dashboardUrl;
 
@@ -221,7 +225,11 @@ export const VibzPreview = () => {
       <div className="min-h-0 min-w-0 relative">
         <iframe
           ref={previewIframeRef}
-          src={view === "preview" ? `${urls.previewUrl}${currentPath === "/" ? "" : currentPath}` : urls.previewUrl}
+          src={
+            view === "preview"
+              ? `${urls.previewUrl}${currentPath === "/" ? "" : currentPath}`
+              : urls.previewUrl
+          }
           className={`w-full h-full absolute inset-0 transition-opacity duration-200 ${
             view === "preview"
               ? "opacity-100 pointer-events-auto"

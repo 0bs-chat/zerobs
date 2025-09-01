@@ -25,7 +25,10 @@ export const Reasoning = memo(
         className="w-full"
         onValueChange={(value) => setIsOpen(value.includes("reasoning"))}
       >
-        <AccordionItem value="reasoning" className={`px-0 ${isOpen ? "border-none" : ""}`}>
+        <AccordionItem
+          value="reasoning"
+          className={`px-0 ${isOpen ? "border-none" : ""}`}
+        >
           <AccordionTrigger
             showIcon={false}
             className="py-1.5 justify-between gap-2 text-xs font-semibold items-center cursor-pointer"
@@ -39,9 +42,7 @@ export const Reasoning = memo(
             </div>
             <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4" />
           </AccordionTrigger>
-          <AccordionContent
-            className="bg-card rounded-md p-2 mt-2 max-h-[36rem] overflow-y-auto"
-          >
+          <AccordionContent className="bg-card rounded-md p-2 mt-2 max-h-[36rem] overflow-y-auto">
             <Markdown
               content={reasoning}
               id={messageId}

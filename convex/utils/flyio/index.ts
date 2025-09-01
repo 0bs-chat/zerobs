@@ -301,7 +301,10 @@ export const fly = {
         // Wait before next check
         await new Promise((resolve) => setTimeout(resolve, interval));
       } catch (error) {
-        console.error(`Error checking health for machine ${machineId} in app ${appName}:`, error);
+        console.error(
+          `Error checking health for machine ${machineId} in app ${appName}:`,
+          error,
+        );
         await new Promise((resolve) => setTimeout(resolve, interval));
       }
     }
@@ -328,7 +331,10 @@ export const fly = {
         };
       }
     } catch (error) {
-      console.error(`Error getting final state for machine ${machineId} in app ${appName}:`, error);
+      console.error(
+        `Error getting final state for machine ${machineId} in app ${appName}:`,
+        error,
+      );
       return {
         healthy: false,
         machine: null,

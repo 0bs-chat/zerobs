@@ -17,7 +17,10 @@ import {
 import { MemorySaver } from "@langchain/langgraph";
 import type { GraphState, AIChunkGroup, ToolChunkGroup } from "./state";
 import { v } from "convex/values";
-import { getThreadFromMessage, processBufferToMessages } from "../chatMessages/helpers";
+import {
+  getThreadFromMessage,
+  processBufferToMessages,
+} from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
 import { checkInternal, trackInternal } from "../autumn";
@@ -79,9 +82,15 @@ export const chat = action({
     const multiplier = modelConfig?.usageRateMultiplier ?? 1.0;
 
     // Check usage limits before processing chat, accounting for multiplier
-    const usageCheck = await checkInternal(chat.userId!, "messages", multiplier);
+    const usageCheck = await checkInternal(
+      chat.userId!,
+      "messages",
+      multiplier,
+    );
     if (!usageCheck.allowed) {
-      throw new Error(`Message limit exceeded. ${usageCheck.message || 'Please upgrade your plan to send more messages.'}`);
+      throw new Error(
+        `Message limit exceeded. ${usageCheck.message || "Please upgrade your plan to send more messages."}`,
+      );
     }
 
     const checkpointer = new MemorySaver();
@@ -236,7 +245,7 @@ export const chat = action({
       hadError = true;
       // Create messages from accumulated buffer and combine with existing thread
       const bufferMessages = processBufferToMessages(accumulatedBuffer);
-      finalMessages = [...thread.map(m => m.message), ...bufferMessages];
+      finalMessages = [...thread.map((m) => m.message), ...bufferMessages];
 
       if (abort.signal.aborted) {
         // Continue processing the buffer messages even when aborted

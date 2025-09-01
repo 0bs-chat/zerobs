@@ -2,15 +2,19 @@ import { MCP_TEMPLATES } from "../../src/components/chat/panels/mcp/templates";
 import type { McpTemplate } from "../../src/components/chat/panels/mcp/templates";
 
 export function findMcpTemplate(templateKey: string): McpTemplate | undefined {
-  return MCP_TEMPLATES.find(t => t.template === templateKey);
+  return MCP_TEMPLATES.find((t) => t.template === templateKey);
 }
 
-export function getTemplateConfigurableEnvs(templateKey: string): McpTemplate['configurableEnvs'] {
+export function getTemplateConfigurableEnvs(
+  templateKey: string,
+): McpTemplate["configurableEnvs"] {
   const template = findMcpTemplate(templateKey);
   return template?.configurableEnvs;
 }
 
-export function getTemplateAuthTokenKey(templateKey: string): string | undefined {
+export function getTemplateAuthTokenKey(
+  templateKey: string,
+): string | undefined {
   const template = findMcpTemplate(templateKey);
   return template?.customAuthTokenFromEnv;
 }
@@ -35,7 +39,10 @@ export function hasPromptTool(templateKey: string): boolean {
   return !!template?.promptTool;
 }
 
-export function getTemplateDisplayInfo(templateKey: string): { name: string; image?: string } {
+export function getTemplateDisplayInfo(templateKey: string): {
+  name: string;
+  image?: string;
+} {
   const template = findMcpTemplate(templateKey);
   return {
     name: template?.name || templateKey,

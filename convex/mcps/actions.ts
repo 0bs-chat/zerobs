@@ -8,7 +8,7 @@ import {
   resolveConfigurableEnvs,
   createMachineConfig,
   validateMcpForDeployment,
-  getOrCreateFlyApp
+  getOrCreateFlyApp,
 } from "./utils";
 import { executeWithBilling } from "../autumn";
 import { McpApps } from "../schema";
@@ -30,44 +30,52 @@ export const create = internalAction({
 
     await validateMcpForDeployment(mcp);
 
-    const pendingApps = mcp.apps?.filter((app) => app.status === "pending") || [];
+    const pendingApps =
+      mcp.apps?.filter((app) => app.status === "pending") || [];
 
     const configurableEnvValues = await resolveConfigurableEnvs(ctx, mcp);
 
     // Use bill-first logic for each app
-    await Promise.all(pendingApps.map(async (app) => {
-      await executeWithBilling(
-        args.userId,
-        "mcps",
-        1, // Bill for 1 MCP
-        async () => {
-          await ctx.runMutation(internal.mcps.crud.updateMcpApp, {
-            id: app._id,
-            patch: {
-              status: "creating",
-            },
-          });
-          const machineConfig = await createMachineConfig(mcp, String(app._id), configurableEnvValues, `machine`);
-          const appName = String(app._id);
-          await getOrCreateFlyApp(appName);
-          const machine = await fly.createMachine(appName, machineConfig);
-          try {
-            await fly.startMachine(appName, machine?.id || "");
-          } catch (error) {}
-          await fly.waitTillHealthy(appName, machine?.id || "", {
-            timeout: 120000,
-            interval: 1000,
-          });
-          await ctx.runMutation(internal.mcps.crud.updateMcpApp, {
-            id: app._id,
-            patch: {
-              status: "created",
-              url: `https://${appName}.fly.dev/mcp`,
-            },
-          });
-        }
-      );
-    }) || []);
+    await Promise.all(
+      pendingApps.map(async (app) => {
+        await executeWithBilling(
+          args.userId,
+          "mcps",
+          1, // Bill for 1 MCP
+          async () => {
+            await ctx.runMutation(internal.mcps.crud.updateMcpApp, {
+              id: app._id,
+              patch: {
+                status: "creating",
+              },
+            });
+            const machineConfig = await createMachineConfig(
+              mcp,
+              String(app._id),
+              configurableEnvValues,
+              `machine`,
+            );
+            const appName = String(app._id);
+            await getOrCreateFlyApp(appName);
+            const machine = await fly.createMachine(appName, machineConfig);
+            try {
+              await fly.startMachine(appName, machine?.id || "");
+            } catch (error) {}
+            await fly.waitTillHealthy(appName, machine?.id || "", {
+              timeout: 120000,
+              interval: 1000,
+            });
+            await ctx.runMutation(internal.mcps.crud.updateMcpApp, {
+              id: app._id,
+              patch: {
+                status: "created",
+                url: `https://${appName}.fly.dev/mcp`,
+              },
+            });
+          },
+        );
+      }) || [],
+    );
   },
 });
 
@@ -77,16 +85,18 @@ export const remove = internalAction({
     userId: v.string(),
   },
   handler: async (_ctx, args) => {
-    await Promise.all(args.mcpApps.map(async (mcpApp) => {
-      await executeWithBilling(
-        args.userId,
-        "mcps",
-        -1, // Deduct for 1 MCP removal
-        async () => {
-          await fly.deleteApp(String(mcpApp._id));
-        }
-      );
-    }) || []);
+    await Promise.all(
+      args.mcpApps.map(async (mcpApp) => {
+        await executeWithBilling(
+          args.userId,
+          "mcps",
+          -1, // Deduct for 1 MCP removal
+          async () => {
+            await fly.deleteApp(String(mcpApp._id));
+          },
+        );
+      }) || [],
+    );
   },
 });
 

@@ -23,7 +23,10 @@ export const getMCPToolsPreview = action({
       mcpIds.map(async (mcpId) => {
         try {
           // Get the MCP document with apps
-          const mcp = await ctx.runQuery(api.mcps.queries.get, { mcpId, includeApps: true });
+          const mcp = await ctx.runQuery(api.mcps.queries.get, {
+            mcpId,
+            includeApps: true,
+          });
           if (!mcp) {
             return { mcpId, error: "MCP not found", tools: [] };
           }
@@ -31,14 +34,21 @@ export const getMCPToolsPreview = action({
           // Get the first created available app for this MCP
           const app = mcp.apps?.find((app) => app.status === "created");
           if (!app || !app.url) {
-            return { mcpId, error: "MCP has no available apps or app has no URL", tools: [] };
+            return {
+              mcpId,
+              error: "MCP has no available apps or app has no URL",
+              tools: [],
+            };
           }
 
           // Get configurable envs (important for per-chat and other MCPs)
           const mcpConfigurableEnvs = await resolveConfigurableEnvs(ctx, mcp);
 
           // Build connection headers using shared utility
-          const headers = await buildMcpConnectionHeaders(mcp, mcpConfigurableEnvs);
+          const headers = await buildMcpConnectionHeaders(
+            mcp,
+            mcpConfigurableEnvs,
+          );
 
           const connection = {
             transport: "http" as const,
@@ -64,10 +74,14 @@ export const getMCPToolsPreview = action({
 
           // Fetch tools with retry logic
           let tools: DynamicStructuredTool[] = [];
-          for (let attempt = 0; attempt <= 10 && tools.length === 0; attempt++) {
+          for (
+            let attempt = 0;
+            attempt <= 10 && tools.length === 0;
+            attempt++
+          ) {
             try {
               if (attempt >= 5) {
-                const machine = await fly.getMachineByName(app._id, 'machine');
+                const machine = await fly.getMachineByName(app._id, "machine");
                 try {
                   await fly.startMachine(app._id, machine?.id!);
                 } catch (error) {}
@@ -82,7 +96,9 @@ export const getMCPToolsPreview = action({
               }
             } catch (error) {
               if (attempt === 10) {
-                throw new Error(`Failed to fetch tools after 10 attempts: ${error}`);
+                throw new Error(
+                  `Failed to fetch tools after 10 attempts: ${error}`,
+                );
               }
               await new Promise((resolve) => setTimeout(resolve, 1000));
             }
@@ -94,28 +110,39 @@ export const getMCPToolsPreview = action({
           const serializedTools = tools.map((tool) => ({
             name: tool.name,
             description: tool.description || "No description available",
-            inputSchema: tool.schema ? JSON.parse(JSON.stringify(tool.schema)) : null,
+            inputSchema: tool.schema
+              ? JSON.parse(JSON.stringify(tool.schema))
+              : null,
           }));
 
           return { mcpId, tools: serializedTools };
         } catch (error) {
           console.error(`Error fetching MCP tools for ${mcpId}:`, error);
-          return { 
-            mcpId, 
+          return {
+            mcpId,
             error: error instanceof Error ? error.message : "Unknown error",
-            tools: [] 
+            tools: [],
           };
         }
-      })
+      }),
     );
 
     // Convert to object keyed by mcpId
-    return mcpResults.reduce((acc, result) => {
-      acc[result.mcpId] = {
-        tools: result.tools,
-        error: result.error || null,
-      };
-      return acc;
-    }, {} as Record<Id<"mcps">, { tools: { name: string; description: string; inputSchema: any; }[]; error: string | null }>);
+    return mcpResults.reduce(
+      (acc, result) => {
+        acc[result.mcpId] = {
+          tools: result.tools,
+          error: result.error || null,
+        };
+        return acc;
+      },
+      {} as Record<
+        Id<"mcps">,
+        {
+          tools: { name: string; description: string; inputSchema: any }[];
+          error: string | null;
+        }
+      >,
+    );
   },
 });

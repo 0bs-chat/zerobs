@@ -27,13 +27,13 @@ function RouteComponent() {
   };
 
   // Usage Card Component
-  const UsageCard = ({ 
-    title, 
-    usage, 
-    limit, 
-    balance, 
-    showReset = false, 
-    resetInterval = "" 
+  const UsageCard = ({
+    title,
+    usage,
+    limit,
+    balance,
+    showReset = false,
+    resetInterval = "",
   }: {
     title: string;
     usage: number;
@@ -51,7 +51,7 @@ function RouteComponent() {
           </span>
         )}
       </div>
-      
+
       <div className="text-3xl font-bold mb-2">
         {usage}
         <span className="text-lg text-muted-foreground font-normal">
@@ -61,17 +61,17 @@ function RouteComponent() {
 
       {/* Usage Bar */}
       <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-        <div 
+        <div
           className={`h-2 rounded-full transition-all duration-300 ${getUsageColor(
-            getUsagePercentage(usage, typeof limit === 'number' ? limit : 1)
+            getUsagePercentage(usage, typeof limit === "number" ? limit : 1),
           )}`}
-          style={{ width: `${getUsagePercentage(usage, typeof limit === 'number' ? limit : 1)}%` }}
+          style={{
+            width: `${getUsagePercentage(usage, typeof limit === "number" ? limit : 1)}%`,
+          }}
         />
       </div>
 
-      <div className="text-sm text-muted-foreground">
-        {balance} remaining
-      </div>
+      <div className="text-sm text-muted-foreground">{balance} remaining</div>
     </div>
   );
 
@@ -86,20 +86,20 @@ function RouteComponent() {
 
       {/* Usage Summary */}
       <div className="grid gap-4 md:grid-cols-2">
-        <UsageCard 
-          title="Messages" 
-          usage={customer?.features?.messages?.usage || 0} 
-          limit={customer?.features?.messages?.included_usage || "∞"} 
-          balance={customer?.features?.messages?.balance || 0} 
-          showReset={true} 
+        <UsageCard
+          title="Messages"
+          usage={customer?.features?.messages?.usage || 0}
+          limit={customer?.features?.messages?.included_usage || "∞"}
+          balance={customer?.features?.messages?.balance || 0}
+          showReset={true}
           resetInterval={getMessageResetInterval()}
         />
 
-        <UsageCard 
-          title="MCPs" 
-          usage={customer?.features?.mcps?.usage || 0} 
-          limit={customer?.features?.mcps?.included_usage || "∞"} 
-          balance={customer?.features?.mcps?.balance || 0} 
+        <UsageCard
+          title="MCPs"
+          usage={customer?.features?.mcps?.usage || 0}
+          limit={customer?.features?.mcps?.included_usage || "∞"}
+          balance={customer?.features?.mcps?.balance || 0}
           showReset={false}
         />
       </div>

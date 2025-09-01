@@ -14,7 +14,6 @@ type ToolAccordionProps = {
   isComplete?: boolean;
 };
 
-
 function ToolAccordion({
   messageName,
   input,
@@ -24,30 +23,32 @@ function ToolAccordion({
   const mcpInfo = parseMcpToolName(messageName);
   return (
     <Accordion type="multiple" className="w-full">
-      <AccordionItem value="tool-call" className="px-0 border-none bg-muted/30 rounded-md">
+      <AccordionItem
+        value="tool-call"
+        className="px-0 border-none bg-muted/30 rounded-md"
+      >
         <AccordionTrigger className="py-2 px-3 gap-2 text-xs font-semibold items-center justify-start">
           {isComplete === true ? (
             <Check className="w-4 h-4 text-green-500" />
           ) : isComplete === false ? (
             <Loader2 className="w-4 h-4 text-yellow-500 animate-spin" />
           ) : null}
-          
+
           {mcpInfo?.icon && (
-            <img 
-              src={mcpInfo.icon} 
+            <img
+              src={mcpInfo.icon}
               alt={`${mcpInfo.displayName} icon`}
               className="w-4 h-4 rounded object-cover flex-shrink-0"
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
+                e.currentTarget.style.display = "none";
               }}
             />
           )}
-          
+
           <span className="text-muted-foreground">
-            {mcpInfo 
+            {mcpInfo
               ? `${mcpInfo.displayName} (${mcpInfo.toolName})`
-              : `Tool Call (${messageName})`
-            }
+              : `Tool Call (${messageName})`}
           </span>
         </AccordionTrigger>
         <AccordionContent className="bg-card rounded-md p-2 border mt-2 mx-2 mb-2 max-h-[36rem] overflow-y-auto">
