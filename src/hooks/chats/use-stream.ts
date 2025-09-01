@@ -9,9 +9,12 @@ import type {
 } from "../../../convex/langchain/state";
 import {
   AIMessage,
-  ToolMessage as LangChainToolMessage,
   mapChatMessagesToStoredMessages,
 } from "@langchain/core/messages";
+import { 
+  groupStreamChunks, 
+  convertChunksToLangChainMessages 
+} from "../../../convex/chatMessages/helpers";
 
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 
@@ -46,88 +49,21 @@ export function useStream(chatId: Id<"chats"> | "new") {
     const allChunks = chunksResult.chunks.page
       .sort((a, b) => a._creationTime - b._creationTime)
       .flatMap((chunkDoc) =>
-        chunkDoc.chunks.map((chunkStr: string) => ({
-          chunk: JSON.parse(chunkStr) as ChunkGroup,
-          timestamp: chunkDoc._creationTime,
-        }))
+        chunkDoc.chunks.map((chunkStr: string) => 
+          JSON.parse(chunkStr) as ChunkGroup
+        )
       );
 
-    // Group chunks intelligently
-    const groups: ChunkGroup[] = [];
-    let currentGroup: ChunkGroup | null = null;
-
-    for (const { chunk } of allChunks) {
-      if (chunk.type === "ai") {
-        // Merge consecutive AI chunks
-        if (currentGroup?.type === "ai") {
-          currentGroup.content += chunk.content;
-          if (chunk.reasoning) {
-            currentGroup.reasoning = (currentGroup.reasoning ?? "") + chunk.reasoning;
-          }
-        } else {
-          currentGroup = { ...chunk };
-          groups.push(currentGroup);
-        }
-      } else if (chunk.type === "tool") {
-        // Tools are always separate groups
-        currentGroup = chunk;
-        groups.push(currentGroup);
-      }
-    }
-
-    return groups;
+    // Use helper function to group chunks intelligently
+    return groupStreamChunks(allChunks);
   }, [chunksResult]);
 
   // Convert chunk groups to LangChain messages
   const langchainMessages = useMemo(() => {
     if (!groupedChunks.length) return [];
     
-    const completedIds = new Set(
-      groupedChunks
-        .filter((c) => c.type === "tool" && c.isComplete)
-        .map((c) => (c as ToolChunkGroup).toolCallId),
-    );
-
-    return groupedChunks
-      .map((chunk) => {
-        if (chunk.type === "ai") {
-          return new AIMessage({
-            content: chunk.content,
-            additional_kwargs: chunk.reasoning
-              ? { reasoning_content: chunk.reasoning }
-              : {},
-          });
-        }
-        
-        if (chunk.type === "tool") {
-          if (chunk.isComplete) {
-            return new LangChainToolMessage({
-              content: chunk.output as string,
-              name: chunk.toolName,
-              tool_call_id: chunk.toolCallId,
-              additional_kwargs: {
-                input: JSON.parse(JSON.stringify(chunk.input)),
-                is_complete: true,
-              },
-            });
-          }
-          
-          if (!completedIds.has(chunk.toolCallId)) {
-            return new LangChainToolMessage({
-              name: chunk.toolName,
-              tool_call_id: chunk.toolCallId,
-              content: "",
-              additional_kwargs: {
-                input: JSON.parse(JSON.stringify(chunk.input)),
-                is_complete: false,
-              },
-            });
-          }
-        }
-        
-        return undefined;
-      })
-      .filter(Boolean) as (AIMessage | LangChainToolMessage)[];
+    // Use helper function to convert chunks to LangChain messages
+    return convertChunksToLangChainMessages(groupedChunks);
   }, [groupedChunks]);
 
   // Generate planning steps message

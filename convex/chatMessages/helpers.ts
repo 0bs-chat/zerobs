@@ -5,7 +5,9 @@ import {
   type StoredMessage,
   AIMessage,
   ToolMessage,
+  ToolMessage as LangChainToolMessage,
 } from "@langchain/core/messages";
+import type { AIChunkGroup, ToolChunkGroup } from "../langchain/state";
 
 export type Message = Omit<Doc<"chatMessages">, "message"> & {
   message: BaseMessage;
@@ -290,4 +292,86 @@ export function getThreadFromMessage(
   }
 
   return chain.reverse().map((m) => ({ ...m, message: toBaseMessage(m) }));
+}
+
+export function groupStreamChunks(chunks: (AIChunkGroup | ToolChunkGroup)[]): (AIChunkGroup | ToolChunkGroup)[] {
+  const groups: (AIChunkGroup | ToolChunkGroup)[] = [];
+  let currentGroup: (AIChunkGroup | ToolChunkGroup) | null = null;
+
+  for (const chunk of chunks) {
+    if (chunk.type === "ai") {
+      if (currentGroup?.type === "ai") {
+        currentGroup.content += chunk.content;
+        if (chunk.reasoning) {
+          currentGroup.reasoning = (currentGroup.reasoning ?? "") + chunk.reasoning;
+        }
+      } else {
+        currentGroup = { ...chunk };
+        groups.push(currentGroup);
+      }
+    } else if (chunk.type === "tool") {
+      currentGroup = chunk;
+      groups.push(currentGroup);
+    }
+  }
+
+  return groups;
+}
+
+export function convertChunksToLangChainMessages(
+  groups: (AIChunkGroup | ToolChunkGroup)[]
+): (AIMessage | LangChainToolMessage)[] {
+  const completedIds = new Set(
+    groups
+      .filter((c) => c.type === "tool" && c.isComplete)
+      .map((c) => (c as ToolChunkGroup).toolCallId),
+  );
+
+  return groups
+    .map((chunk) => {
+      if (chunk.type === "ai") {
+        return new AIMessage({
+          content: chunk.content,
+          additional_kwargs: chunk.reasoning
+            ? { reasoning_content: chunk.reasoning }
+            : {},
+        });
+      }
+      
+      if (chunk.type === "tool") {
+        if (chunk.isComplete) {
+          return new LangChainToolMessage({
+            content: chunk.output as string,
+            name: chunk.toolName,
+            tool_call_id: chunk.toolCallId,
+            additional_kwargs: {
+              input: JSON.parse(JSON.stringify(chunk.input)),
+              is_complete: true,
+            },
+          });
+        }
+        
+        if (!completedIds.has(chunk.toolCallId)) {
+          return new LangChainToolMessage({
+            name: chunk.toolName,
+            tool_call_id: chunk.toolCallId,
+            content: "",
+            additional_kwargs: {
+              input: JSON.parse(JSON.stringify(chunk.input)),
+              is_complete: false,
+            },
+          });
+        }
+      }
+      
+      return undefined;
+    })
+    .filter(Boolean) as (AIMessage | LangChainToolMessage)[];
+}
+
+export function processBufferToMessages(accumulatedBuffer: string[]): (AIMessage | LangChainToolMessage)[] {
+  if (accumulatedBuffer.length === 0) return [];
+  const chunks = accumulatedBuffer.map(chunkStr => JSON.parse(chunkStr) as (AIChunkGroup | ToolChunkGroup));
+  const groups = groupStreamChunks(chunks);
+  return convertChunksToLangChainMessages(groups);
 }

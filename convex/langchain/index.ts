@@ -12,11 +12,12 @@ import {
   SystemMessage,
   ToolMessage,
   HumanMessage,
+  BaseMessage,
 } from "@langchain/core/messages";
 import { MemorySaver } from "@langchain/langgraph";
 import type { GraphState, AIChunkGroup, ToolChunkGroup } from "./state";
 import { v } from "convex/values";
-import { getThreadFromMessage } from "../chatMessages/helpers";
+import { getThreadFromMessage, processBufferToMessages } from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
 import { autumn } from "../autumn";
@@ -96,8 +97,11 @@ export const chat = action({
 
     let streamDoc: Doc<"streams"> | null = null;
     let buffer: string[] = [];
+    let accumulatedBuffer: string[] = [];
     let checkpoint: typeof GraphState.State | null = null;
+    let finalMessages: BaseMessage[] | null = null;
     let finished = false;
+    let hadError = false;
 
     const flushAndStream = async (): Promise<
       typeof GraphState.State | null
@@ -109,6 +113,7 @@ export const chat = action({
           if (buffer.length > 0) {
             const chunks = buffer;
             buffer = [];
+            accumulatedBuffer = [...accumulatedBuffer, ...chunks];
             streamDoc = await ctx.runMutation(
               internal.streams.mutations.flush,
               {
@@ -223,21 +228,28 @@ export const chat = action({
 
     try {
       checkpoint = await flushAndStream();
+      finalMessages = checkpoint?.messages!;
     } catch (e) {
+      hadError = true;
+      // Create messages from accumulated buffer and combine with existing thread
+      const bufferMessages = processBufferToMessages(accumulatedBuffer);
+      finalMessages = [...thread.map(m => m.message), ...bufferMessages];
+
       if (abort.signal.aborted) {
-        return;
+        // Continue processing the buffer messages even when aborted
+      } else {
+        // Update status to error but continue processing
+        await ctx.runMutation(internal.streams.mutations.update, {
+          chatId,
+          updates: {
+            completedSteps: [],
+            status: "error",
+          },
+        });
       }
-      await ctx.runMutation(internal.streams.mutations.update, {
-        chatId,
-        updates: {
-          completedSteps: [],
-          status: "error",
-        },
-      });
-      throw e;
     }
 
-    const newMessages = checkpoint?.messages?.slice(thread.length);
+    const newMessages = finalMessages?.slice(thread.length);
     if (newMessages?.length) {
       const parent: Id<"chatMessages"> | null = thread.length
         ? thread[thread.length - 1]._id
@@ -300,10 +312,13 @@ export const chat = action({
       }
     }
 
-    await ctx.runMutation(internal.streams.mutations.update, {
-      chatId,
-      updates: { status: "done", completedSteps: [] },
-    });
+    // Only update to "done" if there was no error and we weren't aborted
+    if (!hadError && !abort.signal.aborted) {
+      await ctx.runMutation(internal.streams.mutations.update, {
+        chatId,
+        updates: { status: "done", completedSteps: [] },
+      });
+    }
 
     // Track message usage - count the number of new messages created
     if (newMessages?.length) {
