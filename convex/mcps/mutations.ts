@@ -5,7 +5,7 @@ import { v } from "convex/values";
 import { createJwt } from "../utils/encryption";
 import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
-import { Doc } from "../_generated/dataModel";
+import { type Doc } from "../_generated/dataModel";
 
 export const create = mutation({
   args: {
