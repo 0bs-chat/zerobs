@@ -32,7 +32,7 @@ const flyRequest = async (
   if (!response.ok) {
     const errorText = await response.text();
     console.error(
-      `Fly API Error: ${response.status} ${response.statusText}`,
+      `Fly API Error: ${path} ${response.status} ${response.statusText}`,
       errorText,
     );
     if (response.status === 404) {

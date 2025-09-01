@@ -82,3 +82,36 @@ export const getAll = query({
     return page;
   },
 });
+
+export const getAssignedMcpAppForChat = query({
+  args: {
+    mcpId: v.id("mcps"),
+    chatId: v.id("chats"),
+  },
+  handler: async (ctx, args): Promise<Doc<"mcps"> & { apps?: Doc<"mcpApps">[] } | null> => {
+    const { userId } = await requireAuth(ctx);
+
+    // Get the MCP to verify ownership
+    const mcp = await ctx.runQuery(internal.mcps.queries.getInternal, {
+      mcpId: args.mcpId,
+      includeApps: true,
+      userId: userId,
+    });
+
+    if (!mcp) {
+      return null;
+    }
+
+    // Find the app assigned to this chat
+    const assignedApp = mcp.apps?.find((app) => app.chatId === args.chatId);
+
+    if (!assignedApp) {
+      return null;
+    }
+
+    return {
+      ...mcp,
+      apps: [assignedApp],
+    };
+  },
+});
