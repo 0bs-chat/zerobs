@@ -33,8 +33,6 @@ export const create = internalAction({
     const pendingApps =
       mcp.apps?.filter((app) => app.status === "pending") || [];
 
-    const configurableEnvValues = await resolveConfigurableEnvs(ctx, mcp);
-
     // Use bill-first logic for each app
     await Promise.all(
       pendingApps.map(async (app) => {
@@ -49,6 +47,7 @@ export const create = internalAction({
                 status: "creating",
               },
             });
+            const configurableEnvValues = await resolveConfigurableEnvs(ctx, mcp);
             const machineConfig = await createMachineConfig(
               mcp,
               String(app._id),
