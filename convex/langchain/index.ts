@@ -22,6 +22,7 @@ import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
 import { autumn } from "../autumn";
 import { checkInternal } from "../autumn";
+import { models } from "./models";
 
 export const generateTitle = internalAction({
   args: v.object({
@@ -75,8 +76,11 @@ export const chat = action({
     const { chat, message, messages, customPrompt } = prep!;
     const thread = getThreadFromMessage(message, messages);
 
-    // Check usage limits before processing chat
-    const usageCheck = await checkInternal(chat.userId!, "messages", 1);
+    const modelConfig = models.find((m) => m.model_name === chat.model);
+    const multiplier = modelConfig?.usageRateMultiplier ?? 1.0;
+
+    // Check usage limits before processing chat, accounting for multiplier
+    const usageCheck = await checkInternal(chat.userId!, "messages", multiplier);
     if (!usageCheck.allowed) {
       throw new Error(`Message limit exceeded. ${usageCheck.message || 'Please upgrade your plan to send more messages.'}`);
     }
@@ -322,9 +326,12 @@ export const chat = action({
 
     // Track message usage - count the number of new messages created
     if (newMessages?.length) {
+      // Apply multiplier and round to nearest integer
+      const usageValue = Math.round(newMessages.length * multiplier);
+
       await autumn.track(ctx, {
         featureId: "messages",
-        value: newMessages.length,
+        value: usageValue,
       });
     }
   },

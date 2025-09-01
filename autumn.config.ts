@@ -32,7 +32,7 @@ export const free = product({
 
 		featureItem({
 			feature_id: messages.id,
-			included_usage: 8,
+			included_usage: 20,
 			interval: "day",
 		}),
 	],
@@ -55,7 +55,7 @@ export const pro = product({
 
 		featureItem({
 			feature_id: messages.id,
-			included_usage: 1000,
+			included_usage: 1500,
 			interval: "month",
 		}),
 	],

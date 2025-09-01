@@ -152,6 +152,13 @@ const SortableModelItem = ({
           )}
         </div>
 
+        {/* Usage Rate Multiplier */}
+        {model.usageRateMultiplier !== 1.0 && (
+          <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground">
+            <span className="font-medium">{model.usageRateMultiplier}x</span>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <Button
           size="sm"
@@ -524,6 +531,13 @@ export function ModelPopover({
                       <thinkingTagInfo.icon
                         className={`h-4 w-4 ${thinkingTagInfo.className}`}
                       />
+                    </div>
+                  )}
+
+                  {/* Usage Rate Multiplier */}
+                  {model.usageRateMultiplier !== 1.0 && (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground">
+                      <span className="font-medium">{model.usageRateMultiplier}x</span>
                     </div>
                   )}
                 </div>

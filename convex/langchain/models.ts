@@ -122,7 +122,7 @@ export const models: {
     description:
       "Gemini 2.5 Pro is an advanced model designed for high-performance tasks across various modalities.",
     owner: "google",
-    usageRateMultiplier: 1.5,
+    usageRateMultiplier: 2.0,
     temperature: 1.0,
     parser: "functionCalling",
   },
@@ -140,7 +140,7 @@ export const models: {
     description:
       "GPT-4.1 is a state-of-the-art language model capable of understanding and generating human-like text.",
     owner: "openai",
-    usageRateMultiplier: 1.0,
+    usageRateMultiplier: 1.5,
   },
   {
     label: "o4 mini",
