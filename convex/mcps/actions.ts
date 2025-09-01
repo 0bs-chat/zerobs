@@ -1,11 +1,9 @@
 "use node";
 
-import { api, internal } from "../_generated/api";
-import { internalAction, action } from "../_generated/server";
+import { internal } from "../_generated/api";
+import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { fly } from "../utils/flyio";
-import type { FlyApp } from "../utils/flyio";
-import { randomUUID } from "crypto";
 import {
   resolveConfigurableEnvs,
   createMachineConfig,
@@ -14,125 +12,78 @@ import {
   handleMcpActionError
 } from "./utils";
 import { trackInternal, checkInternal } from "../autumn";
+import { McpApps } from "../schema";
 
 export const create = internalAction({
   args: {
     mcpId: v.id("mcps"),
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
-    try {
-      const mcp = await ctx.runQuery(internal.mcps.crud.read, {
-        id: args.mcpId,
-      });
-      if (!mcp) {
-        throw new Error("MCP not found");
-      }
+    const mcp = await ctx.runQuery(internal.mcps.queries.getInternal, {
+      mcpId: args.mcpId,
+      includeApps: true,
+      userId: args.userId,
+    });
+    if (!mcp) {
+      throw new Error("MCP not found");
+    }
 
-      await validateMcpForDeployment(mcp);
+    await validateMcpForDeployment(mcp);
 
-      // Check usage limits before creating MCPs
-      const usageCheck = await checkInternal(mcp.userId!, "mcps", 1);
-      if (!usageCheck.allowed) {
-        throw new Error(`Usage limit exceeded for MCPs. ${usageCheck.message || 'Please upgrade your plan to create more MCPs.'}`);
-      }
+    const pendingApps = mcp.apps?.filter((app) => app.status === "pending") || [];
 
-      const appName = String(mcp._id);
-      const sseUrl = `https://${appName}.fly.dev/mcp`;
+    const usageCheck = await checkInternal(args.userId, "mcps", pendingApps.length);
+    if (!usageCheck.allowed) {
+      throw new Error(`Usage limit exceeded for MCPs. ${usageCheck.message || 'Please upgrade your plan to create more MCPs.'}`);
+    }
 
-      // Process configurableEnvs if template is specified
-      const configurableEnvValues = await resolveConfigurableEnvs(ctx, mcp);
-
-      const machineConfig = await createMachineConfig(
-        mcp,
-        appName,
-        configurableEnvValues,
-        "machine",
-      );
-
-      await getOrCreateFlyApp(appName);
-
-      if (mcp.perChat) {
-        // Query existing unassigned machines
-        const unassignedCount = await ctx.runQuery(internal.mcps.queries.countUnassignedPerChatMcps, {
-          mcpId: args.mcpId,
+    const configurableEnvValues = await resolveConfigurableEnvs(ctx, mcp);
+    await Promise.all(pendingApps.map(async (app) => {
+      try {
+        await ctx.runMutation(internal.mcps.crud.updateMcpApp, {
+          id: app._id,
+          patch: {
+            status: "creating",
+          },
         });
-
-        // Only create machines if we have less than 2 unassigned
-        const machinesToCreate = Math.max(0, 2 - unassignedCount);
-
-        if (machinesToCreate > 0) {
-          if (machinesToCreate > 1) {
-            const additionalUsageCheck = await checkInternal(mcp.userId!, "mcps", machinesToCreate);
-            if (!additionalUsageCheck.allowed) {
-              throw new Error(`Usage limit exceeded for MCPs. Cannot create ${machinesToCreate} machines. ${additionalUsageCheck.message || 'Please upgrade your plan.'}`);
-            }
-          }
-          await Promise.all(
-            Array.from({ length: machinesToCreate }, async () => {
-              const machineConfig = await createMachineConfig(mcp, appName, configurableEnvValues, randomUUID());
-              const machine = await fly.createMachine(appName, machineConfig);
-
-              // Create entry in perChatMcps table with chatId set to undefined (unassigned)
-              await ctx.runMutation(internal.mcps.crud.createPerChatMcp, {
-                mcpId: args.mcpId,
-                chatId: undefined,
-                machineId: machine?.id!
-              });
-
-              // Wait for machine to be healthy
-              await fly.waitTillHealthy(appName, machine?.id || "", {
-                timeout: 120000,
-                interval: 1000,
-              });
-            })
-          );
-
-          // Track MCP usage for per-chat MCPs based on machines created
-          await trackInternal(mcp.userId!, "mcps", machinesToCreate);
-        }
-      } else {
-        // Create single machine for regular MCPs
-        await fly.createMachine(appName, machineConfig);
-
-        // Wait for machine to be healthy
-        await fly.waitTillHealthy(appName, "machine", {
+        const machineConfig = await createMachineConfig(mcp, String(app._id), configurableEnvValues, `machine`);
+        const appName = String(app._id);
+        await getOrCreateFlyApp(appName);
+        const machine = await fly.createMachine(appName, machineConfig);
+        try {
+          await fly.startMachine(appName, machine?.id || "");
+        } catch (error) {}
+        await fly.waitTillHealthy(appName, machine?.id || "", {
           timeout: 120000,
           interval: 1000,
         });
-
-        // Track MCP usage for regular MCPs (1 machine)
-        await trackInternal(mcp.userId!, "mcps", 1);
+        await ctx.runMutation(internal.mcps.crud.updateMcpApp, {
+          id: app._id,
+          patch: {
+            status: "created",
+            url: `https://${appName}.fly.dev/mcp`,
+          },
+        });
+        await trackInternal(args.userId, "mcps", 1);
+      } catch (error) {
+        await handleMcpActionError(ctx, app._id);
       }
-
-      await ctx.runMutation(internal.mcps.crud.update, {
-        id: args.mcpId,
-        patch: { url: sseUrl, status: "created" },
-      });
-    } catch (error) {
-      await handleMcpActionError(ctx, args.mcpId);
-    }
+    }) || []);
   },
 });
 
 export const remove = internalAction({
   args: {
-    mcpId: v.id("mcps"),
+    mcpApps: v.array(McpApps.doc),
     userId: v.string(),
   },
   handler: async (_ctx, args) => {
-    const appName = String(args.mcpId);
-    const app: FlyApp | null = await fly.getApp(appName);
-    
-    if (app && app.name) {
-      // Get all machines for this app to count them
-      const machines = await fly.listMachines(app.name);
-      const machineCount = machines?.length || 0;
-      if (machineCount > 0) {
-        await trackInternal(args.userId, "mcps", -machineCount);
-      }
-      
-      await fly.deleteApp(app.name);
-    }
+    await Promise.all(args.mcpApps.map(async (mcpApp) => {
+      await fly.deleteApp(String(mcpApp._id));
+
+      await trackInternal(args.userId, "mcps", -1);
+    }) || []);
   },
 });
 
@@ -202,37 +153,5 @@ export const getConvexDeployKey = internalAction({
       CONVEX_DEPLOYMENT_NAME: devDeploymentName,
       CONVEX_DEPLOYMENT_URL: projectRes.deploymentUrl,
     };
-  },
-});
-
-export const getMachineId = action({
-  args: {
-    mcpId: v.id("mcps"),
-    chatId: v.string(),
-  },
-  returns: v.union(v.string(), v.null()),
-  handler: async (ctx, args): Promise<string | null> => {
-    const mcp = await ctx.runQuery(api.mcps.queries.get, {
-      mcpId: args.mcpId,
-    });
-
-    if (mcp.perChat) {
-      // First try to assign/get an assigned machine for this chat
-      const assignedMachineId: string | null = await ctx.runMutation(api.mcps.mutations.assignMachineToChat, {
-        mcpId: args.mcpId,
-        chatId: args.chatId as any, // Type assertion for chatId conversion
-      });
-
-      if (assignedMachineId) {
-        return assignedMachineId;
-      }
-
-      // If no assigned machine, try to get machine by name as fallback
-      const machine = await fly.getMachineByName(args.mcpId, args.chatId);
-      return machine?.name || null;
-    } else {
-      // For non-per-chat MCPs, return the default machine name
-      return "machine";
-    }
   },
 });

@@ -10,7 +10,22 @@ import { useEffect } from "react";
 export type MCPFormState = Omit<
   Doc<"mcps">,
   "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
->;
+> & {
+  url?: string; // For form input
+};
+
+export type MCPWithApps = Doc<"mcps"> & {
+  apps?: Doc<"mcpApps">[];
+};
+
+// Helper function to safely get app data from MCP
+export function getMcpAppData(mcp: MCPWithApps): { url?: string; status?: "creating" | "created" | "error" | "pending" } {
+  const app = mcp.apps?.[0];
+  return {
+    url: app?.url,
+    status: app?.status
+  };
+}
 
 function validateMCP(mcp: MCPFormState): boolean {
   if (!mcp.name.trim()) {
@@ -47,14 +62,14 @@ export function useMCPsData() {
   
   const { data: fetchedMcps } = useQuery({
     ...convexQuery(api.mcps.queries.getAll, {
-      paginationOpts: { numItems: 10, cursor: null },
+      includeApps: true,
     }),
   });
 
   // Update atom when data is fetched
   useEffect(() => {
     if (fetchedMcps) {
-      setMcps(fetchedMcps.page);
+      setMcps(fetchedMcps);
     }
   }, [fetchedMcps, setMcps]);
 
@@ -65,7 +80,7 @@ export function useMCPMutations() {
   const updateMCP = useConvexMutation(api.mcps.mutations.update);
   const removeMCP = useConvexMutation(api.mcps.mutations.remove);
   const createMCP = useConvexMutation(api.mcps.mutations.create);
-  const batchToggleMCP = useConvexMutation(api.mcps.mutations.batchToggle as any);
+  const batchToggleMCP = useConvexMutation(api.mcps.mutations.batchToggle);
 
   const handleToggleMCP = async (mcpId: Id<"mcps">, enabled: boolean) => {
     try {
@@ -107,12 +122,11 @@ export function useMCPMutations() {
       const createParams: Parameters<typeof createMCP>[0] = {
         ...rest,
         command: command?.trim() || undefined,
-        url: url?.trim() || undefined,
+        url: (url?.trim() || "") as string,
         dockerImage: dockerImage?.trim() || undefined,
         dockerPort: dockerPort,
         env: env && Object.keys(env).length > 0 ? env : undefined,
         enabled: true,
-        status: "creating",
       };
 
       if (createParams.type !== "docker") {

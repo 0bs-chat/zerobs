@@ -3,4 +3,4 @@ import schema from "../schema";
 
 export const { create, read, update, destroy } = crud(schema, "mcps");
 
-export const { create: createPerChatMcp, read: readPerChatMcp, update: updatePerChatMcp, destroy: destroyPerChatMcp } = crud(schema, "perChatMcps");
+export const { create: createMcpApp, read: readMcpApp, update: updateMcpApp, destroy: destroyMcpApp } = crud(schema, "mcpApps");

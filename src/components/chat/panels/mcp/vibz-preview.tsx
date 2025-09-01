@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { selectedVibzMcpAtom, chatIdAtom } from "@/store/chatStore";
+import { getMcpAppData } from "@/hooks/chats/use-mcp";
 import { useRef, useState, useEffect } from "react";
 import { useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
@@ -30,7 +31,6 @@ export const VibzPreview = () => {
   const dashboardIframeRef = useRef<HTMLIFrameElement>(null);
 
   const createJwtAction = useAction(api.utils.encryption.createJwtAction);
-  const getMachineId = useAction(api.mcps.actions.getMachineId);
 
   useEffect(() => {
     const initializeUrls = async () => {
@@ -43,17 +43,17 @@ export const VibzPreview = () => {
           skipTimestamp: true,
         });
 
-        const machineId = await getMachineId({
-          mcpId: selectedVibzMcp._id,
-          chatId,
-        });
-
-        const appName = selectedVibzMcp._id;
+        // Use the first app for vibz preview
+        const { url } = getMcpAppData(selectedVibzMcp);
+        if (!url) return;
+        
+        const appName = selectedVibzMcp.apps?.[0]?._id;
+        if (!appName) return;
 
         setUrls({
-          previewUrl: `https://${appName}.fly.dev/${machineId}/preview/`,
-          codeUrl: `https://${appName}.fly.dev/${machineId}/8080/${oauthToken}/`,
-          dashboardUrl: `https://${appName}.fly.dev/${machineId}/dashboard?auth=${oauthToken}`,
+          previewUrl: `https://${appName}.fly.dev/machine/preview/`,
+          codeUrl: `https://${appName}.fly.dev/machine/8080/${oauthToken}/`,
+          dashboardUrl: `https://${appName}.fly.dev/machine/dashboard?auth=${oauthToken}`,
         });
       } catch (error) {
         console.error("Error initializing URLs:", error);
@@ -61,7 +61,7 @@ export const VibzPreview = () => {
     };
 
     initializeUrls();
-  }, [selectedVibzMcp?._id, chatId, createJwtAction, getMachineId]);
+  }, [selectedVibzMcp?._id, chatId, createJwtAction]);
 
   const handleClose = () => {
     setSelectedVibzMcp(undefined);

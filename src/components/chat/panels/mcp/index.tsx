@@ -1,5 +1,5 @@
 import { MCPCard } from "./mcp-card";
-import { useMCPsData, useMCPMutations } from "@/hooks/chats/use-mcp";
+import { useMCPsData, useMCPMutations, getMcpAppData } from "@/hooks/chats/use-mcp";
 import { MCPDialog } from "./mcp-dialog";
 import { useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
@@ -17,9 +17,10 @@ export const MCPPanel = () => {
   useEffect(() => {
     if (!mcps || mcps.length === 0) return;
 
-    const enabledMcpsWithUrl = mcps.filter(mcp => 
-      mcp.enabled && mcp.url && mcp.status === "created"
-    );
+    const enabledMcpsWithUrl = mcps.filter(mcp => {
+      const { url, status } = getMcpAppData(mcp);
+      return mcp.enabled && url && status === "created";
+    });
     
     if (enabledMcpsWithUrl.length === 0) return;
 
@@ -68,7 +69,7 @@ export const MCPPanel = () => {
           <MCPCard
             key={mcp._id}
             mcp={mcp}
-            status={mcp.status}
+            status={getMcpAppData(mcp).status || "error"}
             onStartStop={handleToggleMCP}
             onDelete={handleDeleteMCP}
           />

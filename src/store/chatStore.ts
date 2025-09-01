@@ -52,7 +52,7 @@ export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
   undefined,
 );
 export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
-export const selectedVibzMcpAtom = atom<Doc<"mcps"> | undefined>(undefined);
+export const selectedVibzMcpAtom = atom<Doc<"mcps"> & { apps?: Doc<"mcpApps">[] } | undefined>(undefined);
 
 export const pinnedChatsAccordionOpenAtom = atomWithStorage(
   "pinnedChatsAccordionOpen",
@@ -136,7 +136,6 @@ export const initialMCPState = {
   dockerPort: 8000,
   dockerCommand: "",
   env: {},
-  status: "creating" as const,
   perChat: false,
   template: undefined as string | undefined,
 };

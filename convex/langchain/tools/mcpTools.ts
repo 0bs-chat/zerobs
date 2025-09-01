@@ -3,7 +3,7 @@
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 import { api, internal } from "../../_generated/api";
 import type { ActionCtx } from "../../_generated/server";
-import type { Id } from "../../_generated/dataModel";
+import type { Doc, Id } from "../../_generated/dataModel";
 import { fly } from "../../utils/flyio";
 import { getDocumentUrl } from "../../utils/helpers";
 import {
@@ -14,7 +14,7 @@ import type { GraphState } from "../state";
 import { getTemplatePromptTool } from "../../mcps/templateHelpers";
 import {
   resolveConfigurableEnvs,
-  createMcpAuthToken
+  buildMcpConnectionHeaders,
 } from "../../mcps/utils";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 
@@ -24,87 +24,61 @@ export const getMCPTools = async (
   config?: ExtendedRunnableConfig,
 ) => {
   const mcps = await ctx.runQuery(api.mcps.queries.getAll, {
-    paginationOpts: {
-      numItems: 100,
-      cursor: null,
-    },
     filters: {
       enabled: true,
     },
+    includeApps: true,
   });
 
-  if (mcps.page.length === 0) {
+  if (mcps.length === 0) {
     return [];
   }
 
   // Process all MCPs in one comprehensive loop - setup, connection, client creation, and tool fetching
   const clientsAndTools = await Promise.all(
-    mcps.page.map(async (mcp) => {
-      try {
-      // Get configurable envs once per MCP
+    mcps.map(async (mcp) => {
+    try {
       const mcpConfigurableEnvs = await resolveConfigurableEnvs(ctx, mcp);
 
-      let machineId: string | undefined;
+      let appDoc: Doc<"mcpApps"> | null;
 
       // Handle per-chat MCPs - assign from pool or create on demand
       if (mcp.perChat && ["stdio", "docker"].includes(mcp.type) && config) {
         try {
-          let assignedMachineId = await ctx.runMutation(api.mcps.mutations.assignMachineToChat, {
+          appDoc = await ctx.runMutation(internal.mcps.mutations.assignAppToChat, {
             mcpId: mcp._id,
             chatId: config.chat._id,
           });
-
-          if (!assignedMachineId) {
-            await ctx.runAction(internal.mcps.actions.create, {
-              mcpId: mcp._id,
-            });
-            assignedMachineId = await ctx.runMutation(api.mcps.mutations.assignMachineToChat, {
-              mcpId: mcp._id,
-              chatId: config.chat._id,
-            });
-          } else {
-            await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
-              mcpId: mcp._id,
-            });
-          }
-
-          if (assignedMachineId) {
-            machineId = assignedMachineId;
-          }
         } catch (error) {
           console.error(`Failed to assign per-chat MCP machine for ${mcp.name}:`, error);
           return null;
         }
       } else {
-        machineId = (await fly.getMachineByName(mcp._id, "machine"))?.id!;
+        appDoc = mcp.apps?.[0]!;
       }
 
+      const machine = await fly.getMachineByName(appDoc?._id!, 'machine');
+
       try {
-        await fly.startMachine(mcp._id, machineId!);
+        await fly.startMachine(appDoc?._id!, machine?.id!);
       } catch (error) {}
-      await fly.waitTillHealthy(mcp._id, machineId!, {
+      await fly.waitTillHealthy(appDoc?._id!, machine?.id!, {
         timeout: 120000,
         interval: 1000,
       });
 
       // Filter out MCPs that don't have a URL or aren't ready
-      if (!mcp.url || mcp.status === "creating") {
+      if (!appDoc?.url || appDoc.status === "creating") {
         console.error(`MCP ${mcp._id} is not ready`);
         return null;
       }
 
-      // Build connection object
-      const authToken = await createMcpAuthToken(mcp);
-      const headers: Record<string, string> = {
-        ...mcp.env,
-        ...mcpConfigurableEnvs,
-        fly_force_instance_id: machineId!,
-        Authorization: `Bearer ${authToken}`,
-      };
+      // Build connection headers using shared utility
+      const headers = await buildMcpConnectionHeaders(mcp, mcpConfigurableEnvs);
 
       const connection = {
         transport: "http" as const,
-        url: mcp.url!,
+        url: appDoc.url,
         headers,
         useNodeEventSource: true,
         reconnect: {
@@ -130,9 +104,9 @@ export const getMCPTools = async (
         try {
           if (attempt >= 5) {
             try {
-              await fly.startMachine(mcp._id, machineId!);
+              await fly.startMachine(appDoc._id, machine?.id!);
             } catch (error) {}
-            await fly.waitTillHealthy(mcp._id, machineId!, {
+            await fly.waitTillHealthy(appDoc._id, machine?.id!, {
               timeout: 120000,
               interval: 1000,
             });
@@ -165,12 +139,13 @@ export const getMCPTools = async (
                   mcpTools[0].description = `${prompt.messages[0].content.text}\n\n${mcpTools[0].description}`;
                 }
               }
+
             }
           } catch (error) {}
         }
       }
 
-      return { client, tools, mcp, machineId };
+      return { client, tools, mcp, appDoc, machine };
     } catch (error) {
       console.error(`Failed to process MCP ${mcp.name}:`, error);
       return null;
@@ -218,14 +193,13 @@ export const getMCPTools = async (
           }),
         )
       )
-        // Filter out any null results from documents without URLs
         .filter((file): file is { name: string; url: string } => file !== null);
 
       // Upload files to each MCP's specific machine
       await Promise.all(
-        validClientsAndTools.map(async ({ mcp, machineId }) => {
-          if (["stdio", "docker"].includes(mcp.type) && files.length > 0 && machineId) {
-            await fly.uploadFileToMachine(mcp._id, machineId, files);
+        validClientsAndTools.map(async ({ mcp, appDoc, machine }) => {
+          if (["stdio", "docker"].includes(mcp.type) && files.length > 0 && machine?.id) {
+            await fly.uploadFileToMachine(appDoc._id, machine.id, files);
           }
         }),
       );
@@ -234,3 +208,4 @@ export const getMCPTools = async (
 
   return tools;
 };
+

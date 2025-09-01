@@ -124,18 +124,6 @@ export async function validateMcpForDeployment(mcp: Doc<"mcps">): Promise<void> 
   }
 }
 
-export async function validateMcpForRestart(mcp: Doc<"mcps">): Promise<void> {
-  if (!["docker", "stdio"].includes(mcp.type)) {
-    throw new Error("MCP is not a docker or stdio type");
-  }
-  if (!mcp.url) {
-    throw new Error("MCP URL is not defined");
-  }
-  if (mcp.status === "creating") {
-    throw new Error("MCP is still creating");
-  }
-}
-
 export async function getOrCreateFlyApp(appName: string): Promise<any> {
   let app = await fly.getApp(appName);
   if (!app) {
@@ -148,45 +136,6 @@ export async function getOrCreateFlyApp(appName: string): Promise<any> {
     }
   }
   return app;
-}
-
-
-
-export async function restartAllMachines(appName: string): Promise<void> {
-  const machines = await fly.listMachines(appName);
-
-  if (machines && machines.length > 0) {
-    const machinesWithId = machines.filter((machine) => machine.id);
-
-    // Stop machines
-    await Promise.all(
-      machinesWithId.map((machine) =>
-        fly.stopMachine(appName, machine.id!),
-      ),
-    );
-
-    // Wait for machines to stop
-    for (let i = 0; i < 30; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const updatedMachines = await fly.listMachines(appName);
-      if (
-        updatedMachines?.every(
-          (m) =>
-            !machinesWithId.some((original) => original.id === m.id) ||
-            m.state === "stopped",
-        )
-      ) {
-        break;
-      }
-    }
-
-    // Start machines
-    await Promise.all(
-      machinesWithId.map((machine) =>
-        fly.startMachine(appName, machine.id!),
-      ),
-    );
-  }
 }
 
 export async function createMcpAuthToken(
@@ -211,10 +160,10 @@ export async function createMcpAuthToken(
 
 export async function handleMcpActionError(
   ctx: ActionCtx | MutationCtx,
-  mcpId: Id<"mcps">,
+  mcpAppId: Id<"mcpApps">,
 ): Promise<void> {
-  await ctx.runMutation(internal.mcps.crud.update, {
-    id: mcpId,
+  await ctx.runMutation(internal.mcps.crud.updateMcpApp, {
+    id: mcpAppId,
     patch: { status: "error" },
   });
 }
@@ -256,5 +205,18 @@ export async function createMachineConfig(
         },
       ],
     },
+  };
+}
+
+// Shared utility for building MCP connection headers
+export async function buildMcpConnectionHeaders(
+  mcp: Doc<"mcps">,
+  configurableEnvValues: Record<string, string> = {},
+): Promise<Record<string, string>> {
+  const authToken = await createMcpAuthToken(mcp);
+  return {
+    ...mcp.env,
+    ...configurableEnvValues,
+    Authorization: `Bearer ${authToken}`,
   };
 }

@@ -1,38 +1,60 @@
-import { internalQuery, query } from "../_generated/server";
+import { query, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
-import { paginationOptsValidator } from "convex/server";
 import { verifyEnv } from "./utils";
 import type { Doc } from "../_generated/dataModel";
+import { internal } from "../_generated/api";
 
-export const get = query({
+export const getInternal = internalQuery({
   args: {
     mcpId: v.id("mcps"),
+    includeApps: v.optional(v.boolean()),
+    userId: v.string(),
   },
-  handler: async (ctx, args): Promise<Doc<"mcps">> => {
-    const { userId } = await requireAuth(ctx);
+  handler: async (ctx, args): Promise<Doc<"mcps"> & { apps?: Doc<"mcpApps">[] }> => {
 
     const mcp = await ctx.db.get(args.mcpId);
 
-    if (!mcp || mcp.userId !== userId) {
+    if (!mcp || mcp.userId !== args.userId) {
       throw new Error("MCP not found");
+    }
+
+    let apps: Doc<"mcpApps">[] = [];
+    if (args.includeApps) {
+      apps = await ctx.db.query("mcpApps").withIndex("by_mcp", (q) => q.eq("mcpId", args.mcpId)).collect();
     }
 
     return {
       ...mcp,
       env: await verifyEnv(mcp.env!),
+      ...(args.includeApps ? { apps } : {}),
     };
+  },
+});
+
+export const get = query({
+  args: {
+    mcpId: v.id("mcps"),
+    includeApps: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<Doc<"mcps"> & { apps?: Doc<"mcpApps">[] }> => {
+    const { userId } = await requireAuth(ctx);
+    return await ctx.runQuery(internal.mcps.queries.getInternal, {
+      mcpId: args.mcpId,
+      includeApps: args.includeApps,
+      userId: userId,
+    });
   },
 });
 
 export const getAll = query({
   args: {
-    paginationOpts: paginationOptsValidator,
     filters: v.optional(
       v.object({
         enabled: v.optional(v.boolean()),
       }),
     ),
+    includeApps: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -44,69 +66,19 @@ export const getAll = query({
         args.filters?.enabled === undefined
           ? true
           : q.eq(q.field("enabled"), args.filters.enabled),
-      )
-      .paginate(args.paginationOpts);
+      ).collect();
 
     const page = await Promise.all(
-      mcps.page.map(async (mcp) => {
+      mcps.map(async (mcp) => {
+        const apps = await ctx.db.query("mcpApps").withIndex("by_mcp", (q) => q.eq("mcpId", mcp._id)).collect();
         return {
           ...mcp,
           env: await verifyEnv(mcp.env!),
+          ...(args.includeApps ? { apps } : {}),
         };
       }),
     );
 
-    return {
-      ...mcps,
-      page,
-    };
-  },
-});
-
-export const getAssignedMachineId = internalQuery({
-  args: {
-    mcpId: v.id("mcps"),
-    chatId: v.id("chats"),
-  },
-  returns: v.union(v.string(), v.null()),
-  handler: async (ctx, args) => {
-    const assignment = await ctx.db
-      .query("perChatMcps")
-      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
-      .filter((q) => q.eq(q.field("mcpId"), args.mcpId))
-      .first();
-
-    return assignment?.machineId || null;
-  },
-});
-
-export const getUnassignedMachineIds = internalQuery({
-  args: {
-    mcpId: v.id("mcps"),
-  },
-  handler: async (ctx, args) => {
-    const unassigned = await ctx.db
-      .query("perChatMcps")
-      .withIndex("by_mcp", (q) => q.eq("mcpId", args.mcpId))
-      .filter((q) => q.eq(q.field("chatId"), undefined))
-      .collect();
-
-    return unassigned.map((assignment) => assignment.machineId);
-  },
-});
-
-export const countUnassignedPerChatMcps = internalQuery({
-  args: {
-    mcpId: v.id("mcps"),
-  },
-  returns: v.number(),
-  handler: async (ctx, args) => {
-    const unassignedMachines = await ctx.db
-      .query("perChatMcps")
-      .withIndex("by_mcp", (q) => q.eq("mcpId", args.mcpId))
-      .filter((q) => q.eq(q.field("chatId"), undefined))
-      .collect();
-
-    return unassignedMachines.length;
+    return page;
   },
 });

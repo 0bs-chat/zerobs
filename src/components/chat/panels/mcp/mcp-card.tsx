@@ -7,6 +7,7 @@ import type { Doc, Id } from "convex/_generated/dataModel";
 import { useSetAtom, useAtomValue } from "jotai";
 import { selectedVibzMcpAtom, mcpToolsAtom } from "@/store/chatStore";
 import { getMcpLogoUrl } from "@/hooks/chats/use-mcp-helpers";
+import { getMcpAppData } from "@/hooks/chats/use-mcp";
 
 export const MCPCard = ({
   mcp,
@@ -15,7 +16,7 @@ export const MCPCard = ({
   onDelete,
 }: {
   mcp: Doc<"mcps">;
-  status: "creating" | "created" | "error";
+  status: "creating" | "created" | "error" | "pending";
   onStartStop: (mcpId: Id<"mcps">, enabled: boolean) => Promise<void>;
   onDelete: (mcpId: Id<"mcps">) => Promise<void>;
 }) => {
@@ -24,7 +25,7 @@ export const MCPCard = ({
 
   const isVibzTemplate = mcp.template === "vibz";
   const canShowPreview = isVibzTemplate && mcp.enabled && status === "created";
-  const canLoadTools = mcp.url && mcp.enabled && status === "created";
+  const canLoadTools = getMcpAppData(mcp).url && mcp.enabled && status === "created";
 
   const handlePreview = () => {
     setSelectedVibzMcp(mcp);
@@ -77,7 +78,7 @@ export const MCPCard = ({
       case "stdio":
         return mcp.command;
       case "http":
-        return mcp.url;
+        return getMcpAppData(mcp).url;
       case "docker":
         const dockerInfo = `${mcp.dockerImage}:${mcp.dockerPort}`;
         return mcp.dockerCommand
@@ -93,6 +94,7 @@ export const MCPCard = ({
       case "created":
         return mcp.enabled ? "bg-green-500" : "bg-gray-500";
       case "creating":
+      case "pending":
         return "bg-yellow-500";
       case "error":
         return "bg-red-500";
@@ -211,9 +213,9 @@ export const MCPCard = ({
             className="cursor-pointer"
             onClick={() => onStartStop(mcp._id, mcp.enabled)}
             aria-label={mcp.enabled ? "Stop" : "Start"}
-            disabled={status === "creating"}
+            disabled={["creating", "pending"].includes(status)}
           >
-            {status === "creating" ? (
+            {["creating", "pending"].includes(status) ? (
               <Loader2
                 className="h-4 w-4 animate-spin"
                 aria-label="Creating MCP"
@@ -230,7 +232,7 @@ export const MCPCard = ({
             className="cursor-pointer"
             onClick={() => onDelete(mcp._id)}
             aria-label="Delete"
-            disabled={status === "creating"}
+            disabled={["creating", "pending"].includes(status)}
           >
             <Trash2 className="h-4 w-4" aria-label="Delete MCP" />
           </Button>
