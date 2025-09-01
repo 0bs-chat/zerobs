@@ -3,11 +3,13 @@ import { Loader2, Play, Square, Trash2, Eye, WrenchIcon } from "lucide-react";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type { Doc, Id } from "convex/_generated/dataModel";
 import { useSetAtom, useAtomValue } from "jotai";
 import { selectedVibzMcpAtom, mcpToolsAtom } from "@/store/chatStore";
 import { getMcpLogoUrl } from "@/hooks/chats/use-mcp-helpers";
 import { getMcpAppData } from "@/hooks/chats/use-mcp";
+import { useState } from "react";
 
 export const MCPCard = ({
   mcp,
@@ -22,6 +24,7 @@ export const MCPCard = ({
 }) => {
   const setSelectedVibzMcp = useSetAtom(selectedVibzMcpAtom);
   const mcpToolsData = useAtomValue(mcpToolsAtom);
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
 
   const isVibzTemplate = mcp.template === "vibz";
   const canShowPreview = isVibzTemplate && mcp.enabled && status === "created";
@@ -141,7 +144,7 @@ export const MCPCard = ({
               {getDisplayValue() || "No configuration"}
             </CardDescription>
             
-            {/* Tools section */}
+            {/* Tools section with accordion */}
             {canLoadTools && (
               <div className="mt-2">
                 {toolsLoading ? (
@@ -155,41 +158,64 @@ export const MCPCard = ({
                     <span className="text-xs text-red-500">Failed to load tools</span>
                   </div>
                 ) : tools.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {tools.map((tool, index) => (
-                      <HoverCard key={index}>
-                        <HoverCardTrigger asChild>
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs cursor-help hover:bg-muted"
-                          >
-                            {tool.name}
-                          </Badge>
-                        </HoverCardTrigger>
-                        <HoverCardContent className="w-80" side="top">
-                          <div className="space-y-2">
-                            <h4 className="text-sm font-semibold">{tool.name}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {tool.description}
-                            </p>
-                            {tool.inputSchema && (
-                              <div className="text-sm text-muted-foreground">
-                                <p className="font-semibold mb-1">Input Arguments:</p>
-                                <pre className="whitespace-pre-wrap font-mono text-xs bg-muted p-2 rounded">
-                                  {formatInputArgs(tool.inputSchema)}
-                                </pre>
-                                {tool.inputSchema?.required && Array.isArray(tool.inputSchema.required) && tool.inputSchema.required.length > 0 && (
-                                  <p className="mt-2 text-xs">
-                                    <strong>Required:</strong> {tool.inputSchema.required.join(", ")}
+                  <Accordion
+                    type="single"
+                    collapsible
+                    value={isToolsOpen ? "tools" : ""}
+                    onValueChange={(value) => setIsToolsOpen(value === "tools")}
+                    className="w-full"
+                  >
+                    <AccordionItem value="tools" className="border-none">
+                      <AccordionTrigger
+                        className="py-1 px-0 h-auto hover:no-underline text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        showIcon={false}
+                      >
+                        <div className="flex items-center gap-1">
+                          <WrenchIcon className="w-3 h-3" />
+                          <span className="text-xs font-medium">
+                            {isToolsOpen ? "Show Less" : `${tools.length} Tools`}
+                          </span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-0">
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {tools.map((tool, index) => (
+                            <HoverCard key={index}>
+                              <HoverCardTrigger asChild>
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs cursor-help hover:bg-muted"
+                                >
+                                  {tool.name}
+                                </Badge>
+                              </HoverCardTrigger>
+                              <HoverCardContent className="w-80" side="top">
+                                <div className="space-y-2">
+                                  <h4 className="text-sm font-semibold">{tool.name}</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {tool.description}
                                   </p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </HoverCardContent>
-                      </HoverCard>
-                    ))}
-                  </div>
+                                  {tool.inputSchema && (
+                                    <div className="text-sm text-muted-foreground">
+                                      <p className="font-semibold mb-1">Input Arguments:</p>
+                                      <pre className="whitespace-pre-wrap font-mono text-xs bg-muted p-2 rounded">
+                                        {formatInputArgs(tool.inputSchema)}
+                                      </pre>
+                                      {tool.inputSchema?.required && Array.isArray(tool.inputSchema.required) && tool.inputSchema.required.length > 0 && (
+                                        <p className="mt-2 text-xs">
+                                          <strong>Required:</strong> {tool.inputSchema.required.join(", ")}
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </HoverCardContent>
+                            </HoverCard>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 ) : null}
               </div>
             )}

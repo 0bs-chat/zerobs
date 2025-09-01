@@ -20,8 +20,7 @@ import { v } from "convex/values";
 import { getThreadFromMessage, processBufferToMessages } from "../chatMessages/helpers";
 import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
-import { autumn } from "../autumn";
-import { checkInternal } from "../autumn";
+import { checkInternal, trackInternal } from "../autumn";
 import { models } from "./models";
 
 export const generateTitle = internalAction({
@@ -329,10 +328,7 @@ export const chat = action({
       // Apply multiplier and round to nearest integer
       const usageValue = Math.round(newMessages.length * multiplier);
 
-      await autumn.track(ctx, {
-        featureId: "messages",
-        value: usageValue,
-      });
+      await trackInternal(chat.userId!, "messages", usageValue);
     }
   },
 });

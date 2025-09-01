@@ -81,10 +81,50 @@ export const checkInternal = async (customerId: string, featureId: string, requi
       ...(requiredQuantity && { required_quantity: requiredQuantity }),
     }),
   });
-  
+
   if (!response.ok) {
     throw new Error(`Failed to check usage: ${response.statusText}`);
   }
-  
+
   return response.json();
+};
+
+export const billFirst = async (customerId: string, featureId: string, value: number) => {
+  // Immediately bill the customer
+  await trackInternal(customerId, featureId, value);
+  return {
+    billId: `${customerId}-${featureId}-${Date.now()}`,
+    value,
+    timestamp: Date.now(),
+  };
+};
+
+export const deductOnFailure = async (customerId: string, featureId: string, billId: string, value: number) => {
+  // Deduct the billed amount (negative value)
+  await trackInternal(customerId, featureId, -value);
+  return {
+    billId,
+    deducted: value,
+    timestamp: Date.now(),
+  };
+};
+
+export const executeWithBilling = async <T>(
+  customerId: string,
+  featureId: string,
+  value: number,
+  operation: () => Promise<T>
+): Promise<T> => {
+  // Bill first
+  const bill = await billFirst(customerId, featureId, value);
+
+  try {
+    // Execute the operation
+    const result = await operation();
+    return result;
+  } catch (error) {
+    // On failure, deduct the billed amount
+    await deductOnFailure(customerId, featureId, bill.billId, value);
+    throw error;
+  }
 };
