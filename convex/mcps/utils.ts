@@ -75,6 +75,7 @@ export async function executeFunctionByReference(
 export async function resolveConfigurableEnvs(
   ctx: ActionCtx | MutationCtx | QueryCtx,
   mcp: Doc<"mcps">,
+  forConnection: boolean = false,
 ): Promise<Record<string, string>> {
   let configurableEnvValues: Record<string, string> = {};
 
@@ -89,13 +90,15 @@ export async function resolveConfigurableEnvs(
             userId: mcp.userId,
           };
 
-          const result = await executeFunctionByReference(
-            ctx,
-            envConfig.func,
-            argsWithUserId,
-            envConfig.type,
-          );
-          configurableEnvValues = { ...configurableEnvValues, ...result };
+          if (!forConnection) {
+            const result = await executeFunctionByReference(
+              ctx,
+              envConfig.func,
+              argsWithUserId,
+              envConfig.type,
+            );
+            configurableEnvValues = { ...configurableEnvValues, ...result };
+          }
         } catch (error) {
           console.error(
             `Failed to resolve configurable env ${envConfig.func}:`,

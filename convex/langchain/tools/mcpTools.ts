@@ -38,7 +38,7 @@ export const getMCPTools = async (
   const clientsAndTools = await Promise.all(
     mcps.map(async (mcp) => {
       try {
-        const mcpConfigurableEnvs = await resolveConfigurableEnvs(ctx, mcp);
+        const mcpConfigurableEnvs = await resolveConfigurableEnvs(ctx, mcp, true);
 
         let appDoc: Doc<"mcpApps"> | null;
 
@@ -63,12 +63,16 @@ export const getMCPTools = async (
           appDoc = mcp.apps?.[0]!;
         }
 
-        const machine = await fly.getMachineByName(appDoc?._id!, "machine");
+        if (!appDoc) {
+          return null;
+        }
+
+        const machine = await fly.getMachineByName(appDoc?._id, "machine");
 
         try {
-          await fly.startMachine(appDoc?._id!, machine?.id!);
+          await fly.startMachine(appDoc?._id, machine?.id!);
         } catch (error) {}
-        await fly.waitTillHealthy(appDoc?._id!, machine?.id!, {
+        await fly.waitTillHealthy(appDoc?._id, machine?.id!, {
           timeout: 120000,
           interval: 1000,
         });

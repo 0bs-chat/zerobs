@@ -188,8 +188,10 @@ export const assignAppToChat = internalMutation({
       return existingAssignment;
     }
 
-    // Find an unassigned app for this MCP
-    const unassignedApps = mcp.apps?.filter((app) => app.chatId === undefined);
+    // Find an unassigned app for this MCP that is created
+    const unassignedApps = mcp.apps?.filter(
+      (app) => app.chatId === undefined && app.status === "created",
+    );
 
     if (!unassignedApps?.length) {
       return null; // No unassigned app available
@@ -201,12 +203,12 @@ export const assignAppToChat = internalMutation({
     });
 
     if (unassignedApps.length < 2) {
-      const numCreate = Math.min(2 - unassignedApps.length, 1);
+      const numCreate = Math.max(2, 2-unassignedApps.length);
       await Promise.all(
         Array.from({ length: numCreate }, async () => {
           await ctx.runMutation(internal.mcps.crud.createMcpApp, {
             mcpId: args.mcpId,
-            chatId: args.chatId,
+            chatId: undefined,
             url: "",
             status: "pending",
           });

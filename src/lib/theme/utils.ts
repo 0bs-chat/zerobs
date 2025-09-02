@@ -3,6 +3,7 @@ export const THEME_URLS = [
   "https://tweakcn.com/editor/theme?theme=claude",
   "https://tweakcn.com/editor/theme?theme=t3-chat",
   "https://tweakcn.com/r/themes/amethyst-haze.json",
+  "https://tweakcn.com/editor/theme?theme=twitter",
   "https://tweakcn.com/editor/theme?theme=caffeine",
   "https://tweakcn.com/editor/theme?theme=mono",
   "https://tweakcn.com/editor/theme?theme=tangerine",
