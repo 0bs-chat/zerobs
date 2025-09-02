@@ -296,7 +296,8 @@ export function groupStreamChunks(
   chunks: (AIChunkGroup | ToolChunkGroup)[],
 ): (AIChunkGroup | ToolChunkGroup)[] {
   const groups: (AIChunkGroup | ToolChunkGroup)[] = [];
-  let currentGroup: (AIChunkGroup | ToolChunkGroup) | null = null;
+  let currentGroup: AIChunkGroup | null = null;
+  const toolGroups = new Map<string, ToolChunkGroup[]>();
 
   for (const chunk of chunks) {
     if (chunk.type === "ai") {
@@ -311,63 +312,140 @@ export function groupStreamChunks(
         groups.push(currentGroup);
       }
     } else if (chunk.type === "tool") {
-      currentGroup = chunk;
-      groups.push(currentGroup);
+      const toolChunk = chunk as ToolChunkGroup;
+      // Group by index only, since all chunks of the same tool call should have the same index
+      // If index is not available, use toolCallId as fallback
+      const key = toolChunk.index !== undefined ? `index_${toolChunk.index}` : (toolChunk.toolCallId || 'unknown');
+
+      if (!toolGroups.has(key)) {
+        toolGroups.set(key, []);
+      }
+      toolGroups.get(key)!.push(toolChunk);
+    }
+  }
+
+  // Process each tool group
+  for (const [key, toolChunks] of toolGroups) {
+    // Check if we have a complete chunk
+    const completeChunk = toolChunks.find(chunk => chunk.isComplete);
+    const incompleteChunks = toolChunks.filter(chunk => !chunk.isComplete);
+
+    if (completeChunk) {
+      // If we have a complete chunk, use it
+      groups.push(completeChunk);
+    } else if (incompleteChunks.length > 0) {
+      // If no complete chunk, construct one from incomplete chunks
+      const mergedChunk = mergeIncompleteToolChunks(incompleteChunks);
+      if (mergedChunk) {
+        groups.push(mergedChunk);
+      }
     }
   }
 
   return groups;
 }
 
+function mergeIncompleteToolChunks(chunks: ToolChunkGroup[]): ToolChunkGroup | null {
+  if (chunks.length === 0) return null;
+
+  // Collect all available information from all chunks
+  let toolCallId: string | undefined;
+  let toolName: string | undefined;
+  let index: number | undefined;
+  let concatenatedArgs = '';
+
+  for (const chunk of chunks) {
+    // Collect metadata from any chunk that has it
+    if (chunk.toolCallId && !toolCallId) {
+      toolCallId = chunk.toolCallId;
+    }
+    if (chunk.toolName && !toolName) {
+      toolName = chunk.toolName;
+    }
+    if (chunk.index !== undefined && index === undefined) {
+      index = chunk.index;
+    }
+
+    // Concatenate args/input from all chunks
+    if (chunk.input && typeof chunk.input === 'string') {
+      concatenatedArgs += chunk.input;
+    }
+  }
+
+  // Try to parse the concatenated args as JSON
+  let parsedInput: unknown = concatenatedArgs;
+  try {
+    if (concatenatedArgs.trim()) {
+      parsedInput = JSON.parse(concatenatedArgs);
+    }
+  } catch (e) {
+    // If parsing fails, keep as string
+    parsedInput = concatenatedArgs;
+  }
+
+  return {
+    type: "tool",
+    toolCallId,
+    toolName,
+    index,
+    input: parsedInput,
+    isComplete: false,
+  };
+}
+
 export function convertChunksToLangChainMessages(
   groups: (AIChunkGroup | ToolChunkGroup)[],
 ): (AIMessage | LangChainToolMessage)[] {
-  const completedIds = new Set(
-    groups
-      .filter((c) => c.type === "tool" && c.isComplete)
-      .map((c) => (c as ToolChunkGroup).toolCallId),
-  );
+  // Track which tool calls we've already processed to avoid duplicates
+  const processedToolCalls = new Set<string>();
+  const messages: (AIMessage | LangChainToolMessage)[] = [];
 
-  return groups
-    .map((chunk) => {
-      if (chunk.type === "ai") {
-        return new AIMessage({
-          content: chunk.content,
-          additional_kwargs: chunk.reasoning
-            ? { reasoning_content: chunk.reasoning }
-            : {},
-        });
+  for (const chunk of groups) {
+    if (chunk.type === "ai") {
+      messages.push(new AIMessage({
+        content: chunk.content,
+        additional_kwargs: chunk.reasoning
+          ? { reasoning_content: chunk.reasoning }
+          : {},
+      }));
+    } else if (chunk.type === "tool") {
+      const toolChunk = chunk as ToolChunkGroup;
+      const toolCallKey = toolChunk.toolCallId || `index_${toolChunk.index || 0}`;
+
+      // Skip if we've already processed this tool call
+      if (processedToolCalls.has(toolCallKey)) {
+        continue;
       }
 
-      if (chunk.type === "tool") {
-        if (chunk.isComplete) {
-          return new LangChainToolMessage({
-            content: chunk.output as string,
-            name: chunk.toolName,
-            tool_call_id: chunk.toolCallId,
-            additional_kwargs: {
-              input: JSON.parse(JSON.stringify(chunk.input)),
-              is_complete: true,
-            },
-          });
-        }
+      processedToolCalls.add(toolCallKey);
 
-        if (!completedIds.has(chunk.toolCallId)) {
-          return new LangChainToolMessage({
-            name: chunk.toolName,
-            tool_call_id: chunk.toolCallId,
-            content: "",
-            additional_kwargs: {
-              input: JSON.parse(JSON.stringify(chunk.input)),
-              is_complete: false,
-            },
-          });
-        }
+      if (toolChunk.isComplete) {
+        // Complete tool call with output
+        messages.push(new LangChainToolMessage({
+          content: toolChunk.output as string,
+          name: toolChunk.toolName || undefined,
+          tool_call_id: toolChunk.toolCallId || `unknown_${Date.now()}`,
+          additional_kwargs: {
+            input: toolChunk.input,
+            is_complete: true,
+          },
+        }));
+      } else {
+        // Incomplete tool call - construct from streaming chunks
+        messages.push(new LangChainToolMessage({
+          name: toolChunk.toolName || undefined,
+          tool_call_id: toolChunk.toolCallId || `unknown_${Date.now()}`,
+          content: "", // No output yet for incomplete calls
+          additional_kwargs: {
+            input: toolChunk.input,
+            is_complete: false,
+          },
+        }));
       }
+    }
+  }
 
-      return undefined;
-    })
-    .filter(Boolean) as (AIMessage | LangChainToolMessage)[];
+  return messages;
 }
 
 export function processBufferToMessages(
