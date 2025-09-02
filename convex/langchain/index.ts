@@ -177,6 +177,7 @@ export const chat = action({
               if (evt.event === "on_chat_model_stream") {
                 buffer.push(
                   JSON.stringify({
+                    id: crypto.randomUUID(),
                     type: "ai",
                     content: evt.data?.chunk?.content ?? "",
                     reasoning:
@@ -187,6 +188,7 @@ export const chat = action({
                   for (const toolCallChunk of evt.data.chunk.tool_call_chunks) {
                     buffer.push(
                       JSON.stringify({
+                        id: crypto.randomUUID(),
                         type: "tool",
                         toolCallId: toolCallChunk.id,
                         toolName: toolCallChunk.name,
@@ -232,6 +234,7 @@ export const chat = action({
 
                 buffer.push(
                   JSON.stringify({
+                    id: crypto.randomUUID(),
                     type: "tool",
                     toolName: evt.name,
                     input: evt.data?.input,

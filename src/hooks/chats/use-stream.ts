@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
-import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
-import { convexQuery } from "@convex-dev/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { convexQuery, useConvex } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import type {
@@ -12,27 +12,26 @@ import {
   mapChatMessagesToStoredMessages,
 } from "@langchain/core/messages";
 import {
-  processStreamingChunks,
   convertChunksToLangChainMessages,
+  processStreamingChunks,
 } from "../../../convex/chatMessages/helpers";
+import { toast } from "sonner";
 
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 export async function* streamChunks(
   stream: Doc<"streams">,
-  queryClient: QueryClient,
+  convex: ReturnType<typeof useConvex>,
 ): AsyncGenerator<ChunkGroup> {
   let lastChunkTime: number = 0;
   while (stream.status === "streaming") {
     console.log("lastChunkTime", lastChunkTime);
-    const chunksResult = await queryClient.fetchQuery({
-      ...convexQuery(
-        api.streams.queries.getChunks,
-        {
-          chatId: stream.chatId,
-          lastChunkTime,
-        },
-      ),
-    });
+    const chunksResult = await convex.query(
+      api.streams.queries.getChunks,
+      {
+        chatId: stream.chatId,
+        lastChunkTime,
+      },
+    );
     if (!chunksResult?.chunks) break;
     for (const chunk of chunksResult?.chunks ?? []) {
       for (const chunkStr of chunk.chunks) {
@@ -46,7 +45,7 @@ export async function* streamChunks(
 
 export function useStream(chatId: Id<"chats"> | "new") {
   const [chunks, setChunks] = useState<ChunkGroup[]>([]);
-  const queryClient = useQueryClient();
+  const convex = useConvex();
   
   // Get stream info to check if we should start streaming
   const { data: stream } = useQuery({
@@ -58,7 +57,8 @@ export function useStream(chatId: Id<"chats"> | "new") {
 
   useEffect(() => {
     if (!stream || chatId === "new") return;
-    if (stream.status === "done") {
+    if (stream.status !== "streaming") {
+      setChunks([]);
       return;
     }
     setChunks([]);
@@ -67,22 +67,21 @@ export function useStream(chatId: Id<"chats"> | "new") {
       const collectedChunks: ChunkGroup[] = [];
       
       try {
-        for await (const chunk of streamChunks(stream, queryClient)) {
+        for await (const chunk of streamChunks(stream, convex)) {
           collectedChunks.push(chunk);
-          setChunks([...collectedChunks]);
+          setChunks([...collectedChunks.filter((c) => c.id !== chunk.id)]);
         }
       } catch (error) {
-        console.error("Stream error:", error);
+        toast.error("Stream error: " + error);
+        console.error("Stream error: " + error);
       }
     };
 
     streamData();
-  }, [stream, chatId, queryClient]);
+  }, [stream, chatId, convex]);
 
-  const groupedChunks = processStreamingChunks(chunks);
-  const langchainMessages = convertChunksToLangChainMessages(groupedChunks);
-
-  // Generate planning steps message
+  const groupedChunks = useMemo(() => processStreamingChunks(chunks), [chunks]);
+  const langchainMessages = useMemo(() => convertChunksToLangChainMessages(groupedChunks), [groupedChunks]);
   const planningStepsMessage = useMemo(() => {
     if (!stream?.completedSteps || stream.completedSteps.length === 0)
       return null;

@@ -55,7 +55,7 @@ export const useMessages = ({ chatId }: { chatId: Id<"chats"> | "new" }) => {
     setUseStreamAtom(streamData);
   }, [
     messageGroups,
-    JSON.stringify(streamData),
+    streamData,
     setCurrentThread,
     setUseStreamAtom,
   ]);
