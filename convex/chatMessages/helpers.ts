@@ -7,7 +7,7 @@ import {
   ToolMessage,
   ToolMessage as LangChainToolMessage,
 } from "@langchain/core/messages";
-import type { AIChunkGroup, ToolChunkGroup } from "../langchain/state";
+import type { AIChunkGroup, ToolChunkGroup, ChunkGroup } from "../langchain/state";
 
 export type Message = Omit<Doc<"chatMessages">, "message"> & {
   message: BaseMessage;
@@ -292,52 +292,51 @@ export function getThreadFromMessage(
   return chain.reverse().map((m) => ({ ...m, message: toBaseMessage(m) }));
 }
 
-export function groupStreamChunks(
-  chunks: (AIChunkGroup | ToolChunkGroup)[],
-): (AIChunkGroup | ToolChunkGroup)[] {
-  const groups: (AIChunkGroup | ToolChunkGroup)[] = [];
-  let currentGroup: AIChunkGroup | null = null;
-  const toolGroups = new Map<string, ToolChunkGroup[]>();
-
+export function processStreamingChunks(chunks: ChunkGroup[]): ChunkGroup[] {
+  const groups: ChunkGroup[] = [];
+  
   for (const chunk of chunks) {
+    const currentGroup = groups[groups.length - 1];
+    
     if (chunk.type === "ai") {
       if (currentGroup?.type === "ai") {
+        // Merge with existing AI chunk
         currentGroup.content += chunk.content;
         if (chunk.reasoning) {
-          currentGroup.reasoning =
-            (currentGroup.reasoning ?? "") + chunk.reasoning;
+          currentGroup.reasoning = (currentGroup.reasoning ?? "") + chunk.reasoning;
         }
       } else {
-        currentGroup = { ...chunk };
-        groups.push(currentGroup);
+        // Start new AI chunk
+        groups.push(chunk);
       }
     } else if (chunk.type === "tool") {
-      const toolChunk = chunk as ToolChunkGroup;
-      // Group by index only, since all chunks of the same tool call should have the same index
-      // If index is not available, use toolCallId as fallback
-      const key = toolChunk.index !== undefined ? `index_${toolChunk.index}` : (toolChunk.toolCallId || 'unknown');
+      // Find existing tool group by index or toolCallId
+      const existingToolGroup = groups.find(
+        (group) => 
+          group.type === "tool" && 
+          (group.toolCallId === chunk.toolCallId || group.index === chunk.index)
+      ) as ToolChunkGroup | undefined;
 
-      if (!toolGroups.has(key)) {
-        toolGroups.set(key, []);
-      }
-      toolGroups.get(key)!.push(toolChunk);
-    }
-  }
-
-  // Process each tool group
-  for (const [key, toolChunks] of toolGroups) {
-    // Check if we have a complete chunk
-    const completeChunk = toolChunks.find(chunk => chunk.isComplete);
-    const incompleteChunks = toolChunks.filter(chunk => !chunk.isComplete);
-
-    if (completeChunk) {
-      // If we have a complete chunk, use it
-      groups.push(completeChunk);
-    } else if (incompleteChunks.length > 0) {
-      // If no complete chunk, construct one from incomplete chunks
-      const mergedChunk = mergeIncompleteToolChunks(incompleteChunks);
-      if (mergedChunk) {
-        groups.push(mergedChunk);
+      if (existingToolGroup) {
+        // Merge with existing tool chunk
+        if (chunk.isComplete && chunk.toolCallId === existingToolGroup.toolCallId) {
+          existingToolGroup.input = chunk.input;
+          existingToolGroup.output = chunk.output;
+          existingToolGroup.isComplete = true;
+        } else if (chunk.input) {
+          // Concatenate input args
+          existingToolGroup.input = String(existingToolGroup.input) + String(chunk.input);
+        }
+        // Update metadata if missing
+        if (chunk.toolName && !existingToolGroup.toolName) {
+          existingToolGroup.toolName = chunk.toolName;
+        }
+        if (chunk.toolCallId && !existingToolGroup.toolCallId) {
+          existingToolGroup.toolCallId = chunk.toolCallId;
+        }
+      } else {
+        // Start new tool chunk
+        groups.push(chunk);
       }
     }
   }
@@ -345,59 +344,9 @@ export function groupStreamChunks(
   return groups;
 }
 
-function mergeIncompleteToolChunks(chunks: ToolChunkGroup[]): ToolChunkGroup | null {
-  if (chunks.length === 0) return null;
-
-  // Collect all available information from all chunks
-  let toolCallId: string | undefined;
-  let toolName: string | undefined;
-  let index: number | undefined;
-  let concatenatedArgs = '';
-
-  for (const chunk of chunks) {
-    // Collect metadata from any chunk that has it
-    if (chunk.toolCallId && !toolCallId) {
-      toolCallId = chunk.toolCallId;
-    }
-    if (chunk.toolName && !toolName) {
-      toolName = chunk.toolName;
-    }
-    if (chunk.index !== undefined && index === undefined) {
-      index = chunk.index;
-    }
-
-    // Concatenate args/input from all chunks
-    if (chunk.input && typeof chunk.input === 'string') {
-      concatenatedArgs += chunk.input;
-    }
-  }
-
-  // Try to parse the concatenated args as JSON
-  let parsedInput: unknown = concatenatedArgs;
-  try {
-    if (concatenatedArgs.trim()) {
-      parsedInput = JSON.parse(concatenatedArgs);
-    }
-  } catch (e) {
-    // If parsing fails, keep as string
-    parsedInput = concatenatedArgs;
-  }
-
-  return {
-    type: "tool",
-    toolCallId,
-    toolName,
-    index,
-    input: parsedInput,
-    isComplete: false,
-  };
-}
-
 export function convertChunksToLangChainMessages(
-  groups: (AIChunkGroup | ToolChunkGroup)[],
+  groups: ChunkGroup[],
 ): (AIMessage | LangChainToolMessage)[] {
-  // Track which tool calls we've already processed to avoid duplicates
-  const processedToolCalls = new Set<string>();
   const messages: (AIMessage | LangChainToolMessage)[] = [];
 
   for (const chunk of groups) {
@@ -409,39 +358,15 @@ export function convertChunksToLangChainMessages(
           : {},
       }));
     } else if (chunk.type === "tool") {
-      const toolChunk = chunk as ToolChunkGroup;
-      const toolCallKey = toolChunk.toolCallId || `index_${toolChunk.index || 0}`;
-
-      // Skip if we've already processed this tool call
-      if (processedToolCalls.has(toolCallKey)) {
-        continue;
-      }
-
-      processedToolCalls.add(toolCallKey);
-
-      if (toolChunk.isComplete) {
-        // Complete tool call with output
-        messages.push(new LangChainToolMessage({
-          content: toolChunk.output as string,
-          name: toolChunk.toolName || undefined,
-          tool_call_id: toolChunk.toolCallId || `unknown_${Date.now()}`,
-          additional_kwargs: {
-            input: toolChunk.input,
-            is_complete: true,
-          },
-        }));
-      } else {
-        // Incomplete tool call - construct from streaming chunks
-        messages.push(new LangChainToolMessage({
-          name: toolChunk.toolName || undefined,
-          tool_call_id: toolChunk.toolCallId || `unknown_${Date.now()}`,
-          content: "", // No output yet for incomplete calls
-          additional_kwargs: {
-            input: toolChunk.input,
-            is_complete: false,
-          },
-        }));
-      }
+      messages.push(new LangChainToolMessage({
+        content: chunk.output as string,
+        name: chunk.toolName || undefined,
+        tool_call_id: chunk.toolCallId!,
+        additional_kwargs: {
+          input: chunk.input,
+          is_complete: chunk.isComplete,
+        },
+      }));
     }
   }
 
@@ -455,6 +380,6 @@ export function processBufferToMessages(
   const chunks = accumulatedBuffer.map(
     (chunkStr) => JSON.parse(chunkStr) as AIChunkGroup | ToolChunkGroup,
   );
-  const groups = groupStreamChunks(chunks);
+  const groups = processStreamingChunks(chunks);
   return convertChunksToLangChainMessages(groups);
 }
