@@ -8,35 +8,37 @@ import { resolve } from "node:path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    tanstackRouter({ autoCodeSplitting: true }),
-    react(),
-    tailwindcss(),
-    visualizer({
-      open: true,
-      filename: "stats.html",
-    }),
-  ],
-  test: {
-    globals: true,
-    environment: "jsdom",
-  },
-  resolve: {
-    alias: {
-      "@": resolve(__dirname, "./src"),
-      buffer: "buffer",
-    },
-  },
-  define: {
-    global: "globalThis",
-  },
-  optimizeDeps: {
-    exclude: ["ssh2", "cpu-features"],
-    include: ["buffer"],
-  },
-  build: {
-    rollupOptions: {
-      external: ["ssh2", "cpu-features", /\.node$/],
-    },
-  },
+	plugins: [
+		tanstackRouter({ autoCodeSplitting: true }),
+		react(),
+		tailwindcss(),
+		visualizer({
+			open: true,
+			filename: "stats.html",
+		}),
+	],
+	test: {
+		globals: true,
+		environment: "jsdom",
+	},
+	resolve: {
+		alias: {
+			"@": resolve(__dirname, "./src"),
+			buffer: "buffer",
+			react: resolve(__dirname, "node_modules/react"),
+			"react-dom": resolve(__dirname, "node_modules/react-dom"),
+		},
+	},
+	define: {
+		global: "globalThis",
+	},
+	optimizeDeps: {
+		exclude: ["ssh2", "cpu-features"],
+		include: ["buffer"],
+	},
+	build: {
+		rollupOptions: {
+			external: ["ssh2", "cpu-features", /\.node$/],
+		},
+	},
 });
