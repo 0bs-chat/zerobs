@@ -141,41 +141,6 @@ export const buildThreadFromMessages = (
 
     // Get children of the selected node
     current = idx.children.get(selectedNode._id) ?? [];
-
-    // Include ALL children when there are multiple (this captures tool messages)
-    if (current.length > 1) {
-      // Add all children at this level
-      for (const child of current) {
-        result.push({
-          message: wrapDoc(child),
-          branchIndex: 1, // All are part of the same conversation flow
-          totalBranches: 1,
-          depth: depth + 1,
-        });
-      }
-      // Continue from the last child (usually the final AI response)
-      const lastChild = current[current.length - 1];
-      current = idx.children.get(lastChild._id) ?? [];
-    } else if (current.length === 1) {
-      // Single child - ADD the child to result and continue
-      const desired = path?.[depth + 1] ?? 0;
-      const i = clamp(desired, 0, current.length - 1);
-      const childMessage = current[i];
-
-      // Add the child message to the result
-      result.push({
-        message: wrapDoc(childMessage),
-        branchIndex: i + 1,
-        totalBranches: current.length,
-        depth: depth + 1,
-      });
-
-      // Continue with this child's children
-      current = idx.children.get(childMessage._id) ?? [];
-      depth += 1; // Increment depth here since we added the child
-      continue; // Skip the depth increment at the end of the loop
-    }
-
     depth += 1;
   }
 
