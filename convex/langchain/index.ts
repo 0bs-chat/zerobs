@@ -25,7 +25,7 @@ import { formatMessages, getModel } from "./models";
 import { ChatMessages, Chats } from "../schema";
 import { checkInternal, trackInternal } from "../autumn";
 import { models } from "./models";
-import { v4 as uuidv4 } from "uuid";
+
 
 export const generateTitle = internalAction({
   args: v.object({
@@ -178,7 +178,6 @@ export const chat = action({
               if (evt.event === "on_chat_model_stream") {
                 buffer.push(
                   JSON.stringify({
-                    id: uuidv4(),
                     type: "ai",
                     content: evt.data?.chunk?.content ?? "",
                     reasoning:
@@ -188,7 +187,6 @@ export const chat = action({
               } else if (evt.event === "on_tool_start") {
                 buffer.push(
                   JSON.stringify({
-                    id: uuidv4(),
                     type: "tool",
                     toolName: evt.name,
                     input: evt.data?.input,
@@ -221,7 +219,6 @@ export const chat = action({
 
                 buffer.push(
                   JSON.stringify({
-                    id: uuidv4(),
                     type: "tool",
                     toolName: evt.name,
                     input: evt.data?.input,
