@@ -1,4 +1,3 @@
-import { requireAuth } from "../utils/helpers";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
