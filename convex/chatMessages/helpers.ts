@@ -33,14 +33,8 @@ export type MessageGroup = {
 const clamp = (n: number, min: number, max: number) =>
   Math.max(min, Math.min(n, max));
 
-const cmpId = (a: Id<"chatMessages">, b: Id<"chatMessages">) => {
-  const as = String(a);
-  const bs = String(b);
-  return as < bs ? -1 : as > bs ? 1 : 0;
-};
-
 const byCreatedAsc = (a: Doc<"chatMessages">, b: Doc<"chatMessages">) =>
-  a._creationTime - b._creationTime || cmpId(a._id, b._id);
+  a._creationTime - b._creationTime;
 
 // Identify message kinds
 const getType = (m: MessageWithBranchInfo) => m.message.message.getType();
@@ -71,7 +65,6 @@ type Index = {
   byId: Map<Id<"chatMessages">, Doc<"chatMessages">>;
   children: Map<Id<"chatMessages">, Doc<"chatMessages">[]>;
   roots: Doc<"chatMessages">[];
-  // O(1) index lookups for latestPath computation
   indexInParent: Map<Id<"chatMessages">, number>;
   rootIndex: Map<Id<"chatMessages">, number>;
 };
