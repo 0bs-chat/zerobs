@@ -117,3 +117,17 @@ export const setPerChatToFalse = migrations.define({
 
 // export const runRemoveUrlMigration = migrations.runner(internal.migrations.removeUrlFieldFromMcps);
 // // bunx convex run convex/migrations.ts:runRemoveUrlMigration
+
+// Fix userId in chats table
+// export const fixUserIdMigration = migrations.define({
+//   table: "chats",
+//   migrateOne: async (ctx, doc) => {
+//     if (typeof doc.userId === "string" && doc.userId.includes("|")) {
+//       const newUserId = doc.userId.split("|")[0];
+//       await ctx.db.patch(doc._id, { userId: newUserId });
+//     }
+//   },
+// });
+
+// export const runFixUserIdMigration = migrations.runner(internal.migrations.fixUserIdMigration);
+// // bunx convex run convex/migrations.ts:runFixUserIdMigration

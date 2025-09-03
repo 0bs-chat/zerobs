@@ -14,7 +14,7 @@ export const userLoadableAtom = loadable(userAtom);
 export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   _id: "new" as Id<"chats">,
   _creationTime: 0,
-  userId: "",
+  userId: "" as Id<"users">,
   name: "New Chat",
   pinned: false,
   documents: [],

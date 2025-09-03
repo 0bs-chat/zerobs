@@ -1,8 +1,23 @@
-import { query } from "../_generated/server";
+import { internalQuery, query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
+
+export const getInternal = internalQuery({
+  args: {
+    chatId: v.id("chats"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+    .query("streams")
+    .withIndex("by_chat_user", (q) =>
+      q.eq("chatId", args.chatId).eq("userId", args.userId),
+    )
+    .first();
+  },
+});
 
 export const get = query({
   args: {
@@ -11,12 +26,10 @@ export const get = query({
   handler: async (ctx, args): Promise<Doc<"streams"> | null> => {
     const { userId } = await requireAuth(ctx);
 
-    return await ctx.db
-      .query("streams")
-      .withIndex("by_chat_user", (q) =>
-        q.eq("chatId", args.chatId).eq("userId", userId),
-      )
-      .first();
+    return await ctx.runQuery(internal.streams.queries.getInternal, {
+      chatId: args.chatId,
+      userId: userId,
+    });
   },
 });
 

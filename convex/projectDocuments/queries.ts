@@ -14,7 +14,7 @@ export const get = query({
     args,
   ): Promise<
     Doc<"projectDocuments"> & {
-      project: Doc<"projects">;
+      project: Doc<"projects"> | null;
       document: Doc<"documents">;
     }
   > => {
@@ -149,7 +149,7 @@ export const getMultiple = query({
     args,
   ): Promise<
     (Doc<"projectDocuments"> & {
-      project: Doc<"projects">;
+      project: Doc<"projects"> | null;
       document: Doc<"documents">;
     })[]
   > => {

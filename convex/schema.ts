@@ -37,7 +37,7 @@ export const DocumentVectors = Table("documentVectors", {
 });
 
 export const Chats = Table("chats", {
-  userId: v.string(),
+  userId: v.id("users"),
   name: v.string(),
   pinned: v.boolean(),
   documents: v.array(v.id("documents")),
