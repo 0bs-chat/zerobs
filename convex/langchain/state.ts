@@ -62,12 +62,14 @@ export const GraphState = Annotation.Root({
 });
 
 export interface AIChunkGroup {
+  id: string;
   type: "ai";
   content: string;
   reasoning?: string;
 }
 
 export interface ToolChunkGroup {
+  id: string;
   type: "tool";
   toolName: string;
   input?: unknown;

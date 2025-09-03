@@ -2,7 +2,6 @@ import { query } from "../_generated/server";
 import { v } from "convex/values";
 import { requireAuth } from "../utils/helpers";
 import { api } from "../_generated/api";
-import { paginationOptsValidator, type PaginationResult } from "convex/server";
 import type { Doc } from "../_generated/dataModel";
 
 export const get = query({
@@ -24,7 +23,6 @@ export const get = query({
 export const getChunks = query({
   args: {
     chatId: v.id("chats"),
-    paginationOpts: paginationOptsValidator,
     lastChunkTime: v.optional(v.number()),
   },
   handler: async (
@@ -32,7 +30,7 @@ export const getChunks = query({
     args,
   ): Promise<{
     stream: Doc<"streams">;
-    chunks: PaginationResult<Doc<"streamChunks">>;
+    chunks: Doc<"streamChunks">[];
   }> => {
     const stream = await ctx.runQuery(api.streams.queries.get, {
       chatId: args.chatId,
@@ -46,11 +44,7 @@ export const getChunks = query({
         args.lastChunkTime
           ? q.gt(q.field("_creationTime"), args.lastChunkTime)
           : true,
-      )
-      .paginate({
-        cursor: args.paginationOpts.cursor,
-        numItems: args.paginationOpts.numItems,
-      });
+      ).collect();
 
     return {
       stream: stream!,

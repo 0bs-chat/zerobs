@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import type {
   ToolChunkGroup,
   AIChunkGroup,
@@ -15,46 +15,59 @@ import {
   groupStreamChunks,
   convertChunksToLangChainMessages,
 } from "../../../convex/chatMessages/helpers";
+import { useConvex } from "convex/react";
 
 export type ChunkGroup = AIChunkGroup | ToolChunkGroup;
 
 export function useStream(chatId: Id<"chats"> | "new") {
-  // Get stream info
+  const convex = useConvex();
   const { data: stream } = useQuery({
     ...convexQuery(
       api.streams.queries.get,
       chatId !== "new" ? { chatId: chatId as Id<"chats"> } : "skip",
     ),
   });
+  const [chunksResult, setChunksResult] = useState<Doc<"streamChunks">[]>([]);
+  const lastChunkTimeRef = useRef(0);
 
-  // Get all chunks for the stream reactively
-  const { data: chunksResult } = useQuery({
-    ...convexQuery(
-      api.streams.queries.getChunks,
-      stream
-        ? {
-            chatId: stream.chatId,
-            lastChunkTime: undefined, // Get all chunks
-            paginationOpts: { numItems: 1000, cursor: null },
-          }
-        : "skip",
-    ),
-  });
+  useEffect(() => {
+    setChunksResult([]);
+    lastChunkTimeRef.current = 0;
+    if (!stream) return;
 
-  // Process and group chunks into messages
+    const getChunks = async () => {
+      const result = await convex.query(api.streams.queries.getChunks, {
+        chatId: stream.chatId,
+        lastChunkTime: lastChunkTimeRef.current,
+      });
+
+      if (result.chunks.length > 0) {
+        const lastChunk = result.chunks[result.chunks.length - 1];
+        if (lastChunk) {
+          lastChunkTimeRef.current = lastChunk._creationTime;
+        }
+        setChunksResult((prev) => [...prev, ...result.chunks]);
+      }
+    };
+
+    if (stream.status === "streaming") {
+      const intervalId = setInterval(getChunks, 1000);
+      return () => clearInterval(intervalId);
+    } else if (stream.status === "done") {
+      getChunks();
+    }
+  }, [stream, convex]);
+
   const groupedChunks = useMemo(() => {
-    if (!chunksResult?.chunks?.page?.length) return [];
+    if (!chunksResult?.length) return [];
 
-    // Flatten all chunks from all documents and sort by creation time
-    const allChunks = chunksResult.chunks.page
-      .sort((a, b) => a._creationTime - b._creationTime)
+    const allChunks = chunksResult
       .flatMap((chunkDoc) =>
         chunkDoc.chunks.map(
           (chunkStr: string) => JSON.parse(chunkStr) as ChunkGroup,
         ),
       );
 
-    // Use helper function to group chunks intelligently
     return groupStreamChunks(allChunks);
   }, [chunksResult]);
 
