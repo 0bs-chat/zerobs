@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
-import { visualizer } from "rollup-plugin-visualizer";
+// import { visualizer } from "rollup-plugin-visualizer";
 
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import { resolve } from "node:path";
@@ -12,10 +12,10 @@ export default defineConfig({
 		tanstackRouter({ autoCodeSplitting: true }),
 		react(),
 		tailwindcss(),
-		visualizer({
-			open: true,
-			filename: "stats.html",
-		}),
+		// visualizer({
+		// 	open: true,
+		// 	filename: "stats.html",
+		// }),
 	],
 	test: {
 		globals: true,
