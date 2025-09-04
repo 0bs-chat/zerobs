@@ -8,67 +8,67 @@ import { useStreamAtom } from "@/store/chatStore";
 import { streamingVariants, springTransition } from "@/lib/motion";
 
 export const StreamingMessage = memo(() => {
-  const streamData = useAtomValue(useStreamAtom);
-  const messageId = "streaming-message";
+	const streamData = useAtomValue(useStreamAtom);
+	const messageId = "streaming-message";
 
-  const planningSteps = useMemo(() => {
-    if (!streamData?.planningStepsMessage) return null;
+	const planningSteps = useMemo(() => {
+		if (!streamData?.planningStepsMessage) return null;
 
-    return (
-      <PlanningStep
-        message={streamData.planningStepsMessage}
-        isStreaming={streamData.status === "streaming"}
-        messageId={messageId}
-      />
-    );
-  }, [streamData?.planningStepsMessage, streamData?.status, messageId]);
+		return (
+			<PlanningStep
+				message={streamData.planningStepsMessage}
+				isStreaming={streamData.status === "streaming"}
+				messageId={messageId}
+			/>
+		);
+	}, [streamData?.planningStepsMessage, streamData?.status]);
 
-  const regularContent = useMemo(() => {
-    if (!streamData?.langchainMessages) return [];
+	const regularContent = useMemo(() => {
+		if (!streamData?.langchainMessages) return [];
 
-    return streamData.langchainMessages.map((message, index) => {
-      const isLastAiMessage =
-        index === streamData.langchainMessages!.length - 1 &&
-        message?.getType() === "ai";
+		return streamData.langchainMessages.map((message, index) => {
+			const isLastAiMessage =
+				index === streamData.langchainMessages.length - 1 &&
+				message?.getType() === "ai";
 
-      return (
-        <motion.div
-          key={`${messageId}-${index}`}
-          variants={streamingVariants}
-          initial="initial"
-          animate="animate"
-          transition={{ delay: Math.min(index * 0.1, 1), ...springTransition }}
-        >
-          {message?.getType() === "ai" ? (
-            <AiMessageContent
-              message={message}
-              messageId={`${messageId}-${index}`}
-              isStreaming={isLastAiMessage}
-            />
-          ) : (
-            <ToolMessage message={message!} />
-          )}
-        </motion.div>
-      );
-    });
-  }, [streamData?.langchainMessages, messageId]);
+			return (
+				<motion.div
+					key={message.id}
+					variants={streamingVariants}
+					initial="initial"
+					animate="animate"
+					transition={{ delay: Math.min(index * 0.1, 1), ...springTransition }}
+				>
+					{message?.getType() === "ai" ? (
+						<AiMessageContent
+							message={message}
+							messageId={`${messageId}-${index}`}
+							isStreaming={isLastAiMessage}
+						/>
+					) : (
+						<ToolMessage message={message} />
+					)}
+				</motion.div>
+			);
+		});
+	}, [streamData?.langchainMessages]);
 
-  if (
-    !streamData?.langchainMessages ||
-    streamData.langchainMessages.length === 0
-  )
-    return null;
+	if (
+		!streamData?.langchainMessages ||
+		streamData.langchainMessages.length === 0
+	)
+		return null;
 
-  return (
-    <motion.div
-      className="flex flex-col gap-1"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={springTransition}
-    >
-      <AnimatePresence>{planningSteps || regularContent}</AnimatePresence>
-    </motion.div>
-  );
+	return (
+		<motion.div
+			className="flex flex-col gap-1"
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			transition={springTransition}
+		>
+			<AnimatePresence>{planningSteps || regularContent}</AnimatePresence>
+		</motion.div>
+	);
 });
 
 StreamingMessage.displayName = "StreamingMessage";
