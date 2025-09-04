@@ -77,7 +77,8 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
 							key={chat._id}
 							className="py-2 group/item cursor-pointer w-full h-full"
 							asChild
-							onClick={() => {
+							onClick={(e) => {
+								e.stopPropagation();
 								handleNavigate(chat._id);
 								handleSelect(chat._id);
 							}}
@@ -98,17 +99,14 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
 								>
 									{chat.name}
 								</span>
-								<div
-									onPointerDown={(e) => e.stopPropagation()}
-									onClick={(e) => e.stopPropagation()}
-									className="absolute inset-y-0 right-0 z-10 flex items-center justify-end bg-gradient-to-l gap-0 from-background via-background/80 to-transparent pl-8 pr-1 text-muted-foreground transition-transform duration-200 group-hover/item:translate-x-0 translate-x-full"
-								>
+								<div className="absolute inset-y-0 right-0 flex items-center justify-end bg-gradient-to-l gap-0 from-background via-background/80 to-transparent pl-8 pr-1 text-muted-foreground transition-transform duration-200 group-hover/item:translate-x-0 translate-x-full z-50">
 									<Button
 										variant="ghost"
 										size="icon"
 										className="h-7 w-7 p-0 text-muted-foreground hover:text-secondary-foreground cursor-pointer"
 										onClick={(e) => {
 											e.stopPropagation();
+											e.preventDefault();
 											isPinned ? handleUnpin(chat._id) : handlePin(chat._id);
 										}}
 										aria-label={isPinned ? "Unpin chat" : "Pin chat"}
@@ -125,6 +123,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
 										className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive cursor-pointer"
 										onClick={(e) => {
 											e.stopPropagation();
+											e.preventDefault();
 											handleDelete(chat._id);
 										}}
 										aria-label="Delete chat"
