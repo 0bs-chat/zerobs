@@ -3,11 +3,32 @@ import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
+import { useAtom } from "jotai";
+import { mcpsAtom } from "@/store/chatStore";
+import { useEffect } from "react";
 
 export type MCPFormState = Omit<
   Doc<"mcps">,
   "_id" | "_creationTime" | "userId" | "updatedAt" | "enabled"
->;
+> & {
+  url?: string; // For form input
+};
+
+export type MCPWithApps = Doc<"mcps"> & {
+  apps?: Doc<"mcpApps">[];
+};
+
+// Helper function to safely get app data from MCP
+export function getMcpAppData(mcp: MCPWithApps): {
+  url?: string;
+  status?: "creating" | "created" | "error" | "pending";
+} {
+  const app = mcp.apps?.[0];
+  return {
+    url: app?.url,
+    status: app?.status,
+  };
+}
 
 function validateMCP(mcp: MCPFormState): boolean {
   if (!mcp.name.trim()) {
@@ -39,28 +60,67 @@ function validateMCP(mcp: MCPFormState): boolean {
   return true;
 }
 
-export function useMCPs() {
-  const { data: mcps } = useQuery({
+export function useMCPsData() {
+  const [mcps, setMcps] = useAtom(mcpsAtom);
+
+  const { data: fetchedMcps } = useQuery({
     ...convexQuery(api.mcps.queries.getAll, {
-      paginationOpts: { numItems: 10, cursor: null },
+      includeApps: true,
     }),
   });
 
-  const getAllMCPs = () => {
-    if (!mcps) return null;
-    return mcps;
-  };
+  // Update atom when data is fetched
+  useEffect(() => {
+    if (fetchedMcps) {
+      setMcps(fetchedMcps);
+    }
+  }, [fetchedMcps, setMcps]);
 
-  const createMCP = useConvexMutation(api.mcps.mutations.create);
+  return { mcps, setMcps };
+}
+
+export function useMCPMutations() {
   const updateMCP = useConvexMutation(api.mcps.mutations.update);
   const removeMCP = useConvexMutation(api.mcps.mutations.remove);
-  const restartMutation = useConvexMutation(api.mcps.mutations.restart);
+  const createMCP = useConvexMutation(api.mcps.mutations.create);
+  const batchToggleMCP = useConvexMutation(api.mcps.mutations.batchToggle);
 
-  const handleCreate = async (
+  const handleToggleMCP = async (mcpId: Id<"mcps">, enabled: boolean) => {
+    try {
+      await updateMCP({ mcpId, updates: { enabled: !enabled } });
+      // The cache will be updated when the query refetches
+    } catch (error) {
+      console.error("Failed to start/stop MCP:", error);
+    }
+  };
+
+  const handleDeleteMCP = async (mcpId: Id<"mcps">) => {
+    try {
+      await removeMCP({ mcpId });
+      // The cache will be updated when the query refetches
+    } catch (error) {
+      console.error("Failed to delete MCP:", error);
+    }
+  };
+
+  const handleBatchToggleMCP = async (enabled: boolean) => {
+    try {
+      const count = await batchToggleMCP({ enabled });
+      toast.success(
+        `${enabled ? "Enabled" : "Disabled"} ${count} MCP${count !== 1 ? "s" : ""}`,
+      );
+    } catch (error) {
+      console.error("Failed to batch toggle MCPs:", error);
+      toast.error("Failed to toggle MCPs");
+    }
+  };
+
+  const handleCreateMCP = async (
     newMCPData: MCPFormState,
     setMcpEditDialogOpen: (open: boolean) => void,
-  ) => {
+  ): Promise<void> => {
     if (!validateMCP(newMCPData)) return;
+
     try {
       const { command, url, dockerImage, dockerPort, env, ...rest } =
         newMCPData;
@@ -68,12 +128,11 @@ export function useMCPs() {
       const createParams: Parameters<typeof createMCP>[0] = {
         ...rest,
         command: command?.trim() || undefined,
-        url: url?.trim() || undefined,
+        url: (url?.trim() || "") as string,
         dockerImage: dockerImage?.trim() || undefined,
         dockerPort: dockerPort,
         env: env && Object.keys(env).length > 0 ? env : undefined,
         enabled: true,
-        status: "creating",
       };
 
       if (createParams.type !== "docker") {
@@ -91,45 +150,15 @@ export function useMCPs() {
     }
   };
 
-  const handleDelete = async (mcpId: Id<"mcps">) => {
-    try {
-      await removeMCP({ mcpId });
-      toast.success("MCP deleted successfully");
-    } catch (error) {
-      console.error("Failed to delete MCP:", error);
-      toast.error("Failed to delete MCP");
-    }
-  };
-
-  const toggleMCP = async (mcpId: Id<"mcps">, enabled: boolean) => {
-    try {
-      await updateMCP({ mcpId, updates: { enabled: !enabled } });
-      toast.success(enabled ? "MCP stopped" : "MCP started");
-    } catch (error) {
-      console.error("Failed to start/stop MCP:", error);
-      toast.error("Failed to start/stop MCP");
-    }
-  };
-
-  const restartMCP = async (mcpId: Id<"mcps">) => {
-    try {
-      await restartMutation({ mcpId });
-      toast.success("MCP restarted successfully");
-    } catch (error) {
-      console.error("Failed to restart MCP:", error);
-      toast.error("Failed to restart MCP");
-    }
-  };
-
   return {
-    getAllMCPs,
-    createMCP,
     updateMCP,
     removeMCP,
-    handleCreate,
-    toggleMCP,
-    handleDelete,
-    restartMCP,
-    validateMCP,
+    createMCP,
+    handleToggleMCP,
+    handleDeleteMCP,
+    handleCreateMCP,
+    handleBatchToggleMCP,
   };
 }
+
+export { validateMCP };

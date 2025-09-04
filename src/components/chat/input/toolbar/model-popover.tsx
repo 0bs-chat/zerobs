@@ -5,13 +5,13 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+	Hammer,
+	ChevronDownIcon,
 	Search,
 	Settings,
 	GripVertical,
 	Eye,
 	EyeOff,
-	Hammer,
-	ChevronDown,
 } from "lucide-react";
 import { useSetAtom, useAtom } from "jotai";
 import { getTagInfo } from "@/lib/helper";
@@ -30,7 +30,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
 	Dialog,
 	DialogContent,
-	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
@@ -86,7 +85,7 @@ const SortableModelItem = ({
 		<div
 			ref={setNodeRef}
 			style={style}
-			className={`flex items-center gap-2  px-2 py-3 rounded-lg transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
+			className={`flex items-center gap-2 px-3 py-3 rounded-sm transition-colors justify-between hover:bg-accent/25 dark:hover:bg-accent/60 ${
 				isDragging ? "shadow-lg" : ""
 			}`}
 		>
@@ -96,29 +95,29 @@ const SortableModelItem = ({
 					{...listeners}
 					className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent/25 rounded"
 				>
-					<GripVertical className="h-3 w-3 text-muted-foreground" />
+					<GripVertical className="h-4 w-4 text-muted-foreground" />
 				</div>
+
 				<img
 					src={model.image}
 					aria-label={`${model.label} model icon`}
 					alt={model.label}
 					className={`h-4 w-4 opacity-80 ${
-						["openai", "x-ai", "openrouter", "anthropic"].includes(model.owner)
+						["openai", "x-ai", "z-ai", "openrouter", "anthropic"].includes(
+							model.owner,
+						)
 							? "dark:invert"
 							: ""
 					}`}
 				/>
 
-				<div className="flex items-center gap-2">
-					<span
-						className={`text-sm ${isHidden ? "text-muted-foreground line-through" : "text-foreground/80"}`}
-					>
-						{model.label}
-					</span>
-				</div>
+				<span
+					className={`text-sm ${isHidden ? "text-muted-foreground line-through" : "text-foreground"}`}
+				>
+					{model.label}
+				</span>
 			</div>
 
-			{/* Right Side - Capabilities and Visibility Toggle */}
 			<div className="flex items-center gap-1">
 				{/* Model Tags */}
 				<div className="flex gap-1 items-center opacity-75">
@@ -155,7 +154,14 @@ const SortableModelItem = ({
 					)}
 				</div>
 
-				{/* Visibility Toggle */}
+				{/* Usage Rate Multiplier */}
+				{model.usageRateMultiplier !== 1.0 && (
+					<div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground">
+						<span className="font-medium">{model.usageRateMultiplier}x</span>
+					</div>
+				)}
+
+				{/* Action Buttons */}
 				<Button
 					size="sm"
 					variant="ghost"
@@ -219,22 +225,16 @@ const ModelManagementDialog = ({
 				<Button
 					size="sm"
 					variant="ghost"
-					className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+					className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
 				>
 					<Settings className="h-4 w-4" />
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col bg-background border-border/70 rounded-lg">
-				{/* Header outside scrollable area */}
+			<DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
 				<DialogHeader>
-					<DialogTitle className="text-foreground/90 font-medium text-sm">
-						Manage Models
-					</DialogTitle>
-					<DialogDescription className="text-xs text-muted-foreground">
-						Drag to reorder • Click eye to toggle visibility
-					</DialogDescription>
+					<DialogTitle>Manage Models</DialogTitle>
 				</DialogHeader>
-				<div className="flex-1 overflow-y-auto p-2">
+				<div className="flex-1 overflow-y-auto">
 					<DndContext
 						sensors={sensors}
 						collisionDetection={closestCenter}
@@ -334,18 +334,21 @@ export function ModelPopover({
 		[setPreferences],
 	);
 
-	const handleModelSelect = async (modelName: string) => {
-		if (isNewChat) {
-			setNewChat((prev) => ({ ...prev, model: modelName }));
-		} else {
-			await updateChatMutation({
-				chatId,
-				updates: { model: modelName },
-			});
-		}
-		setPopoverOpen(false);
-		setHighlightedIndex(-1);
-	};
+	const handleModelSelect = useCallback(
+		async (modelName: string) => {
+			if (isNewChat) {
+				setNewChat((prev) => ({ ...prev, model: modelName }));
+			} else {
+				await updateChatMutation({
+					chatId,
+					updates: { model: modelName },
+				});
+			}
+			setPopoverOpen(false);
+			setHighlightedIndex(-1);
+		},
+		[isNewChat, updateChatMutation, chatId, setNewChat],
+	);
 
 	// Get filtered models for shortcuts
 	const filteredModels = visibleModels.filter(
@@ -455,9 +458,10 @@ export function ModelPopover({
 				<Button
 					variant="outline"
 					className="justify-between shadow-none gap-2 cursor-pointer text-foreground/70 hover:text-foreground border-none "
+					onClick={() => setPopoverOpen(!popoverOpen)}
 				>
 					{selectedModelConfig?.label || selectedModel}
-					<ChevronDown className="h-4 w-4" />
+					<ChevronDownIcon className="h-4 w-4" />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent
@@ -550,6 +554,15 @@ export function ModelPopover({
 											<thinkingTagInfo.icon
 												className={`h-4 w-4 ${thinkingTagInfo.className}`}
 											/>
+										</div>
+									)}
+
+									{/* Usage Rate Multiplier */}
+									{model.usageRateMultiplier !== 1.0 && (
+										<div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground">
+											<span className="font-medium">
+												{model.usageRateMultiplier}x
+											</span>
 										</div>
 									)}
 								</div>

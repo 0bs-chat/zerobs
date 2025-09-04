@@ -74,31 +74,51 @@ export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
 
 	// MIXED: files + text blocks
 	if (parsedContent.type === "mixed") {
+		const images = parsedContent.content.filter(
+			(item) => item.type === "file" && item.file?.file_id,
+		);
+		const nonImageContent = parsedContent.content.filter(
+			(item) => !(item.type === "file" && item.file?.file_id),
+		);
+
 		return (
-			<ToolAccordion
-				messageName={message.name ?? "unknown"}
-				input={input}
-				isComplete={(message.additional_kwargs as any)?.is_complete}
-			>
-				<div className="flex flex-col gap-4">
-					{parsedContent.content.map((item, idx) => {
-						if (item.type === "file" && item.file?.file_id) {
-							return <FileDisplay key={idx} fileId={item.file.file_id} />;
-						}
-						if (item.type === "text" && item.text) {
-							return (
-								<pre
-									key={idx}
-									className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap"
-								>
-									{item.text}
-								</pre>
-							);
-						}
-						return null;
-					})}
-				</div>
-			</ToolAccordion>
+			<div className="flex flex-col gap-4">
+				<ToolAccordion
+					messageName={message.name ?? "unknown"}
+					input={input}
+					isComplete={(message.additional_kwargs as any)?.is_complete}
+				>
+					{nonImageContent.length > 0 ? (
+						<div className="flex flex-col gap-4">
+							{nonImageContent.map((item, idx) => {
+								if (item.type === "text" && item.text) {
+									return (
+										<pre
+											key={idx}
+											className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap"
+										>
+											{item.text}
+										</pre>
+									);
+								}
+								return null;
+							})}
+						</div>
+					) : (
+						<div className="text-xs text-muted-foreground">
+							{images.length > 0 ? "Images displayed below" : "No output"}
+						</div>
+					)}
+				</ToolAccordion>
+
+				{images.length > 0 && (
+					<div className="flex flex-col gap-2">
+						{images.map((item, idx) => (
+							<FileDisplay key={idx} fileId={item.file.file_id} />
+						))}
+					</div>
+				)}
+			</div>
 		);
 	}
 

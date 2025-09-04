@@ -1,65 +1,72 @@
-import { Check, Hammer, Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
+	Accordion,
+	AccordionItem,
+	AccordionTrigger,
+	AccordionContent,
 } from "@/components/ui/accordion";
-import { cleanToolName, getToolStatusText } from "@/lib/tool-utils";
+import { parseMcpToolName } from "@/hooks/chats/use-mcp-helpers";
 
 type ToolAccordionProps = {
-  messageName: string;
-  input?: Record<string, any>;
-  children: React.ReactNode;
-  isComplete?: boolean;
+	messageName: string;
+	input?: Record<string, any>;
+	children: React.ReactNode;
+	isComplete?: boolean;
 };
 
 function ToolAccordion({
-  messageName,
-  children,
-  isComplete,
+	messageName,
+	children,
+	isComplete,
 }: ToolAccordionProps) {
-  const cleanedName = cleanToolName(messageName, isComplete);
-  const statusText = getToolStatusText(isComplete);
+	const mcpInfo = parseMcpToolName(messageName);
+	return (
+		<Accordion type="multiple" className="w-full">
+			<AccordionItem
+				value="tool-call"
+				className="px-0 border-none bg-muted/30 rounded-md"
+			>
+				<AccordionTrigger className="py-2 px-3 gap-2 text-xs font-semibold items-center justify-start">
+					{isComplete === true ? (
+						<Check className="w-4 h-4 text-green-500" />
+					) : isComplete === false ? (
+						<Loader2 className="w-4 h-4 text-yellow-500 animate-spin" />
+					) : null}
 
-  return (
-    <Accordion
-      type="multiple"
-      className="w-full border border-border/50 rounded-md bg-card"
-      defaultValue={isComplete === false ? ["tool-call"] : []}
-    >
-      <AccordionItem value="tool-call" className="border-none">
-        <AccordionTrigger
-          showIcon={false}
-          className="px-3 py-2 text-sm items-center justify-start hover:bg-muted transition-colors rounded-md gap-2"
-        >
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <Hammer className="w-4 h-4 text-muted-foreground shrink-0" />
-            <span className="text-foreground truncate">{cleanedName}</span>
-            {statusText && (
-              <span className="text-xs px-1.5 py-0.5 bg-muted text-muted-foreground border border-border rounded font-mono shrink-0">
-                {statusText}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center">
-            {isComplete === true ? (
-              <Check className="w-4 h-4 text-primary" />
-            ) : isComplete === false ? (
-              <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
-            ) : (
-              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground" />
-            )}
-          </div>
-        </AccordionTrigger>
-        <AccordionContent className="px-3 py-3 bg-muted/50 border-t border-border max-h-[32rem] overflow-y-auto">
-          <div className="font-mono text-sm leading-relaxed whitespace-pre-wrap text-foreground">
-            {children}
-          </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
-  );
+					{mcpInfo?.icon && (
+						<img
+							src={mcpInfo.icon}
+							alt={`${mcpInfo.displayName} icon`}
+							className="w-4 h-4 rounded object-cover flex-shrink-0"
+							onError={(e) => {
+								e.currentTarget.style.display = "none";
+							}}
+						/>
+					)}
+
+					<span className="text-muted-foreground">
+						{mcpInfo
+							? `${mcpInfo.displayName} (${mcpInfo.toolName})`
+							: `Tool Call (${messageName})`}
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="bg-card rounded-md p-2 border mt-2 mx-2 mb-2 max-h-[36rem] overflow-y-auto">
+					<h4 className="text-xs font-semibold mb-1 text-muted-foreground">
+						Input
+					</h4>
+					<pre className="text-xs bg-input/50 p-2 rounded overflow-x-auto mb-2 whitespace-pre-wrap">
+						{JSON.stringify(input, null, 2)}
+					</pre>
+					<h4 className="text-xs font-semibold mb-1 text-muted-foreground">
+						Output
+					</h4>
+					<div className="bg-input/50 rounded overflow-x-auto whitespace-pre-wrap">
+						{children}
+					</div>
+				</AccordionContent>
+			</AccordionItem>
+		</Accordion>
+	);
 }
 
 export default ToolAccordion;

@@ -7,6 +7,7 @@ export type McpTemplate = Omit<
   description: string;
   image: string;
   official: boolean;
+  url?: string; // For http templates
   promptTool?: string;
   configurableEnvs?: readonly {
     type: "query" | "mutation" | "action";
@@ -22,7 +23,6 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     template: "github",
     name: "GitHub",
     type: "http",
-    status: "creating",
     url: "https://api.githubcopilot.com/mcp/",
     description:
       "Official GitHub MCP server that provides access to GitHub's APIs for repository management, issue tracking, pull requests, and code analysis. Supports both public and private repositories with proper authentication.",
@@ -37,9 +37,8 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     template: "python-exec",
     name: "Python Exec",
     type: "docker",
-    dockerImage: "registry.fly.io/bitter-leaf-7106:v1",
+    dockerImage: "registry.fly.io/bitter-leaf-7106",
     dockerPort: 8000,
-    status: "creating",
     description:
       "Executes Python code in a sandboxed Docker environment, providing a secure and isolated space for running Python scripts and applications.",
     image:
@@ -53,7 +52,6 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     name: "Memory",
     type: "stdio",
     command: "bunx @modelcontextprotocol/server-memory",
-    status: "creating",
     description:
       "Manages a knowledge graph to provide persistent memory for AI models. It allows for the creation, modification, and retrieval of entities, their relationships, and observations, enabling AI to retain and recall information across conversations.",
     image:
@@ -67,7 +65,6 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     name: "Context7 Docs",
     type: "http",
     url: "https://mcp.context7.com/mcp",
-    status: "creating",
     description:
       "Provides up-to-date, version-specific documentation and code examples for various libraries and frameworks. It helps AI models avoid hallucinations and generate accurate code by supplying relevant, real-time context directly from official sources.",
     image: "https://context7.com/favicon.ico",
@@ -80,7 +77,6 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     name: "Sequential Thinking",
     type: "stdio",
     command: "bunx @modelcontextprotocol/server-sequential-thinking",
-    status: "creating",
     description:
       "Enables AI models to break down complex problems into sequential steps, improving reasoning capabilities and providing structured thinking processes for better problem-solving and decision-making.",
     image: "https://avatars.githubusercontent.com/u/182288589?s=200&v=4",
@@ -92,13 +88,12 @@ export const MCP_TEMPLATES: readonly McpTemplate[] = [
     template: "vibz",
     name: "Vibz",
     type: "docker",
-    status: "creating",
     description: "Vibe code full stack convex + tanstack router apps",
     image: "https://www.convex.dev/favicon.ico",
     official: false,
     env: {},
     perChat: true,
-    dockerImage: "registry.fly.io/still-smoke-7835:v3",
+    dockerImage: "registry.fly.io/still-smoke-7835",
     dockerPort: 80,
     promptTool: "prompt",
     configurableEnvs: [

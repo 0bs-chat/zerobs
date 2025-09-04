@@ -31,15 +31,8 @@ export function TopNav() {
 	const setUser = useSetAtom(userAtom);
 	const location = useLocation();
 
-	function isUnauthorized(err: unknown) {
-		return err instanceof Error && err.message.includes("401");
-	}
-
 	const { data: user } = useQuery({
 		...convexQuery(api.auth.getUser, {}),
-		// Avoid looping on auth errors; tolerate brief transient failures.
-		retry: (failureCount, err) => !isUnauthorized(err) && failureCount < 2,
-		staleTime: 5 * 60 * 1000,
 	});
 
 	useEffect(() => {
@@ -70,8 +63,8 @@ export function TopNav() {
 			}
 		};
 
-		document.addEventListener("keydown", handleKeyDown);
-		return () => document.removeEventListener("keydown", handleKeyDown);
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [isOnChatRoute, setResizePanelOpen, setSelectedArtifact]);
 
 	return (

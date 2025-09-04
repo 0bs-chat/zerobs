@@ -23,7 +23,6 @@ export const Reasoning = memo(
 			<Accordion
 				type="multiple"
 				className="w-full"
-				defaultValue={["reasoning"]}
 				onValueChange={(value) => setIsOpen(value.includes("reasoning"))}
 			>
 				<AccordionItem

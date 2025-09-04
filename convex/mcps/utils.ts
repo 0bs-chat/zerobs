@@ -1,5 +1,8 @@
 import { verifyJwt, createJwt } from "../utils/encryption";
-import { MCP_TEMPLATES } from "../../src/components/chat/panels/mcp/templates";
+import {
+  getTemplateConfigurableEnvs,
+  getTemplateAuthTokenKey,
+} from "./templateHelpers";
 import { makeFunctionReference } from "convex/server";
 import type { ActionCtx, MutationCtx, QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
@@ -72,23 +75,30 @@ export async function executeFunctionByReference(
 export async function resolveConfigurableEnvs(
   ctx: ActionCtx | MutationCtx | QueryCtx,
   mcp: Doc<"mcps">,
+  forConnection: boolean = false,
 ): Promise<Record<string, string>> {
   let configurableEnvValues: Record<string, string> = {};
 
   if (mcp.template) {
-    const matchingTemplate = MCP_TEMPLATES.find(
-      (t) => t.template === mcp.template,
-    );
-    if (matchingTemplate && matchingTemplate.configurableEnvs) {
-      for (const envConfig of matchingTemplate.configurableEnvs) {
+    const configurableEnvs = getTemplateConfigurableEnvs(mcp.template);
+    if (configurableEnvs) {
+      for (const envConfig of configurableEnvs) {
         try {
-          const result = await executeFunctionByReference(
-            ctx,
-            envConfig.func,
-            envConfig.args,
-            envConfig.type,
-          );
-          configurableEnvValues = { ...configurableEnvValues, ...result };
+          // Auto-inject userId from MCP document into function arguments
+          const argsWithUserId = {
+            ...envConfig.args,
+            userId: mcp.userId,
+          };
+
+          if (!forConnection) {
+            const result = await executeFunctionByReference(
+              ctx,
+              envConfig.func,
+              argsWithUserId,
+              envConfig.type,
+            );
+            configurableEnvValues = { ...configurableEnvValues, ...result };
+          }
         } catch (error) {
           console.error(
             `Failed to resolve configurable env ${envConfig.func}:`,
@@ -102,7 +112,9 @@ export async function resolveConfigurableEnvs(
   return configurableEnvValues;
 }
 
-export async function validateMcpForDeployment(mcp: Doc<"mcps">): Promise<void> {
+export async function validateMcpForDeployment(
+  mcp: Doc<"mcps">,
+): Promise<void> {
   if (!mcp.enabled) {
     throw new Error("MCP is not enabled");
   }
@@ -114,18 +126,6 @@ export async function validateMcpForDeployment(mcp: Doc<"mcps">): Promise<void> 
   }
   if (mcp.type === "docker" && !mcp.dockerImage) {
     throw new Error("MCP docker image is not defined");
-  }
-}
-
-export async function validateMcpForRestart(mcp: Doc<"mcps">): Promise<void> {
-  if (!["docker", "stdio"].includes(mcp.type)) {
-    throw new Error("MCP is not a docker or stdio type");
-  }
-  if (!mcp.url) {
-    throw new Error("MCP URL is not defined");
-  }
-  if (mcp.status === "creating") {
-    throw new Error("MCP is still creating");
   }
 }
 
@@ -143,89 +143,26 @@ export async function getOrCreateFlyApp(appName: string): Promise<any> {
   return app;
 }
 
-export async function ensureMachineHealthy(
-  appName: string,
-  machineId: string,
-  timeout: number = 120000,
-): Promise<void> {
-  const result = await fly.waitTillHealthy(appName, {
-    timeout,
-    interval: 1000,
-  });
-
-  if (!result.healthy) {
-    throw new Error(`Machine ${machineId} failed to become healthy: ${result.error || 'Unknown error'}`);
-  }
-}
-
-export async function restartAllMachines(appName: string): Promise<void> {
-  const machines = await fly.listMachines(appName);
-
-  if (machines && machines.length > 0) {
-    const machinesWithId = machines.filter((machine) => machine.id);
-
-    // Stop machines
-    await Promise.all(
-      machinesWithId.map((machine) =>
-        fly.stopMachine(appName, machine.id!),
-      ),
-    );
-
-    // Wait for machines to stop
-    for (let i = 0; i < 30; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const updatedMachines = await fly.listMachines(appName);
-      if (
-        updatedMachines?.every(
-          (m) =>
-            !machinesWithId.some((original) => original.id === m.id) ||
-            m.state === "stopped",
-        )
-      ) {
-        break;
-      }
-    }
-
-    // Start machines
-    await Promise.all(
-      machinesWithId.map((machine) =>
-        fly.startMachine(appName, machine.id!),
-      ),
-    );
-  }
-}
-
-export async function createMcpAuthToken(
-  mcp: Doc<"mcps">,
-): Promise<string> {
+export async function createMcpAuthToken(mcp: Doc<"mcps">): Promise<string> {
   let authToken = null;
   if (mcp.template) {
-    const matchingTemplate = MCP_TEMPLATES.find(
-      (t) => t.template === mcp.template,
-    );
-    if (matchingTemplate && matchingTemplate.customAuthTokenFromEnv) {
-      authToken = mcp.env[matchingTemplate.customAuthTokenFromEnv];
+    const authTokenKey = getTemplateAuthTokenKey(mcp.template);
+    if (authTokenKey) {
+      authToken = mcp.env[authTokenKey];
     }
   }
 
-  return authToken ||
-    (await createJwt(
-      "OAUTH_TOKEN",
-      mcp._id,
-      mcp.userId,
-      true,
-    ));
+  return (
+    authToken || (await createJwt("OAUTH_TOKEN", mcp._id, mcp.userId, true))
+  );
 }
 
 export async function handleMcpActionError(
   ctx: ActionCtx | MutationCtx,
-  mcpId: Id<"mcps">,
-  error: any,
-  action: string,
+  mcpAppId: Id<"mcpApps">,
 ): Promise<void> {
-  console.error(`Error in MCP ${action}:`, error);
-  await ctx.runMutation(internal.mcps.crud.update, {
-    id: mcpId,
+  await ctx.runMutation(internal.mcps.crud.updateMcpApp, {
+    id: mcpAppId,
     patch: { status: "error" },
   });
 }
@@ -234,15 +171,15 @@ export async function createMachineConfig(
   mcp: Doc<"mcps">,
   appName: string,
   configurableEnvValues: Record<string, string> = {},
-  machineName: string,
+  machineId: string,
 ): Promise<CreateMachineRequest> {
   const verifiedEnv = await verifyEnv(mcp.env);
 
   return {
-    name: machineName,
+    name: machineId,
     region: "sea",
     config: {
-      image: mcp.dockerImage || "registry.fly.io/floral-brook-444:v1",
+      image: mcp.dockerImage || "registry.fly.io/floral-brook-444",
       env: {
         ...verifiedEnv,
         ...configurableEnvValues,
@@ -267,5 +204,18 @@ export async function createMachineConfig(
         },
       ],
     },
+  };
+}
+
+// Shared utility for building MCP connection headers
+export async function buildMcpConnectionHeaders(
+  mcp: Doc<"mcps">,
+  configurableEnvValues: Record<string, string> = {},
+): Promise<Record<string, string>> {
+  const authToken = await createMcpAuthToken(mcp);
+  return {
+    ...mcp.env,
+    ...configurableEnvValues,
+    Authorization: `Bearer ${authToken}`,
   };
 }

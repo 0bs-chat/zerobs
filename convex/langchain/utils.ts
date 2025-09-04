@@ -26,15 +26,16 @@ export const prepareChat = internalMutation({
     });
 
     if (args.model && args.model !== chat.model) {
-      await ctx.runMutation(api.chats.mutations.update, {
-        chatId: args.chatId,
-        updates: { model: args.model },
+      await ctx.runMutation(internal.chats.crud.update, {
+        id: args.chatId,
+        patch: { model: args.model, updatedAt: Date.now() },
       });
       chat.model = args.model;
     }
 
-    let streamDoc = await ctx.runQuery(api.streams.queries.get, {
+    let streamDoc = await ctx.runQuery(internal.streams.queries.getInternal, {
       chatId: args.chatId,
+      userId: chat.userId,
     });
     if (["pending", "streaming"].includes(streamDoc?.status ?? "")) {
       return;
@@ -45,22 +46,29 @@ export const prepareChat = internalMutation({
         status: "pending",
         completedSteps: [],
       });
+      streamDoc.status = "pending";
+      streamDoc.completedSteps = [];
     } else {
-      await ctx.db.insert("streams", {
+      const newStreamId = await ctx.db.insert("streams", {
         userId: chat.userId,
         status: "pending",
         chatId: args.chatId,
         completedSteps: [],
       });
+      streamDoc = {
+        _id: newStreamId,
+        userId: chat.userId,
+        status: "pending",
+        chatId: args.chatId,
+        completedSteps: [],
+        _creationTime: Date.now(),
+      };
     }
-
-    streamDoc = (await ctx.runQuery(api.streams.queries.get, {
-      chatId: args.chatId,
-    }))!;
-
+    
     const project = chat.projectId
-      ? await ctx.runQuery(api.projects.queries.get, {
+      ? await ctx.runQuery(internal.projects.queries.getInternal, {
           projectId: chat.projectId,
+          userId: chat.userId,
         })
       : null;
 
@@ -69,9 +77,7 @@ export const prepareChat = internalMutation({
         ? project.systemPrompt
         : undefined;
 
-    const messages = await ctx.runQuery(api.chatMessages.queries.get, {
-      chatId: args.chatId,
-    });
+    const messages = await ctx.db.query("chatMessages").withIndex("by_chat", (q) => q.eq("chatId", args.chatId)).order("asc").collect();
 
     if (messages?.length === 1) {
       await ctx.scheduler.runAfter(0, internal.langchain.index.generateTitle, {

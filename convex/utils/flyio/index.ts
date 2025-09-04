@@ -32,7 +32,7 @@ const flyRequest = async (
   if (!response.ok) {
     const errorText = await response.text();
     console.error(
-      `Fly API Error: ${response.status} ${response.statusText}`,
+      `Fly API Error: ${path} ${response.status} ${response.statusText}`,
       errorText,
     );
     if (response.status === 404) {
@@ -225,16 +225,15 @@ export const fly = {
 
   waitTillHealthy: async (
     appName: string,
+    machineId: string,
     options: {
       timeout?: number;
       interval?: number;
-      minHealthyCount?: number;
     } = {},
   ) => {
     const {
       timeout = 300000, // 5 minutes default
       interval = 5000, // 5 seconds default
-      minHealthyCount = 1,
     } = options;
 
     const startTime = Date.now();
@@ -272,48 +271,40 @@ export const fly = {
           continue;
         }
 
-        // Get all machines for the app
-        const machines = await fly.listMachines(appName);
-        if (!machines) {
+        // Get the specific machine
+        const machine = await fly.getMachine(appName, machineId);
+        if (!machine) {
           await new Promise((resolve) => setTimeout(resolve, interval));
           continue;
         }
 
-        // Filter healthy machines
-        const healthyMachines = machines.filter(isMachineHealthy);
-
-        // Check if we have enough healthy machines
-        if (healthyMachines.length >= minHealthyCount) {
+        // Check if the machine is healthy
+        const isHealthy = isMachineHealthy(machine);
+        if (isHealthy) {
           return {
             healthy: true,
-            healthyCount: healthyMachines.length,
-            totalCount: machines.length,
+            machine,
             app,
-            machines,
           };
         }
 
-        // Check if all machines are in a failed state
-        const failedMachines = machines.filter(
-          (machine) =>
-            machine.state === "destroyed" || machine.state === "failed",
-        );
-
-        if (failedMachines.length === machines.length && machines.length > 0) {
+        // Check if the machine is in a failed state
+        if (machine.state === "destroyed" || machine.state === "failed") {
           return {
             healthy: false,
-            healthyCount: 0,
-            totalCount: machines.length,
+            machine,
             app,
-            machines,
-            error: "All machines failed",
+            error: "Machine failed",
           };
         }
 
         // Wait before next check
         await new Promise((resolve) => setTimeout(resolve, interval));
       } catch (error) {
-        console.error(`Error checking health for app ${appName}:`, error);
+        console.error(
+          `Error checking health for machine ${machineId} in app ${appName}:`,
+          error,
+        );
         await new Promise((resolve) => setTimeout(resolve, interval));
       }
     }
@@ -321,91 +312,86 @@ export const fly = {
     // Timeout reached - get final state
     try {
       const app = await fly.getApp(appName);
-      const machines = (await fly.listMachines(appName)) || [];
-      const healthyMachines = machines.filter(isMachineHealthy);
+      const machine = await fly.getMachine(appName, machineId);
 
-      return {
-        healthy: false,
-        healthyCount: healthyMachines.length,
-        totalCount: machines.length,
-        app,
-        machines,
-        error: "Health check timeout",
-      };
+      if (machine) {
+        const isHealthy = isMachineHealthy(machine);
+        return {
+          healthy: isHealthy,
+          machine,
+          app,
+          error: "Health check timeout",
+        };
+      } else {
+        return {
+          healthy: false,
+          machine: null,
+          app,
+          error: "Machine not found and health check timeout",
+        };
+      }
     } catch (error) {
-      console.error(`Error getting final state for app ${appName}:`, error);
+      console.error(
+        `Error getting final state for machine ${machineId} in app ${appName}:`,
+        error,
+      );
       return {
         healthy: false,
-        healthyCount: 0,
-        totalCount: 0,
+        machine: null,
         app: null,
-        machines: [],
         error: "Health check timeout and unable to get final state",
       };
     }
   },
 
-  uploadFileToAllMachines: async (
+  uploadFileToMachine: async (
     appName: string,
+    machineId: string,
     files: { name: string; url: string }[],
   ) => {
-    const machines = await fly.listMachines(appName);
-    if (!machines || machines.length === 0) {
-      throw new Error(`No machines found for app ${appName}`);
+    // Verify the machine exists
+    const machine = await fly.getMachine(appName, machineId);
+    if (!machine) {
+      throw new Error(`Machine ${machineId} not found in app ${appName}`);
     }
 
-    const results = [];
+    const machineResults = [];
 
-    for (const machine of machines) {
-      if (!machine.id) {
-        console.warn(`Skipping machine without ID`);
-        continue;
+    for (const file of files) {
+      try {
+        // Create the /mnt/data directory if it doesn't exist and download the file
+        const command = [
+          "sh",
+          "-c",
+          `mkdir -p /mnt/data && curl -L "${file.url}" -o "/mnt/data/${file.name}" && echo "File uploaded successfully to /mnt/data/${file.name}"`,
+        ];
+
+        const execResult = await flyRequest(
+          `/apps/${appName}/machines/${machineId}/exec`,
+          "POST",
+          {
+            command: command,
+            timeout: 60,
+          },
+        );
+
+        machineResults.push({
+          fileName: file.name,
+          success: true,
+          result: execResult,
+        });
+      } catch (error) {
+        machineResults.push({
+          fileName: file.name,
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
-
-      const machineResults = [];
-
-      for (const file of files) {
-        try {
-          // Create the /mnt/data directory if it doesn't exist and download the file
-          const command = [
-            "sh",
-            "-c",
-            `mkdir -p /mnt/data && curl -L "${file.url}" -o "/mnt/data/${file.name}" && echo "File uploaded successfully to /mnt/data/${file.name}"`,
-          ];
-
-          const execResult = await flyRequest(
-            `/apps/${appName}/machines/${machine.id}/exec`,
-            "POST",
-            {
-              command: command,
-              timeout: 60,
-            },
-          );
-
-          machineResults.push({
-            fileName: file.name,
-            success: true,
-            result: execResult,
-          });
-        } catch (error) {
-          console.error(
-            `Failed to upload ${file.name} to machine ${machine.id}:`,
-            error,
-          );
-          machineResults.push({
-            fileName: file.name,
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-
-      results.push({
-        machineId: machine.id,
-        files: machineResults,
-      });
     }
 
-    return results;
+    return {
+      machineId,
+      files: machineResults,
+    };
   },
 };

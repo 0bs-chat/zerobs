@@ -1,15 +1,17 @@
 import { api, internal } from "../_generated/api";
-import { mutation } from "../_generated/server";
+import { internalMutation, mutation } from "../_generated/server";
 import { requireAuth } from "../utils/helpers";
 import { v } from "convex/values";
 import { createJwt } from "../utils/encryption";
 import * as schema from "../schema";
 import { partial } from "convex-helpers/validators";
+import { type Doc } from "../_generated/dataModel";
 
 export const create = mutation({
   args: {
     ...schema.Mcps.table.validator.fields,
     ...partial(schema.Mcps.withoutSystemFields),
+    url: v.string(),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAuth(ctx);
@@ -54,18 +56,31 @@ export const create = mutation({
       dockerCommand: args.dockerCommand,
       command: args.command,
       env: envJwts,
-      url: args.url,
       enabled: args.enabled ?? true,
-      status: args.type === "http" || args.perChat ? "created" : "creating",
       userId: userId,
       updatedAt: Date.now(),
       perChat: args.perChat ?? false,
       template: args.template,
     });
 
-    if (args.type !== "http" && !args.perChat) {
+    const numInserts = args.perChat ? 2 : 1;
+    await Promise.all(
+      Array.from(
+        { length: numInserts },
+        async () =>
+          await ctx.db.insert("mcpApps", {
+            mcpId: newMCPId,
+            chatId: undefined,
+            url: args.url,
+            status: args.type === "http" ? "created" : "pending",
+          }),
+      ),
+    );
+
+    if (args.type !== "http") {
       await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
         mcpId: newMCPId,
+        userId: userId,
       });
     }
 
@@ -107,17 +122,18 @@ export const remove = mutation({
     mcpId: v.id("mcps"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
     const mcp = await ctx.runQuery(api.mcps.queries.get, {
       mcpId: args.mcpId,
+      includeApps: true,
     });
-
     if (mcp.type !== "http") {
       await ctx.scheduler.runAfter(0, internal.mcps.actions.remove, {
-        mcpId: args.mcpId,
+        mcpApps: mcp.apps!,
+        userId: mcp.userId!,
       });
     }
+
+    await Promise.all(mcp.apps!.map((mcpApp) => ctx.db.delete(mcpApp._id)));
 
     await ctx.db.delete(args.mcpId);
 
@@ -125,21 +141,85 @@ export const remove = mutation({
   },
 });
 
-export const restart = mutation({
+export const batchToggle = mutation({
   args: {
-    mcpId: v.id("mcps"),
+    enabled: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const { userId } = await requireAuth(ctx);
 
-    await ctx.runQuery(api.mcps.queries.get, {
+    // Get all MCPs for the user
+    const mcps = await ctx.db
+      .query("mcps")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Update all MCPs to the specified enabled state
+    await Promise.all(
+      mcps.map((mcp) =>
+        ctx.db.patch(mcp._id, {
+          enabled: args.enabled,
+          updatedAt: Date.now(),
+        }),
+      ),
+    );
+
+    return mcps.length; // Return number of MCPs updated
+  },
+});
+
+export const assignAppToChat = internalMutation({
+  args: {
+    mcpId: v.id("mcps"),
+    chatId: v.id("chats"),
+  },
+  handler: async (ctx, args): Promise<Doc<"mcpApps"> | null> => {
+    const mcp = await ctx.runQuery(api.mcps.queries.get, {
       mcpId: args.mcpId,
+      includeApps: true,
     });
 
-    await ctx.scheduler.runAfter(0, internal.mcps.actions.restart, {
-      mcpId: args.mcpId,
+    // First check if there's already an assigned app for this chat
+    const existingAssignment = mcp.apps?.find(
+      (app) => app.chatId === args.chatId,
+    );
+
+    if (existingAssignment) {
+      return existingAssignment;
+    }
+
+    // Find an unassigned app for this MCP that is created
+    const unassignedApps = mcp.apps?.filter(
+      (app) => app.chatId === undefined && app.status === "created",
+    );
+
+    if (!unassignedApps?.length) {
+      return null; // No unassigned app available
+    }
+
+    // Assign the app to the chat
+    await ctx.db.patch(unassignedApps[0]._id, {
+      chatId: args.chatId,
     });
 
-    return null;
+    if (unassignedApps.length < 2) {
+      const numCreate = Math.max(2, 2-unassignedApps.length);
+      await Promise.all(
+        Array.from({ length: numCreate }, async () => {
+          await ctx.runMutation(internal.mcps.crud.createMcpApp, {
+            mcpId: args.mcpId,
+            chatId: undefined,
+            url: "",
+            status: "pending",
+          });
+        }),
+      );
+      await ctx.scheduler.runAfter(0, internal.mcps.actions.create, {
+        mcpId: args.mcpId,
+        userId: mcp.userId!,
+      });
+    }
+
+    return unassignedApps[0];
   },
 });

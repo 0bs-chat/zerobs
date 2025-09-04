@@ -16,6 +16,8 @@ import { ThemeProvider } from "@/components/theme/provider";
 import { ConvexQueryClient } from "@convex-dev/react-query";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { AutumnProvider } from "autumn-js/react";
+import { api } from "../convex/_generated/api";
 
 // Create a new router instance
 const router = createRouter({
@@ -66,10 +68,12 @@ if (rootElement && !rootElement.innerHTML) {
       <ThemeProvider>
         <ConvexAuthProvider client={convex}>
           <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-            {import.meta.env.DEV && (
-              <ReactQueryDevtools buttonPosition="bottom-right" />
-            )}
+            <AutumnProvider convex={convex} convexApi={api.autumn}>
+              <RouterProvider router={router} />
+              {import.meta.env.DEV && (
+                <ReactQueryDevtools buttonPosition="bottom-right" />
+              )}
+            </AutumnProvider>
           </QueryClientProvider>
         </ConvexAuthProvider>
       </ThemeProvider>

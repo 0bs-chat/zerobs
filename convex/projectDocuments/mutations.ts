@@ -1,4 +1,3 @@
-import { requireAuth } from "../utils/helpers";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
@@ -9,8 +8,6 @@ export const create = mutation({
     documentId: v.id("documents"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
     await ctx.runQuery(api.documents.queries.get, {
       documentId: args.documentId,
     });
@@ -33,8 +30,6 @@ export const update = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
     await ctx.runQuery(api.projectDocuments.queries.get, {
       projectDocumentId: args.projectDocumentId,
     });
@@ -52,8 +47,6 @@ export const remove = mutation({
     projectDocumentId: v.id("projectDocuments"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
     const projectDocument = await ctx.runQuery(
       api.projectDocuments.queries.get,
       {
@@ -77,8 +70,6 @@ export const toggleSelect = mutation({
     selected: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-
     await ctx.runQuery(api.projects.queries.get, {
       projectId: args.projectId,
     });

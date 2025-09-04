@@ -14,7 +14,7 @@ export const userLoadableAtom = loadable(userAtom);
 export const newChatAtom = atomWithStorage<Doc<"chats">>("newChat", {
   _id: "new" as Id<"chats">,
   _creationTime: 0,
-  userId: "",
+  userId: "" as Id<"users">,
   name: "New Chat",
   pinned: false,
   documents: [],
@@ -52,7 +52,9 @@ export const selectedProjectIdAtom = atom<Id<"projects"> | undefined>(
   undefined,
 );
 export const selectedArtifactAtom = atom<Artifact | undefined>(undefined);
-export const selectedVibzMcpAtom = atom<Doc<"mcps"> | undefined>(undefined);
+export const selectedVibzMcpAtom = atom<
+  (Doc<"mcps"> & { apps?: Doc<"mcpApps">[] }) | undefined
+>(undefined);
 
 export const pinnedChatsAccordionOpenAtom = atomWithStorage(
   "pinnedChatsAccordionOpen",
@@ -136,7 +138,6 @@ export const initialMCPState = {
   dockerPort: 8000,
   dockerCommand: "",
   env: {},
-  status: "creating" as const,
   perChat: false,
   template: undefined as string | undefined,
 };
@@ -155,3 +156,19 @@ export const modelPreferencesAtom = atomWithStorage<ModelPreferences>(
     hidden: models.filter((m) => m.hidden).map((m) => m.model_name),
   },
 );
+
+// MCP caching atom
+export const mcpsAtom = atom<Doc<"mcps">[]>();
+
+// MCP tools batched data atom
+export type MCPTool = {
+  name: string;
+  description: string;
+  inputSchema: any;
+};
+
+export type MCPToolsData = Record<
+  string,
+  { tools: MCPTool[]; error: string | null }
+>;
+export const mcpToolsAtom = atom<MCPToolsData>({});

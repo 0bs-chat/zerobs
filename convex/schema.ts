@@ -37,7 +37,7 @@ export const DocumentVectors = Table("documentVectors", {
 });
 
 export const Chats = Table("chats", {
-  userId: v.string(),
+  userId: v.id("users"),
   name: v.string(),
   pinned: v.boolean(),
   documents: v.array(v.id("documents")),
@@ -113,23 +113,24 @@ export const Mcps = Table("mcps", {
   dockerPort: v.optional(v.number()),
   dockerCommand: v.optional(v.string()),
   command: v.optional(v.string()),
-  url: v.optional(v.string()),
   env: v.record(v.string(), v.string()),
   enabled: v.boolean(),
-  status: v.union(
-    v.literal("creating"),
-    v.literal("created"),
-    v.literal("error"),
-  ),
   userId: v.optional(v.string()),
   updatedAt: v.number(),
   perChat: v.boolean(),
   template: v.optional(v.string()),
 });
 
-export const Usage = Table("usage", {
-  userId: v.string(),
-  messages: v.number(),
+export const McpApps = Table("mcpApps", {
+  mcpId: v.id("mcps"),
+  chatId: v.optional(v.id("chats")), // undefined is unassigned
+  url: v.string(),
+  status: v.union(
+    v.literal("pending"),
+    v.literal("creating"),
+    v.literal("created"),
+    v.literal("error"),
+  ),
 });
 
 export default defineSchema({
@@ -170,6 +171,8 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_updated", ["userId", "updatedAt"])
     .index("by_enabled_user", ["enabled", "userId"]),
+  mcpApps: McpApps.table
+    .index("by_mcp", ["mcpId"])
+    .index("by_chat", ["chatId"]),
   streamChunkRefs: StreamChunkRefs.table.index("by_stream", ["streamId"]),
-  usage: Usage.table.index("by_user", ["userId"]),
 });

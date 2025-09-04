@@ -43,7 +43,7 @@ export const update = mutation({
       projectId: args.projectId,
     });
 
-    await ctx.db.patch(existingProject._id, {
+    await ctx.db.patch(existingProject?._id!, {
       ...args.updates,
       updatedAt: Date.now(),
     });

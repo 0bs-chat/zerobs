@@ -198,7 +198,7 @@ export const UserMessage = memo(
 								onChange={(e) => setEditedText(e.target.value)}
 								minHeight={32}
 								maxHeight={120}
-								className="bg-transparent resize-none border-none w-full ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground/70 outline-none focus-visible:outline-none text-base"
+								className="bg-transparent resize-none border-none w-full ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground/80 outline-none focus-visible:outline-none text-base"
 								autoFocus
 								placeholder="Edit your message..."
 							/>
@@ -217,7 +217,7 @@ export const UserMessage = memo(
 						</div>
 					) : (
 						<div className="bg-card rounded-md shadow-sm">
-							<ScrollArea className="flex flex-col max-h-96 max-w-full px-4 py-3">
+							<ScrollArea className="flex flex-col max-h-72 max-w-full px-4 py-3">
 								{renderedTextContent}
 							</ScrollArea>
 							{nonEditingDocumentIds.length > 0 && (
@@ -232,7 +232,7 @@ export const UserMessage = memo(
 						</div>
 					)}
 				</div>
-				<div className="opacity-0 flex gap-2 group-hover:opacity-100 transition-opacity  self-end">
+				<div className="opacity-0 flex gap-2 group-hover:opacity-100 transition-opacity self-end">
 					<UserUtilsBar
 						input={item}
 						isEditing={isEditing}

@@ -5,7 +5,9 @@ import {
 	type StoredMessage,
 	AIMessage,
 	ToolMessage,
+	ToolMessage as LangChainToolMessage,
 } from "@langchain/core/messages";
+import type { AIChunkGroup, ToolChunkGroup } from "../langchain/state";
 
 export type Message = Omit<Doc<"chatMessages">, "message"> & {
 	message: BaseMessage;
@@ -31,14 +33,8 @@ export type MessageGroup = {
 const clamp = (n: number, min: number, max: number) =>
 	Math.max(min, Math.min(n, max));
 
-const cmpId = (a: Id<"chatMessages">, b: Id<"chatMessages">) => {
-	const as = String(a);
-	const bs = String(b);
-	return as < bs ? -1 : as > bs ? 1 : 0;
-};
-
 const byCreatedAsc = (a: Doc<"chatMessages">, b: Doc<"chatMessages">) =>
-	a._creationTime - b._creationTime || cmpId(a._id, b._id);
+	a._creationTime - b._creationTime;
 
 // Identify message kinds
 const getType = (m: MessageWithBranchInfo) => m.message.message.getType();
@@ -69,7 +65,6 @@ type Index = {
 	byId: Map<Id<"chatMessages">, Doc<"chatMessages">>;
 	children: Map<Id<"chatMessages">, Doc<"chatMessages">[]>;
 	roots: Doc<"chatMessages">[];
-	// O(1) index lookups for latestPath computation
 	indexInParent: Map<Id<"chatMessages">, number>;
 	rootIndex: Map<Id<"chatMessages">, number>;
 };
@@ -139,41 +134,6 @@ export const buildThreadFromMessages = (
 
 		// Get children of the selected node
 		current = idx.children.get(selectedNode._id) ?? [];
-
-		// Include ALL children when there are multiple (this captures tool messages)
-		if (current.length > 1) {
-			// Add all children at this level
-			for (const child of current) {
-				result.push({
-					message: wrapDoc(child),
-					branchIndex: 1, // All are part of the same conversation flow
-					totalBranches: 1,
-					depth: depth + 1,
-				});
-			}
-			// Continue from the last child (usually the final AI response)
-			const lastChild = current[current.length - 1];
-			current = idx.children.get(lastChild._id) ?? [];
-		} else if (current.length === 1) {
-			// Single child - ADD the child to result and continue
-			const desired = path?.[depth + 1] ?? 0;
-			const i = clamp(desired, 0, current.length - 1);
-			const childMessage = current[i];
-
-			// Add the child message to the result
-			result.push({
-				message: wrapDoc(childMessage),
-				branchIndex: i + 1,
-				totalBranches: current.length,
-				depth: depth + 1,
-			});
-
-			// Continue with this child's children
-			current = idx.children.get(childMessage._id) ?? [];
-			depth += 1; // Increment depth here since we added the child
-			continue; // Skip the depth increment at the end of the loop
-		}
-
 		depth += 1;
 	}
 
@@ -288,4 +248,93 @@ export function getThreadFromMessage(
 	}
 
 	return chain.reverse().map((m) => ({ ...m, message: toBaseMessage(m) }));
+}
+
+export function groupStreamChunks(
+	chunks: (AIChunkGroup | ToolChunkGroup)[],
+): (AIChunkGroup | ToolChunkGroup)[] {
+	const groups: (AIChunkGroup | ToolChunkGroup)[] = [];
+	let currentGroup: (AIChunkGroup | ToolChunkGroup) | null = null;
+
+	for (const chunk of chunks) {
+		if (chunk.type === "ai") {
+			if (currentGroup?.type === "ai") {
+				currentGroup.content += chunk.content;
+				if (chunk.reasoning) {
+					currentGroup.reasoning =
+						(currentGroup.reasoning ?? "") + chunk.reasoning;
+				}
+			} else {
+				currentGroup = { ...chunk };
+				groups.push(currentGroup);
+			}
+		} else if (chunk.type === "tool") {
+			currentGroup = chunk;
+			groups.push(currentGroup);
+		}
+	}
+
+	return groups;
+}
+
+export function convertChunksToLangChainMessages(
+	groups: (AIChunkGroup | ToolChunkGroup)[],
+): (AIMessage | LangChainToolMessage)[] {
+	const completedIds = new Set(
+		groups
+			.filter((c) => c.type === "tool" && c.isComplete)
+			.map((c) => (c as ToolChunkGroup).toolCallId),
+	);
+
+	return groups
+		.map((chunk) => {
+			if (chunk.type === "ai") {
+				return new AIMessage({
+					content: chunk.content,
+					additional_kwargs: chunk.reasoning
+						? { reasoning_content: chunk.reasoning }
+						: {},
+				});
+			}
+
+			if (chunk.type === "tool") {
+				if (chunk.isComplete) {
+					return new LangChainToolMessage({
+						content: chunk.output as string,
+						name: chunk.toolName,
+						tool_call_id: chunk.toolCallId,
+						additional_kwargs: {
+							input: JSON.parse(JSON.stringify(chunk.input)),
+							is_complete: true,
+						},
+					});
+				}
+
+				if (!completedIds.has(chunk.toolCallId)) {
+					return new LangChainToolMessage({
+						name: chunk.toolName,
+						tool_call_id: chunk.toolCallId,
+						content: "",
+						additional_kwargs: {
+							input: JSON.parse(JSON.stringify(chunk.input)),
+							is_complete: false,
+						},
+					});
+				}
+			}
+
+			return undefined;
+		})
+		.filter(Boolean) as (AIMessage | LangChainToolMessage)[];
+}
+
+export function processBufferToMessages(
+	accumulatedBuffer: string[],
+): (AIMessage | LangChainToolMessage)[] {
+	if (accumulatedBuffer.length === 0) return [];
+	const chunks = accumulatedBuffer.map(
+		(chunkStr) => JSON.parse(chunkStr) as AIChunkGroup | ToolChunkGroup,
+	);
+	const groups = groupStreamChunks(chunks);
+	return convertChunksToLangChainMessages(groups);
 }
