@@ -299,8 +299,12 @@ export function convertChunksToLangChainMessages(
 
       if (chunk.type === "tool") {
         if (chunk.isComplete) {
+          const contentString =
+            typeof chunk.output === "string"
+              ? (chunk.output as string)
+              : JSON.stringify(chunk.output ?? "");
           return new LangChainToolMessage({
-            content: chunk.output as string,
+            content: contentString,
             name: chunk.toolName,
             tool_call_id: chunk.toolCallId,
             additional_kwargs: {
