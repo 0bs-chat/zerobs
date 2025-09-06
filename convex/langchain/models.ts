@@ -360,6 +360,38 @@ export const models: {
 		usageRateMultiplier: 1.0,
 		parser: "functionCalling",
 	},
+	{
+		label: "Sonoma Sky Alpha",
+		model_name: "sonoma-sky-alpha",
+		model: "openrouter/sonoma-sky-alpha",
+		isThinking: false,
+		toolSupport: true,
+		provider: "openai",
+		owner: "openrouter",
+		modalities: ["text"],
+		image:
+			"https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
+		description:
+			"2 million ctx window, supports image and parallel tool calling",
+		usageRateMultiplier: 1.0,
+		parser: "functionCalling",
+	},
+	{
+		label: "Sonoma Dusk Alpha",
+		model_name: "sonoma-dusk-alpha",
+		model: "openrouter/sonoma-dusk-alpha",
+		isThinking: false,
+		toolSupport: true,
+		provider: "openai",
+		owner: "openrouter",
+		modalities: ["text"],
+		image:
+			"https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
+		description:
+			"2 million ctx window, supports image and parallel tool calling",
+		usageRateMultiplier: 1.0,
+		parser: "functionCalling",
+	},
 ];
 
 export async function getModel(
