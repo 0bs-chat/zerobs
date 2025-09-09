@@ -37,7 +37,8 @@ export const models: {
 		| "cypher"
 		| "qwen"
 		| "z-ai"
-		| "kimi";
+		| "kimi"
+		| "nvidia";
 	usageRateMultiplier: number;
 	hidden?: boolean;
 	type?: "chat" | "embeddings";
@@ -389,6 +390,22 @@ export const models: {
 			"https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
 		description:
 			"2 million ctx window, supports image and parallel tool calling",
+		usageRateMultiplier: 1.0,
+		parser: "functionCalling",
+	},
+	{
+		label: "Nemotron Nano 9B v2",
+		model_name: "nemotron-nano-9b-v2",
+		model: "nvidia/nemotron-nano-9b-v2",
+		isThinking: true,
+		toolSupport: false,
+		provider: "openai",
+		owner: "nvidia",
+		modalities: ["text"],
+		image:
+			"https://ypazyw0thq.ufs.sh/f/38t7p527clgq738p6aIYty0zsu2PpBGJxga1efWZASI7i4DU",
+		description:
+			"Nemotron Nano 9B v2 is a small language model from Nvidia, designed for a wide range of tasks.",
 		usageRateMultiplier: 1.0,
 		parser: "functionCalling",
 	},
