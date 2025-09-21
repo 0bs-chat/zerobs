@@ -1,19 +1,19 @@
 "use node";
 
-import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
-import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import type { ActionCtx } from "../_generated/server";
 import {
 	BaseMessage,
+	type DataContentBlock,
 	HumanMessage,
 	type MessageContentComplex,
-	type DataContentBlock,
 	ToolMessage,
 } from "@langchain/core/messages";
-import type { Doc, Id } from "../_generated/dataModel";
-import { internal } from "../_generated/api";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import mime from "mime";
+import { internal } from "../_generated/api";
+import type { Doc, Id } from "../_generated/dataModel";
+import type { ActionCtx } from "../_generated/server";
 import { getDocumentUrl } from "../utils/helpers";
 
 export const models: {
@@ -288,6 +288,21 @@ export const models: {
 		usageRateMultiplier: 2.0,
 	},
 	{
+		label: "Grok 4 Fast",
+		model_name: "grok-4-fast",
+		model: "x-ai/grok-4-fast:free",
+		isThinking: true,
+		toolSupport: false,
+		provider: "openai",
+		modalities: ["text", "image"],
+		image:
+			"https://ypazyw0thq.ufs.sh/f/38t7p527clgqTWQGWJKcCZGuB4JXj70amYe8kDsr5IfyOV6o",
+		description:
+			"Grok 4 Fast is xAI's latest multimodal model with SOTA cost-efficiency and a 2M token context window",
+		owner: "x-ai",
+		usageRateMultiplier: 2.0,
+	},
+	{
 		label: "Kimi K2",
 		model_name: "kimi-k2",
 		model: "moonshotai/kimi-k2:free",
@@ -361,38 +376,7 @@ export const models: {
 		usageRateMultiplier: 1.0,
 		parser: "functionCalling",
 	},
-	{
-		label: "Sonoma Sky Alpha",
-		model_name: "sonoma-sky-alpha",
-		model: "openrouter/sonoma-sky-alpha",
-		isThinking: false,
-		toolSupport: true,
-		provider: "openai",
-		owner: "openrouter",
-		modalities: ["text"],
-		image:
-			"https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
-		description:
-			"2 million ctx window, supports image and parallel tool calling",
-		usageRateMultiplier: 1.0,
-		parser: "functionCalling",
-	},
-	{
-		label: "Sonoma Dusk Alpha",
-		model_name: "sonoma-dusk-alpha",
-		model: "openrouter/sonoma-dusk-alpha",
-		isThinking: false,
-		toolSupport: true,
-		provider: "openai",
-		owner: "openrouter",
-		modalities: ["text"],
-		image:
-			"https://ypazyw0thq.ufs.sh/f/38t7p527clgq14M72WZqMy6JQjUcm5nrGbA3h7taFpvB4Nzf",
-		description:
-			"2 million ctx window, supports image and parallel tool calling",
-		usageRateMultiplier: 1.0,
-		parser: "functionCalling",
-	},
+
 	{
 		label: "Nemotron Nano 9B v2",
 		model_name: "nemotron-nano-9b-v2",
