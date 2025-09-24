@@ -103,9 +103,7 @@ const SortableModelItem = ({
 					aria-label={`${model.label} model icon`}
 					alt={model.label}
 					className={`h-4 w-4 opacity-80 ${
-						["openai", "x-ai", "z-ai", "openrouter", "anthropic"].includes(
-							model.owner,
-						)
+						["openai", "x-ai", "openrouter", "anthropic"].includes(model.owner)
 							? "dark:invert"
 							: ""
 					}`}

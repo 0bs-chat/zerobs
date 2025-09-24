@@ -78,6 +78,22 @@ export const models: {
 		temperature: 0.3,
 	},
 	{
+		label: "GPT-5 Codex",
+		model_name: "gpt-5-codex",
+		model: "openai/gpt-5-codex",
+		isThinking: true,
+		toolSupport: false,
+		provider: "openai",
+		modalities: ["text", "image"],
+		image:
+			"https://ypazyw0thq.ufs.sh/f/38t7p527clgqeptdPa1iGzX5t6K9HPo7rZCflV3QEyx01m8u",
+		description:
+			"GPT-5 Chat is designed for advanced, natural, multimodal, and context-aware conversations for enterprise applications.",
+		owner: "openai",
+		usageRateMultiplier: 1.0,
+		temperature: 0.3,
+	},
+	{
 		label: "Gemini 2.5 Flash",
 		model_name: "gemini-2.5-flash",
 		model: "google/gemini-2.5-flash",
