@@ -6,139 +6,139 @@ import { FileDisplay } from "./file-result";
 import ToolAccordion from "@/components/ui/tool-accoordion";
 
 export const ToolMessage = memo(({ message }: { message: BaseMessage }) => {
-  const parsedContent = useMemo(() => {
-    if (!message) return null;
+	const parsedContent = useMemo(() => {
+		if (!message) return null;
 
-    // 1) Known “searchWeb” → SearchResult[]
-    if (message.name === "searchWeb") {
-      try {
-        return {
-          type: "searchWeb" as const,
-          results: JSON.parse(message.content as string) as SearchResult[],
-        };
-      } catch {
-        return { type: "generic" as const, content: message.content };
-      }
-    }
+		// 1) Known “searchWeb” → SearchResult[]
+		if (message.name === "searchWeb") {
+			try {
+				return {
+					type: "searchWeb" as const,
+					results: JSON.parse(message.content as string) as SearchResult[],
+				};
+			} catch {
+				return { type: "generic" as const, content: message.content };
+			}
+		}
 
-    // 2) Known “searchProjectDocuments” → DocumentResult[]
-    if (message.name === "searchProjectDocuments") {
-      try {
-        return {
-          type: "document" as const,
-          results: JSON.parse(message.content as string) as DocumentResult[],
-        };
-      } catch {
-        return { type: "generic" as const, content: message.content };
-      }
-    }
+		// 2) Known “searchProjectDocuments” → DocumentResult[]
+		if (message.name === "searchProjectDocuments") {
+			try {
+				return {
+					type: "document" as const,
+					results: JSON.parse(message.content as string) as DocumentResult[],
+				};
+			} catch {
+				return { type: "generic" as const, content: message.content };
+			}
+		}
 
-    // 3) Mixed [ { type: "file", file: { file_id } } | { type: "text", text } ]
-    try {
-      const maybeArr = JSON.parse(message.content as string);
-      if (Array.isArray(maybeArr)) {
-        const isMixed = maybeArr.some(
-          (i) =>
-            (i.type === "file" && i.file?.file_id) ||
-            (i.type === "text" && i.text),
-        );
-        if (isMixed) {
-          return { type: "mixed" as const, content: maybeArr };
-        }
-      }
-    } catch {
-      // not JSON or not the format we expected
-    }
+		// 3) Mixed [ { type: "file", file: { file_id } } | { type: "text", text } ]
+		try {
+			const maybeArr = JSON.parse(message.content as string);
+			if (Array.isArray(maybeArr)) {
+				const isMixed = maybeArr.some(
+					(i) =>
+						(i.type === "file" && i.file?.file_id) ||
+						(i.type === "text" && i.text),
+				);
+				if (isMixed) {
+					return { type: "mixed" as const, content: maybeArr };
+				}
+			}
+		} catch {
+			// not JSON or not the format we expected
+		}
 
-    // 4) fallback generic
-    return { type: "generic" as const, content: message.content };
-  }, [message]);
+		// 4) fallback generic
+		return { type: "generic" as const, content: message.content };
+	}, [message]);
 
-  const input = (message.additional_kwargs as any)?.input as
-    | Record<string, any>
-    | undefined;
+	const input = (message.additional_kwargs as any)?.input as
+		| Record<string, any>
+		| undefined;
 
-  if (!parsedContent) return null;
+	if (!parsedContent) return null;
 
-  // Search/Web calls render in their own specialized component
-  if (parsedContent.type === "searchWeb") {
-    return (
-      <SearchResultDisplay results={parsedContent.results} input={input} />
-    );
-  }
-  if (parsedContent.type === "document") {
-    return (
-      <DocumentResultDisplay results={parsedContent.results} input={input} />
-    );
-  }
+	// Search/Web calls render in their own specialized component
+	if (parsedContent.type === "searchWeb") {
+		return (
+			<SearchResultDisplay results={parsedContent.results} input={input} />
+		);
+	}
+	if (parsedContent.type === "document") {
+		return (
+			<DocumentResultDisplay results={parsedContent.results} input={input} />
+		);
+	}
 
-  // MIXED: files + text blocks
-  if (parsedContent.type === "mixed") {
-    const images = parsedContent.content.filter(
-      (item) => item.type === "file" && item.file?.file_id,
-    );
-    const nonImageContent = parsedContent.content.filter(
-      (item) => !(item.type === "file" && item.file?.file_id),
-    );
+	// MIXED: files + text blocks
+	if (parsedContent.type === "mixed") {
+		const images = parsedContent.content.filter(
+			(item) => item.type === "file" && item.file?.file_id,
+		);
+		const nonImageContent = parsedContent.content.filter(
+			(item) => !(item.type === "file" && item.file?.file_id),
+		);
 
-    return (
-      <div className="flex flex-col gap-4">
-        <ToolAccordion
-          messageName={message.name ?? "unknown"}
-          input={input}
-          isComplete={(message.additional_kwargs as any)?.is_complete}
-        >
-          {nonImageContent.length > 0 ? (
-            <div className="flex flex-col gap-4">
-              {nonImageContent.map((item, idx) => {
-                if (item.type === "text" && item.text) {
-                  return (
-                    <pre
-                      key={idx}
-                      className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap"
-                    >
-                      {item.text}
-                    </pre>
-                  );
-                }
-                return null;
-              })}
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground">
-              {images.length > 0 ? "Images displayed below" : "No output"}
-            </div>
-          )}
-        </ToolAccordion>
+		return (
+			<div className="flex flex-col gap-4">
+				<ToolAccordion
+					messageName={message.name ?? "unknown"}
+					input={input}
+					isComplete={(message.additional_kwargs as any)?.is_complete}
+				>
+					{nonImageContent.length > 0 ? (
+						<div className="flex flex-col gap-4">
+							{nonImageContent.map((item, idx) => {
+								if (item.type === "text" && item.text) {
+									return (
+										<pre
+											key={idx}
+											className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap"
+										>
+											{item.text}
+										</pre>
+									);
+								}
+								return null;
+							})}
+						</div>
+					) : (
+						<div className="text-xs text-muted-foreground">
+							{images.length > 0 ? "Images displayed below" : "No output"}
+						</div>
+					)}
+				</ToolAccordion>
 
-        {images.length > 0 && (
-          <div className="flex flex-col gap-2">
-            {images.map((item, idx) => (
-              <FileDisplay key={idx} fileId={item.file.file_id} />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
+				{images.length > 0 && (
+					<div className="flex flex-col gap-2">
+						{images.map((item, idx) => (
+							<FileDisplay key={idx} fileId={item.file.file_id} />
+						))}
+					</div>
+				)}
+			</div>
+		);
+	}
 
-  // GENERIC: just dump the string or JSON
-  return (
-    <ToolAccordion
-      messageName={message.name ?? "unknown"}
-      input={input}
-      isComplete={(message.additional_kwargs as any)?.is_complete}
-    >
-      {typeof parsedContent.content === "string" ? (
-        <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-          {parsedContent.content}
-        </pre>
-      ) : (
-        <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-          {JSON.stringify(parsedContent.content, null, 2)}
-        </pre>
-      )}
-    </ToolAccordion>
-  );
+	// GENERIC: just dump the string or JSON
+	return (
+		<ToolAccordion
+			messageName={message.name ?? "unknown"}
+			input={input}
+			isComplete={(message.additional_kwargs as any)?.is_complete}
+		>
+			{typeof parsedContent.content === "string" ? (
+				<pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+					{parsedContent.content}
+				</pre>
+			) : (
+				<pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+					{JSON.stringify(parsedContent.content, null, 2)}
+				</pre>
+			)}
+		</ToolAccordion>
+	);
 });
 ToolMessage.displayName = "ToolMessage";

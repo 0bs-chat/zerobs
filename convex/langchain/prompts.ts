@@ -136,7 +136,7 @@ export function createAgentSystemMessage(
   plannerMode: boolean = false,
   customPrompt?: string,
   baseAgentType: boolean = true,
-  artifacts: boolean = true,
+  artifacts: boolean = true
 ): SystemMessage {
   const baseIdentity = `You are 0bs Chat, an AI assistant powered by the ${model} model.`;
 
@@ -178,56 +178,103 @@ export function createAgentSystemMessage(
     `- If documents are provided, they are made avilable to in /mnt/data directory.\n`;
 
   return new SystemMessage(
-    `${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`,
+    `${baseIdentity} ${roleDescription}${communicationGuidelines}${formattingGuidelines}${baseAgentType ? baseAgentGuidelines : ""}${artifacts ? artifactsGuidelines : ""}${customPrompt ? customPrompt : ""}`
   );
 }
 
 // Prompt template for planner
 export function createPlannerPrompt(availableToolsDescription: string) {
-  const toolsSection = `\n**Available Tools:**\n${availableToolsDescription}\n\nWhen planning steps, consider which tools are available and how they can be used to accomplish the objective efficiently.`;
+  const toolsSection =
+    `\n**Available Tools**\n${availableToolsDescription}\n` +
+    `When planning, think about which tool each step will need (if any).\n`;
 
+  // --- NEW PROMPT ---------------------------------------------------------
   return ChatPromptTemplate.fromMessages([
-    [
-      "system",
-      `For the given objective, create a step-by-step plan using the planStep and planArray schema conventions.\n\n` +
-        `**CRITICAL INSTRUCTIONS:**\n` +
-        `- You are ONLY responsible for creating a plan, NOT executing it\n` +
-        `- DO NOT call any tools or execute any function calls\n` +
-        `- DO NOT attempt to carry out the plan yourself\n` +
-        `- ONLY output valid JSON that conforms to the planArray schema\n` +
-        `- Your response must be parseable JSON with no additional text, explanations, or markdown formatting\n\n` +
-        `**Planning Guidelines:**\n` +
-        `- Each step should be actionable, unambiguous, and provide all information needed for a subagent to execute independently\n` +
-        `- Use the discriminated union format with nested arrays for parallel execution\n` +
-        `- Scale the number of steps and parallelism to the complexity of the query\n` +
-        `- Do not add superfluous steps. The result of the final step should be the final answer\n` +
-        `- Make the plan technical and specific to the topic\n` +
-        `- Each planStep object must include both "step" (short instruction) and "context" (detailed explanation) properties\n` +
-        `- Use the discriminated union format: {{ type: "single", data: planStep }} for single steps or {{ type: "parallel", data: planStep[] }} for parallel execution\n` +
-        `${toolsSection}\n\n` +
-        `**Output Format:**\n` +
-        `Your response must be a valid JSON array following the planArray schema. Do not include any other text, explanations, or formatting.\n`,
-    ],
+    new SystemMessage(
+      String.raw`
+You are a task-planner. Your ONLY job is to output a valid JSON object that
+matches **exactly** the TypeScript schema shown below. Do NOT execute the plan.
+
+---------------  REQUIRED SCHEMA  -----------------
+
+type planStep   = { step: string; context: string };
+
+type PlanItem =
+  | { type: "single";   data: planStep }
+  | { type: "parallel"; data: planStep[] };
+
+export type Plan = { plan: PlanItem[] };
+
+CRITICAL: For "single" items, data must be an OBJECT with step and context fields:
+✅ CORRECT: { "type": "single", "data": { "step": "Search docs", "context": "Search for relevant information" } }
+❌ WRONG: { "type": "single", "data": ["Search for relevant information"] }
+
+For "parallel" items, data must be an ARRAY of planStep objects:
+✅ CORRECT: { "type": "parallel", "data": [{ "step": "Task A", "context": "Do A" }, { "step": "Task B", "context": "Do B" }] }
+❌ WRONG: { "type": "parallel", "data": ["Task A", "Task B"] }
+
+---------------------------------------------------
+
+Important constraints:
+1. The top-level key must be "plan".
+2. In a "parallel" item, **data is an array of planStep**, NOT wrapped
+   in {type:"single"} objects.   ❌ WRONG:
+   { "type":"parallel","data":[{ "type":"single", data:{…} }]}
+   ✅ RIGHT:
+   { "type":"parallel","data":[ { "step":"...", "context":"..." }, … ] }
+3. Every planStep must have both fields: "step" (≤6 words) and "context"
+   (1-3 sentences with enough detail for an agent to act).
+4. No markdown, no extra keys, no comments.
+5. Your JSON must pass a strict JSON.parse in JavaScript.
+
+${toolsSection}
+
+Respond with the JSON ONLY.`
+    ),
     new MessagesPlaceholder("messages"),
   ]);
 }
 
 // Prompt template for replanner
 export function createReplannerPrompt(availableToolsDescription: string) {
+  // Explicit schema block to reduce model output errors by clearly
+  // specifying the exact JSON structure that must be returned.
+  const schemaSection = String.raw`
++---------------  REQUIRED SCHEMA  -----------------
+type planStep   = { step: string; context: string };
+
+type PlanItem =
+  | { type: "single";   data: planStep }
+  | { type: "parallel"; data: planStep[] };
+
+// Replanner response must match one of the following shapes exactly
+type ReplanResponse =
+  | { type: "continue_planning"; data: PlanItem[] }
+  | { type: "respond_to_user";   data: string };
+
+CRITICAL:
+- For "single", data MUST be an OBJECT: { step, context } (not an array).
+- For "parallel", data MUST be an ARRAY of planStep objects (not strings).
+- For "respond_to_user", data MUST be a STRING. Do NOT return arrays or objects.
++---------------------------------------------------`;
+
   const toolsSection = `\n**Available Tools:**\n${availableToolsDescription}\n\nWhen planning remaining steps, consider which tools are available and how they can be used to accomplish the remaining objectives efficiently.`;
 
   return ChatPromptTemplate.fromMessages([
-    [
-      "system",
-      `## Your Task: Reflect and Re-plan\n\n` +
-        `For the given objective, update the step-by-step plan using the planStep and planArray schema conventions.\n` +
-        `- Only include the remaining steps needed to fill the gaps identified in your analysis.\n` +
-        `- Use the discriminated union format with nested arrays for parallel execution.\n` +
-        `- Ensure steps are non-overlapping, unambiguous, and context-rich.\n` +
-        `- The result of the final step should be the final answer.\n` +
-        `${toolsSection}\n\n` +
-        `**Message History:**\n`,
-    ],
+    new SystemMessage(
+      String.raw`## Your Task: Reflect and Re-plan
+
+${schemaSection}
+
+For the given objective, update the step-by-step plan using the planStep and planArray schema conventions.
+- Only include the remaining steps needed to fill the gaps identified in your analysis.
+- Use the discriminated union format with nested arrays for parallel execution.
+- Ensure steps are non-overlapping, unambiguous, and context-rich.
+- The result of the final step should be the final answer.
+${toolsSection}
+
+**Message History:**`
+    ),
     new MessagesPlaceholder("messages"),
     [
       "system",
@@ -235,20 +282,38 @@ export function createReplannerPrompt(availableToolsDescription: string) {
         `**Completed steps so far:**\n`,
     ],
     new MessagesPlaceholder("pastSteps"),
-    [
-      "system",
-      `\n\n**MANDATORY ANALYSIS & REPLANNING:**\n\n` +
-        `1. **Re-evaluate the Original Objective:** Look at the user's first message. What were the core components of their request?\n\n` +
-        `2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.\n\n` +
-        `3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.\n\n` +
-        `4. **Update Your Plan:**\n` +
-        ` - **If ready to respond:** Set type to "respond_to_user" and data as the response. Formulate the complete, synthesized response. This is not a draft; it is the complete, polished answer.\n` +
-        ` - **If not ready:** Set type to "continue_planning" and provide a new plan containing **only the remaining steps needed** to fill ` +
-        `the gaps you identified.\n\n` +
-        `**ALWAYS** output valid JSON, do not include any extraneous text or explanations, make sure you understand unions in the output format and respond correctly`,
-    ],
+    new SystemMessage(
+      String.raw`
+
+**MANDATORY ANALYSIS & REPLANNING:**
+
+1. **Re-evaluate the Original Objective:** Look at the user's first message. What were the core components of their request?
+
+2. **Conduct a Gap Analysis:** Compare the completed steps' results against the original objective. Have all components been fully addressed? State explicitly what is **still missing**.
+
+3. **Assess Readiness:** Based on your analysis, decide if you have all the necessary information to synthesize a final, complete answer that satisfies the entire original objective.
+
+4. **Update Your Plan:**
+ - **If ready to respond:** Set type to "respond_to_user" and data as the response. Formulate the complete, synthesized response. This is not a draft; it is the complete, polished answer.
+ - **If not ready:** Set type to "continue_planning" and provide a new plan containing **only the remaining steps needed** to fill the gaps you identified.
+
+**ALWAYS** output valid JSON, do not include any extraneous text or explanations, make sure you understand unions in the output format and respond correctly`
+    ),
   ]);
 }
+
+// Helper schemas to accept alternative respond_to_user shapes for robustness.
+const respondPayloadObject = z.object({
+  step: z.string(),
+  context: z.string(),
+});
+
+const nestedRespondArray = z.array(
+  z.object({
+    type: z.literal("respond_to_user"),
+    data: respondPayloadObject,
+  })
+);
 
 export const replannerOutputSchema = (artifacts: boolean) =>
   z.object({
@@ -263,11 +328,15 @@ export const replannerOutputSchema = (artifacts: boolean) =>
           .describe(
             "The final, complete, and user-facing response, to be used ONLY when 'type' is 'respond_to_user'. " +
               "This string MUST synthesize all gathered information and results from the previous steps into a single, " +
-              "coherent, and well-formatted answer. This is the ONLY output the end-user will see. It must fully and directly " +
-              "address the user's original query, leaving no questions unanswered. Do not include any conversational filler, " +
-              "apologies, or meta-commentary about the process; provide only the definitive answer." +
-              `${artifacts ? ` Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`,
+              "coherent, and well-formatted answer. Do not include any conversational filler." +
+              `${artifacts ? ` Adhere to the following additional guidelines and format your response accordingly:\n${artifactsGuidelines}` : ""}`
           ),
+        respondPayloadObject.describe(
+          "Alternate object shape: { step, context }. 'context' treated as final answer."
+        ),
+        nestedRespondArray.describe(
+          "Alternate nested array shape: [{ type: 'respond_to_user', data: { step, context } }]. 'context' taken from first entry."
+        ),
       ])
       .describe("The response data - either a plan array or a string response"),
   });

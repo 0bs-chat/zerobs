@@ -115,8 +115,8 @@ interface AccordionTriggerProps {
 function AccordionTrigger({
   className,
   children,
-  showIcon = true,
   onClick,
+  showIcon = true,
   ...props
 }: AccordionTriggerProps) {
   const { expandedItems, toggleItem } = useAccordion();
