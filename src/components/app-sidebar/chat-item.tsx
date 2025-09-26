@@ -6,6 +6,7 @@ import { chatHandlers } from "@/hooks/chats/use-chats";
 import { cn } from "@/lib/utils";
 import { useAtomValue } from "jotai";
 import { chatIdAtom } from "@/store/chatStore";
+
 import {
 	ContextMenu,
 	ContextMenuTrigger,
@@ -25,10 +26,12 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ChatItemProps {
 	chat: Doc<"chats">;
 	isPinned: boolean;
+	onClick?: () => void;
 }
 
 export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
@@ -42,7 +45,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
 		} = chatHandlers();
 		const currentChatId = useAtomValue(chatIdAtom);
 		const isSelected = currentChatId === chat._id;
-
+		const isMobile = useIsMobile();
 		// Rename dialog state
 		const [renameOpen, setRenameOpen] = React.useState(false);
 		const [newName, setNewName] = React.useState(chat.name);
@@ -75,7 +78,7 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
 					<ContextMenuTrigger asChild>
 						<SidebarMenuButton
 							key={chat._id}
-							className="py-2 group/item cursor-pointer w-full h-full"
+							className={cn("py-2 group/item cursor-pointer w-full h-full")}
 							asChild
 							onClick={(e) => {
 								e.stopPropagation();
@@ -138,6 +141,16 @@ export const ChatItem = React.forwardRef<HTMLDivElement, ChatItemProps>(
 						<ContextMenuItem onClick={() => setRenameOpen(true)}>
 							Rename
 						</ContextMenuItem>
+						{isMobile && (
+							<>
+								<ContextMenuItem onClick={() => handleDelete(chat._id)}>
+									Delete
+								</ContextMenuItem>
+								<ContextMenuItem onClick={() => handlePin(chat._id)}>
+									{isPinned ? "Unpin" : "Pin"}
+								</ContextMenuItem>
+							</>
+						)}
 					</ContextMenuContent>
 				</ContextMenu>
 				<Dialog open={renameOpen} onOpenChange={setRenameOpen}>

@@ -11,115 +11,119 @@ import { useSetAtom } from "jotai";
 import { createProjectDialogOpenAtom, newChatAtom } from "@/store/chatStore";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
 import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const ProjectsList = () => {
-  const chatId = useAtomValue(chatIdAtom);
-  const navigate = useNavigate();
-  const router = useRouter();
-  const { data: allProjects } = useQuery({
-    ...convexQuery(api.projects.queries.getAll, {
-      paginationOpts: { numItems: 20, cursor: null },
-    }),
-  });
+	const chatId = useAtomValue(chatIdAtom);
+	const navigate = useNavigate();
+	const router = useRouter();
+	const { data: allProjects } = useQuery({
+		...convexQuery(api.projects.queries.getAll, {
+			paginationOpts: { numItems: 20, cursor: null },
+		}),
+	});
 
-  const { mutate: updateChatMutation } = useMutation({
-    mutationFn: useConvexMutation(api.chats.mutations.update),
-  });
-  const { mutate: removeProjectMutation } = useMutation({
-    mutationFn: useConvexMutation(api.projects.mutations.remove),
-  });
-  const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
+	const { mutate: updateChatMutation } = useMutation({
+		mutationFn: useConvexMutation(api.chats.mutations.update),
+	});
+	const { mutate: removeProjectMutation } = useMutation({
+		mutationFn: useConvexMutation(api.projects.mutations.remove),
+	});
+	const setProjectDialogOpen = useSetAtom(createProjectDialogOpenAtom);
 
-  const setNewChat = useSetAtom(newChatAtom);
+	const setNewChat = useSetAtom(newChatAtom);
+	const isMobile = useIsMobile();
 
-  const isOnProjectsRoute = useLocation().pathname === "/projects";
+	const isOnProjectsRoute = useLocation().pathname === "/projects";
 
-  return (
-    <>
-      <div
-        className={` ${isOnProjectsRoute ? "container mx-auto flex max-w-6xl flex-1 flex-col p-3 pb-6 lg:max-h-dvh lg:overflow-y-hidden lg:p-6" : "flex flex-col gap-3 h-full"}`}
-      >
-        <div
-          className={`flex items-center text-center justify-between ${isOnProjectsRoute ? "mb-8" : "mb-0"}`}
-        >
-          <h2
-            className={`${isOnProjectsRoute ? "text-3xl font-bold " : "text-xl font-bold"}`}
-          >
-            {isOnProjectsRoute ? "Projects" : "Select a Project"}
-          </h2>
-          <Button
-            variant="default"
-            size="sm"
-            className="bg-primary text-primary-foreground"
-            onClick={() => {
-              setProjectDialogOpen(true);
-            }}
-          >
-            <PlusIcon className="size-4" />
-            New Project
-          </Button>
-        </div>
-        <ScrollArea className="h-[calc(100vh-10rem)] ">
-          <div className="flex flex-col gap-2 overflow-y-auto">
-            {allProjects?.page.map((project) => (
-              <Card
-                key={project._id}
-                className="group flex-row relative group/card px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-accent/30 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => {
-                  // Only navigate to project page if we're on the /projects route
-                  if (router.state.location.pathname === "/projects") {
-                    navigate({
-                      to: "/project/$projectId",
-                      params: { projectId: project._id },
-                    });
-                  }
+	return (
+		<>
+			<div
+				className={` ${isOnProjectsRoute ? `container flex max-w-6xl flex-1 flex-col p-3 pb-6 lg:max-h-dvh lg:overflow-y-hidden lg:p-6 ` : "flex flex-col gap-3 h-full"}`}
+			>
+				<div
+					className={`flex items-center text-center justify-between ${isOnProjectsRoute ? "mb-8" : "mb-0"}`}
+				>
+					<h2
+						className={`${isOnProjectsRoute ? "text-3xl font-bold " : "text-xl font-bold"}`}
+					>
+						{isOnProjectsRoute ? "Projects" : "Select a Project"}
+					</h2>
+					<Button
+						variant="default"
+						size="sm"
+						className="bg-primary text-primary-foreground"
+						onClick={() => {
+							setProjectDialogOpen(true);
+						}}
+					>
+						<PlusIcon className="size-4" />
+						New Project
+					</Button>
+				</div>
+				<ScrollArea className="h-[calc(100vh-10rem)] ">
+					<div className="flex flex-col gap-2 overflow-y-auto">
+						{allProjects?.page.map((project) => (
+							<Card
+								key={project._id}
+								className="group flex-row relative group/card px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-accent/30 duration-300 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+								onClick={() => {
+									// Only navigate to project page if we're on the /projects route
+									if (router.state.location.pathname === "/projects") {
+										navigate({
+											to: "/project/$projectId",
+											params: { projectId: project._id },
+										});
+									}
 
-                  // Always update the chat if not a new chat
-                  if (chatId !== "new") {
-                    updateChatMutation({
-                      chatId,
-                      updates: {
-                        projectId: project._id,
-                      },
-                    });
-                  } else {
-                    setNewChat((prev) => ({
-                      ...prev,
-                      projectId: project._id,
-                    }));
-                  }
-                }}
-              >
-                <div className="flex items-center justify-between flex-1">
-                  <h3 className="font-medium w-36 flex-shrink-0 truncate">
-                    {project.name}
-                  </h3>
-                  {project.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {project.description}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant="default"
-                  size="icon"
-                  className="cursor-pointer hidden items-center justify-center z-10 absolute right-2 group-hover/card:flex opacity-0 group-hover/card:opacity-100 transition-all duration-300 hover:text-red-500/80"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    removeProjectMutation({
-                      projectId: project._id,
-                    });
-                  }}
-                >
-                  <TrashIcon className="size-5" />
-                </Button>
-              </Card>
-            ))}
-          </div>
-        </ScrollArea>
-      </div>
-      <CreateProjectDialog />
-    </>
-  );
+									// Always update the chat if not a new chat
+									if (chatId !== "new") {
+										updateChatMutation({
+											chatId,
+											updates: {
+												projectId: project._id,
+											},
+										});
+									} else {
+										setNewChat((prev) => ({
+											...prev,
+											projectId: project._id,
+										}));
+									}
+								}}
+							>
+								<div
+									className={`flex  ${isMobile ? "flex-col items-start gap-1" : "items-center justify-between"}  flex-1`}
+								>
+									<h3 className="font-medium w-36 flex-shrink-0 truncate">
+										{project.name}
+									</h3>
+									{project.description && (
+										<p className="text-sm text-muted-foreground line-clamp-2">
+											{project.description}
+										</p>
+									)}
+								</div>
+								<Button
+									variant="default"
+									size="icon"
+									className="cursor-pointer hidden items-center justify-center z-10 absolute right-2 group-hover/card:flex opacity-0 group-hover/card:opacity-100 transition-all duration-300 hover:text-red-500/80"
+									onClick={(e) => {
+										e.stopPropagation();
+										e.preventDefault();
+										removeProjectMutation({
+											projectId: project._id,
+										});
+									}}
+								>
+									<TrashIcon className="size-5" />
+								</Button>
+							</Card>
+						))}
+					</div>
+				</ScrollArea>
+			</div>
+			<CreateProjectDialog />
+		</>
+	);
 };

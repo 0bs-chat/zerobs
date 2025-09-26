@@ -19,6 +19,7 @@ import { getDocTagInfo } from "@/lib/helper";
 import { models } from "../../../../convex/langchain/models";
 import { UserUtilsBar } from "./utils-bar/user-utils-bar";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Shared DocumentList component for both editing and non-editing modes
 const DocumentList = ({
@@ -104,6 +105,7 @@ export const UserMessage = memo(
 		);
 
 		const isEditing = editingMessageId === item.message._id;
+		const isMobile = useIsMobile();
 
 		useEffect(() => {
 			if (editingMessageId) {
@@ -232,7 +234,9 @@ export const UserMessage = memo(
 						</div>
 					)}
 				</div>
-				<div className="opacity-0 flex gap-2 group-hover:opacity-100 transition-opacity self-end">
+				<div
+					className={`opacity-0 flex gap-2 group-hover:opacity-100 transition-opacity self-end ${isMobile ? "opacity-90" : ""}`}
+				>
 					<UserUtilsBar
 						input={item}
 						isEditing={isEditing}

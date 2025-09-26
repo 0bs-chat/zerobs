@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  XIcon,
-  CopyIcon,
-  CheckIcon,
-  ExternalLinkIcon,
-  EyeIcon,
-  CodeIcon,
-  WrapTextIcon,
+	XIcon,
+	CopyIcon,
+	CheckIcon,
+	ExternalLinkIcon,
+	EyeIcon,
+	CodeIcon,
+	WrapTextIcon,
 } from "lucide-react";
 import { useCopy } from "@/hooks/chats/use-copy";
 import { Markdown } from "@/components/ui/markdown";
@@ -16,334 +16,334 @@ import type { Artifact } from "./utils";
 import { useState, useEffect, memo } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
-  oneDark,
-  oneLight,
+	oneDark,
+	oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useAtomValue } from "jotai";
 import { currentThemeModeAtom } from "@/lib/theme/store";
 import {
-  SandpackProvider,
-  SandpackLayout,
-  SandpackPreview,
-  useSandpack,
+	SandpackProvider,
+	SandpackLayout,
+	SandpackPreview,
+	useSandpack,
 } from "@codesandbox/sandpack-react";
 
 const SandpackContent = memo(() => {
-  const { sandpack } = useSandpack();
+	const { sandpack } = useSandpack();
 
-  return (
-    <SandpackLayout style={{ height: "100%" }}>
-      <SandpackPreview
-        showRefreshButton={false}
-        showOpenInCodeSandbox={false}
-        style={{ height: "100%" }}
-      />
-      {sandpack.error && (
-        <div className="absolute bottom-4 left-4 z-10 rounded-md bg-destructive/90 p-3 text-destructive-foreground shadow-lg">
-          <div className="font-medium text-sm">Rendering Error</div>
-          <div className="text-xs opacity-90">{sandpack.error.message}</div>
-        </div>
-      )}
-    </SandpackLayout>
-  );
+	return (
+		<SandpackLayout style={{ height: "100%" }}>
+			<SandpackPreview
+				showRefreshButton={false}
+				showOpenInCodeSandbox={false}
+				style={{ height: "100%" }}
+			/>
+			{sandpack.error && (
+				<div className="absolute bottom-4 left-4 z-10 rounded-md bg-destructive/90 p-3 text-destructive-foreground shadow-lg">
+					<div className="font-medium text-sm">Rendering Error</div>
+					<div className="text-xs opacity-90">{sandpack.error.message}</div>
+				</div>
+			)}
+		</SandpackLayout>
+	);
 });
 SandpackContent.displayName = "SandpackContent";
 
 const ReactComponentRenderer = memo(({ content }: { content: string }) => {
-  const theme = useAtomValue(currentThemeModeAtom);
+	const theme = useAtomValue(currentThemeModeAtom);
 
-  return (
-    <SandpackProvider
-      template="react"
-      customSetup={{
-        dependencies: {
-          recharts: "2.15.0",
-          "lucide-react": "latest",
-          clsx: "latest",
-          "tailwind-merge": "latest",
-          "class-variance-authority": "latest",
-          three: "latest",
-          d3: "latest",
-          tone: "latest",
-          lodash: "latest",
-          mathjs: "latest",
-          papaparse: "latest",
-          sheetjs: "latest",
-          zustand: "latest",
-        },
-      }}
-      files={{
-        "/App.js": content,
-      }}
-      options={{
-        externalResources: ["https://cdn.tailwindcss.com"],
-      }}
-      theme={theme === "light" ? "light" : "dark"}
-      style={{ height: "100%" }}
-    >
-      <SandpackContent />
-    </SandpackProvider>
-  );
+	return (
+		<SandpackProvider
+			template="react"
+			customSetup={{
+				dependencies: {
+					recharts: "2.15.0",
+					"lucide-react": "latest",
+					clsx: "latest",
+					"tailwind-merge": "latest",
+					"class-variance-authority": "latest",
+					three: "latest",
+					d3: "latest",
+					tone: "latest",
+					lodash: "latest",
+					mathjs: "latest",
+					papaparse: "latest",
+					sheetjs: "latest",
+					zustand: "latest",
+				},
+			}}
+			files={{
+				"/App.js": content,
+			}}
+			options={{
+				externalResources: ["https://cdn.tailwindcss.com"],
+			}}
+			theme={theme === "light" ? "light" : "dark"}
+			style={{ height: "100%" }}
+		>
+			<SandpackContent />
+		</SandpackProvider>
+	);
 });
 ReactComponentRenderer.displayName = "ReactComponentRenderer";
 
 const HTMLRenderer = ({ content }: { content: string }) => {
-  return (
-    <iframe
-      srcDoc={content}
-      className="w-full h-full"
-      title="HTML Preview"
-      sandbox="allow-scripts allow-same-origin"
-    />
-  );
+	return (
+		<iframe
+			srcDoc={content}
+			className="w-full h-full"
+			title="HTML Preview"
+			sandbox="allow-scripts allow-same-origin"
+		/>
+	);
 };
 
 const CodeRenderer = ({
-  content,
-  wrapLongLines,
-  language,
+	content,
+	wrapLongLines,
+	language,
 }: {
-  content: string;
-  wrapLongLines: boolean;
-  language?: string;
+	content: string;
+	wrapLongLines: boolean;
+	language?: string;
 }) => {
-  const theme = useAtomValue(currentThemeModeAtom);
+	const theme = useAtomValue(currentThemeModeAtom);
 
-  return (
-    <div className="flex flex-col h-full text-card-foreground overflow-x-auto text-sm font-mono">
-      <SyntaxHighlighter
-        customStyle={{
-          backgroundColor: "transparent",
-          padding: "1rem",
-          margin: "0",
-          height: "100%",
-          overflow: wrapLongLines ? "visible" : "auto",
-        }}
-        language={language || "text"}
-        style={theme === "light" ? oneLight : oneDark}
-        PreTag="div"
-        codeTagProps={{
-          style: {
-            backgroundColor: "transparent",
-            display: "block",
-            whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
-            opacity: 0.9,
-            overflowWrap: wrapLongLines ? "anywhere" : "normal",
-            wordBreak: "normal",
-          },
-        }}
-        lineProps={{
-          style: {
-            backgroundColor: "transparent",
-            display: "block",
-            whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
-            overflowWrap: wrapLongLines ? "anywhere" : "normal",
-            wordBreak: "normal",
-          },
-        }}
-        wrapLines={wrapLongLines}
-      >
-        {content}
-      </SyntaxHighlighter>
-    </div>
-  );
+	return (
+		<div className="flex flex-col h-full text-card-foreground overflow-x-auto text-sm font-mono">
+			<SyntaxHighlighter
+				customStyle={{
+					backgroundColor: "transparent",
+					padding: "1rem",
+					margin: "0",
+					height: "100%",
+					overflow: wrapLongLines ? "visible" : "auto",
+				}}
+				language={language || "text"}
+				style={theme === "light" ? oneLight : oneDark}
+				PreTag="div"
+				codeTagProps={{
+					style: {
+						backgroundColor: "transparent",
+						display: "block",
+						whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
+						opacity: 0.9,
+						overflowWrap: wrapLongLines ? "anywhere" : "normal",
+						wordBreak: "normal",
+					},
+				}}
+				lineProps={{
+					style: {
+						backgroundColor: "transparent",
+						display: "block",
+						whiteSpace: wrapLongLines ? "pre-wrap" : "pre",
+						overflowWrap: wrapLongLines ? "anywhere" : "normal",
+						wordBreak: "normal",
+					},
+				}}
+				wrapLines={wrapLongLines}
+			>
+				{content}
+			</SyntaxHighlighter>
+		</div>
+	);
 };
 
 const SVGRenderer = ({ content }: { content: string }) => {
-  return (
-    <div
-      className="p-4 bg-background flex items-center justify-center"
-      style={{ height: "100%" }}
-    >
-      <div dangerouslySetInnerHTML={{ __html: content }} />
-    </div>
-  );
+	return (
+		<div
+			className="p-4 bg-background flex items-center justify-center"
+			style={{ height: "100%" }}
+		>
+			<div dangerouslySetInnerHTML={{ __html: content }} />
+		</div>
+	);
 };
 
 const MarkdownRenderer = ({ content }: { content: string }) => {
-  return (
-    <div className="h-full p-4 bg-background overflow-y-auto">
-      <Markdown
-        content={content}
-        id={`artifact-${Date.now()}`}
-        className="text-sm text-muted-foreground"
-      />
-    </div>
-  );
+	return (
+		<div className="h-full p-4 bg-background overflow-y-auto">
+			<Markdown
+				content={content}
+				id={`artifact-${Date.now()}`}
+				className="text-sm text-muted-foreground"
+			/>
+		</div>
+	);
 };
 
 const MermaidRenderer = ({ content }: { content: string }) => {
-  return (
-    <div className="p-4 bg-background">
-      <MermaidChart chart={content} id={`artifact-${Date.now()}`} />
-    </div>
-  );
+	return (
+		<div className="p-4 bg-background">
+			<MermaidChart chart={content} id={`artifact-${Date.now()}`} />
+		</div>
+	);
 };
 
 const renderArtifactContent = (
-  artifact: Artifact,
-  view: "preview" | "source",
-  wrapLongLines: boolean,
+	artifact: Artifact,
+	view: "preview" | "source",
+	wrapLongLines: boolean,
 ) => {
-  if (view === "source" && artifact.type !== "application/vnd.ant.code") {
-    let language = artifact.language;
-    if (!language) {
-      switch (artifact.type) {
-        case "application/vnd.ant.react":
-          language = "jsx";
-          break;
-        case "text/html":
-          language = "html";
-          break;
-        case "text/markdown":
-          language = "markdown";
-          break;
-        case "image/svg+xml":
-          language = "xml";
-          break;
-        case "application/vnd.ant.mermaid":
-          language = "mermaid";
-          break;
-      }
-    }
-    return (
-      <CodeRenderer
-        content={artifact.content}
-        language={language}
-        wrapLongLines={wrapLongLines}
-      />
-    );
-  }
+	if (view === "source" && artifact.type !== "application/vnd.ant.code") {
+		let language = artifact.language;
+		if (!language) {
+			switch (artifact.type) {
+				case "application/vnd.ant.react":
+					language = "jsx";
+					break;
+				case "text/html":
+					language = "html";
+					break;
+				case "text/markdown":
+					language = "markdown";
+					break;
+				case "image/svg+xml":
+					language = "xml";
+					break;
+				case "application/vnd.ant.mermaid":
+					language = "mermaid";
+					break;
+			}
+		}
+		return (
+			<CodeRenderer
+				content={artifact.content}
+				language={language}
+				wrapLongLines={wrapLongLines}
+			/>
+		);
+	}
 
-  switch (artifact.type) {
-    case "application/vnd.ant.react":
-      return <ReactComponentRenderer content={artifact.content} />;
-    case "text/html":
-      return <HTMLRenderer content={artifact.content} />;
-    case "application/vnd.ant.code":
-      return (
-        <CodeRenderer
-          content={artifact.content}
-          language={artifact.language}
-          wrapLongLines={wrapLongLines}
-        />
-      );
-    case "text/markdown":
-      return <MarkdownRenderer content={artifact.content} />;
-    case "image/svg+xml":
-      return <SVGRenderer content={artifact.content} />;
-    case "application/vnd.ant.mermaid":
-      return <MermaidRenderer content={artifact.content} />;
-    default:
-      return <MarkdownRenderer content={artifact.content} />;
-  }
+	switch (artifact.type) {
+		case "application/vnd.ant.react":
+			return <ReactComponentRenderer content={artifact.content} />;
+		case "text/html":
+			return <HTMLRenderer content={artifact.content} />;
+		case "application/vnd.ant.code":
+			return (
+				<CodeRenderer
+					content={artifact.content}
+					language={artifact.language}
+					wrapLongLines={wrapLongLines}
+				/>
+			);
+		case "text/markdown":
+			return <MarkdownRenderer content={artifact.content} />;
+		case "image/svg+xml":
+			return <SVGRenderer content={artifact.content} />;
+		case "application/vnd.ant.mermaid":
+			return <MermaidRenderer content={artifact.content} />;
+		default:
+			return <MarkdownRenderer content={artifact.content} />;
+	}
 };
 
 export const ArtifactViewer = ({
-  artifact,
-  onClose,
+	artifact,
+	onClose,
 }: {
-  artifact: Artifact;
-  onClose: () => void;
+	artifact: Artifact;
+	onClose: () => void;
 }) => {
-  const { copy, copied } = useCopy({ duration: 500 });
-  const [view, setView] = useState<"preview" | "source">("preview");
-  const [wrapLongLines, setWrapLongLines] = useState(false);
+	const { copy, copied } = useCopy({ duration: 500 });
+	const [view, setView] = useState<"preview" | "source">("preview");
+	const [wrapLongLines, setWrapLongLines] = useState(false);
 
-  useEffect(() => {
-    if (artifact.type === "application/vnd.ant.code") {
-      setView("source");
-    } else {
-      setView("preview");
-    }
-  }, [artifact.type, artifact.id]);
+	useEffect(() => {
+		if (artifact.type === "application/vnd.ant.code") {
+			setView("source");
+		} else {
+			setView("preview");
+		}
+	}, [artifact.type, artifact.id]);
 
-  const handleCopy = () => {
-    copy(artifact.content);
-  };
+	const handleCopy = () => {
+		copy(artifact.content);
+	};
 
-  const handleOpenInNewTab = () => {
-    if (artifact.type === "text/html") {
-      const newWindow = window.open();
-      if (newWindow) {
-        newWindow.document.write(artifact.content);
-        newWindow.document.close();
-      }
-    }
-  };
+	const handleOpenInNewTab = () => {
+		if (artifact.type === "text/html") {
+			const newWindow = window.open();
+			if (newWindow) {
+				newWindow.document.write(artifact.content);
+				newWindow.document.close();
+			}
+		}
+	};
 
-  return (
-    <div className="w-full h-full grid grid-rows-[auto_1fr]">
-      {/* Header */}
-      <div className="flex items-center justify-between p-1 pl-3">
-        <h2 className="text-lg font-semibold">{artifact.title}</h2>
+	return (
+		<div className="w-full h-full grid grid-rows-[auto_1fr]">
+			{/* Header */}
+			<div className="flex items-center justify-between p-1 pl-3">
+				<h2 className="text-lg font-semibold line-clamp-1">{artifact.title}</h2>
 
-        <div className="flex items-center gap-1">
-          {artifact.type !== "application/vnd.ant.code" && (
-            <Tabs
-              value={view}
-              onValueChange={(v) => setView(v as "preview" | "source")}
-            >
-              <TabsList>
-                <TabsTrigger value="preview" aria-label="Preview view">
-                  <EyeIcon className="w-4 h-4" />
-                </TabsTrigger>
-                <TabsTrigger value="source" aria-label="Source view">
-                  <CodeIcon className="w-4 h-4" />
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          )}
+				<div className="flex items-center gap-1">
+					{artifact.type !== "application/vnd.ant.code" && (
+						<Tabs
+							value={view}
+							onValueChange={(v) => setView(v as "preview" | "source")}
+						>
+							<TabsList>
+								<TabsTrigger value="preview" aria-label="Preview view">
+									<EyeIcon className="w-4 h-4" />
+								</TabsTrigger>
+								<TabsTrigger value="source" aria-label="Source view">
+									<CodeIcon className="w-4 h-4" />
+								</TabsTrigger>
+							</TabsList>
+						</Tabs>
+					)}
 
-          {artifact.type === "text/html" && (
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Open in new tab"
-              onClick={handleOpenInNewTab}
-            >
-              <ExternalLinkIcon className="w-4 h-4" />
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Copy content"
-            onClick={handleCopy}
-          >
-            {copied ? (
-              <CheckIcon className="w-4 h-4" />
-            ) : (
-              <CopyIcon className="w-4 h-4" />
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Wrap long lines"
-            onClick={() => setWrapLongLines(!wrapLongLines)}
-          >
-            {wrapLongLines ? (
-              <WrapTextIcon className="w-4 h-4" />
-            ) : (
-              <WrapTextIcon className="w-4 h-4" />
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Close viewer"
-            onClick={onClose}
-          >
-            <XIcon className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+					{artifact.type === "text/html" && (
+						<Button
+							variant="outline"
+							size="icon"
+							aria-label="Open in new tab"
+							onClick={handleOpenInNewTab}
+						>
+							<ExternalLinkIcon className="w-4 h-4" />
+						</Button>
+					)}
+					<Button
+						variant="outline"
+						size="icon"
+						aria-label="Copy content"
+						onClick={handleCopy}
+					>
+						{copied ? (
+							<CheckIcon className="w-4 h-4" />
+						) : (
+							<CopyIcon className="w-4 h-4" />
+						)}
+					</Button>
+					<Button
+						variant="outline"
+						size="icon"
+						aria-label="Wrap long lines"
+						onClick={() => setWrapLongLines(!wrapLongLines)}
+					>
+						{wrapLongLines ? (
+							<WrapTextIcon className="w-4 h-4" />
+						) : (
+							<WrapTextIcon className="w-4 h-4" />
+						)}
+					</Button>
+					<Button
+						variant="outline"
+						size="icon"
+						aria-label="Close viewer"
+						onClick={onClose}
+					>
+						<XIcon className="w-4 h-4" />
+					</Button>
+				</div>
+			</div>
 
-      {/* Content */}
-      <div className="min-h-0 min-w-0">
-        {renderArtifactContent(artifact, view, wrapLongLines)}
-      </div>
-    </div>
-  );
+			{/* Content */}
+			<div className="min-h-0 min-w-0">
+				{renderArtifactContent(artifact, view, wrapLongLines)}
+			</div>
+		</div>
+	);
 };

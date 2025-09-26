@@ -53,9 +53,11 @@ import {
 	scaleIn,
 	iconSpinVariants,
 } from "@/lib/motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const ToolBar = () => {
 	const chatId = useAtomValue(chatIdAtom);
+	const isMobile = useIsMobile();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const { mutate: updateChatMutation } = useMutation({
@@ -163,38 +165,39 @@ export const ToolBar = () => {
 				<ToolToggles />
 
 				{/* Agent toggle quick-cancel buttons */}
-				{getEnabledSettings().map((setting) => {
-					const IconComponent = setting.icon;
-					const animationVariant =
-						setting.animation === "scale" ? scaleIn : iconSpinVariants;
+				{!isMobile &&
+					getEnabledSettings().map((setting) => {
+						const IconComponent = setting.icon;
+						const animationVariant =
+							setting.animation === "scale" ? scaleIn : iconSpinVariants;
 
-					return (
-						<Button
-							key={setting.key}
-							variant="outline"
-							size="icon"
-							className="transition-all duration-300 relative group border-none text-foreground/70 hover:text-foreground cursor-pointer shadow-none"
-							onClick={() => handleAgentToggle(setting.key, false)}
-							title={setting.tooltip || setting.label}
-						>
-							<motion.span
-								variants={animationVariant}
-								initial="initial"
-								animate="animate"
-								transition={smoothTransition}
-								className="group-hover:hidden"
+						return (
+							<Button
+								key={setting.key}
+								variant="outline"
+								size="icon"
+								className="transition-all duration-300 relative group border-none text-foreground/70 hover:text-foreground cursor-pointer shadow-none"
+								onClick={() => handleAgentToggle(setting.key, false)}
+								title={setting.tooltip || setting.label}
 							>
-								<IconComponent className="h-4 w-4" />
-							</motion.span>
-							<span className="absolute inset-0 items-center justify-center hidden group-hover:flex">
-								<XIcon className="w-4 h-4 text-destructive" />
-							</span>
-						</Button>
-					);
-				})}
+								<motion.span
+									variants={animationVariant}
+									initial="initial"
+									animate="animate"
+									transition={smoothTransition}
+									className="group-hover:hidden"
+								>
+									<IconComponent className="h-4 w-4" />
+								</motion.span>
+								<span className="absolute inset-0 items-center justify-center hidden group-hover:flex">
+									<XIcon className="w-4 h-4 text-destructive" />
+								</span>
+							</Button>
+						);
+					})}
 
 				{/* Render project name with X button on hover */}
-				{project && (
+				{!isMobile && project && (
 					<Button
 						variant="outline"
 						className="group justify-between px-2 border-none"

@@ -51,6 +51,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Sortable Model Item Component
 const SortableModelItem = ({
@@ -80,6 +81,7 @@ const SortableModelItem = ({
 	const isHidden = preferences.hidden.includes(model.model_name);
 	const toolSupportTag = getTagInfo("toolSupport");
 	const thinkingTagInfo = getTagInfo("thinking");
+	const isMobile = useIsMobile();
 
 	return (
 		<div
@@ -189,6 +191,7 @@ const ModelManagementDialog = ({
 	onReorderModels: (newOrder: string[]) => void;
 	onToggleVisibility: (modelName: string) => void;
 }) => {
+	const isMobile = useIsMobile();
 	const sensors = useSensors(
 		useSensor(PointerSensor),
 		useSensor(KeyboardSensor, {
@@ -228,7 +231,7 @@ const ModelManagementDialog = ({
 					<Settings className="h-4 w-4" />
 				</Button>
 			</DialogTrigger>
-			<DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+			<DialogContent className={`max-h-[80vh] overflow-hidden flex flex-col`}>
 				<DialogHeader>
 					<DialogTitle>Manage Models</DialogTitle>
 				</DialogHeader>
@@ -282,6 +285,7 @@ export function ModelPopover({
 	const [highlightedIndex, setHighlightedIndex] = useState(-1);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const modelRefs = useRef<(HTMLDivElement | null)[]>([]);
+	const isMobile = useIsMobile();
 
 	// Ref callback for model items
 	const setModelRef = useCallback(
@@ -458,7 +462,9 @@ export function ModelPopover({
 					className="justify-between shadow-none gap-2 cursor-pointer text-foreground/70 hover:text-foreground border-none "
 					onClick={() => setPopoverOpen(!popoverOpen)}
 				>
-					{selectedModelConfig?.label || selectedModel}
+					{selectedModelConfig?.label.length > 16 && isMobile
+						? `${selectedModelConfig?.label.slice(0, 10)}...`
+						: selectedModelConfig?.label || selectedModel}
 					<ChevronDownIcon className="h-4 w-4" />
 				</Button>
 			</PopoverTrigger>
