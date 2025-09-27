@@ -1,7 +1,6 @@
 import { useMessages } from "../../../hooks/chats/use-messages";
 import { useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { motion } from "motion/react";
 import { MessagesList } from "./messages";
 import { StreamingMessage } from "./streaming-message";
 import { TriangleAlertIcon } from "lucide-react";

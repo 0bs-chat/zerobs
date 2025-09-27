@@ -81,7 +81,6 @@ const SortableModelItem = ({
 	const isHidden = preferences.hidden.includes(model.model_name);
 	const toolSupportTag = getTagInfo("toolSupport");
 	const thinkingTagInfo = getTagInfo("thinking");
-	const isMobile = useIsMobile();
 
 	return (
 		<div
@@ -191,7 +190,6 @@ const ModelManagementDialog = ({
 	onReorderModels: (newOrder: string[]) => void;
 	onToggleVisibility: (modelName: string) => void;
 }) => {
-	const isMobile = useIsMobile();
 	const sensors = useSensors(
 		useSensor(PointerSensor),
 		useSensor(KeyboardSensor, {
@@ -462,8 +460,8 @@ export function ModelPopover({
 					className="justify-between shadow-none gap-2 cursor-pointer text-foreground/70 hover:text-foreground border-none "
 					onClick={() => setPopoverOpen(!popoverOpen)}
 				>
-					{selectedModelConfig?.label.length > 16 && isMobile
-						? `${selectedModelConfig?.label.slice(0, 10)}...`
+					{selectedModelConfig?.label?.length > 16 && isMobile
+						? `${selectedModelConfig?.label?.slice(0, 10)}...`
 						: selectedModelConfig?.label || selectedModel}
 					<ChevronDownIcon className="h-4 w-4" />
 				</Button>

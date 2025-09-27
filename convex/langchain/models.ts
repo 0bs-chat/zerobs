@@ -372,7 +372,7 @@ export const models: {
 		provider: "openai",
 		owner: "z-ai",
 		modalities: ["text"],
-		image: "https://chat.z.ai/static/logoDark.png",
+		image: "https://z-cdn.chatglm.cn/z-blog/z-icon.svg",
 		description:
 			"Latest flagship model from Z-AI, designed for a wide range of tasks.",
 		usageRateMultiplier: 1.0,
@@ -387,7 +387,7 @@ export const models: {
 		provider: "openai",
 		owner: "z-ai",
 		modalities: ["text"],
-		image: "https://chat.z.ai/static/logoDark.png",
+		image: "https://z-cdn.chatglm.cn/z-blog/z-icon.svg",
 		description: "Lightweight version of GLM 4.5",
 		usageRateMultiplier: 1.0,
 		parser: "functionCalling",
