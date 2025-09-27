@@ -460,9 +460,10 @@ export function ModelPopover({
 					className="justify-between shadow-none gap-2 cursor-pointer text-foreground/70 hover:text-foreground border-none "
 					onClick={() => setPopoverOpen(!popoverOpen)}
 				>
-					{selectedModelConfig?.label?.length > 16 && isMobile
-						? `${selectedModelConfig?.label?.slice(0, 10)}...`
-						: selectedModelConfig?.label || selectedModel}
+					{selectedModelConfig?.label !== undefined &&
+						(selectedModelConfig?.label?.length > 16 && isMobile
+							? `${selectedModelConfig?.label?.slice(0, 10)}...`
+							: selectedModelConfig?.label || selectedModel)}
 					<ChevronDownIcon className="h-4 w-4" />
 				</Button>
 			</PopoverTrigger>
