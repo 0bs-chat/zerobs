@@ -224,6 +224,23 @@ export const models: {
 		parser: "functionCalling",
 	},
 	{
+		label: "Claude 4.5",
+		model_name: "claude-4.5",
+		model: "anthropic/claude-sonnet-4.5",
+		isThinking: false,
+		toolSupport: true,
+		provider: "openai",
+		modalities: ["text", "image", "pdf"],
+		image:
+			"https://ypazyw0thq.ufs.sh/f/38t7p527clgqERtPmCxK7iJruFcAblpzLxNM30vHj4R1XQGm",
+		description:
+			"Claude Sonnet 4.5 is Anthropic’s most advanced Sonnet model to date, optimized for real-world agents and coding workflows.",
+		owner: "anthropic",
+		usageRateMultiplier: 2.0,
+		temperature: 0.5,
+		parser: "functionCalling",
+	},
+	{
 		label: "Worker",
 		model_name: "worker",
 		model: "google/gemini-2.0-flash-001",
