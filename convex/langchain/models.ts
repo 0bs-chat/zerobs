@@ -396,6 +396,22 @@ export const models: {
 		parser: "functionCalling",
 	},
 	{
+		label: "GLM 4.6",
+		model_name: "glm-4.6",
+		model: "z-ai/glm-4.6",
+		isThinking: true,
+		toolSupport: true,
+		provider: "openai",
+		owner: "z-ai",
+		modalities: ["text"],
+		image: "https://z-cdn.chatglm.cn/z-blog/z-icon.svg",
+		description:
+			"Compared with GLM-4.5, this generation brings several key improvements:\n" +
+			"Longer context window: The context window has been expanded from 128K to 200K tokens, enabling the model to handle more complex agentic tasks.",
+		usageRateMultiplier: 1.0,
+		parser: "functionCalling",
+	},
+	{
 		label: "GLM 4.5 Air",
 		model_name: "glm-4.5-air",
 		model: "z-ai/glm-4.5-air",
